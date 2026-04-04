@@ -26,7 +26,7 @@ function loadConfig() {
 async function main() {
   const config = loadConfig();
 
-  const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || config.telegram?.token;
+  const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
   if (!TELEGRAM_TOKEN) {
     console.error('❌ TELEGRAM_TOKEN not set in .env.local or config.json');
     process.exit(1);
@@ -72,20 +72,20 @@ async function main() {
       }
 
       if (arg === 'on') {
-        await miraie.controlDevice(device.deviceId, { ps: '1' });
+        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on' });
         await send(`✅ AC *ON* — ${device.deviceName}`);
       } else if (arg === 'off') {
-        await miraie.controlDevice(device.deviceId, { ps: '0' });
+        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' });
         await send(`✅ AC *OFF* — ${device.deviceName}`);
       } else if (!isNaN(Number(arg))) {
         const temp = Math.min(30, Math.max(16, Number(arg)));
-        await miraie.controlDevice(device.deviceId, { tm: temp });
+        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", actmp: String(temp) });
         await send(`✅ AC temperature set to *${temp}°C*`);
       } else {
-        const modeMap: Record<string, string> = { cool: '0', dry: '1', fan: '2', auto: '3', heat: '4' };
+        const modeMap: Record<string, string> = { cool: 'cool', dry: 'dry', fan: 'fan', auto: 'auto', heat: 'heat' };
         const md = modeMap[arg];
         if (!md) { await send(`Unknown AC command: \`${arg}\``); return; }
-        await miraie.controlDevice(device.deviceId, { md });
+        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", acmd: md });
         await send(`✅ AC mode: *${arg.toUpperCase()}*`);
       }
     }
