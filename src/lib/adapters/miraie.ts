@@ -84,17 +84,20 @@ export class MiraieAdapter extends Adapter {
       const spaces = home.spaces || [];
       for (const space of spaces) {
         for (const device of (space.devices || [])) {
-          allDevices.push({
-            deviceId: device.deviceId,
-            deviceName: device.deviceName || 'Panasonic AC',
-            activeStatus: device.activeStatus,
-            deviceTypeCode: device.deviceTypeCode,
-            homeId: home.homeId,
-            topic: {
-              pub: `v1/${home.homeId}/${device.deviceId}/control`,
-              sub: `v1/${home.homeId}/${device.deviceId}/status`,
-            },
-          });
+            const topicPrefix = (device.topic && Array.isArray(device.topic) && device.topic.length > 0) 
+              ? device.topic[0] 
+              : `v1/${home.homeId}/${device.deviceId}`;
+            allDevices.push({
+              deviceId: device.deviceId,
+              deviceName: device.deviceName || 'Panasonic AC',
+              activeStatus: device.activeStatus,
+              deviceTypeCode: device.deviceTypeCode,
+              homeId: home.homeId,
+              topic: {
+                pub: `${topicPrefix}/control`,
+                sub: `${topicPrefix}/status`,
+              },
+            });
         }
       }
     }
