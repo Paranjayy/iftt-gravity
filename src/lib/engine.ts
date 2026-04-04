@@ -9,6 +9,7 @@ export class Engine {
   }
 
   async handleAction(action: Action) {
+    if (!action.deviceId) throw new Error('Action is missing deviceId');
     const [adapterId, nodeId] = action.deviceId.split(':');
     const adapter = manager.getAdapter(adapterId);
     if (!adapter) throw new Error(`Adapter ${adapterId} not found`);
