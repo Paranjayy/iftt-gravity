@@ -48,12 +48,11 @@ export class MiraieAdapter extends Adapter {
   async login(): Promise<{ token: string; userId: string }> {
     if (!this.mobile || !this.password) throw new Error('Credentials missing');
 
-    // Exact payload shape accepted by the MirAie auth server (no clientSecret, no appVersion)
+    // Exact payload — no clientSecret, no appVersion, no empty-string scope
     const res = await axios.post(AUTH_URL, {
       clientId: CLIENT_ID,
       mobile: this.mobile,
       password: this.password,
-      scope: '',
     }, {
       headers: { 'Content-Type': 'application/json' }
     });

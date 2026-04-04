@@ -24,18 +24,21 @@ export async function getDashboardData() {
 
 export async function linkMiraie(mobile: string, password: string) {
   try {
-    const adapter = new MiraieAdapter(mobile, password);
+    // MirAie expects plain 10-digit Indian mobile without country code or +91
+    const normalizedMobile = mobile.trim().replace(/^\+91/, '').replace(/^91/, '').replace(/\s/g, '');
+    
+    const adapter = new MiraieAdapter(normalizedMobile, password);
     const { token, userId } = await adapter.login();
     const devices = await adapter.fetchDevices();
 
     if (devices.length === 0) {
-      return { success: false, error: "Logged in but no AC devices found on this account." };
+      return { success: false, error: "Logged in successfully but no AC devices found on this account." };
     }
 
     const config = await readConfig();
     config.miraie = {
-      mobile,
-      password,   // stored locally only — never sent to any 3rd party
+      mobile: normalizedMobile,
+      password,
       accessToken: token,
       userId,
       devices: devices.map(d => ({
@@ -55,11 +58,10 @@ export async function linkMiraie(mobile: string, password: string) {
       devices: config.miraie.devices,
     };
   } catch (err: any) {
-    console.error("MirAie link error:", err.response?.data || err.message);
-    return {
-      success: false,
-      error: err.response?.data?.message || "Login failed. Check your mobile number and password.",
-    };
+    const apiError = err.response?.data;
+    const msg = apiError?.message || apiError?.error || err.message || "Login failed";
+    console.error("MirAie link error:", JSON.stringify(apiError || err.message));
+    return { success: false, error: msg };
   }
 }
 
