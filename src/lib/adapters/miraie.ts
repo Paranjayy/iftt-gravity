@@ -129,14 +129,10 @@ export class MiraieAdapter extends Adapter {
     const { deviceId, status, temperature, mode } = action.payload;
     if (!this.accessToken) await this.login();
 
-    const modeMap: Record<string, string> = {
-      COOL: '0', DRY: '1', FAN: '2', AUTO: '3', HEAT: '4',
-    };
-
     await this.controlDevice(deviceId, {
-      ps: status === 'ON' ? '1' : '0',
-      tm: temperature || 24,
-      md: modeMap[mode] || '0',
+      ...(status && { ps: status === 'ON' ? 'on' : 'off' }),
+      ...(temperature && { actmp: temperature }),
+      ...(mode && { acmd: mode.toLowerCase() }),
     });
   }
 }

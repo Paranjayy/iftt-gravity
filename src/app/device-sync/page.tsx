@@ -216,7 +216,7 @@ export default function DeviceSyncPage() {
               <p className="text-xs text-white/40 leading-relaxed">
                 Same credentials as the <strong className="text-white">Panasonic MirAie app</strong>. Use your registered mobile number.
               </p>
-              <Field label="Mobile Number" type="tel" placeholder="8160810976" value={mobile} onChange={setMobile} />
+              <Field label="Mobile Number" type="tel" placeholder="1234567890" value={mobile} onChange={setMobile} />
               <Field label="Password" type="password" placeholder="••••••••" value={password} onChange={setPassword} />
               {result && <ResultBanner result={result} successMsg={`Linked! Found ${result.deviceCount} device(s).`} />}
               <LinkButton onClick={handleLink} loading={loading} disabled={!mobile || !password} label="Link MirAie Account" />

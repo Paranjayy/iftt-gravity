@@ -59,9 +59,9 @@ export async function controlMiraieAC(deviceId: string, command: {
     await adapter.login();
     await adapter.fetchDevices();
     await adapter.controlDevice(deviceId, {
-      ...(command.power !== undefined && { ps: command.power ? "1" : "0" }),
-      ...(command.temperature && { tm: command.temperature }),
-      ...(command.mode && { md: { COOL: "0", DRY: "1", FAN: "2", AUTO: "3", HEAT: "4" }[command.mode] }),
+      ...(command.power !== undefined && { ps: command.power ? "on" : "off" }),
+      ...(command.temperature && { actmp: command.temperature }),
+      ...(command.mode && { acmd: command.mode.toLowerCase() }),
     });
     return { success: true };
   } catch (err: any) {
