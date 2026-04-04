@@ -6,16 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "bot": "bun src/lib/bot.ts"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@xyflow/react": "latest",
+    "axios": "^1.14.0",
+    "clsx": "latest",
+    "framer-motion": "latest",
+    "lucide-react": "latest",
+    "mqtt": "^5.15.1",
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest",
-    "@xyflow/react": "latest",
-    "framer-motion": "latest",
-    "clsx": "latest",
     "tailwind-merge": "latest"
   },
   "devDependencies": {

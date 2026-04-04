@@ -22,7 +22,7 @@ export interface Trigger {
 
 export interface Action {
   type: string;
-  deviceId: string;
+  deviceId?: string;
   payload: any;
 }
 

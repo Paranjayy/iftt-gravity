@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disabling turbo to avoid the PostCSS loader panics in this alpha environment
-  process: {
-    turbo: false
-  }
+  // Config stays clean as we move to stable build
 };
 
 module.exports = nextConfig;
