@@ -26,7 +26,7 @@ export interface MiraieStatus {
   cnt?: string;
   sid?: string;
   ps?: string;  // power: 'on'=on, 'off'=off
-  actmp?: number;  // temperature setpoint (16–30)
+  actmp?: string;  // temperature setpoint (16–30)
   acmd?: string;  // mode: 'cool', 'dry', 'fan', 'auto', 'heat'
   acfs?: string; // fan speed: '1'=low, '2'=med, '3'=high, '4'=auto
   acvs?: string; // vert swing: '0'=off, '4'=swing
@@ -152,7 +152,7 @@ export class MiraieAdapter extends Adapter {
     await this.controlDevice(deviceId, {
       ki: 1, cnt: "an", sid: "1",
       ...(status && { ps: status === 'ON' ? 'on' : 'off' }),
-      ...(temperature && { actmp: temperature }),
+      ...(temperature && { actmp: String(temperature) }),
       ...(mode && { acmd: mode.toLowerCase() }),
     });
   }

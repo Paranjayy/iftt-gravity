@@ -61,7 +61,7 @@ export async function controlMiraieAC(deviceId: string, command: {
     await adapter.controlDevice(deviceId, {
       ki: 1, cnt: "an", sid: "1",
       ...(command.power !== undefined && { ps: command.power ? "on" : "off" }),
-      ...(command.temperature && { actmp: command.temperature }),
+      ...(command.temperature && { actmp: String(command.temperature) }),
       ...(command.mode && { acmd: command.mode.toLowerCase() }),
     });
     return { success: true };
