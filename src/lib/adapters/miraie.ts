@@ -1,4 +1,5 @@
 import axios from 'axios';
+import mqtt from 'mqtt';
 import { Adapter, Device, Action } from '../types';
 
 // Correct endpoint — reverse-engineered from the MirAie Android app
@@ -119,13 +120,26 @@ export class MiraieAdapter extends Adapter {
     const device = this.devices.find(d => d.deviceId === deviceId);
     if (!device) throw new Error(`Device ${deviceId} not found`);
 
-    // MirAie uses MQTT pub topic to send commands
-    // The REST "control" endpoint mirrors this
-    await axios.post(
-      `https://app.miraie.in/simplifi/v1/deviceManagement/devices/${deviceId}/control`,
-      command,
-      { headers: this.headers }
-    );
+    return new Promise((resolve, reject) => {
+      const client = mqtt.connect('mqtts://mqtt.miraie.in:8883', {
+        username: device.homeId, // Broker uses Home ID as username
+        password: this.accessToken!, // Broker uses access token as password
+        clientId: 'ha-mirae-mqtt-' + Math.floor(Math.random() * 1000)
+      });
+
+      client.on('connect', () => {
+        client.publish(device.topic.pub, JSON.stringify(command), (err) => {
+          client.end();
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      client.on('error', (err) => {
+        client.end();
+        reject(err);
+      });
+    });
   }
 
   async executeAction(action: Action): Promise<void> {
