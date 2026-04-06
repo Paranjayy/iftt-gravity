@@ -19,6 +19,7 @@ export interface MiraieDevice {
     pub: string;
     sub: string;
   };
+  status?: MiraieStatus;
 }
 
 export interface MiraieStatus {

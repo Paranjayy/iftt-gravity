@@ -15,8 +15,12 @@ import { MiraieAdapter } from './adapters/miraie';
 import { WizAdapter } from './adapters/wiz';
 import fs from 'fs';
 import path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
+const execAsync = promisify(exec);
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');
+declare const Bun: any;
 
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')); }
@@ -25,6 +29,8 @@ function loadConfig() {
 
 async function main() {
   const config = loadConfig();
+  let isPhoneOnline = true; // tracking state
+  let offlineCounter = 0;
 
   const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
   if (!TELEGRAM_TOKEN) {
@@ -62,14 +68,22 @@ async function main() {
   };
 
   const triggerScene = async (sceneId: string) => {
+    const promises = [];
     if (sceneId === "TV") {
-      if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time' } });
+      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time' } }));
       if (miraie && miraie.devices.length > 0) {
-        // Send power-on, then settings
-        await miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on' });
-        await miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '24', acmd: 'cool' });
+        const d = miraie.devices[0].deviceId;
+        promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on' }));
+        promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '24', acmd: 'cool' }));
       }
+    } else if (sceneId === "AWAY") {
+      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
+      if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
+    } else if (sceneId === "HOME") {
+      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
+      if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
     }
+    await Promise.all(promises);
   };
 
   // ──────────────────────────────────────────────────────
@@ -115,7 +129,8 @@ async function main() {
         '`/sleep` — 10% warm + AC 27°C fan',
         '`/away` — turn everything off',
         '`/home` — welcome home: lights + AC on',
-        '`/weather` — sync lights to current weather 🌦️',
+        '`/weather` — sync lights to Junagadh 🌦️',
+        '`/energy` — show device usage & analytics 📊',
         '',
         '🛠 *System*',
         '`/status` — all device states + uptime',
@@ -318,46 +333,51 @@ async function main() {
   });
 
   // ──────────────────────────────────────────────────────
-  // /weather — Sync lights to current weather
+  // /weather — Sync lights to Junagadh weather + Time
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
     command: 'weather',
-    description: 'Sync lights to current weather (auto scene)',
+    description: 'Sync lights to Junagadh weather & Time-of-day',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       if (!wiz) return await send('❌ WiZ not configured.');
       try {
-        // wttr.in — no API key needed!
-        const res = await fetch('https://wttr.in/?format=j1');
+        const res = await fetch('https://wttr.in/Junagadh?format=j1');
         const data: any = await res.json();
         const code = Number(data.current_condition[0].weatherCode);
         const tempC = data.current_condition[0].temp_C;
         const desc = data.current_condition[0].weatherDesc[0].value;
-        const city = data.nearest_area[0].areaName[0].value;
+        const hour = new Date().getHours(); // Local server time (should be IST on Mac)
 
-        // Weather code → scene mapping
+        // Weather logic
         let scene = '', emoji = '';
-        if ([200,201,202,210,211,212,221,230,231,232].includes(code)) {
-          scene = 'Party'; emoji = '⛈️'; // thunderstorm
-        } else if ([300,301,302,310,311,312,313,314,321].includes(code)) {
-          scene = 'Ocean'; emoji = '🌧️'; // drizzle
-        } else if ([500,501,502,503,504,511,520,521,522,531].includes(code)) {
-          scene = 'Ocean'; emoji = '🌧️'; // rain → deep blue
-        } else if ([600,601,602,611,612,613,615,616,620,621,622].includes(code)) {
-          scene = 'Cool White'; emoji = '❄️'; // snow → cool white
-        } else if ([800].includes(code)) {
-          scene = 'True colors'; emoji = '☀️'; // clear → vivid daylight
-        } else if ([801,802].includes(code)) {
-          scene = 'Relax'; emoji = '⛅'; // partly cloudy → warm
-        } else {
-          scene = 'Warm White'; emoji = '☁️'; // cloudy → soft warm
-        }
+        if ([200,201,202,210,211,212,221,230,231,232].includes(code)) { scene = 'Party'; emoji = '⛈️'; }
+        else if ([300,301,302,310,311,312,313,314,321,500,501,502,503,504].includes(code)) { scene = 'Ocean'; emoji = '🌧️'; }
+        else if (hour < 7 || hour > 19) { scene = 'Night Light'; emoji = '🌙'; } // Night time override
+        else if (code === 800) { scene = 'True colors'; emoji = '☀️'; }
+        else { scene = 'Warm White'; emoji = '☁️'; }
 
         await wiz.executeAction({ type: 'control', payload: { state: true, scene } });
-        await send(`${emoji} *${desc}* in ${city} — ${tempC}°C\n\n💡 Set scene: *${scene}*`);
+        await send(`${emoji} *Junagadh:* ${desc} (${tempC}°C)\n🕓 Time: *${hour}:00*\n💡 Auto-Scene: *${scene}*`);
       } catch {
-        await send('❌ Could not fetch weather. Try again later.');
+        await send('❌ Weather service down. Try again later.');
       }
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /energy — Usage Analytics
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'energy',
+    description: 'Show device uptime & analytics',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const stats = config.stats || { acMinutes: 0, lightMinutes: 0, lastReset: new Date() };
+      const hoursAC = (stats.acMinutes / 60).toFixed(1);
+      const hoursLight = (stats.lightMinutes / 60).toFixed(1);
+      
+      await send(`📊 *Gravity Analytics*\n_Since ${new Date(stats.lastReset).toLocaleDateString()}_\n\n❄️ *AC Lifetime*: ${hoursAC} hrs\n💡 *WiZ Lifetime*: ${hoursLight} hrs\n\n_Uptime is tracked even if you use the physical remote!_`);
     }
   });
 
@@ -426,6 +446,106 @@ async function main() {
   for (const userId of (config.authorizedUsers || [])) {
     try { await bot.sendMessage(userId, startMsg, 'Markdown'); } catch {}
   }
+
+  // ──────────────────────────────────────────────────────
+  // /track — Presence IP
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'track',
+    description: 'Set your Phone IP for auto-away/welcome',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const ip = args[0];
+      if (!ip) return await send(`🏠 *Current Tracking:* \`${config.phoneIp || 'None'}\`\nUse: \`/track [IP]\``);
+      config.phoneIp = ip;
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      await send(`✅ Tracking your device at *${ip}*\nGravity will now auto-manage house presence.`);
+    }
+  });
+
+  // ── Presence Detection Pinger ───────────────────────
+  setInterval(async () => {
+    if (!config.phoneIp) return;
+    try {
+      await execAsync(`ping -c 1 -W 2000 ${config.phoneIp}`);
+      if (!isPhoneOnline) {
+        isPhoneOnline = true;
+        offlineCounter = 0;
+        await triggerScene('HOME');
+        for (const uid of (config.authorizedUsers || [])) {
+          await bot.sendMessage(uid, '📱 *Welcome Home!* Phone detected on network. Resetting house state.', 'Markdown');
+        }
+      }
+    } catch {
+      if (isPhoneOnline) {
+        offlineCounter++;
+        if (offlineCounter >= 3) { // Gone for 3 mins
+          isPhoneOnline = false;
+          await triggerScene('AWAY');
+          for (const uid of (config.authorizedUsers || [])) {
+            await bot.sendMessage(uid, '🚶 *Away Detect:* Phone logged out. Gravity entering energy save mode.', 'Markdown');
+          }
+        }
+      }
+    }
+  }, 60000);
+
+  // ── Web Control API (Port 3030) ─────────────────────
+  // Perfect for Raycast / Siri Shortcuts (curl http://localhost:3030/scene/tv)
+  try {
+    (Bun as any).serve({
+      port: 3030,
+      async fetch(req: any) {
+        const url = new URL(req.url);
+        const sceneName = url.pathname.split('/').pop()?.toUpperCase();
+        if (sceneName) {
+          await triggerScene(sceneName);
+          return new Response(`Gravity: Scene ${sceneName} Active`, { status: 200 });
+        }
+        return new Response("Gravity API Active", { status: 200 });
+      },
+    });
+    console.log('🌐 Web API enabled: :3030/scene/[NAME]');
+  } catch(e) { console.warn('API error (port likely in use)'); }
+
+  // ── Energy Monitor ────────────────────────
+  // Poll objects every 60 seconds to detect "ON" state
+  // Even if turned on via physical remote!
+  // Initialize stats if missing
+  if (!config.stats) {
+    config.stats = { acMinutes: 0, lightMinutes: 0, lastReset: new Date() };
+  }
+
+  setInterval(async () => {
+    try {
+      // 1. Check WiZ
+      if (wiz) {
+        const p = await (wiz as any).getPilot(); // adapter.getPilot()
+        if (p?.state) config.stats.lightMinutes++;
+      }
+      // 2. Check MirAie
+      if (miraie && miraie.devices.length > 0) {
+        const device = miraie.devices[0];
+        if (device.status?.ps === 'on') config.stats.acMinutes++;
+      }
+      // 3. Save stats
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+
+      // 4. Daily Review at 11:59 PM
+      const now = new Date();
+      if (now.getHours() === 23 && now.getMinutes() === 59) {
+        const stats = config.stats;
+        const msg = `🌙 *Gravity Daily Review*\n_Today's stats:_\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*\n\nStats reset for tomorrow. Goodnight!`;
+        for (const uid of (config.authorizedUsers || [])) {
+          await bot.sendMessage(uid, msg, 'Markdown');
+        }
+        config.stats = { acMinutes: 0, lightMinutes: 0, lastReset: new Date() };
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      }
+    } catch (err) {
+      console.warn('Stats loop error');
+    }
+  }, 60000);
 
   // ── Shutdown Notification ───────────────────────────
   // Notify on SIGINT / SIGTERM (Ctrl+C, process kill)
