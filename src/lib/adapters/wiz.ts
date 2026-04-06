@@ -5,7 +5,7 @@ const WIZ_PORT = 38899;
 const UDP_TIMEOUT = 3000;
 
 export interface WizState {
-  state: boolean;
+  state?: boolean;
   dimming?: number;   // 10–100
   r?: number; g?: number; b?: number;
   temp?: number;      // color temp 2200–6500K
@@ -99,11 +99,22 @@ export class WizAdapter extends Adapter {
 
   async executeAction(action: Action): Promise<void> {
     const p = action.payload;
-    if (p.state === false) { await this.turnOff(); return; }
-    if (p.r !== undefined) { await this.setColor(p.r, p.g, p.b); return; }
-    if (p.temp !== undefined) { await this.setWhite(p.temp); return; }
-    if (p.brightness !== undefined) { await this.setBrightness(p.brightness); return; }
-    if (p.scene !== undefined) { await this.setScene(p.scene); return; }
-    await this.turnOn();
+    const params: WizState = {};
+    if (p.state !== undefined) params.state = p.state;
+    if (p.dimming !== undefined) params.dimming = p.dimming;
+    if (p.brightness !== undefined) params.dimming = p.brightness;
+    if (p.r !== undefined) { params.r = p.r; params.g = p.g; params.b = p.b; }
+    if (p.temp !== undefined) params.temp = p.temp;
+    if (p.scene !== undefined) { 
+      const id = WIZ_SCENES[p.scene];
+      if (id) params.sceneId = id;
+    }
+    
+    // If we have any params, use setPilot
+    if (Object.keys(params).length > 0) {
+      await this.setPilot(params);
+    } else {
+      await this.turnOn();
+    }
   }
 }
