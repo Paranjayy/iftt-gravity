@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { controlMiraieAC, getDashboardData } from "../../device-sync/actions";
+import { controlMiraieAC, getDashboardData } from "../../../device-sync/actions";
 
 export async function POST(req: Request) {
   try {
