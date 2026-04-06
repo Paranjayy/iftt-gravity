@@ -4,6 +4,9 @@ import fs from "fs/promises";
 import path from "path";
 import { MiraieAdapter } from "../../lib/adapters/miraie";
 import { HomeyAdapter } from "../../lib/adapters/homey";
+import { WizAdapter } from "../../lib/adapters/wiz";
+import { discoverWizBulbs } from "../../lib/discovery/wiz";
+import { scrapeJioRouterClients } from "../../lib/discovery/router";
 
 const CONFIG_PATH = path.join(process.cwd(), "config.json");
 
@@ -60,7 +63,7 @@ export async function controlMiraieAC(deviceId: string, command: {
     await adapter.fetchDevices();
     await adapter.controlDevice(deviceId, {
       ki: 1, cnt: "an", sid: "1",
-      ...(command.power !== undefined && { ps: command.power ? "on" : "off" }),
+      ...(command.power !== undefined ? { ps: command.power ? "on" : "off" } : { ps: "on" }),
       ...(command.temperature && { actmp: String(command.temperature) }),
       ...(command.mode && { acmd: command.mode.toLowerCase() }),
     });
@@ -103,16 +106,16 @@ export async function linkTelegram(token: string, chatId: string) {
 // ─── WiZ ─────────────────────────────────────────────
 // WiZ uses local UDP which only works at runtime from Node server, not buildtime
 // We store the IP and test it via a UDP ping server-side
-export async function linkWiz(ip: string, name?: string) {
+export async function linkWiz(ip: string, name?: string, mac?: string) {
   try {
     const cleanIp = ip.trim();
     if (!cleanIp.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/))
       return { success: false, error: "Enter a valid local IP address (e.g. 192.168.1.105)" };
 
-    // We save first, then test on first use (UDP only works on LAN, not in Actions sandbox)
     const config = await readConfig();
     config.wiz = {
       ip: cleanIp,
+      mac: mac?.trim().toUpperCase(),
       name: name || "Bedroom Light",
       linkedAt: new Date().toISOString(),
     };
@@ -133,7 +136,7 @@ export async function linkHomey(token: string, homeyId: string) {
     config.homey = {
       token, homeyId: homeyId.trim(),
       deviceCount: devices.length,
-      devices: devices.slice(0, 20).map(d => ({
+      devices: devices.slice(0, 20).map((d: any) => ({
         id: d.id, name: d.name, class: d.class, available: d.available,
       })),
       linkedAt: new Date().toISOString(),
@@ -144,6 +147,113 @@ export async function linkHomey(token: string, homeyId: string) {
     const msg = err.response?.data?.error || err.message;
     return { success: false, error: msg || "Failed to connect to Homey. Check token and Homey ID." };
   }
+}
+
+export async function controlWizLight(params: any) {
+  try {
+    const config = await readConfig();
+    if (!config.wiz?.ip) return { success: false, error: "WiZ not configured" };
+    const adapter = new WizAdapter(config.wiz.ip);
+    await adapter.setPilot(params);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function controlHomeyDevice(deviceId: string, capability: string, value: any) {
+  try {
+    const config = await readConfig();
+    if (!config.homey?.token) return { success: false, error: "Homey not linked" };
+    const adapter = new HomeyAdapter(config.homey.token, config.homey.homeyId);
+    await adapter.setCapability(deviceId, capability, value);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function discoverWiz() {
+  try {
+    const devices = await discoverWizBulbs();
+    return { success: true, devices };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function triggerScene(name: string) {
+  try {
+    const config = await getDashboardData();
+    if (name === "TV") {
+      // 1. Hard-power on AC and set to clean 24
+      if (config.miraie?.devices?.[0]?.id) {
+        // We call it twice: once to force wake-up, once for settings
+        await controlMiraieAC(config.miraie.devices[0].id, { power: true });
+        await controlMiraieAC(config.miraie.devices[0].id, { temperature: 24, mode: 'COOL' });
+      }
+      // 2. Switch WiZ to the official "TV time" scene
+      if (config.wiz?.ip) {
+        const wiz = new WizAdapter(config.wiz.ip);
+        await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time' } });
+      }
+      return { success: true, message: "TV Mode: Cinema lighting & 24°C cooling active." };
+    }
+    if (name === "END_TV") {
+      // 1. Turn off AC
+      if (config.miraie?.devices?.[0]?.id) {
+        await controlMiraieAC(config.miraie.devices[0].id, { power: false });
+      }
+      // 2. Restore WiZ to standard Daylight
+      if (config.wiz?.ip) {
+        const wiz = new WizAdapter(config.wiz.ip);
+        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500 } });
+      }
+      return { success: true, message: "End TV: AC Off, Daylight restored." };
+    }
+    return { success: false, error: "Scene not found" };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function linkRouter(adminPass: string) {
+  try {
+    const clients = await scrapeJioRouterClients(adminPass);
+    const config = await readConfig();
+    
+    // Save/Update router creds
+    config.router = { adminPass, linkedAt: new Date().toISOString() };
+    
+    // Silent WiZ IP update via MAC
+    if (config.wiz?.mac) {
+      const match = clients.find(c => c.mac.replace(/[:-]/g, '') === config.wiz.mac.replace(/[:-]/g, ''));
+      if (match && match.ip !== config.wiz.ip) {
+        config.wiz.ip = match.ip;
+        config.wiz.syncedAt = new Date().toISOString();
+      }
+    }
+    
+    await writeConfig(config);
+    return { success: true, clientCount: clients.length };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+// 🌐 Automated Background Sync (Every hour)
+if (process.env.NODE_ENV === "production" || true) {
+  setInterval(async () => {
+    try {
+      const config = await readConfig();
+      if (config.router?.adminPass) {
+        await linkRouter(config.router.adminPass);
+        console.log(`🕒 [Sync] Infrastructure refreshed via router at ${new Date().toLocaleTimeString()}`);
+      }
+    } catch (err) {
+      console.error("🕒 [Sync] Background task failed:", err);
+    }
+  }, 3600 * 1000); // 1 hour
 }
 
 // ─── Legacy compat ────────────────────────────────────

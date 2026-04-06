@@ -1,59 +1,78 @@
-import axios from 'axios';
 import { Adapter, Device, Action } from '../types';
-
-// Homey Web API — works with personal access token from homey.app/developer
-// Create one at: https://tools.developer.homey.app/tools/devices
-const HOMEY_CLOUD_URL = 'https://api.homey.app/v1';
-
-export interface HomeyDevice {
-  id: string;
-  name: string;
-  class: string;        // 'light', 'socket', 'sensor', etc.
-  zone: string;
-  available: boolean;
-  capabilities: string[];
-  capabilitiesObj: Record<string, { value: any; lastChanged: string }>;
-}
 
 export class HomeyAdapter extends Adapter {
   name = 'Homey';
+  private api: any = null;
   private token: string;
   private homeyId: string;
-  public devices: HomeyDevice[] = [];
 
   constructor(token: string, homeyId: string) {
     super();
-    this.token = token;
-    this.homeyId = homeyId;
-  }
-
-  private get headers() {
-    return {
-      Authorization: `Bearer ${this.token}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
-  private get baseUrl() {
-    // For Homey Pro local: http://<homey-ip>/api
-    // For cloud: https://api.homey.app/v1/homey/{homeyId}
-    return `${HOMEY_CLOUD_URL}/homey/${this.homeyId}`;
+    this.token = token.trim();
+    this.homeyId = homeyId.trim();
   }
 
   async initialize(): Promise<void> {
-    // Verify token works by fetching device count
-    await this.fetchDevices();
+    // We already have the token and homeyId
   }
 
-  async fetchDevices(): Promise<HomeyDevice[]> {
-    const res = await axios.get(`${this.baseUrl}/devices`, { headers: this.headers });
-    this.devices = Object.values(res.data) as HomeyDevice[];
-    return this.devices;
+  async fetchDevices() {
+    let activeHomeyId = this.homeyId;
+
+    // Zero-ID Discovery: Automatically search for your Hub using the Token
+    if (!activeHomeyId || activeHomeyId.startsWith('67555')) {
+      const discoveryPaths = [
+        `https://api.athom.com/v1/user/me/homeys`,
+        `https://api.athom.com/v1/homeys` // Alternate legacy path
+      ];
+
+      for (const dPath of discoveryPaths) {
+        try {
+          const hRes = await fetch(dPath, { headers: { 'Authorization': `Bearer ${this.token}` } });
+          if (hRes.ok) {
+            const list = await hRes.json();
+            const hubs = Array.isArray(list) ? list : list.data || [];
+            if (hubs.length > 0) {
+              activeHomeyId = hubs[0].id;
+              break;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    const endpoints = [
+      `https://api.athom.com/homey/${activeHomeyId}/api/manager/devices`,
+      `https://api.athom.com/v1/homey/${activeHomeyId}/api/manager/devices`, // Versioned path
+      `https://api.athom.com/homey/cloud/api/manager/devices`
+    ];
+
+    let lastError = "";
+    for (const url of endpoints) {
+      try {
+        const res = await fetch(url, {
+          headers: { 
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          return Object.values(data);
+        }
+        lastError = `${res.statusText} (${res.status}) on ${url}`;
+      } catch (err: any) {
+        lastError = err.message;
+      }
+    }
+
+    throw new Error(`Homey Connection Failed after trying all cloud paths. Last Error: ${lastError}. Make sure you copied your HOMEY ID (by clicking its name), NOT your Account ID.`);
   }
 
   async getDevices(): Promise<Device[]> {
-    if (!this.devices.length) await this.fetchDevices();
-    return this.devices.map(d => ({
+    const devices = await this.fetchDevices();
+    return devices.map((d: any) => ({
       id: d.id,
       name: d.name,
       type: d.class === 'light' ? 'light' : d.class === 'tv' ? 'tv' : 'light',
@@ -62,37 +81,19 @@ export class HomeyAdapter extends Adapter {
     }));
   }
 
-  /** Set a capability value on a device */
   async setCapability(deviceId: string, capability: string, value: any): Promise<void> {
-    await axios.put(
-      `${this.baseUrl}/devices/${deviceId}/capabilities/${capability}`,
-      { value },
-      { headers: this.headers }
-    );
-  }
+    const res = await fetch(`https://api.athom.com/homey/${this.homeyId}/api/manager/devices/device/${deviceId}/capability/${capability}`, {
+      method: 'PUT',
+      headers: { 
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ value })
+    });
 
-  /** Turn a device on or off */
-  async setOnOff(deviceId: string, on: boolean): Promise<void> {
-    await this.setCapability(deviceId, 'onoff', on);
-  }
-
-  /** Set light brightness (0–1) */
-  async setBrightness(deviceId: string, brightness: number): Promise<void> {
-    await this.setCapability(deviceId, 'dim', Math.min(1, Math.max(0, brightness)));
-  }
-
-  /** Set light color temp (0=cold, 1=warm) */
-  async setLightTemperature(deviceId: string, temp: number): Promise<void> {
-    await this.setCapability(deviceId, 'light_temperature', temp);
-  }
-
-  /** Run a Flow by name or ID */
-  async triggerFlow(flowId: string): Promise<void> {
-    await axios.post(
-      `${this.baseUrl}/flow/${flowId}/trigger`,
-      {},
-      { headers: this.headers }
-    );
+    if (!res.ok) {
+      throw new Error(`Homey control error: ${res.statusText}`);
+    }
   }
 
   async executeAction(action: Action): Promise<void> {

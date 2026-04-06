@@ -15,9 +15,11 @@
     "axios": "^1.14.0",
     "clsx": "latest",
     "framer-motion": "latest",
+    "homey-api": "^3.18.1",
     "lucide-react": "latest",
     "mqtt": "^5.15.1",
     "next": "latest",
+    "node-html-parser": "^7.1.0",
     "react": "latest",
     "react-dom": "latest",
     "tailwind-merge": "latest"

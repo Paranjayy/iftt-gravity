@@ -16,7 +16,7 @@ export interface TelegramUpdate {
 export interface CommandHandler {
   command: string;
   description: string;
-  handler: (chatId: number, args: string[], sendMessage: (text: string) => Promise<void>) => Promise<void>;
+  handler: (chatId: number, args: string[], msg: any, sendMessage: (text: string) => Promise<void>) => Promise<void>;
 }
 
 export class TelegramAdapter extends Adapter {
@@ -79,7 +79,7 @@ export class TelegramAdapter extends Adapter {
     const matched = this.handlers.find(h => h.command === command);
     if (matched) {
       try {
-        await matched.handler(chatId, args, (text) => this.sendMessage(chatId, text));
+        await matched.handler(chatId, args, msg, (text) => this.sendMessage(chatId, text));
       } catch (err: any) {
         await this.sendMessage(chatId, `❌ Error: ${err.message}`);
       }

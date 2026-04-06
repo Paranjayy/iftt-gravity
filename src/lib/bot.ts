@@ -51,94 +51,145 @@ async function main() {
     console.log(`💡 WiZ ready: ${config.wiz.ip}`);
   }
 
+  const isAuthorized = (msg: any) => {
+    const auth = config.authorizedUsers || [];
+    if (auth.length === 0) {
+      config.authorizedUsers = [msg.from.id];
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      return true;
+    }
+    return auth.includes(msg.from.id) || msg.from?.username === "paranjayy";
+  };
+
+  const triggerScene = async (sceneId: string) => {
+    if (sceneId === "TV") {
+      if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time' } });
+      if (miraie && miraie.devices.length > 0) {
+        // Send power-on, then settings
+        await miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on' });
+        await miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '24', acmd: 'cool' });
+      }
+    }
+  };
+
   // ──────────────────────────────────────────────────────
-  // /ac — MirAie AC control
+  // /whoami — Get your ID
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
-    command: 'ac',
-    description: 'Control AC: /ac on | off | 24 | cool | dry | fan | auto',
-    handler: async (chatId, args, send) => {
-      if (!miraie || miraie.devices.length === 0) {
-        await send('❌ MirAie not linked. Go to the Gravity dashboard → Device Sync to connect.');
-        return;
+    command: 'whoami',
+    description: 'Get your Telegram ID',
+    handler: async (chatId, args, msg, send) => {
+      await send(`👤 Your ID: \`${msg.from.id}\`\nUsername: @${msg.from.username || 'N/A'}`);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /allow — Authorize user
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'allow',
+    description: 'Authorize a new user',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (config.authorizedUsers?.[0] !== msg.from?.id && msg.from?.username !== "paranjayy") {
+        return await send('⚠️ Only the *Master Account* can authorize new users.');
       }
-
-      const device = miraie.devices[0];
-      const arg = args[0]?.toLowerCase();
-
-      if (!arg) {
-        await send(`*AC Controls*\n/ac on — Turn on\n/ac off — Turn off\n/ac 24 — Set temperature\n/ac cool|dry|fan|auto — Set mode`);
-        return;
-      }
-
-      if (arg === 'on') {
-        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on' });
-        await send(`✅ AC *ON* — ${device.deviceName}`);
-      } else if (arg === 'off') {
-        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' });
-        await send(`✅ AC *OFF* — ${device.deviceName}`);
-      } else if (!isNaN(Number(arg))) {
-        const temp = Math.min(30, Math.max(16, Number(arg)));
-        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", actmp: String(temp) });
-        await send(`✅ AC temperature set to *${temp}°C*`);
+      const newId = parseInt(args[0]);
+      if (isNaN(newId)) return await send('❌ Please provide a numeric Telegram ID.');
+      if (!config.authorizedUsers.includes(newId)) {
+        config.authorizedUsers.push(newId);
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        await send(`✅ User \`${newId}\` has been authorized.`);
       } else {
-        const modeMap: Record<string, string> = { cool: 'cool', dry: 'dry', fan: 'fan', auto: 'auto', heat: 'heat' };
-        const md = modeMap[arg];
-        if (!md) { await send(`Unknown AC command: \`${arg}\``); return; }
-        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", acmd: md });
-        await send(`✅ AC mode: *${arg.toUpperCase()}*`);
+        await send(`ℹ️ User \`${newId}\` is already authorized.`);
       }
     }
   });
 
   // ──────────────────────────────────────────────────────
-  // /lights — WiZ bulb control
+  // /tv — Cinema Mode
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'tv',
+    description: 'TV Time: Official WiZ Scene & 24°C AC',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await triggerScene("TV");
+      await send("🍿 *Cinema Mode Activated:* Syncing WiZ Scene 18 & AC 24°C...");
+    }
+  });
+
+  bot.registerCommand({
+    command: 'done',
+    description: 'End TV: Restores lights & turns off AC',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await triggerScene("END_TV");
+      await send("💡 *Theater Session Ended:* Restoring lights to Daylight, AC Off. Rest well!");
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /ac — MirAie AC control
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'ac',
+    description: 'AC Control: /ac on, /ac off, /ac 24, /ac cool/dry/fan/auto',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!miraie || miraie.devices.length === 0) return await send('❌ MirAie not linked.');
+      const device = miraie.devices[0];
+      const arg = args[0]?.toLowerCase();
+      if (!arg) return await send(`*AC Control*: /ac [on|off|24|cool]`);
+
+      if (arg === 'on' || arg === 'off') {
+        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: arg });
+        await send(`✅ AC *${arg.toUpperCase()}*`);
+      } else if (!isNaN(Number(arg))) {
+        const temp = Math.min(30, Math.max(16, Number(arg)));
+        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: String(temp) });
+        await send(`✅ AC: *${temp}°C*`);
+      } else {
+        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', acmd: arg });
+        await send(`✅ AC: *${arg.toUpperCase()}* mode`);
+      }
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /lights — WiZ Control
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
     command: 'lights',
-    description: 'Control lights: /lights on | off | 50 | red | blue | warm',
-    handler: async (chatId, args, send) => {
-      if (!wiz) {
-        await send('❌ WiZ not configured. Add bulb IP in Device Sync.');
-        return;
-      }
-
+    description: 'Lights: /lights on, /lights off, /lights 50, /lights red',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!wiz) return await send('❌ WiZ not configured.');
       const arg = args[0]?.toLowerCase();
-      if (!arg) {
-        await send(`*Light Controls*\n/lights on|off\n/lights 50 — brightness %\n/lights red|blue|green|warm|cool`);
-        return;
-      }
+      if (!arg) return await send(`*Lights*: /lights [on|off|dim|color]`);
 
-      const colorMap: Record<string, { r: number; g: number; b: number }> = {
-        red: { r: 255, g: 0, b: 0 },
-        green: { r: 0, g: 255, b: 0 },
-        blue: { r: 0, g: 0, b: 255 },
-        purple: { r: 128, g: 0, b: 128 },
-        orange: { r: 255, g: 100, b: 0 },
-      };
-
-      if (arg === 'on') {
-        await wiz.executeAction({ type: 'light', payload: { state: true } });
-        await send('✅ Lights *ON*');
-      } else if (arg === 'off') {
-        await wiz.executeAction({ type: 'light', payload: { state: false } });
-        await send('✅ Lights *OFF*');
-      } else if (arg === 'warm') {
-        await wiz.executeAction({ type: 'light', payload: { state: true, temp: 2700 } });
-        await send('✅ Lights: *Warm White* 🟡');
-      } else if (arg === 'cool') {
-        await wiz.executeAction({ type: 'light', payload: { state: true, temp: 6000 } });
-        await send('✅ Lights: *Cool White* ⚪');
+      if (arg === 'on' || arg === 'off') {
+        await wiz.executeAction({ type: 'control', payload: { state: arg === 'on' } });
+        await send(`💡 Light *${arg.toUpperCase()}*`);
       } else if (!isNaN(Number(arg))) {
-        const brightness = Math.min(100, Math.max(10, Number(arg)));
-        await wiz.executeAction({ type: 'light', payload: { state: true, brightness } });
-        await send(`✅ Lights: *${brightness}% brightness*`);
-      } else if (colorMap[arg]) {
-        const { r, g, b } = colorMap[arg];
-        await wiz.executeAction({ type: 'light', payload: { state: true, r, g, b } });
-        await send(`✅ Lights: *${arg.toUpperCase()}* 🎨`);
+        const val = Number(arg);
+        if (val === 0) {
+          await wiz.executeAction({ type: 'control', payload: { state: false } });
+          await send(`💡 Light *OFF* (0%)`);
+        } else {
+          const dim = Math.min(100, Math.max(10, val));
+          await wiz.executeAction({ type: 'control', payload: { state: true, dimming: dim } });
+          await send(`💡 Brightness: *${dim}%*`);
+        }
+      } else if (arg === 'white') {
+        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500 } });
+        await send(`💡 Mode: *Daylight White*`);
       } else {
-        await send(`Unknown lights command: \`${arg}\``);
+        const colors: any = { red: { r: 255, g: 0, b: 0 }, blue: { r: 0, g: 0, b: 255 }, green: { r: 0, g: 255, b: 0 } };
+        if (colors[arg]) {
+          await wiz.executeAction({ type: 'control', payload: { state: true, ...colors[arg] } });
+          await send(`💡 Color: *${arg.toUpperCase()}*`);
+        }
       }
     }
   });
@@ -148,19 +199,20 @@ async function main() {
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
     command: 'status',
-    description: 'Show status of all connected devices',
-    handler: async (chatId, args, send) => {
-      const lines = ['*🏠 Gravity — Device Status*\n'];
-      lines.push(`❄️ *MirAie AC*: ${miraie ? `✅ Linked (${miraie.devices.length} device(s))` : '❌ Not linked'}`);
-      lines.push(`💡 *WiZ Lights*: ${wiz ? '✅ Configured' : '❌ Not configured'}`);
-      lines.push(`🤖 *Telegram Bot*: ✅ @${bot.botInfo?.username || 'unknown'}`);
+    description: 'System Status',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const lines = ['*🏡 Gravity Status*\n'];
+      lines.push(`❄️ *AC*: ${miraie ? '✅ Live' : '❌ Offline'}`);
+      lines.push(`💡 *Lights*: ${wiz ? `✅ ${config.wiz.ip}` : '❌ Off'}`);
+      lines.push(`🤖 *Bot*: ✅ @${bot.botInfo?.username}`);
       await send(lines.join('\n'));
     }
   });
 
   // Start polling
   await bot.startPolling();
-  console.log('🚀 Gravity Bot Engine running. Send /start to your Telegram bot to begin.');
+  console.log('🚀 Gravity Bot Engine running. Commands refreshed.');
 }
 
 main().catch(err => {

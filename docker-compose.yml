@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  gravity:
+    build: .
+    container_name: gravity-iot
+    ports:
+      - "3000:3000"
+    volumes:
+      - gravity_config:/app/config.json
+    restart: always
+
+volumes:
+  gravity_config:

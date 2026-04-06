@@ -17,7 +17,7 @@ export const WIZ_SCENES: Record<string, number> = {
   'Ocean': 1, 'Romance': 2, 'Sunset': 3, 'Party': 4, 'Fireplace': 5,
   'Cozy': 6, 'Forest': 7, 'Pastel': 8, 'Wake Up': 9, 'Bedtime': 10,
   'Warm White': 11, 'Cool White': 12, 'Night Light': 13, 'Focus': 14,
-  'Relax': 15, 'True Colors': 16, 'TV Time': 17, 'Plantgrowth': 18, 'Spring': 19,
+  'Relax': 15, 'True colors': 17, 'TV time': 18, 'Plantgrowth': 19, 'Spring': 20,
 };
 
 function sendUDP(ip: string, message: object, expectResponse = false): Promise<any> {
@@ -69,7 +69,13 @@ export class WizAdapter extends Adapter {
   async setPilot(params: WizState): Promise<void> {
     const payload: any = { method: 'setPilot', params: {} };
     if (params.state !== undefined) payload.params.state = params.state;
-    if (params.dimming !== undefined) payload.params.dimming = Math.min(100, Math.max(10, params.dimming));
+    if (params.dimming !== undefined) {
+      if (params.dimming === 0) {
+        payload.params.state = false;
+      } else {
+        payload.params.dimming = Math.min(100, Math.max(10, params.dimming));
+      }
+    }
     if (params.r !== undefined) { payload.params.r = params.r; payload.params.g = params.g; payload.params.b = params.b; }
     if (params.temp !== undefined) payload.params.temp = Math.min(6500, Math.max(2200, params.temp));
     if (params.sceneId !== undefined) payload.params.sceneId = params.sceneId;

@@ -131,7 +131,8 @@ export class MiraieAdapter extends Adapter {
       });
 
       client.on('connect', () => {
-        client.publish(device.topic.pub, JSON.stringify(command), (err) => {
+        const payload = { ...command, bz: 1 }; // bz: 1 triggers the confirmatory beep
+        client.publish(device.topic.pub, JSON.stringify(payload), (err) => {
           client.end();
           if (err) reject(err);
           else resolve();
@@ -150,8 +151,11 @@ export class MiraieAdapter extends Adapter {
     if (!this.accessToken) await this.login();
 
     await this.controlDevice(deviceId, {
-      ki: 1, cnt: "an", sid: "1",
-      ...(status && { ps: status === 'ON' ? 'on' : 'off' }),
+      ki: 1, 
+      cnt: "an", 
+      sid: "1",
+      bz: 1,
+      ...(status !== undefined ? { ps: status === 'ON' ? 'on' : 'off' } : { ps: 'on' }),
       ...(temperature && { actmp: String(temperature) }),
       ...(mode && { acmd: mode.toLowerCase() }),
     });
