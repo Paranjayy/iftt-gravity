@@ -22,6 +22,14 @@ const execAsync = promisify(exec);
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');
 declare const Bun: any;
 
+async function speak(text: string) {
+  try { await execAsync(`say "${text.replace(/"/g, '')}"`); }
+  catch (e) { console.warn('Voice output failed (not on Mac?)'); }
+}
+
+let lastBriefDate = "";
+let lastEveningDate = "";
+
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')); }
   catch { return {}; }
@@ -64,27 +72,44 @@ async function main() {
       fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
       return true;
     }
-    return auth.includes(msg.from.id) || msg.from?.username === "paranjayy";
+    const isOwner = auth.includes(msg.from.id) || msg.from?.username === "paranjayy";
+    const isGuest = config.guests?.some((g: any) => g.id === msg.from.id && g.expires > Date.now());
+    return isOwner || isGuest;
   };
 
   const triggerScene = async (sceneId: string) => {
     const promises = [];
     if (sceneId === "TV") {
+      speak("Entering Cinema Mode. Enjoy the movie.");
       if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time' } }));
       if (miraie && miraie.devices.length > 0) {
         const d = miraie.devices[0].deviceId;
         promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on' }));
         promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '24', acmd: 'cool' }));
       }
+    } else if (sceneId === "FOCUS") {
+      speak("Focus mode engaged. Time for deep work.");
+      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } }));
+      if (miraie && miraie.devices.length > 0) {
+        const d = miraie.devices[0].deviceId;
+        promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
+      }
+    } else if (sceneId === "DINNER") {
+      speak("Dinner mode. Bon appetit.");
+      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'Fireplace' } }));
+      // Leave AC as is or turn it off, let's keep it comfortable.
     } else if (sceneId === "AWAY") {
+      speak("Goodbye. Everything is secured.");
       if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
       if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
     } else if (sceneId === "HOME") {
+      speak("Welcome back. Powering up your sanctuary.");
       if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
       if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
     }
     await Promise.all(promises);
   };
+
 
   // ──────────────────────────────────────────────────────
   // /whoami — Get your ID
@@ -94,6 +119,79 @@ async function main() {
     description: 'Get your Telegram ID',
     handler: async (chatId, args, msg, send) => {
       await send(`👤 Your ID: \`${msg.from.id}\`\nUsername: @${msg.from.username || 'N/A'}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'broadcast',
+    description: 'Speak a message on the house speakers',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const text = args.join(' ');
+      if (!text) return await send('Usage: /broadcast [message]');
+      await speak(text);
+      await send(`📢 *Broadcasting:* "${text}"`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'guest',
+    description: 'Generate a 1-hour guest access PIN',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const pin = Math.floor(1000 + Math.random() * 9000).toString();
+      config.guestPin = { pin, expires: Date.now() + 3600000 }; // 1 hour
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      await send(`🔑 *Guest PIN:* \`${pin}\`\nValid for 1 hour for anyone to join via bot.`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'join',
+    description: 'Join house as guest using a PIN',
+    handler: async (chatId, args, msg, send) => {
+      const pinArg = args[0];
+      if (!pinArg) return await send('Usage: /join [PIN]');
+      if (config.guestPin && config.guestPin.pin === pinArg && config.guestPin.expires > Date.now()) {
+        if (!config.guests) config.guests = [];
+        config.guests.push({ id: msg.from.id, expires: Date.now() + 3600000 });
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        await send('🔓 *Access Granted!* You are now a guest for 1 hour.');
+        speak(`A new guest has joined the house.`);
+      } else {
+        await send('❌ Invalid or expired PIN.');
+      }
+    }
+  });
+
+  bot.registerCommand({
+    command: 'party',
+    description: 'High energy party mode',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      speak("Party mode activated! Let's get loud!");
+      if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'Party' } });
+      await send('🌈 *PARTY MODE ACTIVATED!* 🕺💃');
+    }
+  });
+
+  bot.registerCommand({
+    command: 'focus',
+    description: 'Deep work mode',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await triggerScene('FOCUS');
+      await send('🧠 *Focus Mode:* Engaged. Lights set to cool white bright, AC to 25°C.');
+    }
+  });
+
+  bot.registerCommand({
+    command: 'dinner',
+    description: 'Warm cozy dining',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await triggerScene('DINNER');
+      await send('🍷 *Dinner Mode:* Engaged. Fireplace lights active.');
     }
   });
 
@@ -124,19 +222,27 @@ async function main() {
         '`/ac cool|dry|fan|auto` — mode',
         '',
         '🎥 *Modes*',
+        '`/focus` — deep work: cool bright + AC 25°C 🧠',
+        '`/dinner` — dining: cozy fireplace vibe 🍷',
         '`/tv` — cinema: WiZ TV scene + AC 24°C',
-        '`/done` — end cinema: daylight + AC off',
-        '`/sleep` — 10% warm + AC 27°C fan',
+        '`/party` — disco: light show + music hype 🌈',
+        '`/sleep` — bedroom: 10% warm + AC 27°C fan',
         '`/away` — turn everything off',
         '`/home` — welcome home: lights + AC on',
-        '`/weather` — sync lights to Junagadh 🌦️',
+        '`/weather` — sync lights to Junagadh weather 🌦️',
+        '',
+        '🛡 *Access & Interaction*',
+        '`/broadcast [msg]` — speak on Mac speakers 🎙️',
+        '`/guest` — generate 1-hour PIN PIN for visitors 🔑',
+        '`/join [PIN]` — join house as temporary guest',
         '`/energy` — show device usage & analytics 📊',
+        '`/track [IP]` — set phone for auto-presence 📱',
         '',
         '🛠 *System*',
         '`/status` — all device states + uptime',
         '`/ping` — quick health check',
         '`/whoami` — your Telegram ID',
-        '`/allow [ID]` — authorize a new user',
+        '`/allow [ID]` — authorize a new owner',
       ].join('\n');
       await send(help);
     }
@@ -463,17 +569,45 @@ async function main() {
     }
   });
 
-  // ── Presence Detection Pinger ───────────────────────
+  // ── Presence Detection & Automations ───────────────
   setInterval(async () => {
     if (!config.phoneIp) return;
     try {
       await execAsync(`ping -c 1 -W 2000 ${config.phoneIp}`);
+      
+      const now = new Date();
+      const dateStr = now.toDateString();
+      
       if (!isPhoneOnline) {
         isPhoneOnline = true;
         offlineCounter = 0;
         await triggerScene('HOME');
+        
+        // 🌅 Morning Briefing (First connection after 5 AM and before 10 AM)
+        if (now.getHours() >= 5 && now.getHours() < 10 && lastBriefDate !== dateStr) {
+          lastBriefDate = dateStr;
+          try {
+            const weather = await fetch('https://wttr.in/Junagadh?format=j1').then(r => r.json());
+            const cur = weather.current_condition[0];
+            const brief = `Good morning Paranjay. It is currently ${cur.temp_C} degrees and ${cur.weatherDesc[0].value} in Junagadh. Your home sanctuary is ready. Have a productive day!`;
+            speak(brief);
+          } catch { speak("Good morning Paranjay. Welcome home."); }
+        } else {
+          speak("Welcome home. Phone detected on network. Resetting house state.");
+        }
+
         for (const uid of (config.authorizedUsers || [])) {
           await bot.sendMessage(uid, '📱 *Welcome Home!* Phone detected on network. Resetting house state.', 'Markdown');
+        }
+      } else {
+        // 🌇 Sunset Routine (If home at 6:30 PM)
+        if (now.getHours() === 18 && now.getMinutes() >= 30 && lastEveningDate !== dateStr) {
+          lastEveningDate = dateStr;
+          speak("The sun is setting. Transitioning to evening lighting mode.");
+          if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'Cozy' } });
+          for (const uid of (config.authorizedUsers || [])) {
+            await bot.sendMessage(uid, '🌇 *Golden Hour:* Setting cozy dinner lighting.', 'Markdown');
+          }
         }
       }
     } catch {
@@ -482,6 +616,7 @@ async function main() {
         if (offlineCounter >= 3) { // Gone for 3 mins
           isPhoneOnline = false;
           await triggerScene('AWAY');
+          speak("Goodbye. Everything is secured. Energy saving mode active.");
           for (const uid of (config.authorizedUsers || [])) {
             await bot.sendMessage(uid, '🚶 *Away Detect:* Phone logged out. Gravity entering energy save mode.', 'Markdown');
           }
@@ -498,6 +633,14 @@ async function main() {
       async fetch(req: any) {
         const url = new URL(req.url);
         const sceneName = url.pathname.split('/').pop()?.toUpperCase();
+        if (url.pathname.includes('/status')) {
+          const body = JSON.stringify({
+            online: isPhoneOnline,
+            stats: config.stats,
+            uptime: process.uptime()
+          }, null, 2);
+          return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
         if (sceneName) {
           await triggerScene(sceneName);
           return new Response(`Gravity: Scene ${sceneName} Active`, { status: 200 });

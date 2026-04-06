@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "bot": "bun src/lib/bot.ts"
+    "bot": "bun src/lib/bot.ts",
+    "build:bot": "bun build --compile --target=bun-darwin-arm64 src/lib/bot.ts --outfile build/gravity-bot"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.2",
