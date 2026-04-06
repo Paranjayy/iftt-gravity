@@ -6,7 +6,7 @@ const UDP_TIMEOUT = 3000;
 
 export interface WizState {
   state?: boolean;
-  dimming?: number;   // 10–100
+  dimming?: number;   // 0–100 (0 = dim to minimum, use state:false for off)
   r?: number; g?: number; b?: number;
   temp?: number;      // color temp 2200–6500K
   sceneId?: number;
@@ -69,13 +69,7 @@ export class WizAdapter extends Adapter {
   async setPilot(params: WizState): Promise<void> {
     const payload: any = { method: 'setPilot', params: {} };
     if (params.state !== undefined) payload.params.state = params.state;
-    if (params.dimming !== undefined) {
-      if (params.dimming === 0) {
-        payload.params.state = false;
-      } else {
-        payload.params.dimming = Math.min(100, Math.max(10, params.dimming));
-      }
-    }
+    if (params.dimming !== undefined) payload.params.dimming = Math.min(100, Math.max(0, params.dimming));
     if (params.r !== undefined) { payload.params.r = params.r; payload.params.g = params.g; payload.params.b = params.b; }
     if (params.temp !== undefined) payload.params.temp = Math.min(6500, Math.max(2200, params.temp));
     if (params.sceneId !== undefined) payload.params.sceneId = params.sceneId;
@@ -84,7 +78,7 @@ export class WizAdapter extends Adapter {
 
   async turnOn() { await this.setPilot({ state: true }); }
   async turnOff() { await this.setPilot({ state: false }); }
-  async setBrightness(pct: number) { await this.setPilot({ state: true, dimming: pct }); }
+  async setBrightness(pct: number) { await this.setPilot({ state: pct > 0, dimming: pct }); }
   async setColor(r: number, g: number, b: number) { await this.setPilot({ state: true, r, g, b }); }
   async setWhite(temp: number) { await this.setPilot({ state: true, temp }); }
   async setScene(name: string) {

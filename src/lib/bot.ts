@@ -172,15 +172,9 @@ async function main() {
         await wiz.executeAction({ type: 'control', payload: { state: arg === 'on' } });
         await send(`💡 Light *${arg.toUpperCase()}*`);
       } else if (!isNaN(Number(arg))) {
-        const val = Number(arg);
-        if (val === 0) {
-          await wiz.executeAction({ type: 'control', payload: { state: false } });
-          await send(`💡 Light *OFF* (0%)`);
-        } else {
-          const dim = Math.min(100, Math.max(10, val));
-          await wiz.executeAction({ type: 'control', payload: { state: true, dimming: dim } });
-          await send(`💡 Brightness: *${dim}%*`);
-        }
+        const dim = Math.min(100, Math.max(0, Number(arg)));
+        await wiz.executeAction({ type: 'control', payload: { state: dim > 0, dimming: dim } });
+        await send(`💡 Brightness: *${dim}%*${dim === 0 ? ' (minimum)' : ''}`);
       } else if (arg === 'white') {
         await wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500 } });
         await send(`💡 Mode: *Daylight White*`);
