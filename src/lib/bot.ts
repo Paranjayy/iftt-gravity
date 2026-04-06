@@ -130,6 +130,25 @@ async function main() {
   });
 
   // ──────────────────────────────────────────────────────
+  // /sleep — Sleep mode: dim warm + AC fan
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'sleep',
+    description: 'Sleep mode: 10% warm lights + AC 27°C fan auto',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const promises = [];
+      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 10 } }));
+      if (miraie && miraie.devices.length > 0) {
+        const d = miraie.devices[0];
+        promises.push(miraie.controlDevice(d.deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '27', acmd: 'auto', acfs: '1' }));
+      }
+      await Promise.all(promises);
+      await send('🌙 *Sleep Mode:* Lights → 10% warm · AC → 27°C fan auto\n\nGoodnight! 😴');
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
   // /ac — MirAie AC control
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
@@ -189,6 +208,61 @@ async function main() {
   });
 
   // ──────────────────────────────────────────────────────
+  // /ping — Quick health check
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'ping',
+    description: 'Check if bot is alive',
+    handler: async (chatId, args, msg, send) => {
+      const uptime = Math.floor(process.uptime());
+      const mins = Math.floor(uptime / 60);
+      const secs = uptime % 60;
+      await send(`🏓 *Pong!* Bot is alive\n⏱ Uptime: *${mins}m ${secs}s*\n💾 Memory: *${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB*`);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /warm — Warm white lights
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'warm',
+    description: 'Set lights to warm white (2700K cozy)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!wiz) return await send('❌ WiZ not configured.');
+      await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700 } });
+      await send(`🕯️ *Warm White* — cozy mode activated`);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /scene — WiZ Scene control
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'scene',
+    description: 'WiZ scene: /scene tv, /scene cozy, /scene party, /scene list',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!wiz) return await send('❌ WiZ not configured.');
+      const arg = args[0]?.toLowerCase();
+      if (!arg || arg === 'list') {
+        const sceneList = ['*🎨 WiZ Scenes:*', '/scene tv', '/scene cozy', '/scene party', '/scene relax', '/scene focus', '/scene warm', '/scene cool', '/scene bedtime', '/scene fireplace', '/scene ocean', '/scene sunrise'].join('\n');
+        return await send(sceneList);
+      }
+      const sceneMap: Record<string, string> = {
+        tv: 'TV time', cozy: 'Cozy', party: 'Party', relax: 'Relax',
+        focus: 'Focus', warm: 'Warm White', cool: 'Cool White',
+        bedtime: 'Bedtime', fireplace: 'Fireplace', ocean: 'Ocean',
+        sunrise: 'Wake Up', romance: 'Romance', pastel: 'Pastel',
+      };
+      const sceneName = sceneMap[arg];
+      if (!sceneName) return await send(`❌ Unknown scene. Try */scene list*`);
+      await wiz.executeAction({ type: 'control', payload: { state: true, scene: sceneName } });
+      await send(`🎨 Scene: *${sceneName}*`);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
   // /status — Device Status
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
@@ -196,10 +270,12 @@ async function main() {
     description: 'System Status',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const uptime = Math.floor(process.uptime());
       const lines = ['*🏡 Gravity Status*\n'];
-      lines.push(`❄️ *AC*: ${miraie ? '✅ Live' : '❌ Offline'}`);
-      lines.push(`💡 *Lights*: ${wiz ? `✅ ${config.wiz.ip}` : '❌ Off'}`);
-      lines.push(`🤖 *Bot*: ✅ @${bot.botInfo?.username}`);
+      lines.push(`❄️ *AC*: ${miraie ? `✅ Live (${miraie.devices.length} device)` : '❌ Offline'}`);
+      lines.push(`💡 *Lights*: ${wiz ? `✅ ${config.wiz.ip}` : '❌ Offline'}`);
+      lines.push(`🤖 *Bot*: ✅ Online`);
+      lines.push(`⏱ *Uptime*: ${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`);
       await send(lines.join('\n'));
     }
   });
@@ -207,6 +283,27 @@ async function main() {
   // Start polling
   await bot.startPolling();
   console.log('🚀 Gravity Bot Engine running. Commands refreshed.');
+
+  // ── Startup Notification ────────────────────────────
+  // Tell all authorized users the bot just came online
+  const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+  const startMsg = `🟢 *Gravity is ONLINE*\n⏰ Started at *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 WiZ: ${wiz ? '✅' : '❌'}\n\nType /ping to check status anytime.`;
+  for (const userId of (config.authorizedUsers || [])) {
+    try { await bot.sendMessage(userId, startMsg, 'Markdown'); } catch {}
+  }
+
+  // ── Shutdown Notification ───────────────────────────
+  // Notify on SIGINT / SIGTERM (Ctrl+C, process kill)
+  const shutdown = async (signal: string) => {
+    const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n\nBot will not respond until restarted.`;
+    for (const userId of (config.authorizedUsers || [])) {
+      try { await bot.sendMessage(userId, stopMsg, 'Markdown'); } catch {}
+    }
+    process.exit(0);
+  };
+  process.on('SIGINT', () => shutdown('manual stop'));
+  process.on('SIGTERM', () => shutdown('system stop'));
 }
 
 main().catch(err => {

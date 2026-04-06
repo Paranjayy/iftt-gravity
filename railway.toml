@@ -1,0 +1,7 @@
+[build]
+dockerfile = "Dockerfile.bot"
+
+[deploy]
+startCommand = "bun src/lib/bot.ts"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
