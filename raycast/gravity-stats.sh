@@ -1,29 +1,35 @@
 #!/bin/bash
-
 # Required parameters:
 # @raycast.schemaVersion 1
 # @raycast.title Gravity Status
 # @raycast.mode inline
 # @raycast.refreshTime 5m
-
 # Optional parameters:
 # @raycast.icon 📊
 # @raycast.packageName Gravity Hub
-
-# Documentation:
-# @raycast.description Check house state and energy usage via Raycast.
+# @raycast.description Live house status: presence, AC, and light hours.
 # @raycast.author Paranjay
 # @raycast.authorURL https://github.com/Paranjayy
 
-STATUS=$(curl -s "http://localhost:3030/status")
-ONLINE=$(echo $STATUS | grep -o '"online": [^,]*' | cut -d' ' -f2)
-AC=$(echo $STATUS | grep -o '"acMinutes": [^,]*' | cut -d' ' -f2)
-LIGHT=$(echo $STATUS | grep -o '"lightMinutes": [^,]*' | cut -d' ' -f2)
+STATUS=$(curl -s --max-time 2 "http://localhost:3030/status" 2>/dev/null)
+if [ -z "$STATUS" ]; then
+  echo "⚠️ Gravity Offline"
+  exit 0
+fi
 
-if [ "$ONLINE" == "true" ]; then
+ONLINE=$(echo "$STATUS" | grep -o '"online": [^,}]*' | awk '{print $2}')
+AC=$(echo "$STATUS" | grep -o '"acMinutes": [^,}]*' | awk '{print $2}')
+LIGHT=$(echo "$STATUS" | grep -o '"lightMinutes": [^,}]*' | awk '{print $2}')
+
+AC=${AC:-0}
+LIGHT=${LIGHT:-0}
+AC_HRS=$((AC / 60))
+LIGHT_HRS=$((LIGHT / 60))
+
+if [ "$ONLINE" = "true" ]; then
   PRESENCE="🏠 Home"
 else
   PRESENCE="🚶 Away"
 fi
 
-echo "Gravity: $PRESENCE | ❄️  $((AC/60))hr | 💡 $((LIGHT/60))hr"
+echo "Gravity: $PRESENCE | ❄️ ${AC_HRS}h | 💡 ${LIGHT_HRS}h"
