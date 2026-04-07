@@ -23,6 +23,7 @@
     "node-html-parser": "^7.1.0",
     "react": "latest",
     "react-dom": "latest",
+    "recharts": "^3.8.1",
     "tailwind-merge": "latest"
   },
   "devDependencies": {

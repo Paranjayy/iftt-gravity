@@ -27,6 +27,14 @@ async function speak(text: string) {
   catch (e) { console.warn('Voice output failed (not on Mac?)'); }
 }
 
+const LOG_PATH = path.join(process.cwd(), 'house_log.md');
+
+function logActivity(text: string) {
+  const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const entry = `[${stamp}] ${text}\n`;
+  fs.appendFileSync(LOG_PATH, entry);
+}
+
 let lastBriefDate = "";
 let lastEveningDate = "";
 
@@ -58,6 +66,77 @@ async function main() {
     console.log(`❄️  MirAie ready: ${miraie.devices.length} device(s)`);
   }
 
+  if (!config.stats.history) config.stats.history = [];
+  // Ensure at least one point exists on boot
+  if (config.stats.history.length === 0) {
+    const stamp = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    config.stats.history.push({ time: stamp, ac: config.stats.acMinutes || 0, lights: config.stats.lightMinutes || 0 });
+  }
+
+  // ──────────────────────────────────────────────────────
+  // Presence Detection (Advanced ARP Scan)
+  // ──────────────────────────────────────────────────────
+  setInterval(async () => {
+    const phoneIp = config.phoneIp || '192.168.29.50';
+    try {
+      // Pinging first wakes up the device network stack
+      await execAsync(`ping -c 1 -t 1 ${phoneIp}`).catch(() => {});
+      // ARP check is more reliable for sleeping devices
+      const { stdout } = await execAsync(`arp -a`);
+      const isPresent = stdout.includes(`(${phoneIp})`);
+
+      if (isPresent) {
+        if (!isPhoneOnline) {
+          isPhoneOnline = true;
+          offlineCounter = 0;
+          logActivity("📱 Presence: Phone detected (HOME)");
+          await triggerScene('HOME');
+          
+          const now = new Date();
+          const hour = now.getHours();
+          const dateStr = now.toDateString();
+          if (hour >= 5 && hour < 10 && lastBriefDate !== dateStr) {
+            lastBriefDate = dateStr;
+            setTimeout(() => triggerScene('MORNING_BRIEF'), 5000);
+          }
+        } else {
+          offlineCounter = 0;
+        }
+      } else {
+        offlineCounter++;
+        if (offlineCounter >= 4) { // Gone for ~4 mins (more tolerant for ARP)
+          if (isPhoneOnline) {
+            isPhoneOnline = false;
+            logActivity("🚶 Presence: Phone disconnected (AWAY)");
+            await triggerScene('AWAY');
+            speak("Goodbye. Energy saving mode active.");
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Presence check failed', e);
+    }
+  }, 60000);
+
+  // ──────────────────────────────────────────────────────
+  // Hourly Stats Persistence (For Dashboard Charts)
+  // ──────────────────────────────────────────────────────
+  setInterval(() => {
+    const now = new Date();
+    const stamp = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    
+    config.stats.history.push({
+      time: stamp,
+      ac: config.stats.acMinutes || 0,
+      lights: config.stats.lightMinutes || 0
+    });
+
+    // Keep last 24 points (1 day if hourly, or last 24 entries)
+    if (config.stats.history.length > 24) config.stats.history.shift();
+    
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+  }, 3600000); // Every 1 hour
+
   let wiz: WizAdapter | null = null;
   if (config.wiz?.ip) {
     wiz = new WizAdapter(config.wiz.ip);
@@ -79,6 +158,7 @@ async function main() {
 
   const triggerScene = async (sceneId: string, extra?: any) => {
     const promises = [];
+    logActivity(`🎬 Scene Trigger: ${sceneId}`);
     if (sceneId === "TV") {
       speak("Cinema mode. Enjoy.");
       // Apply saved TV light preference
@@ -652,11 +732,33 @@ async function main() {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const uptime = Math.floor(process.uptime());
       const lines = ['*🏡 Gravity Status*\n'];
-      lines.push(`❄️ *AC*: ${miraie ? `✅ Live (${miraie.devices.length} device)` : '❌ Offline'}`);
-      lines.push(`💡 *Lights*: ${wiz ? `✅ ${config.wiz.ip}` : '❌ Offline'}`);
+      lines.push(`❄️ *AC*: ${miraie ? `✅ Live` : '❌ Offline'}`);
+      lines.push(`💡 *Lights*: ${wiz ? `✅` : '❌ Offline'}`);
       lines.push(`🤖 *Bot*: ✅ Online`);
       lines.push(`⏱ *Uptime*: ${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`);
+      
+      try {
+        const logs = fs.readFileSync(LOG_PATH, 'utf-8').trim().split('\n');
+        const last = logs[logs.length - 1] || "No events logged yet.";
+        lines.push(`\n📜 *Last Activity*: \`${last.split('] ')[1] || last}\``);
+      } catch {}
+
       await send(lines.join('\n'));
+    }
+  });
+
+  bot.registerCommand({
+    command: 'logs',
+    description: 'View last 10 house events',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      try {
+        const logs = fs.readFileSync(LOG_PATH, 'utf-8').trim().split('\n');
+        const last10 = logs.slice(-10).join('\n');
+        await send(`📜 *Recent House Activities:*\n\n\`\`\`\n${last10}\n\`\`\``);
+      } catch {
+        await send('📜 No logs found yet.');
+      }
     }
   });
 
@@ -784,55 +886,56 @@ async function main() {
   setInterval(async () => {
     if (!config.phoneIp) return;
     try {
-      await execAsync(`ping -c 1 -W 2000 ${config.phoneIp}`);
+      // Pinging first wakes up the device network stack
+      await execAsync(`ping -c 1 -W 500 ${config.phoneIp}`).catch(() => {});
+      // ARP check is 10x more reliable for modern smartphones
+      const { stdout } = await execAsync(`arp -a`);
+      const isPresent = stdout.includes(`(${config.phoneIp})`);
       
       const now = new Date();
       const dateStr = now.toDateString();
       
-      if (!isPhoneOnline) {
-        isPhoneOnline = true;
-        offlineCounter = 0;
-        await triggerScene('HOME');
-        
-        // 🌅 Morning Briefing (First connection after 5 AM and before 10 AM)
-        if (now.getHours() >= 5 && now.getHours() < 10 && lastBriefDate !== dateStr) {
-          lastBriefDate = dateStr;
-          try {
-            const weather = await fetch('https://wttr.in/Junagadh?format=j1').then(r => r.json());
-            const cur = weather.current_condition[0];
-            const brief = `Good morning Paranjay. It is currently ${cur.temp_C} degrees and ${cur.weatherDesc[0].value} in Junagadh. Your home sanctuary is ready. Have a productive day!`;
-            speak(brief);
-          } catch { speak("Good morning Paranjay. Welcome home."); }
-        } else {
-          speak("Welcome home. Phone detected on network. Resetting house state.");
-        }
+      if (isPresent) {
+        if (!isPhoneOnline) {
+          isPhoneOnline = true;
+          offlineCounter = 0;
+          logActivity("📱 Presence: Phone detected (HOME)");
+          await triggerScene('HOME');
+          
+          if (now.getHours() >= 5 && now.getHours() < 10 && lastBriefDate !== dateStr) {
+            lastBriefDate = dateStr;
+            try {
+              const weather = await fetch('https://wttr.in/Junagadh?format=j1').then(r => r.json());
+              const cur = weather.current_condition[0];
+              const brief = `Good morning Paranjay. It is currently ${cur.temp_C} degrees in Junagadh. Welcome home.`;
+              speak(brief);
+            } catch { speak("Good morning. Welcome home."); }
+          } else {
+            speak("Welcome home.");
+          }
 
-        for (const uid of (config.authorizedUsers || [])) {
-          await bot.sendMessage(uid, '📱 *Welcome Home!* Phone detected on network. Resetting house state.', 'Markdown');
+          for (const uid of (config.authorizedUsers || [])) {
+            await bot.sendMessage(uid, '🏠 *Welcome Home!* Phone detected on network.', 'Markdown');
+          }
+        } else {
+          offlineCounter = 0;
         }
       } else {
-        // 🌇 Sunset Routine (If home at 6:30 PM)
-        if (now.getHours() === 18 && now.getMinutes() >= 30 && lastEveningDate !== dateStr) {
-          lastEveningDate = dateStr;
-          speak("The sun is setting. Transitioning to evening lighting mode.");
-          if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'Cozy' } });
-          for (const uid of (config.authorizedUsers || [])) {
-            await bot.sendMessage(uid, '🌇 *Golden Hour:* Setting cozy dinner lighting.', 'Markdown');
-          }
-        }
-      }
-    } catch {
-      if (isPhoneOnline) {
         offlineCounter++;
-        if (offlineCounter >= 3) { // Gone for 3 mins
-          isPhoneOnline = false;
-          await triggerScene('AWAY');
-          speak("Goodbye. Everything is secured. Energy saving mode active.");
-          for (const uid of (config.authorizedUsers || [])) {
-            await bot.sendMessage(uid, '🚶 *Away Detect:* Phone logged out. Gravity entering energy save mode.', 'Markdown');
+        if (offlineCounter >= 4) { // Gone for ~4 mins (more tolerant for ARP)
+          if (isPhoneOnline) {
+            isPhoneOnline = false;
+            logActivity("🚶 Presence: Phone disconnected (AWAY)");
+            await triggerScene('AWAY');
+            speak("Goodbye. House secured.");
+            for (const uid of (config.authorizedUsers || [])) {
+              await bot.sendMessage(uid, '🚶 *Away Detect:* Phone logged out. Energy saving mode active.', 'Markdown');
+            }
           }
         }
       }
+    } catch (e) {
+      console.warn('Presence loop error', e);
     }
   }, 60000);
 
@@ -850,7 +953,7 @@ async function main() {
             stats: config.stats,
             uptime: process.uptime()
           }, null, 2);
-          return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json' } });
+          return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
         if (sceneName) {
           await triggerScene(sceneName);
@@ -874,7 +977,7 @@ async function main() {
     try {
       // 1. Check WiZ
       if (wiz) {
-        const p = await (wiz as any).getPilot(); // adapter.getPilot()
+        const p = await (wiz as any).getPilot();
         if (p?.state) config.stats.lightMinutes++;
       }
       // 2. Check MirAie
@@ -882,18 +985,27 @@ async function main() {
         const device = miraie.devices[0];
         if (device.status?.ps === 'on') config.stats.acMinutes++;
       }
+
+      const now = new Date();
+      // Record hourly snapshot if it's a new hour
+      if (now.getMinutes() === 0) {
+        if (!config.stats.history) config.stats.history = [];
+        const stamp = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        config.stats.history.push({ time: stamp, ac: config.stats.acMinutes, lights: config.stats.lightMinutes });
+        if (config.stats.history.length > 24) config.stats.history.shift();
+      }
+
       // 3. Save stats
       fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 
       // 4. Daily Review at 11:59 PM
-      const now = new Date();
       if (now.getHours() === 23 && now.getMinutes() === 59) {
         const stats = config.stats;
-        const msg = `🌙 *Gravity Daily Review*\n_Today's stats:_\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*\n\nStats reset for tomorrow. Goodnight!`;
+        const msg = `🌙 *Gravity Daily Review*\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*`;
         for (const uid of (config.authorizedUsers || [])) {
           await bot.sendMessage(uid, msg, 'Markdown');
         }
-        config.stats = { acMinutes: 0, lightMinutes: 0, lastReset: new Date() };
+        config.stats = { acMinutes: 0, lightMinutes: 0, lastReset: new Date(), history: config.stats.history };
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
       }
     } catch (err) {

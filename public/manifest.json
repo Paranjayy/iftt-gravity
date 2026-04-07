@@ -1,8 +1,8 @@
 {
   "name": "Gravity Hub",
   "short_name": "Gravity",
-  "description": "IFTTT and Smart Home hub.",
-  "start_url": "/",
+  "description": "Gravity IoT Mission Control.",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#7B2CBF",
