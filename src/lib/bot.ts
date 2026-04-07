@@ -77,14 +77,36 @@ async function main() {
     return isOwner || isGuest;
   };
 
-  const triggerScene = async (sceneId: string) => {
+  const triggerScene = async (sceneId: string, extra?: any) => {
     const promises = [];
     if (sceneId === "TV") {
-      speak("Entering Cinema Mode. Enjoy the movie.");
-      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time' } }));
+      speak("Cinema mode. Enjoy.");
+      // Apply saved TV light preference
+      const tvLight = extra?.tvLight || config.tvLights;
+      if (wiz && tvLight) {
+        if (tvLight === 'off') {
+          promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
+        } else if (!isNaN(Number(tvLight))) {
+          promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: Number(tvLight) } }));
+        } else {
+          const presets: Record<string, any> = {
+            warm: { state: true, temp: 2700, dimming: 30 },
+            bias: { state: true, temp: 2700, dimming: 20 },
+            blue: { state: true, r: 0, g: 50, b: 255, dimming: 20 },
+            purple: { state: true, r: 150, g: 0, b: 255, dimming: 20 },
+            red: { state: true, r: 255, g: 0, b: 0, dimming: 20 },
+            cool: { state: true, temp: 4500, dimming: 30 },
+            night: { state: true, temp: 2200, dimming: 10 },
+          };
+          const p = presets[tvLight];
+          if (p) promises.push(wiz.executeAction({ type: 'control', payload: p }));
+        }
+      } else if (wiz) {
+        // Default: warm bias light if no preference set
+        promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 25 } }));
+      }
       if (miraie && miraie.devices.length > 0) {
         const d = miraie.devices[0].deviceId;
-        promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on' }));
         promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '24', acmd: 'cool' }));
       }
     } else if (sceneId === "FOCUS") {
@@ -195,8 +217,72 @@ async function main() {
     }
   });
 
-  // ──────────────────────────────────────────────────────
-  // /help — Command reference
+  bot.registerCommand({
+    command: 'boost',
+    description: 'Max cooling for 30 min then restore',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const mins = parseInt(args[0]) || 30;
+      if (!miraie || miraie.devices.length === 0) return await send('❌ AC not configured.');
+      const d = miraie.devices[0].deviceId;
+      await miraie.controlDevice(d, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '18', acmd: 'cool', acfs: '5' });
+      await send(`🥶 *Boost Mode*: AC → 18°C max fan for ${mins} min`);
+      speak(`Boost mode active. Max cooling for ${mins} minutes.`);
+      setTimeout(async () => {
+        await miraie.controlDevice(d, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '25', acmd: 'cool', acfs: '3' });
+        await bot.sendMessage(msg.from.id, '🌡️ *Boost Done:* AC restored to 25°C.', 'Markdown');
+        speak('Boost complete. AC returned to comfort level.');
+      }, mins * 60000);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'vibe',
+    description: '/vibe [name] — trigger saved vibe · /vibe save [name] [ac°] [light]',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!config.vibes) config.vibes = {};
+
+      if (args[0] === 'save') {
+        // /vibe save gaming 22 blue
+        const [, name, acTemp, light] = args;
+        if (!name) return await send('Usage: `/vibe save [name] [ac°C] [light]`\nExample: `/vibe save gaming 22 blue`');
+        config.vibes[name] = { acTemp: acTemp || '25', light: light || 'warm' };
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        return await send(`✅ Vibe *${name}* saved!\nAC: *${acTemp || 25}°C* · Light: *${light || 'warm'}*`);
+      }
+
+      if (args[0] === 'list') {
+        const list = Object.keys(config.vibes);
+        if (!list.length) return await send('No vibes saved yet.\nUse: `/vibe save [name] [ac°C] [light]`');
+        return await send(`🎨 *Saved Vibes:*\n${list.map(v => `· \`/vibe ${v}\` — AC ${config.vibes[v].acTemp}°C · Light ${config.vibes[v].light}`).join('\n')}`);
+      }
+
+      const name = args[0];
+      if (!name) return await send('Usage: `/vibe [name]` · `/vibe save [name] [ac°C] [light]` · `/vibe list`');
+      const vibe = config.vibes[name];
+      if (!vibe) return await send(`❌ Vibe *${name}* not found.\nSee \`/vibe list\` or create with \`/vibe save\``);
+
+      const promises = [];
+      if (wiz) {
+        const lightPresets: Record<string, any> = {
+          warm: { state: true, temp: 2700, dimming: 80 }, cool: { state: true, temp: 6500, dimming: 100 },
+          blue: { state: true, r: 0, g: 50, b: 255 }, purple: { state: true, r: 150, g: 0, b: 255 },
+          red: { state: true, r: 255, g: 0, b: 0 }, night: { state: true, temp: 2200, dimming: 10 },
+          off: { state: false },
+        };
+        const p = lightPresets[vibe.light] || { state: true, temp: 4000, dimming: 80 };
+        promises.push(wiz.executeAction({ type: 'control', payload: p }));
+      }
+      if (miraie && miraie.devices.length > 0) {
+        promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: vibe.acTemp, acmd: 'cool' }));
+      }
+      await Promise.all(promises);
+      speak(`${name} vibe activated.`);
+      await send(`🎨 *Vibe: ${name}*\nAC: *${vibe.acTemp}°C* · Lights: *${vibe.light}*`);
+    }
+  });
+
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
     command: 'help',
@@ -272,15 +358,38 @@ async function main() {
   });
 
   // ──────────────────────────────────────────────────────
-  // /tv — Cinema Mode
+  // ──────────────────────────────────────────────────────
+  // /tv — Cinema Mode with custom lights
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
     command: 'tv',
-    description: 'TV Time: Official WiZ Scene & 24°C AC',
+    description: 'Cinema mode: /tv [off|warm|bias|blue|purple|20|...]',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      await triggerScene("TV");
-      await send("🍿 *Cinema Mode Activated:* Syncing WiZ Scene 18 & AC 24°C...");
+      const lightArg = args[0]?.toLowerCase();
+      
+      if (lightArg) {
+        // Save preference for next time
+        config.tvLights = lightArg;
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      }
+
+      await triggerScene("TV", lightArg ? { tvLight: lightArg } : undefined);
+      const savedLight = lightArg || config.tvLights || 'warm bias';
+      await send(`🍿 *Cinema Mode* — Lights: *${savedLight}* · AC: 24°C cool`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'tvset',
+    description: 'Save TV light preference: /tvset blue',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const lightArg = args[0]?.toLowerCase();
+      if (!lightArg) return await send(`🎨 Current TV light: *${config.tvLights || 'bias (default)'}*\nUse: \`/tvset [warm|bias|blue|purple|red|cool|night|off|0-100]\``);
+      config.tvLights = lightArg;
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      await send(`✅ TV light preference saved: *${lightArg}*\nNext /tv will use this automatically.`);
     }
   });
 
