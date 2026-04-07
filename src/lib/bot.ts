@@ -541,17 +541,109 @@ async function main() {
     }
   });
 
+  // ──────────────────────────────────────────────────────
+  // /remind — Delayed Telegram reminder
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'remind',
+    description: 'Set a reminder: /remind 30m take a break',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const timeArg = args[0];
+      const message = args.slice(1).join(' ');
+      if (!timeArg || !message) return await send('Usage: `/remind 30m take a break` or `/remind 2h drink water`');
+      
+      const match = timeArg.match(/^(\d+)(m|h|s)$/i);
+      if (!match) return await send('❌ Invalid time. Use: `30m`, `2h`, `90s`');
+      
+      const num = parseInt(match[1]);
+      const unit = match[2].toLowerCase();
+      const ms = unit === 'h' ? num * 3600000 : unit === 'm' ? num * 60000 : num * 1000;
+      const readableTime = unit === 'h' ? `${num} hour${num > 1 ? 's' : ''}` : unit === 'm' ? `${num} min${num > 1 ? 's' : ''}` : `${num}s`;
+      
+      await send(`⏰ Got it! Reminding you in *${readableTime}*:\n_"${message}"_`);
+      setTimeout(async () => {
+        await bot.sendMessage(msg.from.id, `🔔 *Reminder:* ${message}`, 'Markdown');
+      }, ms);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /timer — Auto shut-off timer
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'timer',
+    description: 'Auto off-timer: /timer 30 lights',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const mins = parseInt(args[0]);
+      const device = args[1]?.toLowerCase() || 'all';
+      if (isNaN(mins) || mins <= 0) return await send('Usage: `/timer 30 lights` or `/timer 60 ac` or `/timer 45 all`');
+      
+      await send(`⏱ *Auto-off in ${mins} min* for: *${device.toUpperCase()}*\nGravity will handle it.`);
+      setTimeout(async () => {
+        const promises = [];
+        if ((device === 'all' || device === 'lights') && wiz) {
+          promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
+        }
+        if ((device === 'all' || device === 'ac') && miraie && miraie.devices.length > 0) {
+          promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'off' }));
+        }
+        await Promise.all(promises);
+        await bot.sendMessage(msg.from.id, `😴 *Timer Done:* ${device.toUpperCase()} powered off.`, 'Markdown');
+        speak(`${device} powered off by timer.`);
+      }, mins * 60000);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /temp — Current AC temp readout
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'temp',
+    description: 'Show current AC set temperature',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!miraie || miraie.devices.length === 0) return await send('❌ AC not configured.');
+      const device = miraie.devices[0];
+      const status = (device as any).status;
+      if (status) {
+        const isOn = status.ps === 'on';
+        const acTemp = status.actmp || '?';
+        const mode = status.acmd || '?';
+        await send(`❄️ *AC Status*\nPower: ${isOn ? '✅ ON' : '❌ OFF'}\nSet Temp: *${acTemp}°C*\nMode: *${mode.toUpperCase()}*`);
+      } else {
+        await send(`❄️ AC is configured (${device.deviceName})\n_Status polling not available for this device._`);
+      }
+    }
+  });
+
   // Start polling
   await bot.startPolling();
   console.log('🚀 Gravity Bot Engine running. Commands refreshed.');
 
   // ── Startup Notification ────────────────────────────
-  // Tell all authorized users the bot just came online
   const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
   const startMsg = `🟢 *Gravity is ONLINE*\n⏰ Started at *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 WiZ: ${wiz ? '✅' : '❌'}\n\nType /ping to check status anytime.`;
   for (const userId of (config.authorizedUsers || [])) {
     try { await bot.sendMessage(userId, startMsg, 'Markdown'); } catch {}
   }
+
+  // ── Daily Noon Heartbeat ────────────────────────────
+  // Confirms the bot is alive every day at 12:00 PM IST
+  setInterval(async () => {
+    const now = new Date();
+    const istHour = (now.getUTCHours() + 5) % 24;
+    const istMin = (now.getUTCMinutes() + 30) % 60;
+    if (istHour === 12 && istMin < 2) {
+      const stats = config.stats || { acMinutes: 0, lightMinutes: 0 };
+      const ping = `🌞 *Gravity Daily Ping*\n_Bot is alive and healthy._\n\n❄️ AC today: *${(stats.acMinutes/60).toFixed(1)}h*\n💡 Lights today: *${(stats.lightMinutes/60).toFixed(1)}h*\n⏱ Uptime: *${Math.floor(process.uptime()/3600)}h*`;
+      for (const uid of (config.authorizedUsers || [])) {
+        try { await bot.sendMessage(uid, ping, 'Markdown'); } catch {}
+      }
+    }
+  }, 60000);
+
 
   // ──────────────────────────────────────────────────────
   // /track — Presence IP
