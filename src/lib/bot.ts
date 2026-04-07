@@ -359,9 +359,18 @@ async function main() {
         const dim = Math.min(100, Math.max(10, Number(arg)));
         await wiz.executeAction({ type: 'control', payload: { state: true, dimming: dim } });
         await send(`💡 Brightness: *${dim}%*`);
-      } else if (arg === 'white') {
-        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500 } });
-        await send(`💡 Mode: *Daylight White*`);
+      } else if (arg === 'tv') {
+        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 30 } });
+        await send(`📺 *TV Bias Light* — warm 2700K at 30%`);
+      } else if (arg === 'warm') {
+        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 80 } });
+        await send(`🕯️ *Warm White* — cozy 2700K`);
+      } else if (arg === 'cool' || arg === 'white') {
+        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } });
+        await send(`🔆 *Cool White* — bright 6500K`);
+      } else if (arg === 'night') {
+        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2200, dimming: 10 } });
+        await send(`🌙 *Night Light* — ultra-dim 2200K`);
       } else {
         const colors: Record<string, {r:number,g:number,b:number}> = {
           red:    { r: 255, g: 0,   b: 0   },
@@ -377,11 +386,12 @@ async function main() {
           await wiz.executeAction({ type: 'control', payload: { state: true, ...colors[arg] } });
           await send(`💡 Color: *${arg.toUpperCase()}*`);
         } else {
-          await send(`❌ Unknown: \`${arg}\`\nTry: on · off · 0–100 · white · red · blue · green · purple · pink · yellow · orange · cyan`);
+          await send(`❌ Unknown: \`${arg}\`\nTry: on · off · tv · warm · cool · night · 0–100 · red · blue · green · purple · pink · yellow · orange · cyan`);
         }
       }
     }
   });
+
 
   // ──────────────────────────────────────────────────────
   // /ping — Quick health check
