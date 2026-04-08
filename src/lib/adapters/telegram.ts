@@ -26,6 +26,7 @@ export class TelegramAdapter extends Adapter {
   private polling = false;
   private handlers: CommandHandler[] = [];
   public botInfo: { id: number; username: string; first_name: string } | null = null;
+  public onMessage?: (msg: any) => void;
 
   constructor(token: string) {
     super();
@@ -55,6 +56,7 @@ export class TelegramAdapter extends Adapter {
   private async processUpdate(update: TelegramUpdate): Promise<void> {
     const msg = update.message;
     if (!msg?.text) return;
+    if (this.onMessage) this.onMessage(msg);
 
     const [rawCommand, ...args] = msg.text.trim().split(/\s+/);
     const command = rawCommand.replace(/^\//, '').replace(/@.*$/, '').toLowerCase();

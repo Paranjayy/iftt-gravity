@@ -30,8 +30,14 @@ interface GravityStatus {
     acMinutes: number;
     lightMinutes: number;
     lastReset: string;
+    pgvcl?: {
+      amount: string;
+      units: string;
+      scannedAt: string;
+    };
   };
   uptime: number;
+  estimatedPgBill?: string;
   logs: string[];
 }
 
@@ -162,9 +168,27 @@ export default function GravityDashboard() {
               </div>
             </div>
             
-            <button className="mt-8 w-full py-3 rounded-2xl bg-slate-100 text-[#0a0a0c] font-bold text-sm tracking-widest hover:bg-white transition-colors active:scale-[0.98]">
-              SYNC HUB
-            </button>
+            <div className="mt-8 space-y-4">
+              <div className="glass p-4 rounded-2xl border border-blue-500/10 hover:border-blue-500/30 transition-colors">
+                <div className="flex justify-between items-center mb-1">
+                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">PGVCL Utility</span>
+                   <Zap className="w-3 h-3 text-blue-400" />
+                </div>
+                <div className="text-xl font-bold tracking-tighter">₹{data?.stats.pgvcl?.amount || '0'}</div>
+                <div className="text-[10px] text-slate-400 font-medium tracking-tight mb-2">Current Bill · {data?.stats.pgvcl?.units || '0'} Units</div>
+                
+                {data?.estimatedPgBill && (
+                  <div className="pt-2 border-t border-white/5">
+                    <div className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-1">Gravity Estimate</div>
+                    <div className="text-lg font-bold">₹{data.estimatedPgBill}</div>
+                  </div>
+                )}
+              </div>
+
+              <button className="w-full py-3 rounded-2xl bg-slate-100 text-[#0a0a0c] font-bold text-sm tracking-widest hover:bg-white transition-colors active:scale-[0.98]">
+                SYNC HUB
+              </button>
+            </div>
           </motion.div>
 
           {/* Energy Graph */}
@@ -216,7 +240,7 @@ export default function GravityDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           
           <div className="md:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <SceneCard icon={<Tv />} label="Cinema" scene="TV" color="blue" onClick={() => triggerScene('TV')} />
+            <SceneCard icon={<Tv />} label="TV TIME" scene="TV" color="blue" onClick={() => triggerScene('TV')} />
             <SceneCard icon={<Target />} label="Deep Work" scene="FOCUS" color="purple" onClick={() => triggerScene('FOCUS')} />
             <SceneCard icon={<Moon />} label="Night Wrap" scene="SLEEP" color="orange" onClick={() => triggerScene('SLEEP')} />
             <SceneCard icon={<ShieldCheck />} label="Away Mode" scene="AWAY" color="slate" onClick={() => triggerScene('AWAY')} />

@@ -38,6 +38,7 @@ export class MiraieAdapter extends Adapter {
   private accessToken: string | null = null;
   private userId: string | null = null;
   public devices: MiraieDevice[] = [];
+  private mqttClient?: mqtt.MqttClient;
 
   constructor(private mobile?: string, private password?: string) {
     super();
@@ -47,7 +48,46 @@ export class MiraieAdapter extends Adapter {
     if (this.mobile && this.password) {
       await this.login();
       await this.fetchDevices();
+      this.startListening();
     }
+  }
+
+  private startListening() {
+    if (!this.accessToken || this.devices.length === 0) return;
+    
+    this.mqttClient = mqtt.connect('mqtts://mqtt.miraie.in:8883', {
+      username: this.devices[0].homeId,
+      password: this.accessToken!,
+      clientId: 'gravity-mirae-listener-' + Math.floor(Math.random() * 1000),
+      keepalive: 60
+    });
+
+    this.mqttClient.on('connect', () => {
+      this.devices.forEach(d => {
+        this.mqttClient!.subscribe(d.topic.sub);
+        // Request immediate status sync
+        this.mqttClient!.publish(d.topic.pub, JSON.stringify({ get: 'status' }));
+      });
+    });
+
+    this.mqttClient.on('message', (topic, message) => {
+      const msgStr = message.toString();
+      const device = this.devices.find(d => d.topic.sub === topic);
+      
+      // Forensic Log
+      require('fs').appendFileSync('/tmp/gravity-mqtt-trace.log', `[${new Date().toISOString()}] TOPIC: ${topic} | MSG: ${msgStr}\n`);
+
+      if (device) {
+        try {
+          const data = JSON.parse(msgStr);
+          device.status = { ...device.status, ...(data.status || data) };
+        } catch (e) {}
+      }
+    });
+
+    this.mqttClient.on('error', (err) => {
+      console.error('MirAie MQTT Listener Error:', err.message);
+    });
   }
 
   async login(): Promise<{ token: string; userId: string }> {
@@ -104,7 +144,24 @@ export class MiraieAdapter extends Adapter {
     }
 
     this.devices = allDevices;
+    // Initial status sync
+    await this.refreshAllStatuses();
     return allDevices;
+  }
+
+  async refreshAllStatuses(): Promise<void> {
+    for (const device of this.devices) {
+      try {
+        const res = await axios.get(`https://app.miraie.in/simplifi/v1/homeManagement/homes/devices/${device.deviceId}/status`, {
+          headers: this.headers
+        });
+        if (res.data) {
+          device.status = { ...device.status, ...(res.data.status || res.data) };
+        }
+      } catch (e) {
+        // Fallback to MQTT if REST fails
+      }
+    }
   }
 
   async getDevices(): Promise<Device[]> {
@@ -126,17 +183,21 @@ export class MiraieAdapter extends Adapter {
 
     return new Promise((resolve, reject) => {
       const client = mqtt.connect('mqtts://mqtt.miraie.in:8883', {
-        username: device.homeId, // Broker uses Home ID as username
-        password: this.accessToken!, // Broker uses access token as password
+        username: device.homeId, 
+        password: this.accessToken!, 
         clientId: 'ha-mirae-mqtt-' + Math.floor(Math.random() * 1000)
       });
 
       client.on('connect', () => {
-        const payload = { ...command, bz: 1 }; // bz: 1 triggers the confirmatory beep
+        const payload = { ...command, bz: 1 };
         client.publish(device.topic.pub, JSON.stringify(payload), (err) => {
           client.end();
           if (err) reject(err);
-          else resolve();
+          else {
+            // Update local status cache for immediate feedback
+            device.status = { ...device.status, ...command };
+            resolve();
+          }
         });
       });
 
@@ -145,6 +206,11 @@ export class MiraieAdapter extends Adapter {
         reject(err);
       });
     });
+  }
+
+  async getDeviceStatus(deviceId: string): Promise<MiraieStatus | null> {
+    const device = this.devices.find(d => d.deviceId === deviceId);
+    return device?.status || { actmp: '24', ps: 'off' };
   }
 
   async executeAction(action: Action): Promise<void> {

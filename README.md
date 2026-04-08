@@ -1,41 +1,51 @@
-# 🌌 Gravity: Production God Build
+# 🪐 Gravity: The God Mode v2.4 Hub
 
-Your private IoT command center is now fully optimized for deployment.
+Gravity is now a professional-grade IoT and Intelligence Hub. It provides a unified cinematic experience for your home, utility tracking, and direct Mac control.
 
-## 🚀 Deployment (Set-and-Forget)
-You can now run Gravity as a background service so it stays alive even after you close the terminal:
-
-### Option A: Docker (Recommended)
-1. **Build & Start**: `docker-compose up -d`
-2. This will keep Gravity running on **localhost:3000** locally and persist all your accounts in a secure Docker volume.
-
-### Option B: PM2 (No Docker)
-1. `npm install -g pm2`
-2. `pm2 start "bun run dev" --name gravity`
+## 🚀 One-Click Startup
+To start the Hub and all its intelligence features, run:
+```bash
+chmod +x hub.sh
+./hub.sh
+```
+This will start the **Telegram Bot** and all background services (`MirAie`, `WiZ`, `PGVCL Scraper`).
 
 ---
 
-## ❄️ MirAie — The "Beep" & Direct Control
-- **Physical "Beep"**: I've injected the `bz: 1` flag into all MirAie commands. When you change temp or mode from Gravity, you should now hear the same confirmatory beep as your physical remote.
-- **Raycast Integration**: Use the script in `./raycast/ac-control.sh`. Import it into Raycast to control your AC with zero clicks.
-- **Homey Sync**: You requested MirAie inside Homey. You can now use **Homey Webhooks** to call Gravity's new API: `POST http://localhost:3000/api/control/ac`.
+## 📡 Telegram Command Center
+Use these commands to rule your house from anywhere:
+
+### **🏠 Mission Scenes**
+- `/tv` — **Cinematic Mode**: Warm Indigo lights + Quiet AC.
+- `/home` — **Welcome Home**: Bright lights + Fast Cooling.
+- `/away` — **Security Mode**: Everything OFF (Automatic on phone exit).
+- `/lights tv` — **Only Lights**: Standard TV Bias lighting (No AC change).
+
+### **🖥 Mac God-Build Control**
+- `/system` — **Hub Health**: See Mac Battery, CPU Load, and Hub Uptime.
+- `/lock` — **Security**: Instantly lock your Mac screen.
+- `/sleep` — **Rest**: Put the Mac to sleep remotely.
+- `/say [MSG]` — **Presence**: Make your Mac speak your message out loud! (Remote TTS).
+
+### **⚡ Utility & Intelligence**
+- `/pgvcl` — **Live Billing**: Check real-time usage and GERC tariff estimation.
+- `/remember [FACT]` — **Cortex**: Save facts into Gravity's persistent memory.
+- `[Raw Text]` — **Insights**: Gravity automatically archives your raw ideas into the `house_wishlist.md`.
 
 ---
 
-## 💡 WiZ — Automatic Discovery
-- No more searching for IP addresses! 
-- Go to the **Device Sync** dashboard, click **Manage WiZ**, and click the new **"Scan for Bulbs"** button. It will scan your local network and find them instantly.
+## 🛠 Features v2.4 (New)
+1. **The Battery Guardian**: Automatic Telegram alert if your Mac's battery hits 20%.
+2. **Presence Awareness**: If you leave the house and forgot the lights, Gravity pings you to confirm shutoff.
+3. **Raycast Native UI**: A professional Mission Control built into your Mac search.
 
 ---
 
-## 🏠 Homey — Professional SDK
-- I’ve completely migrated Homey to the **official `homey-api` SDK**.
-- This is much more robust than the old API hacks and allows for future expansion into complex Homey Flows.
+## 🔐 Configuration
+All your tokens and device IPs are stored in `config.json`.
+- **Phone IP**: Used for ARP-based presence tracking (10x more reliable than ping).
+- **PGVCL**: Scraped every 6 hours via Puppeteer.
 
 ---
 
-## 🔐 Security & Persistence
-- Your `config.json` is safely stored and ignored from Git.
-- **Raycast/External Access**: The new API endpoint in `src/app/api/control/ac` allows you to build your own dashboard skins or phone shortcuts.
-
-Good luck with your exams! The grid is officially yours. 🌌🏆
+Built for the God Build. 🪐🏆

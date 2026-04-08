@@ -1,0 +1,47 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "gravity-hub",
+  "title": "Gravity Hub",
+  "description": "Native Mission Control for the Gravity IoT Hub.",
+  "icon": "assets/icon.png",
+  "author": "antigravity",
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "control",
+      "title": "Control House",
+      "description": "Manage AC, Lights, and Scenes",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "logs",
+      "title": "View Logs",
+      "description": "See the latest house activity",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.71.0",
+    "node-fetch": "^3.3.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.9",
+    "@raycast/eslint-config": "^1.0.8",
+    "@types/node": "20.8.10",
+    "@types/react": "18.2.27",
+    "eslint": "^8.51.0",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "fix-lint": "eslint src --fix",
+    "lint": "eslint src",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}

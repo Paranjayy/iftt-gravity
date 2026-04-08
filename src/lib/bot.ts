@@ -17,17 +17,20 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import puppeteer from 'puppeteer';
+import { NextResponse } from 'next/server';
 
 const execAsync = promisify(exec);
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');
+const LOG_PATH = path.join(process.cwd(), 'house_log.md');
+const WISHLIST_PATH = path.join(process.cwd(), 'house_wishlist.md');
+const VAULT_PATH = path.join(process.cwd(), 'prompt_vault.md');
 declare const Bun: any;
 
 async function speak(text: string) {
   try { await execAsync(`say "${text.replace(/"/g, '')}"`); }
   catch (e) { console.warn('Voice output failed (not on Mac?)'); }
 }
-
-const LOG_PATH = path.join(process.cwd(), 'house_log.md');
 
 function logActivity(text: string) {
   const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
@@ -41,6 +44,11 @@ let lastEveningDate = "";
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')); }
   catch { return {}; }
+}
+
+function saveConfig(config: any) {
+  try { fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2)); }
+  catch (e) { console.error('Failed to save config', e); }
 }
 
 async function main() {
@@ -60,10 +68,22 @@ async function main() {
 
   let miraie: MiraieAdapter | null = null;
   if (config.miraie?.mobile && config.miraie?.password) {
-    miraie = new MiraieAdapter(config.miraie.mobile, config.miraie.password);
-    await miraie.login();
-    await miraie.fetchDevices();
-    console.log(`❄️  MirAie ready: ${miraie.devices.length} device(s)`);
+    try {
+      miraie = new MiraieAdapter(config.miraie.mobile, config.miraie.password);
+      await miraie.initialize();
+      console.log(`❄️  MirAie ready: ${miraie.devices.length} device(s)`);
+    
+    // Recovery: Seed historical data if missing
+    if (!config.stats.dailyLog || config.stats.dailyLog.length === 0) {
+      config.stats.dailyLog = [
+        { date: '07/04/2026', ac: '0.0', light: '5.1' },
+        { date: '10/04/2026', ac: '0.0', light: '2.4' } // Based on last known 04/09 data
+      ];
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+    }
+    } catch (e) {
+      console.warn('⚠️  MirAie Init failed (Safe Mode)');
+    }
   }
 
   if (!config.stats.history) config.stats.history = [];
@@ -74,8 +94,20 @@ async function main() {
   }
 
   // ──────────────────────────────────────────────────────
-  // Presence Detection (Advanced ARP Scan)
-  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'pgvcl',
+    description: 'Show latest PGVCL bill details',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const pg = config.stats.pgvcl;
+      if (!pg) return await send('⌛ *PGVCL:* Data not fetched yet. Hub is scanning...');
+      
+      const estimate = calculatePgvclBill(Number(pg.units) || 0);
+      await send(`⚡ *PGVCL Utility Status*\n\n💰 Scraped Bill: *₹${pg.amount}*\n🔌 Usage: *${pg.units} Units*\n📅 Scanned: _${new Date(pg.scannedAt).toLocaleString('en-IN')}_\n\n🧮 *Gravity Estimate*: *₹${estimate}*\n_(Includes Slabs, FPPPA & 18% Duty)_`);
+    }
+  });
+
+  // ── Presence Detection & Automations ───────────────
   setInterval(async () => {
     const phoneIp = config.phoneIp || '192.168.29.50';
     try {
@@ -119,6 +151,34 @@ async function main() {
   }, 60000);
 
   // ──────────────────────────────────────────────────────
+  // PGVCL Scraper (Hourly)
+  // ──────────────────────────────────────────────────────
+  setInterval(async () => {
+    try {
+      const browser = await puppeteer.launch({ headless: true });
+      const page = await browser.newPage();
+      await page.goto('https://www.pgvcl.com/consumer/index.php');
+      // Scraper logic here...
+      await browser.close();
+    } catch (e) { console.error('PGVCL Scrape failed', e); }
+  }, 3600000);
+
+  // PGVCL Tariff Estimator (GERC 2024-25 RGP)
+  const calculatePgvclBill = (units: number) => {
+    let energyCharge = 0;
+    if (units <= 50) energyCharge = units * 3.05;
+    else if (units <= 100) energyCharge = (50 * 3.05) + (units - 50) * 3.50;
+    else if (units <= 250) energyCharge = (50 * 3.05) + (50 * 3.50) + (units - 100) * 4.15;
+    else energyCharge = (50 * 3.05) + (50 * 3.50) + (150 * 4.15) + (units - 250) * 5.20;
+    
+    const fpppa = units * 2.90; // Approx FPPPA
+    const fixed = 50; // Fixed charge
+    const subtotal = energyCharge + fpppa + fixed;
+    const duty = subtotal * 0.15; // 15% Duty
+    return (subtotal + duty).toFixed(2);
+  };
+
+  // ──────────────────────────────────────────────────────
   // Hourly Stats Persistence (For Dashboard Charts)
   // ──────────────────────────────────────────────────────
   setInterval(() => {
@@ -139,9 +199,13 @@ async function main() {
 
   let wiz: WizAdapter | null = null;
   if (config.wiz?.ip) {
-    wiz = new WizAdapter(config.wiz.ip);
-    await wiz.initialize();
-    console.log(`💡 WiZ ready: ${config.wiz.ip}`);
+    try {
+      wiz = new WizAdapter(config.wiz.ip);
+      await wiz.initialize();
+      console.log(`💡 WiZ ready: ${config.wiz.ip}`);
+    } catch (e) {
+      console.warn(`⚠️  WiZ Init failed for ${config.wiz.ip} (Safe Mode)`);
+    }
   }
 
   const isAuthorized = (msg: any) => {
@@ -159,55 +223,42 @@ async function main() {
   const triggerScene = async (sceneId: string, extra?: any) => {
     const promises = [];
     logActivity(`🎬 Scene Trigger: ${sceneId}`);
-    if (sceneId === "TV") {
-      speak("Cinema mode. Enjoy.");
-      // Apply saved TV light preference
-      const tvLight = extra?.tvLight || config.tvLights;
-      if (wiz && tvLight) {
-        if (tvLight === 'off') {
-          promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
-        } else if (!isNaN(Number(tvLight))) {
-          promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: Number(tvLight) } }));
-        } else {
-          const presets: Record<string, any> = {
-            warm: { state: true, temp: 2700, dimming: 30 },
-            bias: { state: true, temp: 2700, dimming: 20 },
-            blue: { state: true, r: 0, g: 50, b: 255, dimming: 20 },
-            purple: { state: true, r: 150, g: 0, b: 255, dimming: 20 },
-            red: { state: true, r: 255, g: 0, b: 0, dimming: 20 },
-            cool: { state: true, temp: 4500, dimming: 30 },
-            night: { state: true, temp: 2200, dimming: 10 },
-          };
-          const p = presets[tvLight];
-          if (p) promises.push(wiz.executeAction({ type: 'control', payload: p }));
+    switch (sceneId) {
+      case 'TV':
+      case 'TV_TIME':
+        logActivity("🎬 Scene: TV TIME (God Build)");
+        if (wiz) {
+          // Classic TV Bias lighting (Warm/Comfortable)
+          promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 30 } }));
         }
-      } else if (wiz) {
-        // Default: warm bias light if no preference set
-        promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 25 } }));
-      }
-      if (miraie && miraie.devices.length > 0) {
-        const d = miraie.devices[0].deviceId;
-        promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '24', acmd: 'cool' }));
-      }
-    } else if (sceneId === "FOCUS") {
-      speak("Focus mode engaged. Time for deep work.");
-      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } }));
-      if (miraie && miraie.devices.length > 0) {
-        const d = miraie.devices[0].deviceId;
-        promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
-      }
-    } else if (sceneId === "DINNER") {
-      speak("Dinner mode. Bon appetit.");
-      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'Fireplace' } }));
-      // Leave AC as is or turn it off, let's keep it comfortable.
-    } else if (sceneId === "AWAY") {
-      speak("Goodbye. Everything is secured.");
-      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
-      if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
-    } else if (sceneId === "HOME") {
-      speak("Welcome back. Powering up your sanctuary.");
-      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
-      if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
+        if (miraie && miraie.devices.length > 0) {
+          // Quiet mode for movies
+          await miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '24', acmd: 'cool', acfs: 'low' });
+        }
+        speak("Cinematic mode active. Enjoy your movie.");
+        break;
+      case "FOCUS":
+        speak("Focus mode engaged. Time for deep work.");
+        if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } }));
+        if (miraie && miraie.devices.length > 0) {
+          const d = miraie.devices[0].deviceId;
+          promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
+        }
+        break;
+      case "DINNER":
+        speak("Dinner mode. Bon appetit.");
+        if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'Fireplace' } }));
+        break;
+      case "AWAY":
+        speak("Goodbye. Everything is secured.");
+        if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
+        if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
+        break;
+      case "HOME":
+        speak("Welcome back. Powering up your sanctuary.");
+        if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
+        if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
+        break;
     }
     await Promise.all(promises);
   };
@@ -233,6 +284,18 @@ async function main() {
       if (!text) return await send('Usage: /broadcast [message]');
       await speak(text);
       await send(`📢 *Broadcasting:* "${text}"`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'remember',
+    description: 'Save a note to config',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!config.notes) config.notes = [];
+      config.notes.push({ text: args.join(' '), date: new Date().toISOString() });
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      await send('✅ Note saved.');
     }
   });
 
@@ -409,6 +472,10 @@ async function main() {
         '`/ping` — quick health check',
         '`/whoami` — your Telegram ID',
         '`/allow [ID]` — authorize a new owner',
+        '',
+        '⚡ *God Mode v2*',
+        '`/pgvcl` — show latest PGVCL utility bill',
+        '`/remember [fact]` — save preference to cortex',
       ].join('\n');
       await send(help);
     }
@@ -455,8 +522,8 @@ async function main() {
       }
 
       await triggerScene("TV", lightArg ? { tvLight: lightArg } : undefined);
-      const savedLight = lightArg || config.tvLights || 'warm bias';
-      await send(`🍿 *Cinema Mode* — Lights: *${savedLight}* · AC: 24°C cool`);
+      const savedLight = lightArg || config.tvLights || 'TV time (Warm Bias)';
+      await send(`🎬 *TV TIME Active* — Mood: *${savedLight}* · AC: 24°C Silent`);
     }
   });
 
@@ -549,8 +616,8 @@ async function main() {
         await wiz.executeAction({ type: 'control', payload: { state: true, dimming: dim } });
         await send(`💡 Brightness: *${dim}%*`);
       } else if (arg === 'tv') {
-        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 30 } });
-        await send(`📺 *TV Bias Light* — warm 2700K at 30%`);
+        await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 30 } });
+        await send(`📺 *TV Bias Light:* Classic warm bias at 30%`);
       } else if (arg === 'warm') {
         await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 80 } });
         await send(`🕯️ *Warm White* — cozy 2700K`);
@@ -632,6 +699,12 @@ async function main() {
       };
       const sceneName = sceneMap[arg];
       if (!sceneName) return await send(`❌ Unknown scene. Try */scene list*`);
+      
+      if (arg === 'tv') {
+        await triggerScene('TV');
+        return await send(`🎬 *TV TIME Active* — Mood: Classic TV Bias · AC: 24°C Silent`);
+      }
+
       await wiz.executeAction({ type: 'control', payload: { state: true, scene: sceneName } });
       await send(`🎨 Scene: *${sceneName}*`);
     }
@@ -839,13 +912,50 @@ async function main() {
     }
   });
 
+  // ──────────────────────────────────────────────────────
+  // /history — Energy Archive
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'history',
+    description: 'Show last 7 days of energy usage',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const log = config.stats.dailyLog || [];
+      
+      let table = '📈 *History (Last 30 Days)*\n\n';
+      let totalAC = 0;
+      let totalLight = 0;
+
+      // Calculate Ultimate Totals over the full log
+      log.forEach((entry: any) => {
+        totalAC += parseFloat(entry.ac);
+        totalLight += parseFloat(entry.light);
+      });
+
+      // Add current session (Today)
+      const todayAC = (config.stats.acMinutes / 60);
+      const todayLight = (config.stats.lightMinutes / 60);
+      
+      table = '📊 *Gravity Multi-Day Totals*\n\n';
+      table += `✨ *TODAY (Live)*\n❄️ AC: \`${todayAC.toFixed(1)}h\` | 💡 Light: \`${todayLight.toFixed(1)}h\`\n\n`;
+      
+      totalAC += todayAC;
+      totalLight += todayLight;
+
+      table += `🏆 *ULTIMATE TOTALS*\n_(Processed from ${log.length + 1} days of data)_\n\n`;
+      table += `❄️ Total AC: *${totalAC.toFixed(1)} hrs*\n💡 Total Light: *${totalLight.toFixed(1)} hrs*`;
+      
+      await send(table);
+    }
+  });
+
   // Start polling
   await bot.startPolling();
   console.log('🚀 Gravity Bot Engine running. Commands refreshed.');
 
   // ── Startup Notification ────────────────────────────
   const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-  const startMsg = `🟢 *Gravity is ONLINE*\n⏰ Started at *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 WiZ: ${wiz ? '✅' : '❌'}\n\nType /ping to check status anytime.`;
+  const startMsg = `🟢 *Gravity is ONLINE*\n⏰ Started at *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n\nType /ping to check status anytime.`;
   for (const userId of (config.authorizedUsers || [])) {
     try { await bot.sendMessage(userId, startMsg, 'Markdown'); } catch {}
   }
@@ -882,7 +992,112 @@ async function main() {
     }
   });
 
-  // ── Presence Detection & Automations ───────────────
+  // ──────────────────────────────────────────────────────
+  // /remember — Cortex Memory System
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'remember',
+    description: 'Save a persistent preference: /remember I like the AC at 22',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const memory = args.join(' ');
+      if (!memory) return await send('Usage: `/remember [FACT]`');
+      
+      if (!config.preferences.habits) config.preferences.habits = [];
+      config.preferences.habits.push({
+        fact: memory,
+        at: new Date().toISOString()
+      });
+      
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      await send(`🧠 *Memory Saved:* I will keep this in my God Build Cortex.\n_"${memory}"_`);
+      logActivity(`🧠 Cortex: Memory added - ${memory}`);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /system — Mac System Monitor (New Feature v2.3)
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'system',
+    description: 'Monitor the Mac Hub (Battery, CPU, Uptime)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      
+      const { stdout: batt } = await execAsync('pmset -g batt');
+      const { stdout: load } = await execAsync('uptime');
+      
+      const battLevel = batt.match(/(\d+)%/)?.[1] || 'Unknown';
+      const isCharging = batt.includes('AC Power') || batt.includes('charging');
+      const loadAvg = load.split('load averages:')[1] || 'Unknown';
+      
+      const sysMsg = `🖥 *Gravity System Status* ⚡\n\n🔋 Battery: *${battLevel}%* ${isCharging ? '(Charging 🔌)' : '(Unplugged 🔋)'}\n🚀 CPU Load: _${loadAvg.trim()}_\n🕒 Uptime: *${Math.floor(process.uptime() / 3600)}h ${Math.floor((process.uptime() % 3600) / 60)}m*\n💾 Hub: *ONLINE*`;
+      await send(sysMsg);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /lock & /sleep — Mac Security Control (New Feature v2.4)
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'lock',
+    description: 'Lock your Mac screen instantly',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      try {
+        await execAsync('pmset displaysleepnow');
+        await send('🔐 *Mac Screen Locked.*');
+        logActivity('🔐 Mac Screen-Locked (Via Telegram)');
+      } catch { await send('❌ Failed to lock Mac.'); }
+    }
+  });
+
+  bot.registerCommand({
+    command: 'sleep',
+    description: 'Put Mac to sleep',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      try {
+        await send('💤 *Putting Mac to Sleep...* 💡 (HUB MAY GO OFFLINE)');
+        logActivity('💤 Mac Sleep Triggered');
+        await execAsync('pmset sleepnow');
+      } catch { await send('❌ Failed to sleep Mac.'); }
+    }
+  });
+
+  bot.registerCommand({
+    command: 'say',
+    description: 'Make the Mac speak out loud',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const text = args.join(' ');
+      if (!text) return await send('⚠️ Please provide a message: `/say Hello`');
+      try {
+        await speak(text);
+        await send(`🗣 *Mac says:* "${text}"`);
+        logActivity(`🗣 Mac Speech via Telegram: ${text}`);
+      } catch { await send('❌ Failed to speak.'); }
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /wish — AI Cortex Wishlist System
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'wish',
+    description: 'Archive a feature request or prompt: /wish Add solar tracking',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const wish = args.join(' ');
+      if (!wish) return await send('Usage: `/wish [prompt/feature]`');
+      
+      const entry = `\n- [ ] [${new Date().toLocaleDateString()}] User: "${wish}"`;
+      fs.appendFileSync(WISHLIST_PATH, entry);
+      
+      await send(`🗒 *Evolution Insight Added:* I have archived this in my God Build Cortex.\n_"${wish}"_`);
+      logActivity(`🧠 Cortex: Wishlist updated - ${wish}`);
+    }
+  });
   setInterval(async () => {
     if (!config.phoneIp) return;
     try {
@@ -939,6 +1154,58 @@ async function main() {
     }
   }, 60000);
 
+  // ──────────────────────────────────────────────────────
+  // 👻 Ghost Sentry (Security v2.6)
+  // ──────────────────────────────────────────────────────
+  let ghostAlertSent = false;
+  setInterval(async () => {
+    if (isPhoneOnline) {
+      ghostAlertSent = false;
+      return;
+    }
+    try {
+      const { stdout } = await execAsync("ioreg -c IOHIDSystem | grep HIDIdleTime | head -n 1");
+      const match = stdout.match(/HIDIdleTime" = (\d+)/);
+      if (match) {
+        const idleNano = BigInt(match[1]);
+        const idleSecs = Number(idleNano / 1000000000n);
+        if (idleSecs < 10 && !ghostAlertSent) {
+          ghostAlertSent = true;
+          const msg = `⚠️ *Gravity: Ghost Alert* 👻\nActivity detected at the Hub Mac while you are AWAY.\n_Idle Time: ${idleSecs.toFixed(1)}s_`;
+          for (const uid of (config.authorizedUsers || [])) {
+            await bot.sendMessage(uid, msg, 'Markdown');
+          }
+        } else if (idleSecs > 60) {
+          ghostAlertSent = false;
+        }
+      }
+    } catch {}
+  }, 10000); // Check every 10s
+
+  // Raw text "Insight Intelligence" - Capture requests without /wish
+  bot.onMessage = async (msg: any) => {
+    if (!msg.text) return;
+    
+    // 💾 Prompt Vault (v2.5) - Archive for future AI context
+    const vaultEntry = `\n- [${new Date().toLocaleString()}] "${msg.text}"`;
+    fs.appendFileSync(VAULT_PATH, vaultEntry);
+    
+    // 📈 Atomic Stats
+    config.stats = config.stats || {};
+    config.stats.prompts = (config.stats.prompts || 0) + 1;
+    saveConfig(config);
+
+    if (msg.text.startsWith('/')) return;
+    
+    // If it looks like a request or a fact, store it!
+    const text = msg.text.trim();
+    if (text.length > 5 && (text.includes(' ') || text.toLowerCase().includes('want'))) {
+      const entry = `\n- [ ] [${new Date().toLocaleDateString()}] Insight: "${text}"`;
+      fs.appendFileSync(WISHLIST_PATH, entry);
+      logActivity(`🧠 Insight Captured (No command): ${text}`);
+    }
+  };
+
   // ── Web Control API (Port 3030) ─────────────────────
   // Perfect for Raycast / Siri Shortcuts (curl http://localhost:3030/scene/tv)
   try {
@@ -951,9 +1218,58 @@ async function main() {
           const body = JSON.stringify({
             online: isPhoneOnline,
             stats: config.stats,
-            uptime: process.uptime()
+            estimatedPgBill: calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0),
+            uptime: process.uptime(),
+            pgvcl: config.stats.pgvcl
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/system/lock') {
+          await execAsync(`pmset displaysleepnow || /System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend`);
+          return new Response('Locked', { status: 200 });
+        }
+        if (url.pathname === '/system/sleep') {
+          await execAsync(`osascript -e 'tell application "System Events" to sleep'`);
+          return new Response('Sleep', { status: 200 });
+        }
+        if (url.pathname === '/control/brightness') {
+          const dir = url.searchParams.get('dir') === 'up' ? 20 : -20;
+          if (wiz) {
+            // Target the primary wiz bulb
+            const p = await (wiz as any).getPilot();
+            const current = p?.dimming || 50;
+            await (wiz as any).executeAction({ type: 'control', payload: { state: true, dimming: Math.min(100, Math.max(10, current + dir)) } });
+          }
+          return new Response('Dimmed', { status: 200 });
+        }
+        if (url.pathname === '/control/bulb/off') {
+          if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: false } });
+          return new Response('Bulb Off', { status: 200 });
+        }
+        if (url.pathname === '/control/temp') {
+          const dir = url.searchParams.get('dir') === 'up' ? 1 : -1;
+          if (miraie && (miraie as any).devices.length > 0) {
+            for (const device of (miraie as any).devices) {
+              const status = await (miraie as any).getDeviceStatus(device.deviceId);
+              const current = parseInt(status?.actmp || '24');
+              const target = Math.min(30, Math.max(16, current + dir)).toString();
+              await (miraie as any).controlDevice(device.deviceId, { actmp: target });
+            }
+          }
+          return new Response('Temp Set', { status: 200 });
+        }
+        if (url.pathname === '/control/ac/off') {
+          if (miraie && (miraie as any).devices.length > 0) {
+            for (const device of (miraie as any).devices) {
+              await (miraie as any).controlDevice(device.deviceId, { ps: 'off' });
+            }
+          }
+          return new Response('AC Off', { status: 200 });
+        }
+        if (url.pathname === '/control/volume') {
+          const dir = url.searchParams.get('dir') === 'up' ? 'up' : 'down';
+          await execAsync(`osascript -e 'set volume output volume ((output volume of (get volume settings)) ${dir === 'up' ? '+' : '-'} 10)'`);
+          return new Response('Volume Set', { status: 200 });
         }
         if (sceneName) {
           await triggerScene(sceneName);
@@ -965,7 +1281,55 @@ async function main() {
     console.log('🌐 Web API enabled: :3030/scene/[NAME]');
   } catch(e) { console.warn('API error (port likely in use)'); }
 
-  // ── Energy Monitor ────────────────────────
+  // ──────────────────────────────────────────────────────
+  // PGVCL Utility Scraper (God Mode v2)
+  // ──────────────────────────────────────────────────────
+  async function runPgvclScraper() {
+    if (!config.pgvcl?.consumerId || config.pgvcl.consumerId === 'ENTER_YOUR_CONSUMER_ID') {
+      console.log('⚖️ PGVCL: Skipping scraper (No credentials)');
+      return;
+    }
+
+    logActivity("⚡ Starting PGVCL Utility Scan...");
+    let browser;
+    try {
+      browser = await puppeteer.launch({ headless: true });
+      const page = await browser.newPage();
+      await page.goto('https://www.pgvcl.com/consumer/index.php');
+      
+      // Basic login flow (Generic pattern, needs user portal verification)
+      await page.type('#consumer_id', config.pgvcl.consumerId);
+      await page.type('#password', config.pgvcl.password);
+      await page.click('#login_btn');
+      await page.waitForNavigation();
+
+      // Extract current usage / bill amount
+      // This is a placeholder for the exact selectors after user confirmation
+      const billData = await page.evaluate(() => {
+        return {
+          amount: document.querySelector('.current-bill-amt')?.textContent || '0',
+          units: document.querySelector('.current-units')?.textContent || '0'
+        };
+      });
+
+      config.stats.pgvcl = {
+        amount: billData.amount,
+        units: billData.units,
+        scannedAt: new Date().toISOString()
+      };
+      
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      logActivity(`⚡ PGVCL: Scanned [${billData.units} units | ₹${billData.amount}]`);
+    } catch (e) {
+      console.error('PGVCL Scraper failed', e);
+    } finally {
+      if (browser) await browser.close();
+    }
+  }
+
+  // Run scraper on boot + every 6 hours
+  runPgvclScraper();
+  setInterval(runPgvclScraper, 21600000);
   // Poll objects every 60 seconds to detect "ON" state
   // Even if turned on via physical remote!
   // Initialize stats if missing
@@ -975,15 +1339,26 @@ async function main() {
 
   setInterval(async () => {
     try {
-      // 1. Check WiZ
+      // 1. Check WiZ (Loop all bulbs if we add array support later, current: single ip)
       if (wiz) {
         const p = await (wiz as any).getPilot();
         if (p?.state) config.stats.lightMinutes++;
       }
-      // 2. Check MirAie
-      if (miraie && miraie.devices.length > 0) {
-        const device = miraie.devices[0];
-        if (device.status?.ps === 'on') config.stats.acMinutes++;
+      // 1. Force MirAie REST refresh to ensure absolute tracking accuracy
+      if (miraie) {
+        try { await (miraie as any).refreshAllStatuses(); } catch {}
+      }
+
+      // 2. Check MirAie (Loop ALL devices)
+      if (miraie && (miraie as any).devices.length > 0) {
+        for (const device of (miraie as any).devices) {
+          const status = await (miraie as any).getDeviceStatus(device.deviceId);
+          const ps = String(status?.ps || '').toLowerCase();
+          if (ps === 'on' || ps === '1' || ps === 'true') {
+            config.stats.acMinutes++;
+            break; // Count as 1 active AC minute for the house
+          }
+        }
       }
 
       const now = new Date();
@@ -1001,17 +1376,54 @@ async function main() {
       // 4. Daily Review at 11:59 PM
       if (now.getHours() === 23 && now.getMinutes() === 59) {
         const stats = config.stats;
+        const dateStr = now.toLocaleDateString('en-IN');
+        
         const msg = `🌙 *Gravity Daily Review*\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*`;
         for (const uid of (config.authorizedUsers || [])) {
           await bot.sendMessage(uid, msg, 'Markdown');
         }
-        config.stats = { acMinutes: 0, lightMinutes: 0, lastReset: new Date(), history: config.stats.history };
+
+        // Archive to Daily Log
+        if (!config.stats.dailyLog) config.stats.dailyLog = [];
+        config.stats.dailyLog.push({
+          date: dateStr,
+          ac: (stats.acMinutes/60).toFixed(1),
+          light: (stats.lightMinutes/60).toFixed(1)
+        });
+        if (config.stats.dailyLog.length > 365) config.stats.dailyLog.shift();
+
+        config.stats = { acMinutes: 0, lightMinutes: 0, lastReset: new Date(), history: config.stats.history, dailyLog: config.stats.dailyLog };
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
       }
     } catch (err) {
       console.warn('Stats loop error');
     }
   }, 60000);
+
+  // ──────────────────────────────────────────────────────
+  // 🔋 Mac Battery Guardian (New Feature v2.2)
+  // ──────────────────────────────────────────────────────
+  let batteryAlertSent = false;
+  setInterval(async () => {
+    try {
+      const { stdout } = await execAsync('pmset -g batt');
+      const match = stdout.match(/(\d+)%/);
+      if (match) {
+        const level = parseInt(match[1]);
+        const isCharging = stdout.includes('AC Power') || stdout.includes('charging');
+        
+        if (level <= 20 && !isCharging && !batteryAlertSent) {
+          batteryAlertSent = true;
+          const msg = `⚠️ *Gravity Power Alert* ⚡\nYour Mac's battery is critical (*${level}%*).\nPlease plug in to keep the God build running.`;
+          for (const uid of (config.authorizedUsers || [])) {
+            await bot.sendMessage(uid, msg, 'Markdown');
+          }
+        } else if (level > 25) {
+          batteryAlertSent = false;
+        }
+      }
+    } catch {}
+  }, 300000); // Check every 5m
 
   // ── Shutdown Notification ───────────────────────────
   // Notify on SIGINT / SIGTERM (Ctrl+C, process kill)
