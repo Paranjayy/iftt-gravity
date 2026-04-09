@@ -45,48 +45,105 @@ export class TelegramAdapter extends Adapter {
     this.handlers.push(handler);
   }
 
-  async sendMessage(chatId: number, text: string, parseMode: 'Markdown' | 'HTML' = 'Markdown'): Promise<void> {
-    await fetch(`${BASE(this.botToken)}/sendMessage`, {
+  private async sendRequest(method: string, body: any): Promise<any> {
+    const res = await fetch(`${BASE(this.botToken)}/${method}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: parseMode }),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(`Telegram error: ${method} failed: ${errData.description || res.statusText}`);
+    }
+    return res.json();
+  }
+
+  async sendMessage(chatId: number, text: string, options: { parse_mode?: 'Markdown' | 'HTML', reply_markup?: any } = { parse_mode: 'Markdown' }): Promise<void> {
+    await this.sendRequest('sendMessage', {
+      chat_id: chatId,
+      text,
+      parse_mode: options.parse_mode || 'Markdown',
+      reply_markup: options.reply_markup
     });
   }
 
-  private async processUpdate(update: TelegramUpdate): Promise<void> {
-    const msg = update.message;
-    if (!msg?.text) return;
-    if (this.onMessage) this.onMessage(msg);
+  private async processUpdate(update: any): Promise<void> {
+    // 1. Handle Messages
+    if (update.message) {
+      const msg = update.message;
+      if (!msg.text) return;
+      if (this.onMessage) this.onMessage(msg);
 
-    const [rawCommand, ...args] = msg.text.trim().split(/\s+/);
-    const command = rawCommand.replace(/^\//, '').replace(/@.*$/, '').toLowerCase();
-    const chatId = msg.chat.id;
+      const chatId = msg.chat.id;
+      const [raw, ...args] = msg.text.trim().split(/\s+/);
+      const command = raw.toLowerCase().replace('/', '');
 
-    if (command === 'start') {
-      await this.sendMessage(chatId,
-        `⚡ *Gravity Control Bot*\n\nHey ${msg.from.first_name}! I control your home.\n\n` +
-        this.handlers.map(h => `/${h.command} — ${h.description}`).join('\n') +
-        `\n\n_Gravity Automation Engine_`
-      );
-      return;
-    }
-
-    if (command === 'help') {
-      await this.sendMessage(chatId,
-        `*Available Commands*\n\n` + this.handlers.map(h => `\`/${h.command}\` — ${h.description}`).join('\n')
-      );
-      return;
-    }
-
-    const matched = this.handlers.find(h => h.command === command);
-    if (matched) {
-      try {
-        await matched.handler(chatId, args, msg, (text) => this.sendMessage(chatId, text));
-      } catch (err: any) {
-        await this.sendMessage(chatId, `❌ Error: ${err.message}`);
+      // Special handling for the Command Center triggers
+      if (command === 'start' || msg.text === '🎮 Command Center') {
+        await this.sendMessage(chatId,
+          `⚡ *Gravity Control Bot*\n\nHey ${msg.from.first_name}! I am your home cortex.\n\n` +
+          this.handlers.map(h => `/${h.command} — ${h.description}`).join('\n') +
+          `\n\n_Gravity Automation Engine_`,
+          {
+            reply_markup: {
+              keyboard: [
+                [{ text: '📊 History' }, { text: '✨ Today' }],
+                [{ text: '❄️ Control' }, { text: '🏠 Scenes' }],
+                [{ text: '🎮 Command Center' }]
+              ],
+              resize_keyboard: true,
+              persistent: true
+            }
+          }
+        );
+        return;
       }
-    } else {
-      await this.sendMessage(chatId, `Unknown command: \`/${command}\`\n\nUse /help to see available commands.`);
+
+      // Bridge emoji buttons to commands
+      let effectiveCommand = command;
+      if (msg.text === '📊 History') effectiveCommand = 'history';
+      if (msg.text === '✨ Today') effectiveCommand = 'today';
+      if (msg.text.includes('Control')) effectiveCommand = 'control';
+      if (msg.text.includes('Scenes')) effectiveCommand = 'scene';
+
+      if (effectiveCommand === 'help') {
+        await this.sendMessage(chatId,
+          `*Available Commands*\n\n` + this.handlers.map(h => `\`/${h.command}\` — ${h.description}`).join('\n')
+        );
+        return;
+      }
+
+      const matched = this.handlers.find(h => h.command === effectiveCommand);
+      if (matched) {
+        try {
+          await matched.handler(chatId, args, msg, (text) => this.sendMessage(chatId, text));
+        } catch (err: any) {
+          await this.sendMessage(chatId, `❌ Error: ${err.message}`);
+        }
+      } else if (msg.text.startsWith('/')) {
+        await this.sendMessage(chatId, `Unknown command: \`/${command}\`\n\nUse /help to see available commands.`);
+      }
+    }
+
+    // 2. Handle Callback Queries (Interactive Buttons)
+    if (update.callback_query) {
+      const cb = update.callback_query;
+      const chatId = cb.message.chat.id;
+      const data = cb.data;
+
+      // Execute button logic by simulating a command
+      const [cmd, ...args] = data.split(':');
+      const matched = this.handlers.find(h => h.command === cmd);
+      if (matched) {
+        try {
+          // IMPORTANT: Capture the actual user who clicked the button (cb.from)
+          // and merge it into the message context for authorization checks.
+          const msgContext = { ...cb.message, from: cb.from };
+          await matched.handler(chatId, args, msgContext, (text) => this.sendMessage(chatId, text));
+          // Answer the callback to remove loading state
+          await this.sendRequest('answerCallbackQuery', { callback_query_id: cb.id });
+        } catch (e) {}
+      }
     }
   }
 
@@ -99,17 +156,17 @@ export class TelegramAdapter extends Adapter {
       if (!this.polling) return;
       try {
         const res = await fetch(
-          `${BASE(this.botToken)}/getUpdates?offset=${this.offset}&timeout=10&allowed_updates=["message"]`
+          `${BASE(this.botToken)}/getUpdates?offset=${this.offset}&timeout=10&allowed_updates=["message", "callback_query"]`
         );
         const data = await res.json();
         if (data.ok && data.result.length > 0) {
-          for (const update of data.result as TelegramUpdate[]) {
+          for (const update of data.result) {
             this.offset = update.update_id + 1;
             await this.processUpdate(update);
           }
         }
       } catch (err) {
-        console.error('Telegram poll error:', err);
+        // console.error('Telegram poll error:', err);
       }
       setTimeout(poll, intervalMs);
     };

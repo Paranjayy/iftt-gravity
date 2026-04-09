@@ -66,6 +66,49 @@ async function main() {
   const bot = new TelegramAdapter(TELEGRAM_TOKEN);
   await bot.initialize();
 
+  // 🌙 Sleep Intelligence (Adaptive Sleep Curve)
+  class SleepCurveManager {
+    private timers: NodeJS.Timeout[] = [];
+    private active = false;
+    public isActive() { return this.active; }
+    public async start(chatId: string | number) {
+      this.cancel();
+      this.active = true;
+      logActivity("Adaptive Sleep Curve: Initialized (24°C)");
+      // Step 1: 2 hours later -> 25C
+      this.timers.push(setTimeout(async () => {
+        if (!this.active) return;
+        await this.setTemp('25');
+        await bot.sendMessage(chatId as number, "🌙 *Gravity ACS*: Phase 1 - Raising to 25°C for deep sleep.", { parse_mode: 'Markdown' });
+      }, 2 * 60 * 60 * 1000));
+      // Step 2: 4 hours later -> 26C
+      this.timers.push(setTimeout(async () => {
+        if (!this.active) return;
+        await this.setTemp('26');
+        await bot.sendMessage(chatId as number, "🌙 *Gravity ACS*: Phase 2 - Raising to 26°C for early morning comfort.", { parse_mode: 'Markdown' });
+      }, 4 * 60 * 60 * 1000));
+      // Final: 6 hours later -> 27C
+      this.timers.push(setTimeout(async () => {
+        if (!this.active) return;
+        await this.setTemp('27');
+        this.active = false;
+        await bot.sendMessage(chatId as number, "☀️ *Gravity ACS*: Final Phase - Morning optimize at 27°C.", { parse_mode: 'Markdown' });
+      }, 6 * 60 * 60 * 1000));
+    }
+    public cancel() {
+      if (this.active) logActivity("Sleep Curve: Cancelled by override");
+      this.timers.forEach(t => clearTimeout(t));
+      this.timers = [];
+      this.active = false;
+    }
+    private async setTemp(temp: string) {
+      if (miraie && miraie.devices.length > 0) {
+        await miraie.controlDevice(miraie.devices[0].deviceId, { actmp: temp });
+      }
+    }
+  }
+  const sleepManager = new SleepCurveManager();
+
   let miraie: MiraieAdapter | null = null;
   if (config.miraie?.mobile && config.miraie?.password) {
     try {
@@ -95,6 +138,16 @@ async function main() {
 
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
+    command: 'start',
+    description: 'Start Gravity Mission Control',
+    handler: async (chatId, args, msg, send) => {
+      // Forward to the interactive control panel immediately
+      const matched = bot.getHandlers().find(h => h.command === 'control');
+      if (matched) await matched.handler(chatId, [], msg, send);
+    }
+  });
+
+  bot.registerCommand({
     command: 'pgvcl',
     description: 'Show latest PGVCL bill details',
     handler: async (chatId, args, msg, send) => {
@@ -104,6 +157,71 @@ async function main() {
       
       const estimate = calculatePgvclBill(Number(pg.units) || 0);
       await send(`⚡ *PGVCL Utility Status*\n\n💰 Scraped Bill: *₹${pg.amount}*\n🔌 Usage: *${pg.units} Units*\n📅 Scanned: _${new Date(pg.scannedAt).toLocaleString('en-IN')}_\n\n🧮 *Gravity Estimate*: *₹${estimate}*\n_(Includes Slabs, FPPPA & 18% Duty)_`);
+    }
+  });
+
+  // ❄️ Mission Control Panel (Interactive)
+  bot.registerCommand({
+    command: 'control',
+    description: 'Open the Interactive Control Panel',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      
+      const subCommand = args[0];
+      const deviceId = miraie?.devices[0]?.deviceId;
+
+      // Handle Interactive Button Callbacks
+      if (subCommand === 'ac_on') {
+        const payload = { ki: 1, cnt: "an", sid: "1", ps: 'on' };
+        await miraie?.controlDevice(deviceId, payload);
+        return await send('✅ AC turned ON');
+      }
+      if (subCommand === 'ac_off') {
+        const payload = { ki: 1, cnt: "an", sid: "1", ps: 'off' };
+        await miraie?.controlDevice(deviceId, payload);
+        return await send('🚫 AC turned OFF');
+      }
+      if (subCommand === 'bulb_on') {
+        await wiz?.executeAction({ type: 'control', payload: { state: true } });
+        return await send('💡 Bulb turned ON');
+      }
+      if (subCommand === 'bulb_off') {
+        await wiz?.executeAction({ type: 'control', payload: { state: false } });
+        return await send('🌑 Bulb turned OFF');
+      }
+      if (subCommand === 'temp_up' || subCommand === 'temp_down') {
+        const s = await miraie?.getDeviceStatus(deviceId);
+        const cur = parseInt(s?.actmp || '24');
+        const target = subCommand === 'temp_up' ? cur + 1 : cur - 1;
+        const finalTemp = Math.min(30, Math.max(16, target));
+        const payload = { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: String(finalTemp) };
+        await miraie?.controlDevice(deviceId, payload);
+        return await send(`🌡️ AC Temp set to *${finalTemp}°C*`, 'Markdown');
+      }
+
+      // Automatically open the control panel if this is a direct message or /control command
+      await bot.sendMessage(chatId, "❄️ *Gravity Mission Control*\nClick a button to command the hub.", {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '❄️ AC ON', callback_data: 'control:ac_on' },
+              { text: '🚫 AC OFF', callback_data: 'control:ac_off' }
+            ],
+            [
+              { text: '💡 Bulb ON', callback_data: 'control:bulb_on' },
+              { text: '🌑 Bulb OFF', callback_data: 'control:bulb_off' }
+            ],
+            [
+              { text: '🌡️ Temp -', callback_data: 'control:temp_down' },
+              { text: '🌡️ Temp +', callback_data: 'control:temp_up' }
+            ],
+            [
+              { text: '🌙 Sleep Curve', callback_data: 'sleep' },
+              { text: '📊 Status', callback_data: 'status' }
+            ]
+          ]
+        }
+      });
     }
   });
 
@@ -221,6 +339,7 @@ async function main() {
   };
 
   const triggerScene = async (sceneId: string, extra?: any) => {
+    sleepManager.cancel();
     const promises = [];
     logActivity(`🎬 Scene Trigger: ${sceneId}`);
     switch (sceneId) {
@@ -577,6 +696,7 @@ async function main() {
     description: 'AC Control: /ac on, /ac off, /ac 24, /ac cool/dry/fan/auto',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      sleepManager.cancel();
       if (!miraie || miraie.devices.length === 0) return await send('❌ MirAie not linked.');
       const device = miraie.devices[0];
       const arg = args[0]?.toLowerCase();
@@ -604,6 +724,7 @@ async function main() {
     description: 'Lights: /lights on, /lights off, /lights 50, /lights red',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      sleepManager.cancel();
       if (!wiz) return await send('❌ WiZ not configured.');
       const arg = args[0]?.toLowerCase();
       if (!arg) return await send(`*Lights*: /lights [on|off|dim|color]`);
@@ -1099,22 +1220,28 @@ async function main() {
     }
   });
   setInterval(async () => {
-    if (!config.phoneIp) return;
+    const devices = config.familyDevices || (config.phoneIp ? [{name: 'Phone', ip: config.phoneIp}] : []);
+    if (devices.length === 0) return;
     try {
-      // Pinging first wakes up the device network stack
-      await execAsync(`ping -c 1 -W 500 ${config.phoneIp}`).catch(() => {});
-      // ARP check is 10x more reliable for modern smartphones
-      const { stdout } = await execAsync(`arp -a`);
-      const isPresent = stdout.includes(`(${config.phoneIp})`);
+      let anyPresent = false;
+      for (const dev of devices) {
+        // Double-check: Ping + ARP Table lookup
+        await execAsync(`ping -c 1 -W 500 ${dev.ip}`).catch(() => {});
+        const { stdout } = await execAsync(`arp -a`);
+        if (stdout.includes(`(${dev.ip})`)) {
+          anyPresent = true;
+          break;
+        }
+      }
       
       const now = new Date();
       const dateStr = now.toDateString();
       
-      if (isPresent) {
+      if (anyPresent) {
         if (!isPhoneOnline) {
           isPhoneOnline = true;
           offlineCounter = 0;
-          logActivity("📱 Presence: Phone detected (HOME)");
+          logActivity("📱 Presence: Member detected (HOME)");
           await triggerScene('HOME');
           
           if (now.getHours() >= 5 && now.getHours() < 10 && lastBriefDate !== dateStr) {
@@ -1130,21 +1257,21 @@ async function main() {
           }
 
           for (const uid of (config.authorizedUsers || [])) {
-            await bot.sendMessage(uid, '🏠 *Welcome Home!* Phone detected on network.', 'Markdown');
+            await bot.sendMessage(uid, '🏠 *Welcome Home!* Member detected on network.', { parse_mode: 'Markdown' });
           }
         } else {
           offlineCounter = 0;
         }
       } else {
         offlineCounter++;
-        if (offlineCounter >= 4) { // Gone for ~4 mins (more tolerant for ARP)
+        if (offlineCounter >= 5) { // Gone for ~5 mins (more tolerant for ARP)
           if (isPhoneOnline) {
             isPhoneOnline = false;
-            logActivity("🚶 Presence: Phone disconnected (AWAY)");
+            logActivity("🚶 Presence: House Vacant (AWAY)");
             await triggerScene('AWAY');
             speak("Goodbye. House secured.");
             for (const uid of (config.authorizedUsers || [])) {
-              await bot.sendMessage(uid, '🚶 *Away Detect:* Phone logged out. Energy saving mode active.', 'Markdown');
+              await bot.sendMessage(uid, '🚶 *Away Detect:* House vacant. Energy saving mode active.', { parse_mode: 'Markdown' });
             }
           }
         }

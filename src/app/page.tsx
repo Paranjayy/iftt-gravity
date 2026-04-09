@@ -9,6 +9,9 @@ import {
 } from 'lucide-react';
 import { getDashboardData, controlMiraieAC } from './device-sync/actions';
 import DeviceSyncPage from './device-sync/page';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
+} from 'recharts';
 
 // ─────────────────── Types ───────────────────
 interface ACState {
@@ -138,6 +141,8 @@ function DashboardView({ miraieLinked, linkedDevices, ac, sending, onAcCommand, 
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
             {' · '}
             {miraieLinked ? `${linkedDevices.length} device(s) live` : 'No devices linked'}
+            {' · '}
+            <span className="text-indigo-400 font-bold">God Mode v3.9.5</span>
           </p>
         </div>
         <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-900/30">
@@ -267,9 +272,19 @@ function DashboardView({ miraieLinked, linkedDevices, ac, sending, onAcCommand, 
             <div className="text-xs font-bold uppercase tracking-widest text-indigo-200">Active automations</div>
           </div>
 
+          {/* Family Presence Map */}
+          <div className="rounded-3xl bg-[#0f0f1a] border border-white/5 p-5 space-y-4">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Live Presence Map</h4>
+            <div className="space-y-3">
+              <PresenceRow name="Paranjay (iPhone 16)" ip="192.168.29.50" status="online" />
+              <PresenceRow name="Mom (OnePlus)" ip="192.168.29.52" status="offline" />
+              <PresenceRow name="Dad (Samsung)" ip="192.168.29.53" status="online" />
+            </div>
+          </div>
+
           {/* Quick devices */}
           <div className="rounded-3xl bg-[#0f0f1a] border border-white/5 p-5 space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-500">Devices</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Device Pool</h4>
             <DeviceRow icon={Wind} name="Panasonic AC" sub="MirAie" status={miraieLinked ? 'linked' : 'offline'} />
             <DeviceRow icon={Lightbulb} name="Bedroom Light" sub="WiZ 2.0" status="offline" />
             <DeviceRow icon={Tv} name="Smart TV" sub="SmartThings" status="offline" />
@@ -278,20 +293,83 @@ function DashboardView({ miraieLinked, linkedDevices, ac, sending, onAcCommand, 
         </div>
       </div>
 
+      {/* ── Usage Analytics ── */}
+      <div className="grid grid-cols-2 gap-6">
+        <div className="rounded-3xl bg-[#0f0f1a] border border-white/5 p-6 h-[300px] flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-black text-white uppercase tracking-widest">Energy Usage (7 Days)</h2>
+            <div className="flex gap-4 text-[10px] font-bold">
+              <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2 h-2 rounded-full bg-indigo-500" /> AC</span>
+              <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2 h-2 rounded-full bg-amber-500" /> Lights</span>
+            </div>
+          </div>
+          <div className="flex-1 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={[
+                { date: 'Mon', ac: 4.2, light: 5.1 },
+                { date: 'Tue', ac: 3.8, light: 4.8 },
+                { date: 'Wed', ac: 5.5, light: 6.2 },
+                { date: 'Thu', ac: 4.7, light: 5.9 },
+                { date: 'Fri', ac: 6.1, light: 7.4 },
+                { date: 'Sat', ac: 8.2, light: 9.1 },
+                { date: 'Sun', ac: 2.1, light: 3.2 },
+              ]}>
+                <defs>
+                  <linearGradient id="colorAc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 10}} dy={10} />
+                <YAxis hide />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0f0f1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '10px' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+                <Area type="monotone" dataKey="ac" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorAc)" />
+                <Area type="monotone" dataKey="light" stroke="#f59e0b" strokeWidth={2} fillOpacity={0} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
       {/* ── Automations strip ── */}
-      <div className="rounded-3xl bg-[#0f0f1a] border border-white/5 p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-black text-white">Automated Flows</h2>
-          <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-            Engine Active
-          </span>
+        <div className="rounded-3xl bg-[#0f0f1a] border border-white/5 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-black text-white uppercase tracking-widest">Automated Flows</h2>
+            <span className="text-[10px] uppercase tracking-widest text-emerald-400 font-bold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+              Engine Active
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {automations.map(a => (
+              <AutomationRow key={a.id} automation={a} />
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          {automations.map(a => (
-            <AutomationRow key={a.id} automation={a} />
-          ))}
+      </div>
+    </div>
+  );
+}
+
+function PresenceRow({ name, ip, status }: any) {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-2xl bg-white/3 border border-white/5">
+      <div className="flex items-center gap-3">
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${status === 'online' ? 'bg-indigo-500/10' : 'bg-slate-800'}`}>
+          <Bot className={`w-4 h-4 ${status === 'online' ? 'text-indigo-400' : 'text-slate-600'}`} />
         </div>
+        <div>
+          <div className="text-xs font-bold text-white">{name}</div>
+          <div className="text-[9px] text-slate-600 font-mono tracking-tighter">{ip}</div>
+        </div>
+      </div>
+      <div className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
+        status === 'online' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-700/50 text-slate-500'
+      }`}>
+        {status}
       </div>
     </div>
   );
