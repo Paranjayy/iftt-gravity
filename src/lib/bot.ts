@@ -1546,7 +1546,14 @@ async function main() {
 
   // Polls
   await bot.startPolling();
-  console.log('🚀 Gravity Hub ONLINE. Command platform initialized.');
+  const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote Hub');
+  const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+  const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
+  
+  for (const userId of (config.authorizedUsers || [])) {
+    try { await bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+  }
+  console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Commands refreshed.`);
 
   // 🏥 Health Pulse & Maintenance
   setInterval(() => {
