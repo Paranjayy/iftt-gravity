@@ -1021,7 +1021,8 @@ async function main() {
       const secs = uptime % 60;
       const offBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
       const bootedAt = config.stats.bot?.bootedAt ? new Date(config.stats.bot.bootedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : "Unknown";
-      await send(`🏓 *Pong!* Bot is alive\n⏱ Uptime: *${mins}m ${secs}s*\n🚀 Started: *${bootedAt} IST*\n💤 Down before: *${offBefore}*\n💾 Memory: *${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB*`);
+      const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote');
+      await send(`🏓 *Pong!* Gravity Hub: *${PLATFORM}*\n⏱ Uptime: *${mins}m ${secs}s*\n🚀 Started: *${bootedAt} IST*\n💤 Down before: *${offBefore}*\n💾 Memory: *${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB*`);
     }
   });
 
@@ -1424,11 +1425,6 @@ async function main() {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       config.scheduler = [];
       saveConfig(config);
-      const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub Actions' : (os.platform() === 'darwin' ? 'Local Mac' : 'Remote Linux');
-      const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-      const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
-      const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n⏰ Started: *${startTime} IST*\n💤 Downtime: *${botOffBefore}*\n🏗 Platform: *${PLATFORM}*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n━━━━━━━━━━━━━━\n/help for God Mode v4.6`;
-      try { await (bot as any).sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
       scheduler.refresh();
       await send('🧹 *Schedules Cleared*. Routines wiped.');
       logActivity(`🕰 Scheduler: All routines cleared by user.`);
