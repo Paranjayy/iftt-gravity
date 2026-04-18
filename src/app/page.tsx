@@ -38,6 +38,37 @@ export default function Dashboard() {
   const [linkedDevices, setLinkedDevices] = useState<any[]>([]);
   const [ac, setAc] = useState<ACState>({ power: false, temp: 24, mode: 'COOL', fan: 'AUTO' });
   const [sending, setSending] = useState(false);
+  const [showOmni, setShowOmni] = useState(false);
+  const [omniSearch, setOmniSearch] = useState('');
+
+  const [usageData, setUsageData] = useState<any[]>([]);
+
+  // 🏛️ Omni Search Index
+  const omniItems = [
+    { name: 'Turn AC On', desc: 'Panasonic Master Unit', icon: Wind, action: () => sendACCommand({ power: true }) },
+    { name: 'Turn AC Off', desc: 'Panasonic Master Unit', icon: Wind, action: () => sendACCommand({ power: false }) },
+    { name: 'Cinema Mode', desc: 'Dim lights + Cool AC', icon: Tv, action: () => {} },
+    { name: 'Night Light', desc: 'Warm 2700K 10%', icon: Moon, action: () => {} },
+    { name: 'Arrive Home', desc: 'Trigger Arrival Scene', icon: Sun, action: () => {} },
+    { name: 'Vacate House', desc: 'Trigger Away Scene', icon: Sun, action: () => {} },
+  ];
+
+  const filteredOmni = omniItems.filter(item => 
+    item.name.toLowerCase().includes(omniSearch.toLowerCase()) ||
+    item.desc.toLowerCase().includes(omniSearch.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleKeys = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowOmni(prev => !prev);
+      }
+      if (e.key === 'Escape') setShowOmni(false);
+    };
+    window.addEventListener('keydown', handleKeys);
+    return () => window.removeEventListener('keydown', handleKeys);
+  }, []);
 
   useEffect(() => {
     getDashboardData().then(cfg => {
@@ -45,6 +76,16 @@ export default function Dashboard() {
         setMiraieLinked(true);
         setLinkedDevices(cfg.miraie.devices);
       }
+      // Populate usage data from stats
+      const log = cfg.stats?.dailyLog || [];
+      const chartData = log.slice(-7).map((d: any) => ({
+        date: d.date.split('/')[0], // Just the day
+        ac: parseFloat(d.ac),
+        light: parseFloat(d.light)
+      }));
+      setUsageData(chartData.length ? chartData : [
+        { date: '?', ac: 0, light: 0 }
+      ]);
     });
   }, []);
 
@@ -115,6 +156,7 @@ export default function Dashboard() {
             linkedDevices={linkedDevices}
             ac={ac}
             sending={sending}
+            usageData={usageData}
             onAcCommand={sendACCommand}
             onGoToDevices={() => setActiveTab('devices')}
           />
@@ -123,26 +165,119 @@ export default function Dashboard() {
         {activeTab === 'devices' && <DeviceSyncPage />}
         {activeTab === 'history' && <ActivityLogView />}
       </main>
+      
+      {/* ── Omni Palette Layer (Raycast Style) ── */}
+      {showOmni && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-32 p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-xl bg-[#12121e] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Search Input */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 bg-white/3">
+              <Plus className="w-5 h-5 text-indigo-400 rotate-45" />
+              <input
+                autoFocus
+                type="text"
+                placeholder="Type a command or search..."
+                value={omniSearch}
+                onChange={e => setOmniSearch(e.target.value)}
+                className="flex-1 bg-transparent border-none outline-none text-white placeholder:text-slate-600 text-lg font-medium"
+              />
+              <div className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] text-slate-500 font-bold uppercase">ESC to close</div>
+            </div>
+
+            {/* Results */}
+            <div className="max-h-[380px] overflow-y-auto py-2">
+              {filteredOmni.length > 0 ? (
+                filteredOmni.map((item, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => { item.action(); setShowOmni(false); }}
+                    className="w-full flex items-center gap-4 px-5 py-3 hover:bg-white/5 group transition-all"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors">
+                      <item.icon className="w-5 h-5 opacity-60 group-hover:opacity-100" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <div className="text-sm font-bold text-white group-hover:text-indigo-300">{item.name}</div>
+                      <div className="text-[11px] text-slate-500">{item.desc}</div>
+                    </div>
+                    <div className="text-[10px] font-mono text-slate-700 group-hover:text-slate-500">⏎ Action</div>
+                  </button>
+                ))
+              ) : (
+                <div className="px-5 py-8 text-center text-slate-500 text-sm italic">
+                  No commands found matching "{omniSearch}"
+                </div>
+              )}
+            </div>
+            
+            {/* Footer */}
+            <div className="px-4 py-2 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
+              <span className="text-[10px] text-slate-700 font-bold flex items-center gap-1.5 uppercase tracking-widest">
+                <Bot className="w-3 h-3" /> Powered by Gravity Omni
+              </span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1">
+                   <div className="px-1.5 py-0.5 rounded-md bg-white/5 text-[9px] text-slate-500">↑↓</div>
+                   <span className="text-[9px] text-slate-700 font-bold uppercase">Navigate</span>
+                </div>
+                <div className="flex items-center gap-1">
+                   <div className="px-1.5 py-0.5 rounded-md bg-white/5 text-[9px] text-slate-500">↵</div>
+                   <span className="text-[9px] text-slate-700 font-bold uppercase">Select</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─────────────────── Dashboard View ───────────────────
-function DashboardView({ miraieLinked, linkedDevices, ac, sending, onAcCommand, onGoToDevices }: any) {
+function DashboardView({ miraieLinked, linkedDevices, ac, sending, usageData, onAcCommand, onGoToDevices }: any) {
   const ModeIcon = MODE_ICONS[ac.mode as keyof typeof MODE_ICONS];
+  const [hubOnline, setHubOnline] = useState(false);
+
+  // Live Hub Heartbeat
+  useEffect(() => {
+    const checkHub = async () => {
+      try {
+        const res = await fetch('http://localhost:3030/status');
+        setHubOnline(res.ok);
+      } catch {
+        setHubOnline(false);
+      }
+    };
+    checkHub();
+    const timer = setInterval(checkHub, 10000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="p-8 space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white">Command Center</h1>
+          <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            Command Center
+            {hubOnline ? (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.1)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Hub Online
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                Hub Offline
+              </span>
+            )}
+          </h1>
           <p className="text-slate-500 text-sm mt-1">
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
             {' · '}
             {miraieLinked ? `${linkedDevices.length} device(s) live` : 'No devices linked'}
             {' · '}
-            <span className="text-indigo-400 font-bold">God Mode v3.9.5</span>
+            <span className="text-indigo-400 font-bold">God Mode v4.2.0</span>
           </p>
         </div>
         <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-lg shadow-indigo-900/30">
@@ -297,23 +432,15 @@ function DashboardView({ miraieLinked, linkedDevices, ac, sending, onAcCommand, 
       <div className="grid grid-cols-2 gap-6">
         <div className="rounded-3xl bg-[#0f0f1a] border border-white/5 p-6 h-[300px] flex flex-col">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-black text-white uppercase tracking-widest">Energy Usage (7 Days)</h2>
+            <h2 className="text-sm font-black text-white uppercase tracking-widest">Energy History (Actual)</h2>
             <div className="flex gap-4 text-[10px] font-bold">
-              <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2 h-2 rounded-full bg-indigo-500" /> AC</span>
+              <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2 h-2 rounded-full bg-indigo-500" /> AC Hours</span>
               <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2 h-2 rounded-full bg-amber-500" /> Lights</span>
             </div>
           </div>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={[
-                { date: 'Mon', ac: 4.2, light: 5.1 },
-                { date: 'Tue', ac: 3.8, light: 4.8 },
-                { date: 'Wed', ac: 5.5, light: 6.2 },
-                { date: 'Thu', ac: 4.7, light: 5.9 },
-                { date: 'Fri', ac: 6.1, light: 7.4 },
-                { date: 'Sat', ac: 8.2, light: 9.1 },
-                { date: 'Sun', ac: 2.1, light: 3.2 },
-              ]}>
+              <AreaChart data={usageData}>
                 <defs>
                   <linearGradient id="colorAc" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>

@@ -8,6 +8,7 @@ interface HubState {
   stats?: { prompts: number };
   estimatedPgBill?: string;
   pgvcl?: { usage: string; bill: string; lastUpdate: string };
+  weather?: { temp: number; condition: string; isRain: boolean };
 }
 
 export default function Command() {
@@ -85,24 +86,28 @@ export default function Command() {
       <LS title="Deep Device Control">
         <LI
           icon={Icon.Sun}
-          title="Brightness Control"
-          subtitle="Adjust all bulbs"
+          title="Bulb Control"
+          subtitle="Precision lighting"
           actions={
-            <AP title="Brightness">
-              <A icon={Icon.PlusCircle} title="Increase (+20%)" onAction={() => runAction("Brightness Up", "/control/brightness?dir=up")} />
-              <A icon={Icon.MinusCircle} title="Decrease (-20%)" onAction={() => runAction("Brightness Down", "/control/brightness?dir=down")} />
+            <AP title="Lighting">
+              <A icon={Icon.PlusCircle} title="Brightness Up" onAction={() => runAction("Brightness Up", "/control/brightness?dir=up")} />
+              <A icon={Icon.MinusCircle} title="Brightness Down" onAction={() => runAction("Brightness Down", "/control/brightness?dir=down")} />
+              <A icon={Icon.Temperature} title="Warm White" onAction={() => runAction("Warm White", "/control/bulb/color?temp=2700")} />
+              <A icon={Icon.Circle} title="Cool White" onAction={() => runAction("Cool White", "/control/bulb/color?temp=6500")} />
               <A icon={Icon.Power} title="Turn Off Bulbs" onAction={() => runAction("Bulbs Off", "/control/bulb/off")} />
             </AP>
           }
         />
         <LI
-          icon={Icon.Circle}
-          title="AC Temperature"
-          subtitle="Control cooling precision"
+          icon={Icon.Wind}
+          title="Air Conditioning"
+          subtitle="Climate control"
           actions={
-            <AP title="AC Temp">
-              <A icon={Icon.ChevronUp} title="Warmer (+1°C)" onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
-              <A icon={Icon.ChevronDown} title="Cooler (-1°C)" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
+            <AP title="AC Control">
+              <A icon={Icon.ChevronUp} title="Temp Up (+1°C)" onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
+              <A icon={Icon.ChevronDown} title="Temp Down (-1°C)" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
+              <A icon={Icon.Circle} title="Cool Mode" onAction={() => runAction("AC Cool", "/control/ac/mode?mode=cool")} />
+              <A icon={Icon.Leaf} title="Dry Mode" onAction={() => runAction("AC Dry", "/control/ac/mode?mode=dry")} />
               <A icon={Icon.Power} title="Turn Off AC" onAction={() => runAction("AC Off", "/control/ac/off")} />
             </AP>
           }
@@ -119,10 +124,31 @@ export default function Command() {
         />
       </LS>
 
+      <LS title="Hub Telemetry & Environment">
+        <LI
+          icon={Icon.Cloud}
+          title="Current Weather"
+          subtitle={state?.weather ? `${state.weather.condition} (${state.weather.temp}°C)` : "Fetching..."}
+          accessories={[{ text: state?.weather?.isRain ? "☔ Rain Forecast" : "🌤 Clear" }]}
+        />
+        <LI
+          icon={Icon.Bolt}
+          title="Energy Bill Estimate"
+          subtitle={state?.pgvcl?.usage || "Calculating..."}
+          accessories={[{ text: state?.estimatedPgBill ? `Est: ₹${state.estimatedPgBill}` : undefined }]}
+        />
+        <LI
+          icon={state?.online ? Icon.CheckCircle : Icon.Circle}
+          title="Family Presence"
+          subtitle={state?.online ? "Owner Detected" : "AWAY Mode logic active"}
+          accessories={[{ text: `Uptime: ${(state?.uptime || 0).toFixed(1)}s` }]}
+        />
+      </LS>
+
       <LS title="Mac System Control">
         <LI
           icon={Icon.Lock}
-          title="Lock Mac Screen"
+          title="Lock Screen"
           actions={
             <AP title="Lock Now">
               <A icon={Icon.Lock} title="Lock Now" onAction={() => runAction("Lock", "/system/lock")} />
@@ -137,21 +163,6 @@ export default function Command() {
               <A icon={Icon.XMarkCircle} title="Sleep Now" onAction={() => runAction("Sleep", "/system/sleep")} />
             </AP>
           }
-        />
-      </LS>
-
-      <LS title="Gravity Analytics">
-        <LI
-          icon={Icon.Bolt}
-          title="PGVCL Usage"
-          subtitle={state?.pgvcl?.usage || "Scanning..."}
-          accessories={[{ text: state?.estimatedPgBill ? `Est: ₹${state.estimatedPgBill}` : undefined }]}
-        />
-        <LI
-          icon={state?.online ? Icon.CheckCircle : Icon.Circle}
-          title="Hub Status"
-          subtitle={state?.online ? "Phone Detected" : "AWAY Mode active"}
-          accessories={[{ text: `Uptime: ${(state?.uptime || 0).toFixed(1)}s` }]}
         />
       </LS>
     </L>

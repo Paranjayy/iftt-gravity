@@ -8,9 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "bot": "bun src/lib/bot.ts",
-    "build:bot": "bun build --compile --target=bun-darwin-arm64 src/lib/bot.ts --outfile build/gravity-bot"
+    "build:bot": "bun build --compile --target=bun-darwin-arm64 src/lib/bot.ts --outfile build/gravity-bot",
+    "build:standalone": "bun build --compile --target=bun-darwin-arm64 src/lib/bot.ts --outfile gravity-hub",
+    "desktop": "electron electron/main.cjs"
   },
   "dependencies": {
+    "electron": "^31.0.0",
     "@tailwindcss/postcss": "^4.2.2",
     "@xyflow/react": "latest",
     "axios": "^1.14.0",

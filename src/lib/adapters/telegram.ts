@@ -27,6 +27,7 @@ export class TelegramAdapter extends Adapter {
   private handlers: CommandHandler[] = [];
   public botInfo: { id: number; username: string; first_name: string } | null = null;
   public onMessage?: (msg: any) => void;
+  public onCallback?: (cb: any) => void;
 
   constructor(token: string) {
     super();
@@ -64,6 +65,13 @@ export class TelegramAdapter extends Adapter {
       text,
       parse_mode: options.parse_mode || 'Markdown',
       reply_markup: options.reply_markup
+    });
+  }
+  
+  async answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
+    await this.sendRequest('answerCallbackQuery', {
+      callback_query_id: callbackQueryId,
+      text: text
     });
   }
 
@@ -128,6 +136,8 @@ export class TelegramAdapter extends Adapter {
     // 2. Handle Callback Queries (Interactive Buttons)
     if (update.callback_query) {
       const cb = update.callback_query;
+      if (this.onCallback) this.onCallback(cb);
+      
       const chatId = cb.message.chat.id;
       const data = cb.data;
 

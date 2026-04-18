@@ -13,6 +13,7 @@
 import { TelegramAdapter } from './adapters/telegram';
 import { MiraieAdapter } from './adapters/miraie';
 import { WizAdapter } from './adapters/wiz';
+import { WeatherEngine } from './weather';
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
@@ -30,6 +31,13 @@ declare const Bun: any;
 async function speak(text: string) {
   try { await execAsync(`say "${text.replace(/"/g, '')}"`); }
   catch (e) { console.warn('Voice output failed (not on Mac?)'); }
+}
+
+async function getSystemIdleTime(): Promise<number> {
+  try {
+    const { stdout } = await execAsync("ioreg -c IOHIDSystem | awk '/HIDIdleTime/ {print $NF/1000000000; exit}'");
+    return parseFloat(stdout.trim()) || 0;
+  } catch { return 0; }
 }
 
 function logActivity(text: string) {
@@ -51,6 +59,68 @@ function saveConfig(config: any) {
   catch (e) { console.error('Failed to save config', e); }
 }
 
+// 🛡️ Notification Manager (Anti-Spam / Quiet Mode)
+class NotificationManager {
+  constructor(private bot: TelegramAdapter, private config: any) {}
+
+  public async notify(text: string, priority: 'low' | 'high' | 'critical' = 'low') {
+    const now = new Date();
+    const istTime = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+    const [hour] = istTime.split(':').map(Number);
+
+    // Quiet Hours: 11 PM to 7 AM
+    const isQuietHours = hour >= 23 || hour < 7;
+    
+    // Only send if high priority, critical, or not quiet hours
+    if (priority === 'critical' || priority === 'high' || !isQuietHours) {
+      for (const userId of (this.config.authorizedUsers || [])) {
+        try { await this.bot.sendMessage(userId, text, { parse_mode: 'Markdown' }); } catch {}
+      }
+    } else {
+      logActivity(`[Suppressed] Quiet Mode: ${text.substring(0, 30)}...`);
+    }
+  }
+}
+
+// 🕰️ Gravity Scheduler (Cron / Solar / One-time)
+class GravityScheduler {
+  private jobs: any[] = [];
+  
+  constructor(private config: any, private actions: Record<string, Function>) {
+    this.refresh();
+  }
+
+  public refresh() {
+    this.jobs = this.config.scheduler || [];
+  }
+
+  public async check() {
+    const now = new Date();
+    const istTime = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+    const day = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+
+    for (const job of this.jobs) {
+      if (job.time === istTime && (job.days === 'daily' || job.days.includes(day))) {
+        if (job.lastRun === istTime) continue; // Prevent double trigger
+        
+        console.log(`[Scheduler] Triggering: ${job.name || job.action}`);
+        const action = this.actions[job.action];
+        if (action) {
+          try { await action(job.params); } catch (e) { console.error(`Job ${job.action} failed:`, e); }
+        }
+        job.lastRun = istTime;
+      }
+    }
+  }
+}
+
+// 🤖 Heartbeat / Pulse tracking for bot offtime calculation
+function updateBotPulse(config: any) {
+  config.stats.bot = config.stats.bot || {};
+  config.stats.bot.lastPulse = new Date().toISOString();
+  fs.writeFileSync(path.join(process.cwd(), 'config.json'), JSON.stringify(config, null, 2));
+}
+
 async function main() {
   const config = loadConfig();
   let isPhoneOnline = true; // tracking state
@@ -64,6 +134,31 @@ async function main() {
 
   // Init adapters
   const bot = new TelegramAdapter(TELEGRAM_TOKEN);
+  const notifier = new NotificationManager(bot, config);
+
+  // Initialize Scheduler Actions
+  const scheduler = new GravityScheduler(config, {
+    ac_on: async () => miraie?.controlDevice(miraie?.devices[0]?.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on' }),
+    ac_off: async () => miraie?.controlDevice(miraie?.devices[0]?.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }),
+    bulb_on: async () => wiz?.executeAction({ type: 'control', payload: { state: true } }),
+    bulb_off: async () => wiz?.executeAction({ type: 'control', payload: { state: false } }),
+    bulb_dim: async (params: any) => wiz?.executeAction({ type: 'control', payload: { state: true, dimming: params.dim || 50 } }),
+    scene: async (params: any) => triggerScene(params.name),
+    speak: async (params: any) => speak(params.text),
+    // 💤 Adaptive Sleep Curve (ACS)
+    // Automated temp stepping: 11PM (24) -> 2AM (25) -> 5AM (26)
+    sleep_curve: async () => {
+      if (!miraie || miraie.devices.length === 0) return;
+      const hour = new Date().getHours();
+      let temp = '24';
+      if (hour >= 2 && hour < 5) temp = '25';
+      if (hour >= 5) temp = '26';
+      
+      await miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: temp, acmd: 'cool' });
+      logActivity(`💤 ACS: Sleep curve pivot. Room set to ${temp}°C.`);
+    }
+  });
+
   await bot.initialize();
 
   // 🌙 Sleep Intelligence (Adaptive Sleep Curve)
@@ -129,12 +224,54 @@ async function main() {
     }
   }
 
+  // Calculate Bot Offtime
+  const nowIso = new Date().toISOString();
+  config.stats.bot = config.stats.bot || {};
+  const lastPulse = config.stats.bot.lastPulse;
+  let botOfftime = "Unknown";
+  if (lastPulse) {
+    const diff = Date.now() - new Date(lastPulse).getTime();
+    if (diff > 120000) { // If more than 2 mins have passed since last pulse
+      const hours = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      botOfftime = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+    } else {
+      botOfftime = "None (Restarted quickly)";
+    }
+  }
+  config.stats.bot.bootedAt = nowIso;
+  config.stats.bot.offtimeBeforeBoot = botOfftime;
+  saveConfig(config);
+  
+  // Start Heartbeat
+  setInterval(() => updateBotPulse(config), 60000);
+
   if (!config.stats.history) config.stats.history = [];
   // Ensure at least one point exists on boot
   if (config.stats.history.length === 0) {
     const stamp = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
     config.stats.history.push({ time: stamp, ac: config.stats.acMinutes || 0, lights: config.stats.lightMinutes || 0 });
   }
+
+  // Helper to calculate duration string
+  const getDurationString = (lastChangedIso: string) => {
+    if (!lastChangedIso) return "Unknown";
+    const diff = Date.now() - new Date(lastChangedIso).getTime();
+    const hours = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  };
+
+  // Helper to update state with timestamp
+  const updateDeviceState = (type: 'ac' | 'light', status: string) => {
+    if (!config.stats[type]) config.stats[type] = { status: 'unknown', lastChanged: new Date().toISOString() };
+    if (config.stats[type].status !== status) {
+      config.stats[type].status = status;
+      config.stats[type].lastChanged = new Date().toISOString();
+      logActivity(`${type.toUpperCase()} State: ${status.toUpperCase()}`);
+    }
+  };
 
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
@@ -152,8 +289,18 @@ async function main() {
     description: 'Show latest PGVCL bill details',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      
       const pg = config.stats.pgvcl;
-      if (!pg) return await send('⌛ *PGVCL:* Data not fetched yet. Hub is scanning...');
+      
+      // Fallback: Estimation Engine (v4.0.0 High-Fidelity)
+      if (!pg || !config.pgvcl?.consumerId || config.pgvcl.consumerId === 'ENTER_ID') {
+        const units = (config.stats.acMinutes / 60 * 1.5) + (config.stats.lightMinutes / 60 * 0.015);
+        const bill = calculatePgvclBill(units);
+        const roundedBill = Math.round(bill);
+        
+        await send(`⚡ *Gravity Energy Insight (Estimation)*\n\n💰 Est. Month-to-Date: *₹${roundedBill}*\n🔌 Est. Usage: *${units.toFixed(1)} Units*\n⚠️ _Mode: Autonomous Estimation (Link PGVCL for live data)_`);
+        return;
+      }
       
       const estimate = calculatePgvclBill(Number(pg.units) || 0);
       await send(`⚡ *PGVCL Utility Status*\n\n💰 Scraped Bill: *₹${pg.amount}*\n🔌 Usage: *${pg.units} Units*\n📅 Scanned: _${new Date(pg.scannedAt).toLocaleString('en-IN')}_\n\n🧮 *Gravity Estimate*: *₹${estimate}*\n_(Includes Slabs, FPPPA & 18% Duty)_`);
@@ -174,19 +321,23 @@ async function main() {
       if (subCommand === 'ac_on') {
         const payload = { ki: 1, cnt: "an", sid: "1", ps: 'on' };
         await miraie?.controlDevice(deviceId, payload);
+        updateDeviceState('ac', 'on');
         return await send('✅ AC turned ON');
       }
       if (subCommand === 'ac_off') {
         const payload = { ki: 1, cnt: "an", sid: "1", ps: 'off' };
         await miraie?.controlDevice(deviceId, payload);
+        updateDeviceState('ac', 'off');
         return await send('🚫 AC turned OFF');
       }
       if (subCommand === 'bulb_on') {
         await wiz?.executeAction({ type: 'control', payload: { state: true } });
+        updateDeviceState('light', 'on');
         return await send('💡 Bulb turned ON');
       }
       if (subCommand === 'bulb_off') {
         await wiz?.executeAction({ type: 'control', payload: { state: false } });
+        updateDeviceState('light', 'off');
         return await send('🌑 Bulb turned OFF');
       }
       if (subCommand === 'temp_up' || subCommand === 'temp_down') {
@@ -226,12 +377,11 @@ async function main() {
   });
 
   // ── Presence Detection & Automations ───────────────
+  const weather = new WeatherEngine();
   setInterval(async () => {
     const phoneIp = config.phoneIp || '192.168.29.50';
     try {
-      // Pinging first wakes up the device network stack
       await execAsync(`ping -c 1 -t 1 ${phoneIp}`).catch(() => {});
-      // ARP check is more reliable for sleeping devices
       const { stdout } = await execAsync(`arp -a`);
       const isPresent = stdout.includes(`(${phoneIp})`);
 
@@ -245,7 +395,7 @@ async function main() {
           const now = new Date();
           const hour = now.getHours();
           const dateStr = now.toDateString();
-          if (hour >= 5 && hour < 10 && lastBriefDate !== dateStr) {
+          if (hour >= 5 && hour < 11 && lastBriefDate !== dateStr) {
             lastBriefDate = dateStr;
             setTimeout(() => triggerScene('MORNING_BRIEF'), 5000);
           }
@@ -254,12 +404,24 @@ async function main() {
         }
       } else {
         offlineCounter++;
-        if (offlineCounter >= 4) { // Gone for ~4 mins (more tolerant for ARP)
+        if (offlineCounter >= 4) {
           if (isPhoneOnline) {
             isPhoneOnline = false;
             logActivity("🚶 Presence: Phone disconnected (AWAY)");
-            await triggerScene('AWAY');
-            speak("Goodbye. Energy saving mode active.");
+          }
+          
+          // 🕰️ Run Scheduler Check
+          await scheduler.check();
+
+          // 🛡️ Ghost Sentry Check
+          if (config.sentryActive !== false && !isPhoneOnline) {
+             const idle = await getSystemIdleTime();
+             if (idle < 10) { // Active movement detected
+                const stamp = new Date().toLocaleTimeString();
+                logActivity("🚨 SENTRY: Unauthorized activity detected!");
+                speak("Warning! Unauthorized access. Alerting the owner.");
+                await notifier.notify(`🚨 *GHOST SENTRY*: Activity detected while you are AWAY!\nTimestamp: \`${stamp}\`\nIdle Time: \`${idle.toFixed(1)}s\``, 'critical');
+             }
           }
         }
       }
@@ -377,6 +539,12 @@ async function main() {
         speak("Welcome back. Powering up your sanctuary.");
         if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
         if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
+        break;
+      case "MORNING_BRIEF":
+        const hours = (config.stats.acMinutes / 60).toFixed(1);
+        const bill = calculatePgvclBill(Number(config.stats.pgvcl?.units || 0));
+        speak(`Good morning Master. Hub is at peak health. AC ran for ${hours} hours. Current bill estimate is ${bill} rupees. System is autonomous.`);
+        await bot.sendMessage(config.telegram.chatId, `☀️ *Morning Briefing*\n\n❄️ AC Runtime: *${hours}h*\n🔌 Energy Rank: *S-Tier*\n💰 Estimated Bill: *₹${bill}*\n\nWelcome back to the grid.`, { parse_mode: 'Markdown' });
         break;
     }
     await Promise.all(promises);
@@ -704,13 +872,16 @@ async function main() {
 
       if (arg === 'on' || arg === 'off') {
         await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: arg });
+        updateDeviceState('ac', arg);
         await send(`✅ AC *${arg.toUpperCase()}*`);
       } else if (!isNaN(Number(arg))) {
         const temp = Math.min(30, Math.max(16, Number(arg)));
         await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: String(temp) });
+        updateDeviceState('ac', 'on');
         await send(`✅ AC: *${temp}°C*`);
       } else {
         await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', acmd: arg });
+        updateDeviceState('ac', 'on');
         await send(`✅ AC: *${arg.toUpperCase()}* mode`);
       }
     }
@@ -731,6 +902,7 @@ async function main() {
 
       if (arg === 'on' || arg === 'off') {
         await wiz.executeAction({ type: 'control', payload: { state: arg === 'on' } });
+        updateDeviceState('light', arg);
         await send(`💡 Light *${arg.toUpperCase()}*`);
       } else if (!isNaN(Number(arg))) {
         const dim = Math.min(100, Math.max(10, Number(arg)));
@@ -780,7 +952,9 @@ async function main() {
       const uptime = Math.floor(process.uptime());
       const mins = Math.floor(uptime / 60);
       const secs = uptime % 60;
-      await send(`🏓 *Pong!* Bot is alive\n⏱ Uptime: *${mins}m ${secs}s*\n💾 Memory: *${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB*`);
+      const offBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
+      const bootedAt = config.stats.bot?.bootedAt ? new Date(config.stats.bot.bootedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : "Unknown";
+      await send(`🏓 *Pong!* Bot is alive\n⏱ Uptime: *${mins}m ${secs}s*\n🚀 Started: *${bootedAt} IST*\n💤 Down before: *${offBefore}*\n💾 Memory: *${Math.round(process.memoryUsage().rss / 1024 / 1024)}MB*`);
     }
   });
 
@@ -836,31 +1010,37 @@ async function main() {
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
     command: 'weather',
-    description: 'Sync lights to Junagadh weather & Time-of-day',
+    description: 'Explicitly sync lights & AC to Junagadh environment',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      if (!wiz) return await send('❌ WiZ not configured.');
-      try {
-        const res = await fetch('https://wttr.in/Junagadh?format=j1');
-        const data: any = await res.json();
-        const code = Number(data.current_condition[0].weatherCode);
-        const tempC = data.current_condition[0].temp_C;
-        const desc = data.current_condition[0].weatherDesc[0].value;
-        const hour = new Date().getHours(); // Local server time (should be IST on Mac)
-
-        // Weather logic
-        let scene = '', emoji = '';
-        if ([200,201,202,210,211,212,221,230,231,232].includes(code)) { scene = 'Party'; emoji = '⛈️'; }
-        else if ([300,301,302,310,311,312,313,314,321,500,501,502,503,504].includes(code)) { scene = 'Ocean'; emoji = '🌧️'; }
-        else if (hour < 7 || hour > 19) { scene = 'Night Light'; emoji = '🌙'; } // Night time override
-        else if (code === 800) { scene = 'True colors'; emoji = '☀️'; }
-        else { scene = 'Warm White'; emoji = '☁️'; }
-
+      const weather = new WeatherEngine();
+      const w = await weather.getWeather();
+      if (!w) return await send('🌦 *Weather*: Service temporarily unavailable.');
+      
+      let res = `🌡️ *Gravity Explicit Sync (Junagadh)*\nTemperature: *${w.temp}°C*\nCondition: *${w.condition}*\nRain: ${w.isRain ? '☔ YES' : '🌤 NO'}`;
+      
+      // 1. Sync Lights (WiZ)
+      if (wiz) {
+        let scene = 'Warm White';
+        if (w.isRain) scene = 'Ocean';
+        else if (w.condition.includes('Clear')) scene = 'True colors';
         await wiz.executeAction({ type: 'control', payload: { state: true, scene } });
-        await send(`${emoji} *Junagadh:* ${desc} (${tempC}°C)\n🕓 Time: *${hour}:00*\n💡 Auto-Scene: *${scene}*`);
-      } catch {
-        await send('❌ Weather service down. Try again later.');
+        res += `\n\n💡 *Lighting*: Adjusted to *${scene}* scene.`;
       }
+
+      // 2. Sync AC (MirAie) if extreme
+      if (miraie && (miraie as any).devices.length > 0) {
+        if (w.temp > 35) {
+          await (miraie as any).controlDevice((miraie as any).devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '23' });
+          res += `\n❄️ *Air Con*: Heat trigger! Set to *23°C* for relief.`;
+        } else if (w.temp < 25) {
+          await (miraie as any).controlDevice((miraie as any).devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '26' });
+          res += `\n🌡️ *Air Con*: Cool breeze! Set to *26°C* for comfort.`;
+        }
+      }
+      
+      await send(res);
+      logActivity(`🌦 Explicit Weather Sync: ${w.temp}°C [Manual Trigger]`);
     }
   });
 
@@ -876,7 +1056,18 @@ async function main() {
       const hoursAC = (stats.acMinutes / 60).toFixed(1);
       const hoursLight = (stats.lightMinutes / 60).toFixed(1);
       
-      await send(`📊 *Gravity Analytics*\n_Since ${new Date(stats.lastReset).toLocaleDateString()}_\n\n❄️ *AC Lifetime*: ${hoursAC} hrs\n💡 *WiZ Lifetime*: ${hoursLight} hrs\n\n_Uptime is tracked even if you use the physical remote!_`);
+      let res = `📊 *Gravity Analytics*\n_Since ${new Date(stats.lastReset).toLocaleDateString()}_\n\n`;
+      res += `❄️ *AC Lifetime*: ${hoursAC} hrs\n`;
+      if (stats.ac?.lastChanged) {
+        res += `↳ _State: ${stats.ac.status.toUpperCase()} for ${getDurationString(stats.ac.lastChanged)}_\n`;
+      }
+      res += `\n💡 *WiZ Lifetime*: ${hoursLight} hrs\n`;
+      if (stats.light?.lastChanged) {
+        res += `↳ _State: ${stats.light.status.toUpperCase()} for ${getDurationString(stats.light.lastChanged)}_\n`;
+      }
+      res += `\n_Uptime is tracked even if you use the physical remote!_`;
+      
+      await send(res);
     }
   });
 
@@ -917,6 +1108,38 @@ async function main() {
 
   // ──────────────────────────────────────────────────────
 
+  // ──────────────────────────────────────────────────────
+  // /brief — On-Demand Executive Briefing
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'brief',
+    description: 'Get a professional summary of house status',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      
+      const uptime = Math.floor(process.uptime());
+      const stats = config.stats || {};
+      const usage = stats.dailyLog?.[stats.dailyLog.length - 1] || { ac: 0, light: 0 };
+      
+      const load = os.loadavg();
+      
+      let message = `👔 *Gravity Hub Executive Briefing*\n`;
+      message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+      message += `🛡️ *Security:* System is **GOD MODE (Active)**\n`;
+      message += `⚡ *Consumption:* AC usage at **${usage.ac} hrs** today\n`;
+      message += `🕰️ *Uptime:* ${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m active\n`;
+      message += `🖥️ *SysLoad:* ${load[0].toFixed(2)} (1m avg)\n`;
+      
+      if (miraie && miraie.devices.length > 0) {
+        const s = await miraie.getDeviceStatus(miraie.devices[0].deviceId);
+        message += `❄️ *Climate:* AC is currently **${s?.ps?.toUpperCase() || 'OFF'}** (${s?.actmp}°C)\n`;
+      }
+      
+      message += `\n📜 _Last logged act: ${usage.date || 'Today'}_`;
+      await send(message);
+    }
+  });
+
   // /status — Device Status
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
@@ -926,10 +1149,22 @@ async function main() {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const uptime = Math.floor(process.uptime());
       const lines = ['*🏡 Gravity Status*\n'];
-      lines.push(`❄️ *AC*: ${miraie ? `✅ Live` : '❌ Offline'}`);
-      lines.push(`💡 *Lights*: ${wiz ? `✅` : '❌ Offline'}`);
-      lines.push(`🤖 *Bot*: ✅ Online`);
-      lines.push(`⏱ *Uptime*: ${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`);
+      
+      const acStatus = config.stats.ac?.status || 'unknown';
+      const acDuration = getDurationString(config.stats.ac?.lastChanged);
+      lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} (${acDuration}) ${miraie ? '✅' : '❌'}`);
+      
+      const lightStatus = config.stats.light?.status || 'unknown';
+      const lightDuration = getDurationString(config.stats.light?.lastChanged);
+      lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} (${lightDuration}) ${wiz ? '✅' : '❌'}`);
+      
+      const botUptime = Math.floor(process.uptime());
+      const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
+      const bootedAt = config.stats.bot?.bootedAt ? new Date(config.stats.bot.bootedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : "Unknown";
+      
+      lines.push(`🤖 *Bot*: ONLINE (Since ${bootedAt} IST)`);
+      lines.push(`⏱ *Session Uptime*: ${Math.floor(botUptime/3600)}h ${Math.floor((botUptime%3600)/60)}m`);
+      lines.push(`💤 *Bot Downtime*: Last down for ${botOffBefore}`);
       
       try {
         const logs = fs.readFileSync(LOG_PATH, 'utf-8').trim().split('\n');
@@ -989,8 +1224,7 @@ async function main() {
   bot.registerCommand({
     command: 'timer',
     description: 'Auto off-timer: /timer 30 lights',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+    handler: async (chat_id, args, msg, send) => {
       const mins = parseInt(args[0]);
       const device = args[1]?.toLowerCase() || 'all';
       if (isNaN(mins) || mins <= 0) return await send('Usage: `/timer 30 lights` or `/timer 60 ac` or `/timer 45 all`');
@@ -1008,6 +1242,115 @@ async function main() {
         await bot.sendMessage(msg.from.id, `😴 *Timer Done:* ${device.toUpperCase()} powered off.`, 'Markdown');
         speak(`${device} powered off by timer.`);
       }, mins * 60000);
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
+  // /schedule — Management
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'schedule',
+    description: 'View active routines and schedules',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const jobs = config.scheduler || [];
+      if (jobs.length === 0) return await send('🕰 *Schedules*: No routines active.');
+      
+      let res = '🕰 *Active Hub Routines*\n\n';
+      jobs.forEach((j: any, i: number) => {
+        res += `${i+1}. [${j.time}] \`${j.action.toUpperCase()}\`\n`;
+      });
+      res += '\n_Use the buttons below to manage mission routines._';
+      
+      await bot.sendMessage(chatId, res, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '➕ Add Routine', callback_data: 'schedule_prompt' }],
+            [{ text: '🧹 Clear All', callback_data: 'schedule_clear_confirm' }]
+          ]
+        }
+      });
+    }
+  });
+
+  // Handle Scheduler Callbacks
+  bot.onCallback = async (query: any) => {
+    const data = query.data;
+    if (data === 'schedule_prompt') {
+      await bot.sendMessage(query.message.chat.id, '🕰 *New Routine:* Use `/schedule_add 22:30 ac_off`');
+    }
+    if (data === 'schedule_clear_confirm') {
+       config.scheduler = [];
+       saveConfig(config);
+       scheduler.refresh();
+       await bot.sendMessage(query.message.chat.id, '🧹 *Schedules Cleared*. All routines wiped.');
+    }
+    try { await bot.answerCallbackQuery(query.id); } catch {}
+  };
+
+  bot.registerCommand({
+    command: 'schedule_add',
+    description: 'Add a new schedule: /schedule_add 23:00 ac_off',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const time = args[0];
+      const action = args[1];
+      if (!time || !action) {
+        return await send('🕰 *Usage*: `/schedule_add 23:00 ac_off` \n\n' +
+                          '*Available Actions*:\n' +
+                          '• `ac_on` / `ac_off`\n' +
+                          '• `bulb_on` / `bulb_off` / `bulb_dim`\n' +
+                          '• `sleep_curve` (Night Step-up)\n' +
+                          '• `scene` (e.g. `scene cinema`)');
+      }
+      
+      if (!time.match(/^\d{2}:\d{2}$/)) return await send('❌ Time format must be `HH:MM` (24h).');
+      
+      const newJob = { 
+        time, 
+        action, 
+        days: 'daily',
+        lastRun: '' 
+      };
+      
+      config.scheduler = config.scheduler || [];
+      config.scheduler.push(newJob);
+      saveConfig(config);
+      scheduler.refresh();
+      
+      await send(`✅ *Schedule Added*: \`${action}\` daily at ${time}`);
+      logActivity(`🕰 Scheduler: New routine added - ${action} @ ${time}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'schedule_clear',
+    description: 'Wipe all active schedules',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      config.scheduler = [];
+      saveConfig(config);
+      scheduler.refresh();
+      await send('🧹 *Schedules Cleared*. Routines wiped.');
+      logActivity(`🕰 Scheduler: All routines cleared by user.`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'schedule_rm',
+    description: 'Remove a specific schedule by index: /schedule_rm 1',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const idx = parseInt(args[0]) - 1;
+      if (!config.scheduler || isNaN(idx) || idx < 0 || idx >= config.scheduler.length) {
+         return await send('❌ Invalid index. Please use `/schedule` to see the numbers, then `/schedule_rm 1`.');
+      }
+      const removed = config.scheduler.splice(idx, 1)[0];
+      saveConfig(config);
+      scheduler.refresh();
+      await send(`🗑️ *Removed Schedule*: \`${removed.action}\` at ${removed.time}`);
+      logActivity(`🕰 Scheduler: Routine removed - ${removed.action} @ ${removed.time}`);
     }
   });
 
@@ -1074,27 +1417,37 @@ async function main() {
   await bot.startPolling();
   console.log('🚀 Gravity Bot Engine running. Commands refreshed.');
 
-  // ── Startup Notification ────────────────────────────
+  // ──────────────────────────────────────────────────────
+  // /schedule — Hub Routines
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'schedule',
+    description: 'View active automation routines',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const jobs = config.scheduler || [];
+      if (jobs.length === 0) return await send('🕰️ *Gravity Scheduler*: No active routines defined in `config.json`.');
+      
+      let table = '🕰️ *Active Hub Routines*\n\n';
+      jobs.forEach((j: any, i: number) => {
+        table += `${i+1}. *${j.time}* - \`${j.name || j.action}\` (${j.days})\n`;
+      });
+      await send(table);
+    }
+  });
   const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-  const startMsg = `🟢 *Gravity is ONLINE*\n⏰ Started at *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n\nType /ping to check status anytime.`;
+  const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
+  const startMsg = `🟢 *Gravity is ONLINE*\n⏰ Started at *${startTime} IST*\n💤 Down for: *${botOffBefore}*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n\nType /ping to check status anytime.`;
   for (const userId of (config.authorizedUsers || [])) {
     try { await bot.sendMessage(userId, startMsg, 'Markdown'); } catch {}
   }
 
-  // ── Daily Noon Heartbeat ────────────────────────────
-  // Confirms the bot is alive every day at 12:00 PM IST
+  // ── Daily Noon Heartbeat (DISABLED: SPAM PREVENTION) ──
+  /*
   setInterval(async () => {
-    const now = new Date();
-    const istHour = (now.getUTCHours() + 5) % 24;
-    const istMin = (now.getUTCMinutes() + 30) % 60;
-    if (istHour === 12 && istMin < 2) {
-      const stats = config.stats || { acMinutes: 0, lightMinutes: 0 };
-      const ping = `🌞 *Gravity Daily Ping*\n_Bot is alive and healthy._\n\n❄️ AC today: *${(stats.acMinutes/60).toFixed(1)}h*\n💡 Lights today: *${(stats.lightMinutes/60).toFixed(1)}h*\n⏱ Uptime: *${Math.floor(process.uptime()/3600)}h*`;
-      for (const uid of (config.authorizedUsers || [])) {
-        try { await bot.sendMessage(uid, ping, 'Markdown'); } catch {}
-      }
-    }
-  }, 60000);
+    ...
+  }, 30000); 
+  */
 
 
   // ──────────────────────────────────────────────────────
@@ -1246,18 +1599,9 @@ async function main() {
           
           if (now.getHours() >= 5 && now.getHours() < 10 && lastBriefDate !== dateStr) {
             lastBriefDate = dateStr;
-            try {
-              const weather = await fetch('https://wttr.in/Junagadh?format=j1').then(r => r.json());
-              const cur = weather.current_condition[0];
-              const brief = `Good morning Paranjay. It is currently ${cur.temp_C} degrees in Junagadh. Welcome home.`;
-              speak(brief);
-            } catch { speak("Good morning. Welcome home."); }
+            speak("Good morning. Welcome home.");
           } else {
             speak("Welcome home.");
-          }
-
-          for (const uid of (config.authorizedUsers || [])) {
-            await bot.sendMessage(uid, '🏠 *Welcome Home!* Member detected on network.', { parse_mode: 'Markdown' });
           }
         } else {
           offlineCounter = 0;
@@ -1270,9 +1614,6 @@ async function main() {
             logActivity("🚶 Presence: House Vacant (AWAY)");
             await triggerScene('AWAY');
             speak("Goodbye. House secured.");
-            for (const uid of (config.authorizedUsers || [])) {
-              await bot.sendMessage(uid, '🚶 *Away Detect:* House vacant. Energy saving mode active.', { parse_mode: 'Markdown' });
-            }
           }
         }
       }
@@ -1342,12 +1683,14 @@ async function main() {
         const url = new URL(req.url);
         const sceneName = url.pathname.split('/').pop()?.toUpperCase();
         if (url.pathname.includes('/status')) {
+          const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
           const body = JSON.stringify({
             online: isPhoneOnline,
             stats: config.stats,
             estimatedPgBill: calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0),
             uptime: process.uptime(),
-            pgvcl: config.stats.pgvcl
+            pgvcl: config.stats.pgvcl,
+            weather: w
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
@@ -1380,7 +1723,7 @@ async function main() {
               const status = await (miraie as any).getDeviceStatus(device.deviceId);
               const current = parseInt(status?.actmp || '24');
               const target = Math.min(30, Math.max(16, current + dir)).toString();
-              await (miraie as any).controlDevice(device.deviceId, { actmp: target });
+              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: target });
             }
           }
           return new Response('Temp Set', { status: 200 });
@@ -1388,10 +1731,24 @@ async function main() {
         if (url.pathname === '/control/ac/off') {
           if (miraie && (miraie as any).devices.length > 0) {
             for (const device of (miraie as any).devices) {
-              await (miraie as any).controlDevice(device.deviceId, { ps: 'off' });
+              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' });
             }
           }
           return new Response('AC Off', { status: 200 });
+        }
+        if (url.pathname === '/control/ac/mode') {
+          const mode = url.searchParams.get('mode') || 'cool';
+          if (miraie && (miraie as any).devices.length > 0) {
+            for (const device of (miraie as any).devices) {
+              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', acmd: mode });
+            }
+          }
+          return new Response(`Mode Set: ${mode}`, { status: 200 });
+        }
+        if (url.pathname === '/control/bulb/color') {
+          const temp = parseInt(url.searchParams.get('temp') || '4500');
+          if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: true, temp } });
+          return new Response('Bulb Color Set', { status: 200 });
         }
         if (url.pathname === '/control/volume') {
           const dir = url.searchParams.get('dir') === 'up' ? 'up' : 'down';
@@ -1457,19 +1814,48 @@ async function main() {
   // Run scraper on boot + every 6 hours
   runPgvclScraper();
   setInterval(runPgvclScraper, 21600000);
-  // Poll objects every 60 seconds to detect "ON" state
-  // Even if turned on via physical remote!
-  // Initialize stats if missing
-  if (!config.stats) {
-    config.stats = { acMinutes: 0, lightMinutes: 0, lastReset: new Date() };
-  }
+  let awayAcMinutes = 0;
 
   setInterval(async () => {
     try {
-      // 1. Check WiZ (Loop all bulbs if we add array support later, current: single ip)
+      // 1. Auto-Saver Protection (2.5h / 150m limit)
+      if (!isPhoneOnline) {
+        // Only count if an AC is actually on
+        let anyAcOn = false;
+        if (miraie && miraie.devices.length > 0) {
+           for (const d of miraie.devices) {
+             const s = await miraie.getDeviceStatus(d.deviceId);
+             if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
+           }
+        }
+        
+        if (anyAcOn) {
+          awayAcMinutes++;
+          if (awayAcMinutes >= 150) {
+            awayAcMinutes = 0; // reset
+            const promises = [];
+             if (miraie && miraie.devices.length > 0) {
+               promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
+             }
+             await Promise.all(promises);
+             const alert = `🛡️ *Gravity Auto-Saver:* AC was on for >2.5h while you were AWAY. High-fidelity safety shut-off triggered.`;
+             for (const uid of (config.authorizedUsers || [])) {
+               try { await bot.sendMessage(uid, alert, 'Markdown'); } catch {}
+             }
+             logActivity(`🛡️ Auto-Saver: Shutdown triggered after 150m of away-usage.`);
+          }
+        }
+      } else {
+        awayAcMinutes = 0; // Reset if anyone comes home
+      }
+
+      // ──────────────────────────────────────────────────────
+      // 1. Check WiZ
       if (wiz) {
         const p = await (wiz as any).getPilot();
+        const state = p?.state ? 'on' : 'off';
         if (p?.state) config.stats.lightMinutes++;
+        updateDeviceState('light', state);
       }
       // 1. Force MirAie REST refresh to ensure absolute tracking accuracy
       if (miraie) {
@@ -1478,14 +1864,16 @@ async function main() {
 
       // 2. Check MirAie (Loop ALL devices)
       if (miraie && (miraie as any).devices.length > 0) {
+        let anyAcOn = false;
         for (const device of (miraie as any).devices) {
           const status = await (miraie as any).getDeviceStatus(device.deviceId);
           const ps = String(status?.ps || '').toLowerCase();
           if (ps === 'on' || ps === '1' || ps === 'true') {
-            config.stats.acMinutes++;
-            break; // Count as 1 active AC minute for the house
+            anyAcOn = true;
           }
         }
+        if (anyAcOn) config.stats.acMinutes++;
+        updateDeviceState('ac', anyAcOn ? 'on' : 'off');
       }
 
       const now = new Date();
@@ -1523,7 +1911,7 @@ async function main() {
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
       }
     } catch (err) {
-      console.warn('Stats loop error');
+      console.error('Stats loop error:', err);
     }
   }, 60000);
 
@@ -1555,8 +1943,10 @@ async function main() {
   // ── Shutdown Notification ───────────────────────────
   // Notify on SIGINT / SIGTERM (Ctrl+C, process kill)
   const shutdown = async (signal: string) => {
+    const uptime = Math.floor(process.uptime());
+    const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
     const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n\nBot will not respond until restarted.`;
+    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n⏱ Session Uptime: *${uptimeStr}*\n\nBot will not respond until restarted.`;
     for (const userId of (config.authorizedUsers || [])) {
       try { await bot.sendMessage(userId, stopMsg, 'Markdown'); } catch {}
     }
