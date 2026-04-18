@@ -11,6 +11,17 @@ Gravity looks into this file periodically to evolve.
 - [ ] Adaptive Pricing: Shift AC usage to low-tariff hours (if applicable)
 - [ ] Dynamic Comfort Index: Adjust AC based on Humidity + Temp
 - [ ] Scene chaining: Link Light/AC scenes to TV/Music states
+- [ ] Multi-User Presence: Only trigger AWAY if ALL registered phones are gone
+- [ ] Ghost Sentry Visuals: Snap Mac webcam/screenshot on unauthorized activity
+- [ ] Battery Guardian v2: Use a smart plug to cycle Mac battery (20%-80%)
+- [ ] System HUD: Persistent Mac desktop overlay (Uptime/Temp/Bill)
+- [ ] active_app_sync: Sync vibe (Lights/AC) based on current Mac App (e.g. VS Code = Focus)
+- [ ] Raycast Visuals: Mini ASCII sparklines in Raycast search for usage tracking
+- [ ] Habit Learner: Suggest automations based on repeated manual commands
+- [ ] Raycast Geo-Precool: Trigger AC cooling when Mac enters home geo-fence
+- [ ] Voice Intent: Background listener for "Gravity..." wake-word
+- [ ] Energy Visuals: Auto-generate and send usage charts/graphs via Telegram
+- [ ] Auto-Healer: Background retry logic for failed MirAie/WiZ connections
 
 ## 📡 Missed Insights (Unrecognized Commands)
 - [2026-04-08] User: "see the scene tv i want that for both btw tv command lights tv" (RESOLVED)
@@ -19,5 +30,7 @@ Gravity looks into this file periodically to evolve.
 - [x] [4/8/2026] User: "the ac isnt still calculating time btw" (FIXED: Session duration added to /status)
 - [x] [4/18/2026] User: "offtime or ontime duration add" (FIXED: Implemented state-change tracking for AC & Lights)
 - [x] [4/18/2026] User: "offtime/ontime duration of our bot" (FIXED: Added bot heartbeats & downtime calculation)
+- [ ] [4/20/2026] Iteration: Adaptive Debounce (Don't trigger AWAY if back within 5m)
+- [ ] [4/20/2026] Iteration: Budget Guard (Alert if daily electricity > ₹X)
 - [ ] [4/18/2026] User: "notification grouping" (NEW IDEA: Prevent spam alerts)
 - [ ] [4/18/2026] User: "energy budget" (NEW IDEA: Alert if daily cost exceeds ₹X)

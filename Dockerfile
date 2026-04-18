@@ -1,33 +1,22 @@
-# Base image
-FROM ovos/bun:latest AS base
-WORKDIR /app
+# Use the official Bun image
+FROM oven/sh/bun:latest as base
+WORKDIR /usr/src/app
 
 # Install dependencies
 COPY package.json bun.lockb ./
-RUN bun install --frozen-lockfile
+RUN bun install
 
-# Copy all files
+# Copy source code
 COPY . .
-
-# Build step
-RUN bun run build
-
-# Production image
-FROM ovos/bun:latest AS release
-WORKDIR /app
-
-# Copy production files
-COPY --from=base /app/package.json ./
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/.next ./.next
-COPY --from=base /app/public ./public
-COPY --from=base /app/config.json ./config.json
 
 # Environment variables
 ENV NODE_ENV=production
+ENV PORT=3000
 
-# Port
+# Expose ports for Next.js and Gravity Control API
 EXPOSE 3000
+EXPOSE 3030
 
-# Start command
-CMD ["bun", "run", "start"]
+# Start the bot and the dashboard
+# Using a shell script to run both in parallel
+CMD ["sh", "-c", "bun src/lib/bot.ts & bun run dev"]

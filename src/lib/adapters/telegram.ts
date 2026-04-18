@@ -46,6 +46,10 @@ export class TelegramAdapter extends Adapter {
     this.handlers.push(handler);
   }
 
+  getHandlers() {
+    return this.handlers;
+  }
+
   private async sendRequest(method: string, body: any): Promise<any> {
     const res = await fetch(`${BASE(this.botToken)}/${method}`, {
       method: 'POST',
@@ -113,13 +117,6 @@ export class TelegramAdapter extends Adapter {
       if (msg.text === '✨ Today') effectiveCommand = 'today';
       if (msg.text.includes('Control')) effectiveCommand = 'control';
       if (msg.text.includes('Scenes')) effectiveCommand = 'scene';
-
-      if (effectiveCommand === 'help') {
-        await this.sendMessage(chatId,
-          `*Available Commands*\n\n` + this.handlers.map(h => `\`/${h.command}\` — ${h.description}`).join('\n')
-        );
-        return;
-      }
 
       const matched = this.handlers.find(h => h.command === effectiveCommand);
       if (matched) {
