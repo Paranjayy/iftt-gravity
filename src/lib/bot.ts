@@ -129,8 +129,11 @@ function updateBotPulse(config: any) {
   fs.writeFileSync(path.join(process.cwd(), 'config.json'), JSON.stringify(config, null, 2));
 }
 
+let config: any;
+let bot: TelegramAdapter;
+
 async function main() {
-  const config = loadConfig();
+  config = loadConfig();
   let isPhoneOnline = true; // tracking state
   let offlineCounter = 0;
   let offlineSince: number | null = null; // Debounce tracking
@@ -353,11 +356,11 @@ async function main() {
 
       if (subCommand) {
         if (subCommand === 'ac_on') {
-          if (deviceId) await miraie?.controlDevice(deviceId as string, { ki: 1, cnt: 'an', sid: '1', ps: 'on' });
+          if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on' });
           updateDeviceState('ac', 'on', true);
           recordHabit('ac_on');
         } else if (subCommand === 'ac_off') {
-          if (deviceId) await miraie?.controlDevice(deviceId as string, { ki: 1, cnt: 'an', sid: '1', ps: 'off' });
+          if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'off' });
           updateDeviceState('ac', 'off');
           recordHabit('ac_off');
         } else if (subCommand === 'bulb_on') {
@@ -569,7 +572,7 @@ async function main() {
         }
         if (miraie && miraie.devices.length > 0) {
           // Quiet mode for movies
-          await miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '24', acmd: 'cool', acfs: 'low' });
+          await miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '24', acmd: 'cool', acfs: 'low' });
         }
         speak("Cinematic mode active. Enjoy your movie.");
         break;
@@ -578,7 +581,7 @@ async function main() {
         if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } }));
         if (miraie && miraie.devices.length > 0) {
           const d = miraie.devices[0].deviceId;
-          promises.push(miraie.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
+          promises.push(miraie.controlDevice(d, { ps: 'on', actmp: '25', acmd: 'cool' }));
         }
         break;
       case "DINNER":
@@ -588,12 +591,12 @@ async function main() {
       case "AWAY":
         speak("Goodbye. Everything is secured.");
         if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
-        if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
+        if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'off' }));
         break;
       case "HOME":
         speak("Welcome back. Powering up your sanctuary.");
         if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
-        if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '25', acmd: 'cool' }));
+        if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
         break;
       case "MORNING_BRIEF":
         const hours = (config.stats.acMinutes / 60).toFixed(1);
@@ -710,11 +713,11 @@ async function main() {
       const mins = parseInt(args[0]) || 30;
       if (!miraie || miraie.devices.length === 0) return await send('❌ AC not configured.');
       const d = miraie.devices[0].deviceId;
-      await miraie.controlDevice(d, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '18', acmd: 'cool', acfs: '5' });
+      await miraie.controlDevice(d, { ps: 'on', actmp: '18', acmd: 'cool', acfs: '5' });
       await send(`🥶 *Boost Mode*: AC → 18°C max fan for ${mins} min`);
       speak(`Boost mode active. Max cooling for ${mins} minutes.`);
       setTimeout(async () => {
-        await miraie.controlDevice(d, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '25', acmd: 'cool', acfs: '3' });
+        await miraie.controlDevice(d, { ps: 'on', actmp: '25', acmd: 'cool', acfs: '3' });
         await bot.sendMessage(msg.from.id, '🌡️ *Boost Done:* AC restored to 25°C.', { parse_mode: 'Markdown' });
         speak('Boost complete. AC returned to comfort level.');
       }, mins * 60000);
@@ -760,7 +763,7 @@ async function main() {
         promises.push(wiz.executeAction({ type: 'control', payload: p }));
       }
       if (miraie && miraie.devices.length > 0) {
-        promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: vibe.acTemp, acmd: 'cool' }));
+        promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: vibe.acTemp, acmd: 'cool' }));
         recordHabit(`vibe_${name}`);
       }
       await Promise.all(promises);
@@ -840,6 +843,18 @@ async function main() {
   });
 
   // ──────────────────────────────────────────────────────
+  // /login — Generate secure access link
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'login',
+    description: 'Get a secure link to your dashboard',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const dashboardUrl = `https://gravity.yourdomain.com?token=${config.hubToken}`;
+      await send(`🔐 *Secure Entry Configured*\n\nYour Hub Token: \`${config.hubToken}\`\n\n_Use this token in your Dashboard settings or Bearer headers to manage Gravity from mobile._`);
+    }
+  });
+
   // ──────────────────────────────────────────────────────
   // /tv — Cinema Mode with custom lights
   // ──────────────────────────────────────────────────────
@@ -897,7 +912,7 @@ async function main() {
       if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 10 } }));
       if (miraie && miraie.devices.length > 0) {
         const d = miraie.devices[0];
-        promises.push(miraie.controlDevice(d.deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '27', acmd: 'auto', acfs: '1' }));
+        promises.push(miraie.controlDevice(d.deviceId, { ps: 'on', actmp: '27', acmd: 'auto', acfs: '1' }));
       }
       await Promise.all(promises);
       await send('🌙 *Sleep Mode:* Lights → 10% warm · AC → 27°C fan auto\n\nGoodnight! 😴');
@@ -920,18 +935,18 @@ async function main() {
       if (!arg) return await send(`*AC Control*: /ac [on|off|24|cool]`);
 
       if (arg === 'on' || arg === 'off') {
-        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: arg });
+        await miraie.controlDevice(device.deviceId, { ps: arg });
         updateDeviceState('ac', arg);
         recordHabit(`ac_${arg}`);
         await send(`✅ AC *${arg.toUpperCase()}*`);
       } else if (!isNaN(Number(arg))) {
         const temp = Math.min(30, Math.max(16, Number(arg)));
-        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: String(temp) });
+        await miraie.controlDevice(device.deviceId, { ps: 'on', actmp: String(temp) });
         updateDeviceState('ac', 'on');
         recordHabit(`ac_temp_${temp}`);
         await send(`✅ AC: *${temp}°C*`);
       } else {
-        await miraie.controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', acmd: arg });
+        await miraie.controlDevice(device.deviceId, { ps: 'on', acmd: arg });
         updateDeviceState('ac', 'on');
         recordHabit(`ac_mode_${arg}`);
         await send(`✅ AC: *${arg.toUpperCase()}* mode`);
@@ -1083,10 +1098,10 @@ async function main() {
       // 2. Sync AC (MirAie) if extreme
       if (miraie && (miraie as any).devices.length > 0) {
         if (w.temp > 35) {
-          await (miraie as any).controlDevice((miraie as any).devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '23' });
+          await (miraie as any).controlDevice((miraie as any).devices[0].deviceId, { ps: 'on', actmp: '23' });
           res += `\n❄️ *Air Con*: Heat trigger! Set to *23°C* for relief.`;
         } else if (w.temp < 25) {
-          await (miraie as any).controlDevice((miraie as any).devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: '26' });
+          await (miraie as any).controlDevice((miraie as any).devices[0].deviceId, { ps: 'on', actmp: '26' });
           res += `\n🌡️ *Air Con*: Cool breeze! Set to *26°C* for comfort.`;
         }
       }
@@ -1135,7 +1150,7 @@ async function main() {
       if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
       if (miraie && miraie.devices.length > 0) {
         const d = miraie.devices[0];
-        promises.push(miraie.controlDevice(d.deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'off' }));
+        promises.push(miraie.controlDevice(d.deviceId, { ps: 'off' }));
       }
       await Promise.all(promises);
       await send('🚶 *Away Mode:* All devices off. See you later!');
@@ -1151,7 +1166,7 @@ async function main() {
       if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
       if (miraie && miraie.devices.length > 0) {
         const d = miraie.devices[0];
-        promises.push(miraie.controlDevice(d.deviceId, { ki: 1, cnt: 'an', sid: '1', ps: 'on', actmp: '24', acmd: 'cool' }));
+        promises.push(miraie.controlDevice(d.deviceId, { ps: 'on', actmp: '24', acmd: 'cool' }));
       }
       await Promise.all(promises);
       await send('🏠 *Welcome Home!* Lights → 80% daylight · AC → 24°C cool');
@@ -1314,7 +1329,7 @@ async function main() {
           promises.push(wiz.executeAction({ type: 'control', payload: { state: action === 'on' } }));
         }
         if ((device === 'all' || device === 'ac') && miraie && miraie.devices.length > 0) {
-          promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: 'an', sid: '1', ps: action }));
+          promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: action }));
         }
         await Promise.all(promises);
         await bot.sendMessage(msg.from.id, `😴 *Timer Done:* ${device.toUpperCase()} powered ${action}.`, { parse_mode: 'Markdown' });
@@ -1409,6 +1424,11 @@ async function main() {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       config.scheduler = [];
       saveConfig(config);
+      const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub Actions' : (os.platform() === 'darwin' ? 'Local Mac' : 'Remote Linux');
+      const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+      const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
+      const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n⏰ Started: *${startTime} IST*\n💤 Downtime: *${botOffBefore}*\n🏗 Platform: *${PLATFORM}*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n━━━━━━━━━━━━━━\n/help for God Mode v4.6`;
+      try { await (bot as any).sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
       scheduler.refresh();
       await send('🧹 *Schedules Cleared*. Routines wiped.');
       logActivity(`🕰 Scheduler: All routines cleared by user.`);
@@ -1491,836 +1511,12 @@ async function main() {
     }
   });
 
-  // Start polling
-  await bot.startPolling();
-  console.log('🚀 Gravity Bot Engine running. Commands refreshed.');
-
-  // ──────────────────────────────────────────────────────
-  // /schedule — Hub Routines
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'schedule',
-    description: 'View active automation routines',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const jobs = config.scheduler || [];
-      if (jobs.length === 0) return await send('🕰️ *Gravity Scheduler*: No active routines defined in `config.json`.');
-      
-      let table = '🕰️ *Active Hub Routines*\n\n';
-      jobs.forEach((j: any, i: number) => {
-        table += `${i+1}. *${j.time}* - \`${j.name || j.action}\` (${j.days})\n`;
-      });
-      await send(table);
-    }
-  });
-  const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-  const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
-  const startMsg = `🟢 *Gravity is ONLINE*\n⏰ Started at *${startTime} IST*\n💤 Down for: *${botOffBefore}*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n\nType /ping to check status anytime.`;
-  for (const userId of (config.authorizedUsers || [])) {
-    try { await bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
-  }
-
-  // ── Daily Noon Heartbeat (DISABLED: SPAM PREVENTION) ──
-  /*
-  setInterval(async () => {
-    ...
-  }, 30000); 
-  */
-
-
-  // ──────────────────────────────────────────────────────
-  // /track — Presence IP
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'track',
-    description: 'Set your Phone IP for auto-away/welcome',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const ip = args[0];
-      if (!ip) return await send(`🏠 *Current Tracking:* \`${config.phoneIp || 'None'}\`\nUse: \`/track [IP]\``);
-      config.phoneIp = ip;
-      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-      await send(`✅ Tracking your device at *${ip}*\nGravity will now auto-manage house presence.`);
-    }
-  });
-
-  // ──────────────────────────────────────────────────────
-  // /remember — Cortex Memory System
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'remember',
-    description: 'Save a persistent preference: /remember I like the AC at 22',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const memory = args.join(' ');
-      if (!memory) return await send('Usage: `/remember [FACT]`');
-      
-      if (!config.preferences.habits) config.preferences.habits = [];
-      config.preferences.habits.push({
-        fact: memory,
-        at: new Date().toISOString()
-      });
-      
-      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-      await send(`🧠 *Memory Saved:* I will keep this in my God Build Cortex.\n_"${memory}"_`);
-      logActivity(`🧠 Cortex: Memory added - ${memory}`);
-    }
-  });
-  
-  // ──────────────────────────────────────────────────────
-  // /why — AI Logic: Explain recent usage
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'why',
-    description: 'Get an AI insight into recent appliance usage',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      
-      try {
-        const logs = fs.readFileSync(LOG_PATH, 'utf-8').trim().split('\n');
-        const recentLogs = logs.slice(-30).reverse();
-        
-        let explanation = "🔍 *Gravity Usage Insight*\n\n";
-        
-        const lastAcOn = logs.findLast(l => l.includes('AC State: ON'));
-        const lastAcOff = logs.findLast(l => l.includes('AC State: OFF'));
-        
-        if (lastAcOn) {
-          explanation += `❄️ *AC Analysis*: Last turned ON at \`${lastAcOn.split('] ')[0].replace('[','')}\`.\n`;
-          // Find the trigger before that
-          const onIdx = logs.findLastIndex(l => l.includes('AC State: ON'));
-          const context = logs.slice(Math.max(0, onIdx-3), onIdx).reverse();
-          const trigger = context.find(l => l.includes('Trigger') || l.includes('Scene') || l.includes('Presence'));
-          
-          if (trigger) {
-            explanation += `↳ *Reason*: Detected \`${trigger.split('] ')[1]}\` just before.\n`;
-          }
-        }
-        
-        const weather = new WeatherEngine();
-        const w = await weather.getWeather();
-        if (w && w.temp > 30) {
-          explanation += `🌡️ *Environment*: Outside is currently *${w.temp}°C* (${w.condition}), which likely explains the cooling demand.`;
-        }
-        
-        await send(explanation);
-      } catch (e) {
-        await send('❌ Failed to parse brain logs.');
-      }
-    }
-  });
-
-  bot.registerCommand({
-    command: 'budget',
-    description: 'Set a daily electricity budget alert: /budget 50',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const limit = parseFloat(args[0]);
-      if (isNaN(limit)) return await send(`💰 *Current Budget*: ₹${config.stats.budgetLimit || 'None'}\nUse: \`/budget [amount]\``);
-      
-      config.stats.budgetLimit = limit;
-      saveConfig(config);
-      await send(`✅ *Budget Set*: You will be alerted if daily cost exceeds *₹${limit}*.`);
-    }
-  });
-
-  // ──────────────────────────────────────────────────────
-  // /system — Mac System Monitor (New Feature v2.3)
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'system',
-    description: 'Monitor the Mac Hub (Battery, CPU, Uptime)',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      
-      const { stdout: batt } = await execAsync('pmset -g batt');
-      const { stdout: load } = await execAsync('uptime');
-      
-      const battLevel = batt.match(/(\d+)%/)?.[1] || 'Unknown';
-      const isCharging = batt.includes('AC Power') || batt.includes('charging');
-      const loadAvg = load.split('load averages:')[1] || 'Unknown';
-      
-      const sysMsg = `🖥 *Gravity System Status* ⚡\n\n🔋 Battery: *${battLevel}%* ${isCharging ? '(Charging 🔌)' : '(Unplugged 🔋)'}\n🚀 CPU Load: _${loadAvg.trim()}_\n🕒 Uptime: *${Math.floor(process.uptime() / 3600)}h ${Math.floor((process.uptime() % 3600) / 60)}m*\n💾 Hub: *ONLINE*`;
-      await send(sysMsg);
-    }
-  });
-
-  // ──────────────────────────────────────────────────────
-  // /lock & /sleep — Mac Security Control (New Feature v2.4)
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'lock',
-    description: 'Lock your Mac screen instantly',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      try {
-        await execAsync('pmset displaysleepnow');
-        await send('🔐 *Mac Screen Locked.*');
-        logActivity('🔐 Mac Screen-Locked (Via Telegram)');
-      } catch { await send('❌ Failed to lock Mac.'); }
-    }
-  });
-
-  bot.registerCommand({
-    command: 'sleep',
-    description: 'Put Mac to sleep',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      try {
-        await send('💤 *Putting Mac to Sleep...* 💡 (HUB MAY GO OFFLINE)');
-        logActivity('💤 Mac Sleep Triggered');
-        await execAsync('pmset sleepnow');
-      } catch { await send('❌ Failed to sleep Mac.'); }
-    }
-  });
-
-  bot.registerCommand({
-    command: 'say',
-    description: 'Make the Mac speak out loud',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const text = args.join(' ');
-      if (!text) return await send('⚠️ Please provide a message: `/say Hello`');
-      try {
-        await speak(text);
-        await send(`🗣 *Mac says:* "${text}"`);
-        logActivity(`🗣 Mac Speech via Telegram: ${text}`);
-      } catch { await send('❌ Failed to speak.'); }
-    }
-  });
-
-  // ──────────────────────────────────────────────────────
-  // /wish — AI Cortex Wishlist System
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'wish',
-    description: 'Archive a feature request or prompt: /wish Add solar tracking',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const wish = args.join(' ');
-      if (!wish) return await send('Usage: `/wish [prompt/feature]`');
-      
-      const entry = `\n- [ ] [${new Date().toLocaleDateString()}] User: "${wish}"`;
-      fs.appendFileSync(WISHLIST_PATH, entry);
-      
-      await send(`🗒 *Evolution Insight Added:* I have archived this in my God Build Cortex.\n_"${wish}"_`);
-      logActivity(`🧠 Cortex: Wishlist updated - ${wish}`);
-    }
-  });
-  setInterval(async () => {
-    const devices = config.familyDevices || (config.phoneIp ? [{name: 'Phone', ip: config.phoneIp}] : []);
-    if (devices.length === 0) return;
-    try {
-      let anyPresent = false;
-      for (const dev of devices) {
-        // Double-check: Ping + ARP Table lookup
-        await execAsync(`ping -c 1 -W 500 ${dev.ip}`).catch(() => {});
-        const { stdout } = await execAsync(`arp -a`);
-        if (stdout.includes(`(${dev.ip})`)) {
-          anyPresent = true;
-          break;
-        }
-      }
-      
-      const now = new Date();
-      const dateStr = now.toDateString();
-      
-      if (anyPresent) {
-        if (!isPhoneOnline) {
-          isPhoneOnline = true;
-          offlineCounter = 0;
-          offlineSince = null;
-          logActivity("📱 Presence: Member detected (HOME)");
-          await triggerScene('HOME');
-          
-          if (now.getHours() >= 5 && now.getHours() < 10 && lastBriefDate !== dateStr) {
-            lastBriefDate = dateStr;
-            speak("Good morning. Welcome home.");
-          } else {
-            speak("Welcome home.");
-          }
-        } else {
-          offlineCounter = 0;
-          offlineSince = null;
-        }
-      } else {
-        if (isPhoneOnline) {
-          if (!offlineSince) offlineSince = Date.now();
-          const inactiveMins = Math.floor((Date.now() - offlineSince) / 60000);
-          
-          if (inactiveMins >= 5) { // 5 Minute Adaptive Debounce
-            isPhoneOnline = false;
-            offlineSince = null;
-            logActivity("🚶 Presence: House Vacant (AWAY)");
-            await triggerScene('AWAY');
-            speak("Goodbye. House secured.");
-          } else {
-             console.log(`⏳ Presence: Offline for ${inactiveMins}m... Waiting for 5m debounce.`);
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Presence loop error', e);
-    }
-  }, 60000);
-
-  // ──────────────────────────────────────────────────────
-  // 👻 Ghost Sentry (Security v2.6)
-  // ──────────────────────────────────────────────────────
-  let ghostAlertSent = false;
-  setInterval(async () => {
-    if (isPhoneOnline) {
-      ghostAlertSent = false;
-      return;
-    }
-    try {
-      const { stdout } = await execAsync("ioreg -c IOHIDSystem | grep HIDIdleTime | head -n 1");
-      const match = stdout.match(/HIDIdleTime" = (\d+)/);
-      if (match) {
-        const idleNano = BigInt(match[1]);
-        const idleSecs = Number(idleNano / BigInt(1000000000));
-        if (idleSecs < 10 && !ghostAlertSent) {
-          ghostAlertSent = true;
-          const msg = `⚠️ *Gravity: Ghost Alert* 👻\nActivity detected at the Hub Mac while you are AWAY.\n_Idle Time: ${idleSecs.toFixed(1)}s_`;
-          for (const uid of (config.authorizedUsers || [])) {
-            await bot.sendMessage(uid, msg, { parse_mode: 'Markdown' });
-          }
-        } else if (idleSecs > 60) {
-          ghostAlertSent = false;
-        }
-      }
-    } catch {}
-  }, 10000); // Check every 10s
-  // ──────────────────────────────────────────────────────
-  // /remind — Timing & Contextual Reminders
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'remind',
-    description: 'Set a reminder: /remind 10m Take out the trash',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const timeStr = args[0];
-      const message = args.slice(1).join(' ');
-      if (!timeStr || !message) return await send('Usage: `/remind [time] [msg]` (e.g., /remind 1h Check laundry)');
-
-      let ms = 0;
-      const amount = parseInt(timeStr);
-      if (timeStr.endsWith('m')) ms = amount * 60000;
-      else if (timeStr.endsWith('h')) ms = amount * 3600000;
-      else if (timeStr.endsWith('s')) ms = amount * 1000;
-      else ms = amount * 60000;
-
-      const readableTime = ms >= 3600000 ? `${amount}h` : `${amount}m`;
-      await send(`⏰ Got it! Reminding you in *${readableTime}*:\n_"${message}"_`);
-      setTimeout(async () => {
-        await bot.sendMessage(msg.from.id, `🔔 *Reminder:* ${message}`, { parse_mode: 'Markdown' });
-      }, ms);
-    }
-  });
-
-  // ──────────────────────────────────────────────────────
-  // /timer — Device Shutdown Timers
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'timer',
-    description: 'Delayed action: /timer 30 ac off',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const mins = parseInt(args[0]);
-      const device = args[1]?.toLowerCase();
-      const action = args[2]?.toLowerCase() || 'off';
-      if (isNaN(mins) || !device) return await send('Usage: `/timer [mins] [ac|bulb] [off|on]`');
-
-      await send(`😴 *Gravity Timer Set:* ${device.toUpperCase()} will turn ${action} in ${mins} minutes.`);
-      setTimeout(async () => {
-        const promises = [];
-        if (device === 'ac' && miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: 'an', sid: '1', ps: action }));
-        if (device === 'bulb' && wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: action === 'on' } }));
-        await Promise.all(promises);
-        await bot.sendMessage(msg.from.id, `😴 *Timer Done:* ${device.toUpperCase()} powered ${action}.`, { parse_mode: 'Markdown' });
-      }, mins * 60000);
-    }
-  });
-
-  // ──────────────────────────────────────────────────────
-  // /todo — Hub Task List
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'todo',
-    description: 'Task management: /todo add [task] · /todo list · /todo clear',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      if (!config.todos) config.todos = [];
-      const sub = args[0]?.toLowerCase();
-      if (sub === 'add') {
-        const task = args.slice(1).join(' ');
-        config.todos.push({ text: task, at: new Date().toISOString() });
-        saveConfig(config);
-        return await send(`✅ Task Added: _${task}_`);
-      }
-      if (sub === 'clear') { config.todos = []; saveConfig(config); return await send('🧹 *Todo List Cleared.*'); }
-      if (config.todos.length === 0) return await send('📝 *Todo List*: No active tasks.');
-      let res = '📝 *Gravity Hub Todo List*\n\n';
-      config.todos.forEach((t: any, i: number) => { res += `${i+1}. ${t.text}\n`; });
-      await send(res);
-    }
-  });
-
-  // 🖼️ Generate Visual Status Card
-  async function sendVisualStatus(chatId: number) {
-    const browser = await puppeteer.launch({ headless: true });
-    try {
-      const page = await browser.newPage();
-      await page.setViewport({ width: 400, height: 600 });
-      
-      const acStatus = config.stats.ac?.status || 'off';
-      const lightStatus = config.stats.light?.status || 'off';
-      const hoursAC = (config.stats.acMinutes / 60).toFixed(1);
-      const bill = calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0);
-      const weather = await new WeatherEngine().getWeather();
-
-      const html = `
-        <body style="background: linear-gradient(135deg, #1e1e2f 0%, #0f0f1a 100%); color: white; font-family: 'Outfit', sans-serif; padding: 40px; border-radius: 20px; overflow: hidden;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <h1 style="margin: 0; font-size: 28px; letter-spacing: -1px;">Gravity Hub</h1>
-              <div style="font-size: 12px; opacity: 0.5; margin-top: 4px;">REPORTED AT ${new Date().toLocaleTimeString()}</div>
-            </div>
-            <div style="background: #4ade80; width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 10px #4ade80;"></div>
-          </div>
-
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px;">
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 20px;">
-              <div style="font-size: 14px; opacity: 0.6; margin-bottom: 10px;">❄️ AC POWER</div>
-              <div style="font-size: 26px; font-weight: bold; color: ${acStatus === 'on' ? '#4ade80' : '#f87171'}">${acStatus.toUpperCase()}</div>
-              <div style="margin-top: 5px; font-size: 13px; opacity: 0.8;">Avg ${hoursAC}h / day</div>
-            </div>
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 20px;">
-              <div style="font-size: 14px; opacity: 0.6; margin-bottom: 10px;">💰 ENERGY COST</div>
-              <div style="font-size: 26px; font-weight: bold; color: #fbbf24;">₹${bill}</div>
-              <div style="margin-top: 5px; font-size: 13px; opacity: 0.8;">${config.stats.pgvcl?.units || 0} Units Used</div>
-            </div>
-          </div>
-
-          <div style="margin-top: 30px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 25px; border-radius: 20px;">
-            <div style="font-size: 14px; opacity: 0.6; margin-bottom: 10px;">🌍 ENVIRONMENT</div>
-            <div style="font-size: 20px; font-weight: bold;">${weather?.temp || '?'}&deg;C · ${(weather?.humidity) || '?'}% Humidity</div>
-            <div style="font-size: 13px; margin-top: 8px; color: ${ (weather?.humidity || 0) > 70 ? '#60a5fa' : '#9ca3af' }">
-              Current Comfort: ${ (weather?.humidity || 0) > 70 ? 'Humid (Dry Mode Suggested)' : 'Optimal' }
-            </div>
-          </div>
-
-          <div style="margin-top: 30px; opacity: 0.7;">
-            <div style="font-size: 12px; margin-bottom: 10px; opacity: 0.5;">RECENT ACTIVITY</div>
-            <div style="font-size: 13px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; line-height: 1.6;">
-              ${config.stats.acMinutes > 0 ? '• AC Duty cycle active<br/>' : ''}
-              • Hub health status: Nominal<br/>
-              • Auto-presence: Monitoring IP...
-            </div>
-          </div>
-
-          <div style="margin-top: 50px; text-align: center; font-size: 11px; opacity: 0.3; letter-spacing: 2px;">GRAVITY CORTEX CORE v4.5</div>
-        </body>
-      `;
-      
-      await page.setContent(html);
-      const imageBuffer = await page.screenshot({ type: 'png' });
-      
-      // Upload to Telegram as photo
-      const formData = new FormData();
-      formData.append('chat_id', String(chatId));
-      const blob = new Blob([imageBuffer], { type: 'image/png' });
-      formData.append('photo', blob, 'status.png');
-      
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-        method: 'POST',
-        body: formData
-      });
-
-    } catch (e) {
-      console.error('Visual Status Failed', e);
-    } finally {
-      await browser.close();
-    }
-  }
-
-  // ──────────────────────────────────────────────────────
-  // /card — Trigger Visual Hub Card
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'card',
-    description: 'Generate a beautiful visual summary hub card',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      await send('🎨 *Gravity Designer*: Rendering your house metrics... usually takes 3 seconds.');
-      await sendVisualStatus(chatId);
-    }
-  });
-
-  // ──────────────────────────────────────────────────────
-  // /once — Temporary Schedule
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'once',
-    description: 'Temporary action: /once 16:30 ac_off',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const [time, action] = args;
-      if (!time || !action) return await send('Usage: `/once 16:30 ac_off`');
-      
-      if (!config.scheduler) config.scheduler = [];
-      const newJob = {
-        id: Date.now(),
-        name: `Temporary ${action}`,
-        time,
-        action,
-        days: 'daily', // doesn't matter, we filter daily anyway
-        once: true
-      };
-      config.scheduler.push(newJob);
-      saveConfig(config);
-      scheduler.refresh();
-      await send(`🆕 *Temporary Routine Set*: Gravity will execute \`${action}\` once at *${time}* and then wipe it.`);
-    }
-  });
-
-  bot.onMessage = async (msg: any) => {
-    if (!msg.text) return;
-    
-    // 💾 Prompt Vault (v2.5) - Archive for future AI context
-    const vaultEntry = `\n- [${new Date().toLocaleString()}] "${msg.text}"`;
-    fs.appendFileSync(VAULT_PATH, vaultEntry);
-    
-    // 📈 Atomic Stats
-    config.stats = config.stats || {};
-    config.stats.prompts = (config.stats.prompts || 0) + 1;
-    saveConfig(config);
-
-    if (msg.text.startsWith('/')) return;
-    
-    // If it looks like a request or a fact, store it!
-    const text = msg.text.trim();
-    if (text.length > 5 && (text.includes(' ') || text.toLowerCase().includes('want'))) {
-      const entry = `\n- [ ] [${new Date().toLocaleDateString()}] Insight: "${text}"`;
-      fs.appendFileSync(WISHLIST_PATH, entry);
-      logActivity(`🧠 Insight Captured (No command): ${text}`);
-    }
-  };
-
-  // ── Web Control API (Port 3030) ─────────────────────
-  // Perfect for Raycast / Siri Shortcuts (curl http://localhost:3030/scene/tv)
-  try {
-    (Bun as any).serve({
-      port: 3030,
-      async fetch(req: any) {
-        const url = new URL(req.url);
-        const sceneName = url.pathname.split('/').pop()?.toUpperCase();
-        if (url.pathname.includes('/status')) {
-          const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
-          const body = JSON.stringify({
-            online: isPhoneOnline,
-            stats: config.stats,
-            estimatedPgBill: calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0),
-            uptime: process.uptime(),
-            pgvcl: config.stats.pgvcl,
-            weather: w
-          }, null, 2);
-          return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-        }
-        if (url.pathname === '/system/lock') {
-          await execAsync(`pmset displaysleepnow || /System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend`);
-          return new Response('Locked', { status: 200 });
-        }
-        if (url.pathname === '/system/sleep') {
-          await execAsync(`osascript -e 'tell application "System Events" to sleep'`);
-          return new Response('Sleep', { status: 200 });
-        }
-        if (url.pathname === '/control/brightness') {
-          const dir = url.searchParams.get('dir') === 'up' ? 20 : -20;
-          if (wiz) {
-            // Target the primary wiz bulb
-            const p = await (wiz as any).getPilot();
-            const current = p?.dimming || 50;
-            await (wiz as any).executeAction({ type: 'control', payload: { state: true, dimming: Math.min(100, Math.max(10, current + dir)) } });
-          }
-          return new Response('Dimmed', { status: 200 });
-        }
-        if (url.pathname === '/control/bulb/off') {
-          if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: false } });
-          return new Response('Bulb Off', { status: 200 });
-        }
-        if (url.pathname === '/control/temp') {
-          const dir = url.searchParams.get('dir') === 'up' ? 1 : -1;
-          if (miraie && (miraie as any).devices.length > 0) {
-            for (const device of (miraie as any).devices) {
-              const status = await (miraie as any).getDeviceStatus(device.deviceId);
-              const current = parseInt(status?.actmp || '24');
-              const target = Math.min(30, Math.max(16, current + dir)).toString();
-              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: target });
-            }
-          }
-          return new Response('Temp Set', { status: 200 });
-        }
-        if (url.pathname === '/control/ac/off') {
-          if (miraie && (miraie as any).devices.length > 0) {
-            for (const device of (miraie as any).devices) {
-              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' });
-            }
-          }
-          return new Response('AC Off', { status: 200 });
-        }
-        if (url.pathname === '/control/ac/mode') {
-          const mode = url.searchParams.get('mode') || 'cool';
-          if (miraie && (miraie as any).devices.length > 0) {
-            for (const device of (miraie as any).devices) {
-              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', acmd: mode });
-            }
-          }
-          return new Response(`Mode Set: ${mode}`, { status: 200 });
-        }
-        if (url.pathname === '/control/bulb/color') {
-          const temp = parseInt(url.searchParams.get('temp') || '4500');
-          if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: true, temp } });
-          return new Response('Bulb Color Set', { status: 200 });
-        }
-        if (url.pathname === '/control/volume') {
-          const dir = url.searchParams.get('dir') === 'up' ? 'up' : 'down';
-          await execAsync(`osascript -e 'set volume output volume ((output volume of (get volume settings)) ${dir === 'up' ? '+' : '-'} 10)'`);
-          return new Response('Volume Set', { status: 200 });
-        }
-        if (sceneName) {
-          await triggerScene(sceneName);
-          return new Response(`Gravity: Scene ${sceneName} Active`, { status: 200 });
-        }
-        return new Response("Gravity API Active", { status: 200 });
-      },
-    });
-    console.log('🌐 Web API enabled: :3030/scene/[NAME]');
-  } catch(e) { console.warn('API error (port likely in use)'); }
-
-  // ──────────────────────────────────────────────────────
-  // PGVCL Utility Scraper (God Mode v2)
-  // ──────────────────────────────────────────────────────
-  async function runPgvclScraper() {
-    if (!config.pgvcl?.consumerId || config.pgvcl.consumerId === 'ENTER_YOUR_CONSUMER_ID') {
-      console.log('⚖️ PGVCL: Skipping scraper (No credentials)');
-      return;
-    }
-
-    logActivity("⚡ Starting PGVCL Utility Scan...");
-    let browser;
-    try {
-      browser = await puppeteer.launch({ headless: true });
-      const page = await browser.newPage();
-      await page.goto('https://www.pgvcl.com/consumer/index.php');
-      
-      // Basic login flow (Generic pattern, needs user portal verification)
-      await page.type('#consumer_id', config.pgvcl.consumerId);
-      await page.type('#password', config.pgvcl.password);
-      await page.click('#login_btn');
-      await page.waitForNavigation();
-
-      // Extract current usage / bill amount
-      // This is a placeholder for the exact selectors after user confirmation
-      const billData = await page.evaluate(() => {
-        return {
-          amount: document.querySelector('.current-bill-amt')?.textContent || '0',
-          units: document.querySelector('.current-units')?.textContent || '0'
-        };
-      });
-
-      config.stats.pgvcl = {
-        amount: billData.amount,
-        units: billData.units,
-        scannedAt: new Date().toISOString()
-      };
-      
-      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-      logActivity(`⚡ PGVCL: Scanned [${billData.units} units | ₹${billData.amount}]`);
-    } catch (e) {
-      console.error('PGVCL Scraper failed', e);
-    } finally {
-      if (browser) await browser.close();
-    }
-  }
-
-  // Run scraper on boot + every 6 hours
-  runPgvclScraper();
-  setInterval(runPgvclScraper, 21600000);
-  let awayAcMinutes = 0;
-
-  setInterval(async () => {
-    try {
-      // 1. Auto-Saver Protection (2.5h / 150m limit)
-      if (!isPhoneOnline) {
-        // Only count if an AC is actually on
-        let anyAcOn = false;
-        if (miraie && miraie.devices.length > 0) {
-           for (const d of miraie.devices) {
-             const s = await miraie.getDeviceStatus(d.deviceId);
-             if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
-           }
-        }
-        
-        if (anyAcOn) {
-          awayAcMinutes++;
-          if (awayAcMinutes >= 150) {
-            awayAcMinutes = 0; // reset
-            const promises = [];
-             if (miraie && miraie.devices.length > 0) {
-               promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
-             }
-             await Promise.all(promises);
-             const alert = `🛡️ *Gravity Auto-Saver:* AC was on for >2.5h while you were AWAY. High-fidelity safety shut-off triggered.`;
-             for (const uid of (config.authorizedUsers || [])) {
-               try { await bot.sendMessage(uid, alert, { parse_mode: 'Markdown' }); } catch {}
-             }
-             logActivity(`🛡️ Auto-Saver: Shutdown triggered after 150m of away-usage.`);
-          }
-        }
-      } else {
-        awayAcMinutes = 0; // Reset if anyone comes home
-      }
-
-      // ──────────────────────────────────────────────────────
-      // 1. Check WiZ
-      if (wiz) {
-        const p = await (wiz as any).getPilot();
-        const state = p?.state ? 'on' : 'off';
-        if (p?.state) config.stats.lightMinutes++;
-        updateDeviceState('light', state);
-      }
-      // 1. Force MirAie REST refresh to ensure absolute tracking accuracy
-      if (miraie) {
-        try { await (miraie as any).refreshAllStatuses(); } catch {}
-      }
-
-      // 2. Check MirAie (Loop ALL devices)
-      if (miraie && (miraie as any).devices.length > 0) {
-        let anyAcOn = false;
-        for (const device of (miraie as any).devices) {
-          const status = await (miraie as any).getDeviceStatus(device.deviceId);
-          const ps = String(status?.ps || '').toLowerCase();
-          if (ps === 'on' || ps === '1' || ps === 'true') {
-            anyAcOn = true;
-          }
-        }
-        if (anyAcOn) config.stats.acMinutes++;
-        updateDeviceState('ac', anyAcOn ? 'on' : 'off');
-      }
-
-      const now = new Date();
-      // Record hourly snapshot if it's a new hour
-      if (now.getMinutes() === 0) {
-        if (!config.stats.history) config.stats.history = [];
-        const stamp = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
-        config.stats.history.push({ time: stamp, ac: config.stats.acMinutes, lights: config.stats.lightMinutes });
-        if (config.stats.history.length > 24) config.stats.history.shift();
-      }
-
-      // 3. Budget Check
-      if (config.stats.budgetLimit) {
-        const estBill = Number(calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0));
-        const dailyEst = (config.stats.acMinutes / 60 * 1.5) + (config.stats.lightMinutes / 60 * 0.015);
-        const dailyCost = Number(calculatePgvclBill(dailyEst));
-        
-        if (dailyCost > config.stats.budgetLimit && !config.stats.budgetAlertSent) {
-          const alert = `⚠️ *Budget Alert:* Daily electricity cost (*₹${dailyCost.toFixed(1)}*) has exceeded your limit of ₹${config.stats.budgetLimit}. Consider switching to economy mode.`;
-          for (const uid of (config.authorizedUsers || [])) {
-            try { await bot.sendMessage(uid, alert, { parse_mode: 'Markdown' }); } catch {}
-          }
-          config.stats.budgetAlertSent = true;
-        }
-      }
-
-      // 4. Save stats
-      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-
-      // 4. Daily Review at 11:59 PM
-      if (now.getHours() === 23 && now.getMinutes() === 59) {
-        const stats = config.stats;
-        const dateStr = now.toLocaleDateString('en-IN');
-        
-        const msg = `🌙 *Gravity Daily Review*\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*`;
-        for (const uid of (config.authorizedUsers || [])) {
-          await bot.sendMessage(uid, msg, { parse_mode: 'Markdown' });
-        }
-
-        // Archive to Daily Log
-        if (!config.stats.dailyLog) config.stats.dailyLog = [];
-        config.stats.dailyLog.push({
-          date: dateStr,
-          ac: (stats.acMinutes/60).toFixed(1),
-          light: (stats.lightMinutes/60).toFixed(1)
-        });
-        if (config.stats.dailyLog.length > 365) config.stats.dailyLog.shift();
-
-        config.stats = { 
-          acMinutes: 0, 
-          lightMinutes: 0, 
-          lastReset: new Date(), 
-          history: config.stats.history, 
-          dailyLog: config.stats.dailyLog,
-          budgetLimit: config.stats.budgetLimit,
-          budgetAlertSent: false // Reset alert for the next day
-        };
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-      }
-    } catch (err) {
-      console.error('Stats loop error:', err);
-    }
-  }, 60000);
-
-  // ──────────────────────────────────────────────────────
-  // 🔋 Mac Battery Guardian (New Feature v2.2)
-  // ──────────────────────────────────────────────────────
-  let batteryAlertSent = false;
-  setInterval(async () => {
-    try {
-      const { stdout } = await execAsync('pmset -g batt');
-      const match = stdout.match(/(\d+)%/);
-      if (match) {
-        const level = parseInt(match[1]);
-        const isCharging = stdout.includes('AC Power') || stdout.includes('charging');
-        
-        if (level <= 20 && !isCharging && !batteryAlertSent) {
-          batteryAlertSent = true;
-          const msg = `⚠️ *Gravity Power Alert* ⚡\nYour Mac's battery is critical (*${level}%*).\nPlease plug in to keep the God build running.`;
-          for (const uid of (config.authorizedUsers || [])) {
-            await bot.sendMessage(uid, msg, { parse_mode: 'Markdown' });
-          }
-        } else if (level > 25) {
-          batteryAlertSent = false;
-        }
-      }
-    } catch {}
-  }, 300000); // Check every 5m
-
-  // ── Shutdown Notification ───────────────────────────
-  // Notify on SIGINT / SIGTERM (Ctrl+C, process kill)
-  const shutdown = async (signal: string) => {
-    const uptime = Math.floor(process.uptime());
-    const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
-    const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n⏱ Session Uptime: *${uptimeStr}*\n\nBot will not respond until restarted.`;
-    for (const userId of (config.authorizedUsers || [])) {
-      try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
-    }
-    process.exit(0);
-  };
-  process.on('SIGINT', () => shutdown('manual stop'));
-  process.on('SIGTERM', () => shutdown('system stop'));
-}
-
   // 🧠 Habit Learning Analysis (Run daily at 1 AM)
   async function analyzeHabits() {
-    if (!config.habits || config.habits.length < 10) {
-      logActivity("🧠 Habit Learner: Not enough data for analysis yet.");
-      return;
-    }
+    if (!config.habits || (config.habits as any).length < 10) return;
     logActivity("🧠 Habit Learner: Scanning manual patterns...");
     const patterns: Record<string, number[]> = {};
-    config.habits.forEach((h: any) => {
+    (config.habits as any).forEach((h: any) => {
       const key = `${h.command}_${h.day}`;
       if (!patterns[key]) patterns[key] = [];
       patterns[key].push(h.time);
@@ -2329,16 +1525,12 @@ async function main() {
     for (const [key, times] of Object.entries(patterns)) {
       if (times.length >= 3) {
         const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
-        const isClustered = times.every(t => Math.abs(t - avgTime) < 45); // within 45 min window
-        if (isClustered) {
+        if (times.every(t => Math.abs(t - avgTime) < 45)) {
           const [command, dayNum] = key.split('_');
-          const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-          const dayName = days[parseInt(dayNum)];
-          const hours = Math.floor(avgTime / 60);
-          const mins = Math.floor(avgTime % 60);
-          const timeStr = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+          const timeStr = `${Math.floor(avgTime / 60).toString().padStart(2, '0')}:${Math.floor(avgTime % 60).toString().padStart(2, '0')}`;
+          const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][parseInt(dayNum)];
           
-          const msg = `🧠 *Gravity Habit Insight*\n\nMaster, I've noticed you always use \`${command.toUpperCase()}\` around *${timeStr}* on *${dayName}s*.\n\nShould I automate this for you?`;
+          const msg = `🧠 *Gravity Habit Insight*\n\nMaster, I've noticed you always use \`${command.toUpperCase()}\` around *${timeStr}* on *${dayName}s*.\n\nShould I automate this?`;
           for (const uid of (config.authorizedUsers || [])) {
              try {
                await bot.sendMessage(uid, msg, {
@@ -2349,21 +1541,40 @@ async function main() {
                });
              } catch {}
           }
-          // Clear suggested habits to prevent repeat notifications
-          config.habits = config.habits.filter((h: any) => !key.startsWith(h.command));
+          config.habits = (config.habits as any).filter((h: any) => !key.startsWith(h.command));
         }
       }
     }
     saveConfig(config);
   }
 
-  // Schedule habit analysis
+  // Polls
+  await bot.startPolling();
+  console.log('🚀 Gravity Hub ONLINE. Command platform initialized.');
+
+  // 🏥 Health Pulse & Maintenance
   setInterval(() => {
+    updateBotPulse(config);
     const now = new Date();
     if (now.getHours() === 1 && now.getMinutes() === 0) analyzeHabits();
   }, 60000);
 
-  main().catch(err => {
+  // ── Shutdown Guardian ─────────────────────────────
+  const shutdown = async (signal: string) => {
+    const uptime = Math.floor(process.uptime());
+    const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
+    const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n⏱ Session Uptime: *${uptimeStr}*\n\nHub will not respond until restarted.`;
+    for (const userId of (config.authorizedUsers || [])) {
+      try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
+    }
+    process.exit(0);
+  };
+  process.on('SIGINT', () => shutdown('manual stop'));
+  process.on('SIGTERM', () => shutdown('system stop'));
+}
+
+main().catch(err => {
   console.error('Fatal bot error:', err);
   process.exit(1);
 });

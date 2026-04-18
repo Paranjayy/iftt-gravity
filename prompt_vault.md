@@ -79,3 +79,4 @@
 - [4/18/2026, 11:54:03 AM] "/timer 69 min rcb vs dc soon after 1h30mins"
 - [4/18/2026, 11:54:56 AM] "/ac on"
 - [4/18/2026, 11:55:42 AM] "/once 12:15 ac_off"
+- [4/18/2026, 12:12:06 PM] "/ac off"

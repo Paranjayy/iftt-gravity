@@ -189,7 +189,14 @@ export class MiraieAdapter extends Adapter {
       });
 
       client.on('connect', () => {
-        const payload = { ...command, bz: 1 };
+        // MirAie Mandatory Protocol Handshake
+        const payload = { 
+          ki: 1, 
+          cnt: 'an', 
+          sid: '1', 
+          bz: 1, 
+          ...command 
+        };
         client.publish(device.topic.pub, JSON.stringify(payload), (err) => {
           client.end();
           if (err) reject(err);

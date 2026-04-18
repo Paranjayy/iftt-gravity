@@ -5,6 +5,7 @@
 
 export interface WeatherData {
   temp: number;
+  humidity: number;
   condition: string;
   isRain: boolean;
   updatedAt: number;
@@ -23,18 +24,20 @@ export class WeatherEngine {
     }
 
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${this.LAT}&longitude=${this.LON}&current_weather=true`;
+      // Fetching temperature and relative humidity
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${this.LAT}&longitude=${this.LON}&current=temperature_2m,relative_humidity_2m,weather_code`;
       const response = await fetch(url);
       const data = await response.json();
 
-      if (data.current_weather) {
-        const cw = data.current_weather;
-        // WMO Weather interpretation (approximate)
-        const isRain = [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(cw.weathercode);
+      if (data.current) {
+        const cur = data.current;
+        const code = cur.weather_code;
+        const isRain = [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code);
         
         this.cache = {
-          temp: cw.temperature,
-          condition: this.mapCode(cw.weathercode),
+          temp: cur.temperature_2m,
+          humidity: cur.relative_humidity_2m,
+          condition: this.mapCode(code),
           isRain,
           updatedAt: now
         };
