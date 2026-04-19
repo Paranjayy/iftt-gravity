@@ -183,6 +183,18 @@ async function main() {
   });
 
   await bot.initialize();
+  
+  // 🪄 Sync Command Suggestions (Slash menu)
+  await bot.setMyCommands([
+    { command: 'status', description: 'Show all device states' },
+    { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
+    { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
+    { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
+    { command: 'history', description: 'Show energy usage history' },
+    { command: 'ping', description: 'Check Hub health' },
+    { command: 'test_feedback', description: 'Trial Sensory Feedback' },
+    { command: 'login', description: 'Get secure token for dashboard' },
+  ]);
 
   // 🌙 Sleep Intelligence (Adaptive Sleep Curve)
   class SleepCurveManager {

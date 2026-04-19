@@ -42,6 +42,11 @@ export class TelegramAdapter extends Adapter {
     console.log(`✅ Telegram bot @${this.botInfo?.username} is alive`);
   }
 
+  /** Sync slash commands with Telegram menu */
+  async setMyCommands(commands: { command: string; description: string }[]) {
+    await this.sendRequest('setMyCommands', { commands });
+  }
+
   registerCommand(handler: CommandHandler) {
     this.handlers.push(handler);
   }
