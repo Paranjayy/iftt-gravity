@@ -150,7 +150,7 @@ async function main() {
   }
 
   // Init adapters
-  const bot = new TelegramAdapter(TELEGRAM_TOKEN);
+  bot = new TelegramAdapter(TELEGRAM_TOKEN);
   const notifier = new NotificationManager(bot, config);
 
   // Initialize Scheduler Actions
