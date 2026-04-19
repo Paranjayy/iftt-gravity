@@ -20,7 +20,6 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import puppeteer from 'puppeteer';
 import os from 'os';
-import { NextResponse } from 'next/server';
 
 const execAsync = promisify(exec);
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');

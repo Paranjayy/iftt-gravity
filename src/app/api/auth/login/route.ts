@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   const { password } = await request.json();
-  const CORRECT_PASSWORD = process.env.DASHBOARD_PASSWORD || "admin";
+  const CORRECT_PASSWORD = process.env.DASHBOARD_PASSWORD || process.env.GRAVITY_HUB_TOKEN || "admin";
 
-  if (password === CORRECT_PASSWORD) {
+  if (password === CORRECT_PASSWORD || password === process.env.GRAVITY_HUB_TOKEN) {
     const response = NextResponse.json({ success: true });
     
     // Set a secure, HTTP-only cookie
