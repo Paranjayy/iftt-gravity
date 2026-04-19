@@ -133,9 +133,9 @@ export default function Command() {
         />
         <LI
           icon={Icon.Bolt}
-          title="Energy Bill Estimate"
-          subtitle={state?.pgvcl?.usage || "Calculating..."}
-          accessories={[{ text: state?.estimatedPgBill ? `Est: ₹${state.estimatedPgBill}` : undefined }]}
+          title="Energy Usage"
+          subtitle={state?.pgvcl?.units ? `${state.pgvcl.units} Units` : "No data yet"}
+          accessories={[{ text: state?.estimatedPgBill ? ` Est: ₹${state.estimatedPgBill}` : undefined }]}
         />
         <LI
           icon={state?.online ? Icon.CheckCircle : Icon.Circle}
