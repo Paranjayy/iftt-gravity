@@ -134,6 +134,11 @@ let bot: TelegramAdapter;
 
 async function main() {
   config = loadConfig();
+  if (!config.hubToken) {
+    config.hubToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    saveConfig(config);
+  }
+
   let isPhoneOnline = true; // tracking state
   let offlineCounter = 0;
   let offlineSince: number | null = null; // Debounce tracking
@@ -1575,12 +1580,14 @@ async function main() {
         }
 
         // --- AUTH GUARD --- //
+        const isLocal = req.headers.get("host")?.includes("localhost") || req.headers.get("host")?.includes("127.0.0.1");
         const bearer = req.headers.get("Authorization");
         const urlToken = url.searchParams.get("token");
         const tokenStr = bearer ? bearer.split(" ")[1] : urlToken;
-        // Require valid token for all API routes except status readouts
-        if (url.pathname.includes('/control') || url.pathname.includes('/scene')) {
-           if (tokenStr !== config.hubToken) {
+        
+        // Require valid token for all API routes except status readouts, BUT allow Localhost (Raycast) to skip
+        if (!isLocal && (url.pathname.includes('/control') || url.pathname.includes('/scene') || url.pathname.includes('/trigger'))) {
+           if (tokenStr !== (config.hubToken || 'gravity_unprotected')) {
               return new Response(JSON.stringify({ error: "Unauthorized access. Invalid Hub Token." }), { 
                 status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
               });
@@ -1588,6 +1595,16 @@ async function main() {
         }
         
         const sceneName = url.pathname.split('/').pop()?.toUpperCase();
+
+        // 🔗 IFTTT / Webhook Trigger
+        if (url.pathname.startsWith('/trigger/')) {
+          const hook = url.pathname.split('/').pop();
+          if (hook) {
+            logActivity(`🔗 Webhook Triggered: ${hook}`);
+            await triggerScene(hook.toUpperCase());
+            return new Response(`Trigger ${hook} Executed`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
         if (url.pathname.includes('/status')) {
           const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
           const body = JSON.stringify({
