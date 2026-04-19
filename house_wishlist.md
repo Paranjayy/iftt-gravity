@@ -34,3 +34,4 @@ Gravity looks into this file periodically to evolve.
 - [ ] [4/20/2026] Iteration: Budget Guard (Alert if daily electricity > ₹X)
 - [ ] [4/18/2026] User: "notification grouping" (NEW IDEA: Prevent spam alerts)
 - [ ] [4/18/2026] User: "energy budget" (NEW IDEA: Alert if daily cost exceeds ₹X)
+- [x] [4/18/2026] User: "AC OFF ON NOT WORKING FROM CONTROL"

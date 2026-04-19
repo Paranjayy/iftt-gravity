@@ -104,3 +104,15 @@
 [18/4/2026, 7:37:47 AM] 🧠 Cortex: Wishlist updated - offtime or ontime duration add
 [18/4/2026, 11:54:36 AM] AC State: ON (Bot)
 [18/4/2026, 12:11:59 PM] AC State: OFF (Manual/Remote)
+[18/4/2026, 3:13:03 PM] LIGHT State: ON (Manual/Remote)
+[18/4/2026, 3:13:08 PM] LIGHT State: OFF (Manual/Remote)
+[18/4/2026, 3:13:11 PM] AC State: ON (Bot)
+[18/4/2026, 3:13:18 PM] 🧠 Cortex: Wishlist updated - AC OFF ON NOT WORKING FROM CONTROL
+[18/4/2026, 3:42:13 PM] AC State: OFF (Manual/Remote)
+[18/4/2026, 3:42:16 PM] AC State: ON (Bot)
+[19/4/2026, 1:00:07 AM] 🧠 Habit Learner: Scanning manual patterns...
+[19/4/2026, 3:52:22 AM] AC State: OFF (Manual/Remote)
+[19/4/2026, 4:51:30 AM] AC State: ON (Bot)
+[19/4/2026, 5:12:07 AM] AC State: OFF (Manual/Remote)
+[19/4/2026, 6:51:29 PM] LIGHT State: ON (Manual/Remote)
+[19/4/2026, 6:51:31 PM] LIGHT State: OFF (Manual/Remote)

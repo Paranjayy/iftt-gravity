@@ -1507,6 +1507,314 @@ async function main() {
     }
   });
 
+  // ── Web Control API (Port 3030) ─────────────────────
+  // Perfect for Raycast / Siri Shortcuts (curl http://localhost:3030/scene/tv)
+  try {
+    (Bun as any).serve({
+      port: 3030,
+      async fetch(req: any) {
+        const url = new URL(req.url);
+        if (req.method === 'OPTIONS') {
+           const res = new Response('Departed', { status: 200 });
+           res.headers.set('Access-Control-Allow-Origin', '*');
+           res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+           return res;
+        }
+
+        // --- AUTH GUARD --- //
+        const bearer = req.headers.get("Authorization");
+        const urlToken = url.searchParams.get("token");
+        const tokenStr = bearer ? bearer.split(" ")[1] : urlToken;
+        // Require valid token for all API routes except status readouts
+        if (url.pathname.includes('/control') || url.pathname.includes('/scene')) {
+           if (tokenStr !== config.hubToken) {
+              return new Response(JSON.stringify({ error: "Unauthorized access. Invalid Hub Token." }), { 
+                status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+              });
+           }
+        }
+        
+        const sceneName = url.pathname.split('/').pop()?.toUpperCase();
+        if (url.pathname.includes('/status')) {
+          const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
+          const body = JSON.stringify({
+            online: isPhoneOnline,
+            stats: config.stats,
+            estimatedPgBill: calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0),
+            uptime: process.uptime(),
+            pgvcl: config.stats.pgvcl,
+            weather: w
+          }, null, 2);
+          return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/system/lock') {
+          await execAsync(`pmset displaysleepnow || /System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend`);
+          return new Response('Locked', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/system/sleep') {
+          await execAsync(`osascript -e 'tell application "System Events" to sleep'`);
+          return new Response('Sleep', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/brightness') {
+          const dir = url.searchParams.get('dir') === 'up' ? 20 : -20;
+          if (wiz) {
+            // Target the primary wiz bulb
+            const p = await (wiz as any).getPilot();
+            const current = p?.dimming || 50;
+            await (wiz as any).executeAction({ type: 'control', payload: { state: true, dimming: Math.min(100, Math.max(10, current + dir)) } });
+          }
+          return new Response('Dimmed', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/bulb/off') {
+          if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: false } });
+          return new Response('Bulb Off', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/temp') {
+          const dir = url.searchParams.get('dir') === 'up' ? 1 : -1;
+          if (miraie && (miraie as any).devices.length > 0) {
+            for (const device of (miraie as any).devices) {
+              const status = await (miraie as any).getDeviceStatus(device.deviceId);
+              const current = parseInt(status?.actmp || '24');
+              const target = Math.min(30, Math.max(16, current + dir)).toString();
+              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: target });
+            }
+          }
+          return new Response('Temp Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/ac/off') {
+          if (miraie && (miraie as any).devices.length > 0) {
+            for (const device of (miraie as any).devices) {
+              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' });
+            }
+          }
+          return new Response('AC Off', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/ac/mode') {
+          const mode = url.searchParams.get('mode') || 'cool';
+          if (miraie && (miraie as any).devices.length > 0) {
+            for (const device of (miraie as any).devices) {
+              await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', acmd: mode });
+            }
+          }
+          return new Response(`Mode Set: ${mode}`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/bulb/color') {
+          const temp = parseInt(url.searchParams.get('temp') || '4500');
+          if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: true, temp } });
+          return new Response('Bulb Color Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/volume') {
+          const dir = url.searchParams.get('dir') === 'up' ? 'up' : 'down';
+          await execAsync(`osascript -e 'set volume output volume ((output volume of (get volume settings)) ${dir === 'up' ? '+' : '-'} 10)'`);
+          return new Response('Volume Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (sceneName) {
+          await triggerScene(sceneName);
+          return new Response(`Gravity: Scene ${sceneName} Active`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        return new Response("Gravity API Active", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+      },
+    });
+    console.log('🌐 Web API enabled: :3030/scene/[NAME]');
+  } catch(e) { console.warn('API error (port likely in use)'); }
+
+  // ──────────────────────────────────────────────────────
+  // PGVCL Utility Scraper (God Mode v2)
+  // ──────────────────────────────────────────────────────
+  async function runPgvclScraper() {
+    if (!config.pgvcl?.consumerId || config.pgvcl.consumerId === 'ENTER_YOUR_CONSUMER_ID') {
+      console.log('⚖️ PGVCL: Skipping scraper (No credentials)');
+      return;
+    }
+
+    logActivity("⚡ Starting PGVCL Utility Scan...");
+    let browser;
+    try {
+      browser = await puppeteer.launch({ headless: true });
+      const page = await browser.newPage();
+      await page.goto('https://www.pgvcl.com/consumer/index.php');
+      
+      // Basic login flow (Generic pattern, needs user portal verification)
+      await page.type('#consumer_id', config.pgvcl.consumerId);
+      await page.type('#password', config.pgvcl.password);
+      await page.click('#login_btn');
+      await page.waitForNavigation();
+
+      // Extract current usage / bill amount
+      const billData = await page.evaluate(() => {
+        return {
+          amount: document.querySelector('.current-bill-amt')?.textContent || '0',
+          units: document.querySelector('.current-units')?.textContent || '0'
+        };
+      });
+
+      config.stats.pgvcl = {
+        amount: billData.amount,
+        units: billData.units,
+        scannedAt: new Date().toISOString()
+      };
+      
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      logActivity(`⚡ PGVCL: Scanned [${billData.units} units | ₹${billData.amount}]`);
+    } catch (e) {
+      console.error('PGVCL Scraper failed', e);
+    } finally {
+      if (browser) await browser.close();
+    }
+  }
+
+  // Run scraper on boot + every 6 hours
+  runPgvclScraper();
+  setInterval(runPgvclScraper, 21600000);
+  let awayAcMinutes = 0;
+
+  setInterval(async () => {
+    try {
+      // 1. Auto-Saver Protection (2.5h / 150m limit)
+      if (!isPhoneOnline) {
+        // Only count if an AC is actually on
+        let anyAcOn = false;
+        if (miraie && miraie.devices.length > 0) {
+           for (const d of miraie.devices) {
+             const s = await miraie.getDeviceStatus(d.deviceId);
+             if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
+           }
+        }
+        
+        if (anyAcOn) {
+          awayAcMinutes++;
+          if (awayAcMinutes >= 150) {
+            awayAcMinutes = 0; // reset
+            const promises = [];
+             if (miraie && miraie.devices.length > 0) {
+               promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
+             }
+             await Promise.all(promises);
+             const alert = `🛡️ *Gravity Auto-Saver:* AC was on for >2.5h while you were AWAY. High-fidelity safety shut-off triggered.`;
+             for (const uid of (config.authorizedUsers || [])) {
+               try { await bot.sendMessage(uid, alert, { parse_mode: 'Markdown' }); } catch {}
+             }
+             logActivity(`🛡️ Auto-Saver: Shutdown triggered after 150m of away-usage.`);
+          }
+        }
+      } else {
+        awayAcMinutes = 0; // Reset if anyone comes home
+      }
+
+      // ──────────────────────────────────────────────────────
+      // 1. Check WiZ
+      if (wiz) {
+        const p = await (wiz as any).getPilot();
+        const state = p?.state ? 'on' : 'off';
+        if (p?.state) config.stats.lightMinutes++;
+        updateDeviceState('light', state);
+      }
+      // 1. Force MirAie REST refresh to ensure absolute tracking accuracy
+      if (miraie) {
+        try { await (miraie as any).refreshAllStatuses(); } catch {}
+      }
+
+      // 2. Check MirAie (Loop ALL devices)
+      if (miraie && (miraie as any).devices.length > 0) {
+        let anyAcOn = false;
+        for (const device of (miraie as any).devices) {
+          const status = await (miraie as any).getDeviceStatus(device.deviceId);
+          const ps = String(status?.ps || '').toLowerCase();
+          if (ps === 'on' || ps === '1' || ps === 'true') {
+            anyAcOn = true;
+          }
+        }
+        if (anyAcOn) config.stats.acMinutes++;
+        updateDeviceState('ac', anyAcOn ? 'on' : 'off');
+      }
+
+      const now = new Date();
+      // Record hourly snapshot if it's a new hour
+      if (now.getMinutes() === 0) {
+        if (!config.stats.history) config.stats.history = [];
+        const stamp = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        config.stats.history.push({ time: stamp, ac: config.stats.acMinutes, lights: config.stats.lightMinutes });
+        if (config.stats.history.length > 24) config.stats.history.shift();
+      }
+
+      // 3. Budget Check
+      if (config.stats.budgetLimit) {
+        const estBill = Number(calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0));
+        const dailyEst = (config.stats.acMinutes / 60 * 1.5) + (config.stats.lightMinutes / 60 * 0.015);
+        const dailyCost = Number(calculatePgvclBill(dailyEst));
+        
+        if (dailyCost > config.stats.budgetLimit && !config.stats.budgetAlertSent) {
+          const alert = `⚠️ *Budget Alert:* Daily electricity cost (*₹${dailyCost.toFixed(1)}*) has exceeded your limit of ₹${config.stats.budgetLimit}. Consider switching to economy mode.`;
+          for (const uid of (config.authorizedUsers || [])) {
+            try { await bot.sendMessage(uid, alert, { parse_mode: 'Markdown' }); } catch {}
+          }
+          config.stats.budgetAlertSent = true;
+        }
+      }
+
+      // 4. Save stats
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+
+      // 4. Daily Review at 11:59 PM
+      if (now.getHours() === 23 && now.getMinutes() === 59) {
+        const stats = config.stats;
+        const dateStr = now.toLocaleDateString('en-IN');
+        
+        const msg = `🌙 *Gravity Daily Review*\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*`;
+        for (const uid of (config.authorizedUsers || [])) {
+          await bot.sendMessage(uid, msg, { parse_mode: 'Markdown' });
+        }
+
+        // Archive to Daily Log
+        if (!config.stats.dailyLog) config.stats.dailyLog = [];
+        config.stats.dailyLog.push({
+          date: dateStr,
+          ac: (stats.acMinutes/60).toFixed(1),
+          light: (stats.lightMinutes/60).toFixed(1)
+        });
+        if (config.stats.dailyLog.length > 365) config.stats.dailyLog.shift();
+
+        config.stats = { 
+          acMinutes: 0, 
+          lightMinutes: 0, 
+          lastReset: new Date(), 
+          history: config.stats.history, 
+          dailyLog: config.stats.dailyLog,
+          budgetLimit: config.stats.budgetLimit,
+          budgetAlertSent: false // Reset alert for the next day
+        };
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      }
+    } catch (err) {
+      console.error('Stats loop error:', err);
+    }
+  }, 60000);
+
+  // ──────────────────────────────────────────────────────
+  // 🔋 Mac Battery Guardian (New Feature v2.2)
+  // ──────────────────────────────────────────────────────
+  let batteryAlertSent = false;
+  setInterval(async () => {
+    try {
+      const { stdout } = await execAsync('pmset -g batt');
+      const match = stdout.match(/(\d+)%/);
+      if (match) {
+        const level = parseInt(match[1]);
+        const isCharging = stdout.includes('AC Power') || stdout.includes('charging');
+        
+        if (level <= 20 && !isCharging && !batteryAlertSent) {
+          batteryAlertSent = true;
+          const msg = `⚠️ *Gravity Power Alert* ⚡\nYour Mac's battery is critical (*${level}%*).\nPlease plug in to keep the God build running.`;
+          for (const uid of (config.authorizedUsers || [])) {
+            await bot.sendMessage(uid, msg, { parse_mode: 'Markdown' });
+          }
+        } else if (level > 25) {
+          batteryAlertSent = false;
+        }
+      }
+    } catch {}
+  }, 300000); // Check every 5m
+
   // 🧠 Habit Learning Analysis (Run daily at 1 AM)
   async function analyzeHabits() {
     if (!config.habits || (config.habits as any).length < 10) return;
