@@ -293,9 +293,47 @@ async function main() {
       config.stats[type].lastChanged = new Date().toISOString();
       logActivity(`${type.toUpperCase()} State: ${status.toUpperCase()} (${isBotCommand ? 'Bot' : 'Manual/Remote'})`);
       
+      // Reset AC monitor on state change
+      if (type === 'ac') {
+        acEfficiencyData.startTime = status === 'on' ? Date.now() : null;
+        acEfficiencyData.startTemp = null;
+        acEfficiencyData.alerted = false;
+      }
+
       // If the change was manual (remote) or bot-triggered, it's still a habit pattern!
       recordHabit(`${type}_${status}`);
     }
+  };
+
+  // 💡 Blink Light Helper (Visual Alerts v4.7)
+  async function blinkLight(blinks = 3, color = { r: 255, g: 0, b: 0 }) {
+    if (!wiz) return;
+    try {
+      const originalPilot = await (wiz as any).getPilot();
+      for (let i = 0; i < blinks; i++) {
+        await (wiz as any).setPilot({ state: true, r: color.r, g: color.g, b: color.b, dimming: 100 });
+        await new Promise(r => setTimeout(r, 800));
+        await (wiz as any).setPilot({ state: true, dimming: 10 });
+        await new Promise(r => setTimeout(r, 800));
+      }
+      if (originalPilot) {
+        await (wiz as any).setPilot({
+          state: originalPilot.state,
+          dimming: originalPilot.dimming,
+          r: originalPilot.r,
+          g: originalPilot.g,
+          b: originalPilot.b,
+          temp: originalPilot.temp,
+          sceneId: originalPilot.sceneId
+        });
+      }
+    } catch (e) { console.error('Blink failed', e); }
+  }
+
+  let acEfficiencyData = {
+    startTime: null as number | null,
+    startTemp: null as number | null,
+    alerted: false
   };
 
   // 🧠 Habit Recorder: Track manual intent
@@ -1717,14 +1755,33 @@ async function main() {
       // 2. Check MirAie (Loop ALL devices)
       if (miraie && (miraie as any).devices.length > 0) {
         let anyAcOn = false;
+        let currentAcTemp = 0;
         for (const device of (miraie as any).devices) {
           const status = await (miraie as any).getDeviceStatus(device.deviceId);
           const ps = String(status?.ps || '').toLowerCase();
           if (ps === 'on' || ps === '1' || ps === 'true') {
             anyAcOn = true;
+            currentAcTemp = parseInt(status?.actmp || '0');
           }
         }
-        if (anyAcOn) config.stats.acMinutes++;
+        if (anyAcOn) {
+          config.stats.acMinutes++;
+          
+          // Efficiency Monitoring
+          if (acEfficiencyData.startTime && !acEfficiencyData.alerted) {
+             if (acEfficiencyData.startTemp === null) acEfficiencyData.startTemp = currentAcTemp;
+             const elapsed = (Date.now() - acEfficiencyData.startTime) / 60000;
+             if (elapsed >= 45 && currentAcTemp >= acEfficiencyData.startTemp) {
+                acEfficiencyData.alerted = true;
+                const alertBody = `🚨 *Efficiency Alert*: AC has been ON for 45m but room temperature hasn't dropped. Check doors/windows!`;
+                for (const uid of (config.authorizedUsers || [])) {
+                  try { await bot.sendMessage(uid, alertBody, { parse_mode: 'Markdown' }); } catch {}
+                }
+                speak("Attention. Air conditioning efficiency is low. Please check windows and doors.");
+                blinkLight(4, { r: 255, g: 50, b: 0 }); // Pulse Red
+             }
+          }
+        }
         updateDeviceState('ac', anyAcOn ? 'on' : 'off');
       }
 
