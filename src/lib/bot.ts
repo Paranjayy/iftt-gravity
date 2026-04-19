@@ -1955,23 +1955,24 @@ async function main() {
     saveConfig(config);
   }
 
-  // Polls
-  await bot.startPolling();
-  const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote Hub');
-  const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-  const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
-  
-  for (const userId of (config.authorizedUsers || [])) {
-    try { await bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
-  }
-  console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Commands refreshed.`);
-
   // 🏥 Health Pulse & Maintenance
   setInterval(() => {
     updateBotPulse(config);
     const now = new Date();
     if (now.getHours() === 1 && now.getMinutes() === 0) analyzeHabits();
   }, 60000);
+
+  // Polls
+  bot.startPolling();
+  
+  const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote Hub');
+  const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+  const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
+  
+  for (const userId of (config.authorizedUsers || [])) {
+    try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+  }
+  console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Polling started.`);
 
   // ── Shutdown Guardian ─────────────────────────────
   const shutdown = async (signal: string) => {
