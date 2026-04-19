@@ -1065,6 +1065,21 @@ async function main() {
   });
 
   // ──────────────────────────────────────────────────────
+  // /test_feedback — Sensory Feedback Trial (v4.7)
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'test_feedback',
+    description: 'Trial run of Sensory Feedback (Blink + Speak)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await send('🧪 *Gravity Trial*: Triggering sensory feedback...');
+      speak("Testing gravity sensory feedback system. Initiating visual pulse.");
+      await blinkLight(3, { r: 0, g: 200, b: 255 }); // Pulse Cyan for trial
+      await send('✅ Trial complete. Light should have perfectly restored its original state.');
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
   // /warm — Warm white lights
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
