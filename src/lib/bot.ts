@@ -184,8 +184,8 @@ async function main() {
 
   await bot.initialize();
   
-  // 🪄 Sync Command Suggestions (Slash menu)
-  await bot.setMyCommands([
+  // 🪄 Sync Command Suggestions (Slash menu) - Background Task
+  bot.setMyCommands([
     { command: 'status', description: 'Show all device states' },
     { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
     { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
@@ -194,7 +194,9 @@ async function main() {
     { command: 'ping', description: 'Check Hub health' },
     { command: 'test_feedback', description: 'Trial Sensory Feedback' },
     { command: 'login', description: 'Get secure token for dashboard' },
-  ]);
+  ]).catch(err => console.warn('Command sync failed:', err.message));
+
+  // 🌙 Sleep Intelligence (Adaptive Sleep Curve)
 
   // 🌙 Sleep Intelligence (Adaptive Sleep Curve)
   class SleepCurveManager {
