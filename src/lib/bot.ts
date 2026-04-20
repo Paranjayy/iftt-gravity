@@ -14,6 +14,7 @@ import { TelegramAdapter } from './adapters/telegram';
 import { MiraieAdapter } from './adapters/miraie';
 import { WizAdapter } from './adapters/wiz';
 import { WeatherEngine } from './weather';
+import { CodexSDK } from './codex';
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
@@ -151,6 +152,9 @@ async function main() {
   // Init adapters
   bot = new TelegramAdapter(TELEGRAM_TOKEN);
   const notifier = new NotificationManager(bot, config);
+
+  // Initialize Codex SDK
+  const codex = config.codexExportPath ? new CodexSDK(config.codexExportPath) : null;
 
   // Initialize Scheduler Actions
   const scheduler = new GravityScheduler(config, {
@@ -684,6 +688,55 @@ async function main() {
     description: 'Get your Telegram ID',
     handler: async (chatId, args, msg, send) => {
       await send(`👤 Your ID: \`${msg.from.id}\`\nUsername: @${msg.from.username || 'N/A'}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'search',
+    description: 'Search Telegram history via Codex SDK',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const query = args.join(' ');
+      if (!query) return await send('Usage: /search [query]');
+      
+      if (!codex) return await send('❌ Codex SDK not initialized (missing export path).');
+      
+      const results = codex.search(query);
+      if (results.length === 0) return await send(`🔍 No results found for "${query}"`);
+      
+      let response = `🔍 *Codex Search Results:* "${query}"\n━━━━━━━━━━━━━━\n`;
+      results.forEach((r, i) => {
+        const date = new Date(r.timestamp).toLocaleDateString('en-IN');
+        response += `${i+1}. [${date}] ${r.content.substring(0, 100)}${r.content.length > 100 ? '...' : ''}\n\n`;
+      });
+      await send(response);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'codex',
+    description: 'Show Codex SDK stats and pins',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!codex) return await send('❌ Codex SDK not initialized.');
+      
+      const stats = codex.getStats();
+      const pins = codex.getPinned();
+      
+      let response = `🧠 *Codex Orchestrator Intelligence*\n━━━━━━━━━━━━━━\n`;
+      response += `📊 *Stats*:\n`;
+      response += `- Messages: \`${stats.totalMessages}\`\n`;
+      response += `- Participants: \`${stats.participants.join(', ')}\`\n`;
+      response += `- Media: \`${Object.entries(stats.mediaCounts).map(([k, v]) => `${k}:${v}`).join(', ')}\`\n\n`;
+      
+      if (pins.length > 0) {
+        response += `📌 *Top Pinned Messages*:\n`;
+        pins.slice(0, 3).forEach(p => {
+          response += `- ${p.content.substring(0, 60)}...\n`;
+        });
+      }
+      
+      await send(response);
     }
   });
 
@@ -1302,11 +1355,13 @@ async function main() {
       
       const acStatus = config.stats.ac?.status || 'unknown';
       const acDuration = getDurationString(config.stats.ac?.lastChanged);
-      lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} (${acDuration}) ${miraie ? '✅' : '❌'}`);
+      const acHw = miraie ? '✅ Live' : '🌑 Disconnected (Power Cut?)';
+      lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} [Req: ${config.ac?.temp || '24'}°C] (${acHw})`);
       
       const lightStatus = config.stats.light?.status || 'unknown';
       const lightDuration = getDurationString(config.stats.light?.lastChanged);
-      lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} (${lightDuration}) ${wiz ? '✅' : '❌'}`);
+      const lightHw = wiz ? '✅ Live' : '🌑 Disconnected';
+      lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} [Req: ${config.lights?.brightness || '100'}%] (${lightHw})`);
       
       const botUptime = Math.floor(process.uptime());
       const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
