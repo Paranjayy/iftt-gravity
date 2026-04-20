@@ -1,10 +1,11 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "gravity-hub",
+  "version": "1.1.3",
   "title": "Gravity Hub",
   "description": "Native Mission Control for the Gravity IoT Hub.",
   "icon": "assets/icon.png",
-  "author": "antigravity",
+  "author": "paranjay",
   "license": "MIT",
   "commands": [
     {
@@ -18,6 +19,13 @@
       "name": "logs",
       "title": "View Logs",
       "description": "See the latest house activity",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "archive",
+      "title": "Search Clipboard Archive",
+      "description": "Infinite history of your copies and cuts",
       "icon": "assets/icon.png",
       "mode": "view"
     }
@@ -38,7 +46,7 @@
     "typescript": "^5.2.2"
   },
   "scripts": {
-    "build": "ray build -e dist",
+    "build": "ray build",
     "dev": "ray develop",
     "fix-lint": "eslint src --fix",
     "lint": "eslint src",

@@ -407,7 +407,7 @@ async function main() {
       
       // Fallback: Estimation Engine (v4.0.0 High-Fidelity)
       if (!pg || !config.pgvcl?.consumerId || config.pgvcl.consumerId === 'ENTER_ID') {
-        const units = (config.stats.acMinutes / 60 * 1.5) + (config.stats.lightMinutes / 60 * 0.015);
+        const units = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
         const bill = calculatePgvclBill(units);
         const roundedBill = Math.round(Number(bill));
         
@@ -1678,6 +1678,50 @@ async function main() {
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
+        
+        // 🪐 GRAVITY ARCHIVE API
+        if (url.pathname === '/archive/list') {
+          const { ArchiveDB } = await import('../archive/db');
+          const items = ArchiveDB.list(50);
+          return new Response(JSON.stringify(items), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/archive/search') {
+          const { ArchiveDB } = await import('../archive/db');
+          const q = url.searchParams.get('q') || '';
+          const items = ArchiveDB.search(q);
+          return new Response(JSON.stringify(items), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname.startsWith('/archive/bookmark/')) {
+          const { ArchiveDB } = await import('../archive/db');
+          const id = parseInt(url.pathname.split('/').pop() || '0');
+          ArchiveDB.toggleBookmark(id);
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname.startsWith('/archive/delete/')) {
+          const { ArchiveDB } = await import('../archive/db');
+          const id = parseInt(url.pathname.split('/').pop() || '0');
+          ArchiveDB.delete(id);
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname.startsWith('/archive/promote/')) {
+          const { ArchiveDB } = await import('../archive/db');
+          const id = parseInt(url.pathname.split('/').pop() || '0');
+          const items = ArchiveDB.list(1000);
+          const item = items.find(i => i.id === id);
+          if (item) {
+            const entry = `\n### 🪐 Promoted from Archive (${new Date().toLocaleDateString()})\nSource: \`${item.source_app}\`\n\n${item.content}\n\n---\n`;
+            fs.appendFileSync(path.join(process.cwd(), 'prompt_vault.md'), entry);
+            return new Response('Promoted', { headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname.startsWith('/archive/update-labels/')) {
+          const { ArchiveDB } = await import('../archive/db');
+          const id = parseInt(url.pathname.split('/').pop() || '0');
+          const labels = url.searchParams.get('labels') || '';
+          ArchiveDB.updateLabels(id, labels);
+          return new Response('Updated', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
         if (url.pathname === '/system/lock') {
           await execAsync(`pmset displaysleepnow || /System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend`);
           return new Response('Locked', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -1738,6 +1782,19 @@ async function main() {
           const dir = url.searchParams.get('dir') === 'up' ? 'up' : 'down';
           await execAsync(`osascript -e 'set volume output volume ((output volume of (get volume settings)) ${dir === 'up' ? '+' : '-'} 10)'`);
           return new Response('Volume Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/logs') {
+          try {
+            const logsText = fs.readFileSync(path.join(process.cwd(), 'house_log.md'), 'utf-8');
+            return new Response(logsText, { status: 200, headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } });
+          } catch (e) {
+            return new Response("No logs found.", { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+        if (url.pathname === '/system/restart') {
+           // Fire and forget restart script
+           exec(`scripts/iftt-clone.sh`); 
+           return new Response('Restarting Hub...', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (sceneName) {
           await triggerScene(sceneName);
@@ -1847,20 +1904,22 @@ async function main() {
 
       // 2. Check MirAie (Loop ALL devices)
       if (miraie && (miraie as any).devices.length > 0) {
-        let anyAcOn = false;
+        let activeAcCount = 0;
         let currentAcTemp = 0;
         for (const device of (miraie as any).devices) {
           const status = await (miraie as any).getDeviceStatus(device.deviceId);
           const ps = String(status?.ps || '').toLowerCase();
           if (ps === 'on' || ps === '1' || ps === 'true') {
-            anyAcOn = true;
+            activeAcCount++;
             currentAcTemp = parseInt(status?.actmp || '0');
           }
         }
-        if (anyAcOn) {
-          config.stats.acMinutes++;
+        
+        if (activeAcCount > 0) {
+          // Increment minutes for EACH active unit (Parallel Load Accuracy)
+          config.stats.acMinutes += activeAcCount;
           
-          // Efficiency Monitoring
+          // Efficiency Monitoring (on primary unit)
           if (acEfficiencyData.startTime && !acEfficiencyData.alerted) {
              if (acEfficiencyData.startTemp === null) acEfficiencyData.startTemp = currentAcTemp;
              const elapsed = (Date.now() - acEfficiencyData.startTime) / 60000;
@@ -1875,7 +1934,7 @@ async function main() {
              }
           }
         }
-        updateDeviceState('ac', anyAcOn ? 'on' : 'off');
+        updateDeviceState('ac', activeAcCount > 0 ? 'on' : 'off');
       }
 
       const now = new Date();
@@ -1890,7 +1949,7 @@ async function main() {
       // 3. Budget Check
       if (config.stats.budgetLimit) {
         const estBill = Number(calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0));
-        const dailyEst = (config.stats.acMinutes / 60 * 1.5) + (config.stats.lightMinutes / 60 * 0.015);
+        const dailyEst = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
         const dailyCost = Number(calculatePgvclBill(dailyEst));
         
         if (dailyCost > config.stats.budgetLimit && !config.stats.budgetAlertSent) {
