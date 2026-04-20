@@ -2076,12 +2076,20 @@ async function main() {
             preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
           }
           
-          // Liquid Aura: Cycle through Lounge Palette
+          // Liquid Aura: Massive Prism Palette (10+ Colors)
           const palette = [
-            { r: 255, g: 0, b: 127 }, // Neon Pink
-            { r: 155, g: 48, b: 255 }, // Deep Purple
-            { r: 0, g: 191, b: 255 },  // Cyber Blue
-            { r: 255, g: 105, b: 180 } // Hot Pink
+            { r: 255, g: 0, b: 127 },  // Neon Pink
+            { r: 155, g: 48, b: 255 },  // Deep Purple
+            { r: 0, g: 191, b: 255 },   // Cyber Blue
+            { r: 255, g: 105, b: 180 }, // Hot Pink
+            { r: 0, g: 255, b: 127 },   // Spring Green
+            { r: 255, g: 69, b: 0 },    // Orange Red
+            { r: 138, g: 43, b: 226 },  // Blue Violet
+            { r: 0, g: 255, b: 255 },   // Aqua
+            { r: 255, g: 20, b: 147 },  // Deep Pink
+            { r: 75, g: 0, b: 130 },    // Indigo
+            { r: 255, g: 215, b: 0 },   // gold
+            { r: 50, g: 205, b: 50 }    // Lime Green
           ];
           const color = palette[Math.floor(Math.random() * palette.length)];
           
@@ -2089,7 +2097,7 @@ async function main() {
             state: true, r: color.r, g: color.g, b: color.b, dimming: 40 
           }});
           
-          logActivity(`🎵 Liquid Aura: ${currentSpotify} -> Cycling Vibe. 🌈`);
+          logActivity(`🎵 Liquid Aura: ${currentSpotify} -> Prism Pulse. 🌈`);
         } else if ((!currentSpotify || isAd) && lastSpotifyTrack) {
           // Restore original state
           if (preMusicLightState && preMusicLightState.status === 'on') {
