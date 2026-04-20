@@ -88,6 +88,26 @@ function logActivity(text: string) {
   fs.appendFileSync(LOG_PATH, entry);
 }
 
+function archiveClipboard(text: string) {
+  const dir = path.join(process.cwd(), 'gravity-archive');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+  const clipsPath = path.join(dir, 'clips.json');
+  let clips: any[] = [];
+  try {
+    const data = fs.readFileSync(clipsPath, 'utf-8');
+    clips = JSON.parse(data);
+  } catch (e) { clips = []; }
+  
+  clips.unshift({
+    id: Date.now().toString(),
+    text,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Keep last 1000 clips
+  fs.writeFileSync(clipsPath, JSON.stringify(clips.slice(0, 1000), null, 2));
+}
+
 let lastBriefDate = "";
 let lastEveningDate = "";
 
@@ -1844,16 +1864,26 @@ async function main() {
         }
         
         // 🪐 GRAVITY ARCHIVE API
-        if (url.pathname === '/archive/list') {
-          const { ArchiveDB } = await import('../archive/db');
-          const items = ArchiveDB.list(50);
-          return new Response(JSON.stringify(items), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        if (url.pathname === '/archive/add') {
+          const body: any = await req.json();
+          if (body.text) {
+             archiveClipboard(body.text);
+             return new Response('Added', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          return new Response('Empty', { status: 400 });
         }
-        if (url.pathname === '/archive/search') {
-          const { ArchiveDB } = await import('../archive/db');
-          const q = url.searchParams.get('q') || '';
-          const items = ArchiveDB.search(q);
-          return new Response(JSON.stringify(items), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        if (url.pathname === '/archive/search' || url.pathname === '/archive/list') {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          let clips = [];
+          try {
+            const data = fs.readFileSync(clipsPath, 'utf-8');
+            clips = JSON.parse(data);
+          } catch (e) { clips = []; }
+          
+          const q = url.searchParams.get('q')?.toLowerCase();
+          const results = q ? clips.filter((c: any) => c.text.toLowerCase().includes(q)) : clips;
+          
+          return new Response(JSON.stringify(results.slice(0, 50)), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname.startsWith('/archive/bookmark/')) {
           const { ArchiveDB } = await import('../archive/db');
@@ -2036,20 +2066,32 @@ async function main() {
          config.stats.lowBattAlerted = false;
       }
 
-      // 2. Media Aura Sync (Mood Restoration & Track Pulse)
+      // 2. Media Aura Sync (Liquid Aura 2.0 - Dynamic Cycling)
       const currentSpotify = await getSpotifyStatus();
       if (config.mediaAura !== false) {
         const isAd = currentSpotify?.toLowerCase().includes('advertisement') || currentSpotify?.toLowerCase().includes('spotify');
         
         if (currentSpotify && currentSpotify !== lastSpotifyTrack && !isAd) {
-          // New Song or Music Started (and NOT an AD)
           if (!lastSpotifyTrack) {
             preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
           }
-          await triggerScene('chill'); // Deep Lounge Mood
-          logActivity(`🎵 Media Aura: ${currentSpotify} -> Mood Pulsed.`);
+          
+          // Liquid Aura: Cycle through Lounge Palette
+          const palette = [
+            { r: 255, g: 0, b: 127 }, // Neon Pink
+            { r: 155, g: 48, b: 255 }, // Deep Purple
+            { r: 0, g: 191, b: 255 },  // Cyber Blue
+            { r: 255, g: 105, b: 180 } // Hot Pink
+          ];
+          const color = palette[Math.floor(Math.random() * palette.length)];
+          
+          await wiz?.executeAction({ type: 'control', payload: { 
+            state: true, r: color.r, g: color.g, b: color.b, dimming: 40 
+          }});
+          
+          logActivity(`🎵 Liquid Aura: ${currentSpotify} -> Cycling Vibe. 🌈`);
         } else if ((!currentSpotify || isAd) && lastSpotifyTrack) {
-          // Music Stopped or AD started
+          // Restore original state
           if (preMusicLightState && preMusicLightState.status === 'on') {
              await wiz?.executeAction({ type: 'control', payload: { 
                state: true, 
@@ -2059,11 +2101,22 @@ async function main() {
           } else {
              await wiz?.executeAction({ type: 'control', payload: { state: false } });
           }
-          logActivity(`🎵 Media Aura: ${isAd ? 'Ad detected' : 'Music stopped'}. Restoring environment.`);
+          logActivity(`🎵 Liquid Aura: Restored original atmosphere.`);
           preMusicLightState = null;
         }
       }
       lastSpotifyTrack = currentSpotify;
+
+      // 3. Clipboard Archive Engine (Infinite Memory)
+      try {
+        const { stdout } = await execAsync('pbpaste');
+        const currentClip = stdout.trim();
+        if (currentClip && currentClip !== config.lastClip && currentClip.length > 3) {
+          config.lastClip = currentClip;
+          archiveClipboard(currentClip);
+          logActivity(`📋 Memory Archive: New clip captured (${currentClip.substring(0, 20)}...)`);
+        }
+      } catch (e) { /* Clipboard silent */ }
 
       // 3. Auto-Saver Protection (2.5h / 150m limit)
       if (!isPhoneOnline) {
