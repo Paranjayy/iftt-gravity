@@ -11,8 +11,8 @@
 
 echo "🪐 Initializing Gravity Hub..."
 
-# 1. Force kill any existing instances (Total Purge)
-pkill -9 -f "bot.ts" 2>/dev/null
+# 1. Polite kill (Gives bot time to send offline report)
+pkill -SIGINT -f "bot.ts" 2>/dev/null
 
 # 2. Direct detached boot from project root
 cd /Users/paranjay/Developer/iftt

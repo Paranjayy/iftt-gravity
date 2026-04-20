@@ -134,6 +134,10 @@ let bot: TelegramAdapter;
 
 async function main() {
   config = loadConfig();
+  
+  // Session Stats
+  let sessionAcMinutes = 0;
+  let sessionLightMinutes = 0;
   if (!config.hubToken) {
     config.hubToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     saveConfig(config);
@@ -1978,6 +1982,7 @@ async function main() {
         if (activeAcCount > 0) {
           // Increment minutes for EACH active unit (Parallel Load Accuracy)
           config.stats.acMinutes += activeAcCount;
+          sessionAcMinutes += activeAcCount;
           
           // Efficiency Monitoring (on primary unit)
           if (acEfficiencyData.startTime && !acEfficiencyData.alerted) {
@@ -2144,8 +2149,12 @@ async function main() {
   const shutdown = async (signal: string) => {
     const uptime = Math.floor(process.uptime());
     const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
+    const acStr = sessionAcMinutes > 0 ? `\n❄️ AC Workload: *${(sessionAcMinutes/60).toFixed(1)} hrs*` : '';
+    const lightStr = sessionLightMinutes > 0 ? `\n💡 Light Usage: *${(sessionLightMinutes/60).toFixed(1)} hrs*` : '';
+    
     const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n⏱ Session Uptime: *${uptimeStr}*\n\nHub will not respond until restarted.`;
+    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n⏱ Session Uptime: *${uptimeStr}*${acStr}${lightStr}\n\nHub will not respond until restarted.`;
+    
     for (const userId of (config.authorizedUsers || [])) {
       try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
     }
