@@ -2,21 +2,22 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title Gravity Hub
-# @raycast.mode compact
+# @raycast.title Gravity Hub (Archive Only)
+# @raycast.mode silent
 # @raycast.packageName Gravity Tools
 
 # Optional parameters:
 # @raycast.icon 🪐
+# @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt
 
-echo "🪐 Initializing Gravity Hub..."
+# Documentation:
+# @raycast.description Start the Gravity Hub in minimal CLIPBOARD_ONLY mode.
+# @raycast.author antigravity
 
-# 1. Polite kill (Gives bot time to send offline report)
-pkill -SIGINT -f "bot.ts" 2>/dev/null
+# Evict any existing process on 3030 first to prevent domino crashes
+lsof -ti :3030 | xargs kill -9 2>/dev/null
 
-# 2. Direct detached boot from project root
-cd /Users/paranjay/Developer/iftt
-nohup /Users/paranjay/.bun/bin/bun src/lib/bot.ts >> /tmp/gravity-bot.log 2>&1 &
+# Launch the Brain in the background
+CLIPBOARD_ONLY=true /Users/paranjay/.bun/bin/bun src/lib/bot.ts > /tmp/gravity-archive.log 2>&1 &
 
-# 3. Fire and Forget
-echo "🚀 Gravity Hub Launching..."
+echo "🌌 Gravity Archive Sentry: ACTIVE"
