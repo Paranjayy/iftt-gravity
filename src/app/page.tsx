@@ -419,11 +419,35 @@ function DashboardView({ miraieLinked, linkedDevices, ac, sending, usageData, on
 
           {/* Quick devices */}
           <div className="rounded-3xl bg-[#0f0f1a] border border-white/5 p-5 space-y-3">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Device Pool</h4>
-            <DeviceRow icon={Wind} name="Panasonic AC" sub="MirAie" status={miraieLinked ? 'linked' : 'offline'} />
-            <DeviceRow icon={Lightbulb} name="Bedroom Light" sub="WiZ 2.0" status="offline" />
-            <DeviceRow icon={Tv} name="Smart TV" sub="SmartThings" status="offline" />
-            <DeviceRow icon={Bot} name="Telegram Bot" sub="Gravity Bot" status="online" />
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Live Device Heartbeat</h4>
+            <DeviceRow 
+              icon={Wind} 
+              name="Panasonic AC" 
+              sub={miraieLinked ? "Status: ON (Digital)" : "Status: Disconnected"} 
+              status={miraieLinked ? 'linked' : 'offline'}
+              duration="2h 14m" 
+            />
+            <DeviceRow 
+              icon={Lightbulb} 
+              name="Bedroom Light" 
+              sub="Status: OFF (Analog)" 
+              status="offline"
+              duration="14h 12m" 
+            />
+            <DeviceRow 
+              icon={Tv} 
+              name="Smart TV" 
+              sub="Sleep Mode" 
+              status="offline"
+              duration="--h --m" 
+            />
+            <DeviceRow 
+              icon={Bot} 
+              name="Telegram Bot" 
+              sub="Polling Active" 
+              status="online"
+              duration="Live" 
+            />
           </div>
         </div>
       </div>
@@ -502,21 +526,28 @@ function PresenceRow({ name, ip, status }: any) {
   );
 }
 
-function DeviceRow({ icon: Icon, name, sub, status }: any) {
+function DeviceRow({ icon: Icon, name, sub, status, duration }: any) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center">
-        <Icon className="w-4 h-4 text-slate-400" />
+    <div className="flex items-center gap-3 group">
+      <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-indigo-500/10 transition-colors">
+        <Icon className={`w-4 h-4 ${status === 'online' || status === 'linked' ? 'text-indigo-400' : 'text-slate-600'}`} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white truncate">{name}</div>
-        <div className="text-[10px] text-slate-600 uppercase tracking-wider">{sub}</div>
+        <div className="text-[9px] text-slate-600 uppercase tracking-widest">{sub}</div>
       </div>
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-        status === 'linked' || status === 'online' 
-          ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
-          : 'bg-slate-700'
-      }`} />
+      <div className="flex flex-col items-end gap-1">
+        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+          status === 'linked' || status === 'online' 
+            ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
+            : 'bg-slate-700'
+        }`} />
+        {duration && (
+          <span className="text-[8px] font-black uppercase text-slate-700 group-hover:text-slate-500 transition-colors">
+            {duration}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
