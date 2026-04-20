@@ -1360,12 +1360,12 @@ async function main() {
       const acStatus = config.stats.ac?.status || 'unknown';
       const acDuration = getDurationString(config.stats.ac?.lastChanged);
       const acHw = miraie ? '✅ Live' : '🌑 Disconnected (Power Cut?)';
-      lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} [Req: ${config.ac?.temp || '24'}°C] (${acHw})`);
+      lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} (${acDuration}) [Req: ${config.ac?.temp || '24'}°C] (${acHw})`);
       
       const lightStatus = config.stats.light?.status || 'unknown';
       const lightDuration = getDurationString(config.stats.light?.lastChanged);
       const lightHw = wiz ? '✅ Live' : '🌑 Disconnected';
-      lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} [Req: ${config.lights?.brightness || '100'}%] (${lightHw})`);
+      lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} (${lightDuration}) [Req: ${config.lights?.brightness || '100'}%] (${lightHw})`);
       
       const botUptime = Math.floor(process.uptime());
       const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
@@ -2138,7 +2138,9 @@ async function main() {
   
   const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote Hub');
   const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-  const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} | 💡 Light: ${wiz ? '✅' : '❌'}\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
+  const acDur = getDurationString(config.stats.ac?.lastChanged);
+  const ltDur = getDurationString(config.stats.light?.lastChanged);
+  const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} (${acDur}) | 💡 Light: ${wiz ? '✅' : '❌'} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
   
   for (const userId of (config.authorizedUsers || [])) {
     try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}

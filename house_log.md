@@ -138,3 +138,6 @@
 [21/4/2026, 12:59:49 AM] AC State: OFF (Manual/Remote)
 [21/4/2026, 1:00:17 AM] 🧠 Habit Learner: Scanning manual patterns...
 [21/4/2026, 1:53:17 AM] AC State: ON (Bot)
+[21/4/2026, 3:11:48 AM] LIGHT State: OFF (Manual/Remote)
+[21/4/2026, 3:17:49 AM] AC State: OFF (Manual/Remote)
+[21/4/2026, 3:50:49 AM] AC State: ON (Manual/Remote)
