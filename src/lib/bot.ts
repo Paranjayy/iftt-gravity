@@ -41,6 +41,25 @@ async function getSystemIdleTime(): Promise<number> {
   } catch { return 0; }
 }
 
+async function getSpotifyStatus(): Promise<string | null> {
+  if (os.platform() !== 'darwin') return null;
+  try {
+    const script = `
+      if application "Spotify" is running then
+        tell application "Spotify"
+          if player state is playing then
+            return (name of current track) & " - " & (artist of current track)
+          end if
+        end tell
+      end if
+      return "stopped"
+    `;
+    const { stdout } = await execAsync(`osascript -e '${script}'`);
+    const res = stdout.trim();
+    return res === "stopped" ? null : res;
+  } catch { return null; }
+}
+
 function logActivity(text: string) {
   const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   const entry = `[${stamp}] ${text}\n`;
@@ -1371,9 +1390,13 @@ async function main() {
       const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
       const bootedAt = config.stats.bot?.bootedAt ? new Date(config.stats.bot.bootedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : "Unknown";
       
-      lines.push(`🤖 *Bot*: ONLINE (Since ${bootedAt} IST)`);
       lines.push(`⏱ *Session Uptime*: ${Math.floor(botUptime/3600)}h ${Math.floor((botUptime%3600)/60)}m`);
       lines.push(`💤 *Bot Downtime*: Last down for ${botOffBefore}`);
+      
+      const spotify = await getSpotifyStatus();
+      if (spotify) {
+        lines.push(`\n🎵 *Spotify*: ${spotify}`);
+      }
       
       try {
         const logs = fs.readFileSync(LOG_PATH, 'utf-8').trim().split('\n');
