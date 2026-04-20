@@ -714,6 +714,18 @@ async function main() {
         if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
         if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
         break;
+      case "CHILL":
+      case "chill":
+        logActivity("🎬 Scene: CHILL (Media Aura)");
+        if (wiz) {
+           // Deep Purple/Lounge Vibe
+           promises.push(wiz.executeAction({ type: 'control', payload: { 
+             state: true, 
+             r: 155, g: 48, b: 255, 
+             dimming: 40 
+           }}));
+        }
+        break;
       case "MORNING_BRIEF":
         const hours = (config.stats.acMinutes / 60).toFixed(1);
         const bill = calculatePgvclBill(Number(config.stats.pgvcl?.units || 0));
