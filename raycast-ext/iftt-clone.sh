@@ -2,7 +2,7 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title Start Gravity Hub
+# @raycast.title Gravity Hub
 # @raycast.mode compact
 # @raycast.packageName Gravity Tools
 
@@ -11,7 +11,7 @@
 
 echo "🪐 Initializing Gravity Hub..."
 
-# Execute your hub launcher script directly using nohup to detach it
-nohup bash /Users/paranjay/Developer/iftt/hub.sh > /dev/null 2>&1 &
+# Direct detached boot (bypass hub.sh nesting)
+/Users/paranjay/.bun/bin/bun /Users/paranjay/Developer/iftt/src/lib/bot.ts >> /tmp/gravity-bot.log 2>&1 &
 
-echo "🚀 Gravity God Mode is now active!"
+echo "🚀 Gravity Hub is now active!"
