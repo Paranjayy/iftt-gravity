@@ -37,6 +37,13 @@
       "mode": "view"
     },
     {
+      "name": "cortex",
+      "title": "Gravity Cortex",
+      "description": "Active intelligence and background tasks",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
       "name": "aura_toggle",
       "title": "Toggle Media Aura",
       "description": "Toggle automatic music-light sync",

@@ -47,16 +47,21 @@ async function getSpotifyStatus(): Promise<string | null> {
     const script = `
       if application "Spotify" is running then
         tell application "Spotify"
-          if player state is playing then
-            return (name of current track) & " - " & (artist of current track)
-          end if
+          try
+            set tName to name of current track
+            set aName to artist of current track
+            set pState to player state as string
+            if pState is "playing" then
+              return tName & " - " & aName
+            end if
+          end try
         end tell
       end if
       return "stopped"
     `;
     const { stdout } = await execAsync(`osascript -e '${script}'`);
     const res = stdout.trim();
-    return res === "stopped" ? null : res;
+    return (res === "stopped" || res === "") ? null : res;
   } catch { return null; }
 }
 
@@ -2075,8 +2080,12 @@ async function main() {
         awayAcMinutes = 0; // Reset if anyone comes home
       }
 
-      // ──────────────────────────────────────────────────────
-      // 1. Check WiZ
+      // 4. Deep Device Sync (Pulse Check)
+      if (miraie && miraie.devices.length > 0) {
+        const s = await miraie.getDeviceStatus(miraie.devices[0].deviceId);
+        const actualAcStatus = (s?.ps === 'on' || s?.ps === '1') ? 'on' : 'off';
+        updateDeviceState('ac', actualAcStatus);
+      }
       if (wiz) {
         const p = await (wiz as any).getPilot();
         const state = p?.state ? 'on' : 'off';

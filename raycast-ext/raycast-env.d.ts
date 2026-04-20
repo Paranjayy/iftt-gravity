@@ -21,6 +21,8 @@ declare namespace Preferences {
   export type Archive = ExtensionPreferences & {}
   /** Preferences accessible in the `stats` command */
   export type Stats = ExtensionPreferences & {}
+  /** Preferences accessible in the `cortex` command */
+  export type Cortex = ExtensionPreferences & {}
   /** Preferences accessible in the `aura_toggle` command */
   export type AuraToggle = ExtensionPreferences & {}
 }
@@ -34,6 +36,8 @@ declare namespace Arguments {
   export type Archive = {}
   /** Arguments passed to the `stats` command */
   export type Stats = {}
+  /** Arguments passed to the `cortex` command */
+  export type Cortex = {}
   /** Arguments passed to the `aura_toggle` command */
   export type AuraToggle = {}
 }
