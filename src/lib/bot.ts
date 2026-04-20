@@ -2010,7 +2010,7 @@ async function main() {
       }
       lastSpotifyState = currentSpotify;
 
-      // 1. Auto-Saver Protection (2.5h / 150m limit)
+      // 3. Auto-Saver Protection (2.5h / 150m limit)
       if (!isPhoneOnline) {
         // Only count if an AC is actually on
         let anyAcOn = false;
