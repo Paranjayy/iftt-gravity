@@ -142,3 +142,6 @@
 [21/4/2026, 3:17:49 AM] AC State: OFF (Manual/Remote)
 [21/4/2026, 3:50:49 AM] AC State: ON (Manual/Remote)
 [21/4/2026, 4:00:39 AM] LIGHT State: ON (Manual/Remote)
+[21/4/2026, 4:12:17 AM] 🎬 Scene Trigger: chill
+[21/4/2026, 4:12:17 AM] 🎵 Media Aura: Song started. Mood synced.
+[21/4/2026, 4:12:17 AM] AC State: OFF (Manual/Remote)

@@ -1455,6 +1455,22 @@ async function main() {
   // /remind — Delayed Telegram reminder
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
+    command: 'media_aura',
+    description: 'Toggle automatic music-light sync: /media_aura on|off',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const state = args[0]?.toLowerCase();
+      if (state === 'on' || state === 'off') {
+        config.mediaAura = (state === 'on');
+        saveConfig(config);
+        await send(`🎵 *Media Aura*: Automatic mood sync is now *${state.toUpperCase()}*.`);
+      } else {
+        await send(`🎵 *Media Aura*: Currently *${config.mediaAura !== false ? 'ON' : 'OFF'}*. Use \`/media_aura on|off\` to toggle.`);
+      }
+    }
+  });
+
+  bot.registerCommand({
     command: 'remind',
     description: 'Set a reminder: /remind 30m take a break',
     handler: async (chatId, args, msg, send) => {
@@ -1989,24 +2005,26 @@ async function main() {
 
       // 2. Media Aura Sync (Mood Restoration)
       const currentSpotify = await getSpotifyStatus();
-      if (currentSpotify && !lastSpotifyState) {
-        // Music Started
-        preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
-        await triggerScene('chill'); // Deep Lounge Mood
-        logActivity(`🎵 Media Aura: Song started. Mood synced.`);
-      } else if (!currentSpotify && lastSpotifyState) {
-        // Music Stopped
-        if (preMusicLightState && preMusicLightState.status === 'on') {
-           await wiz?.executeAction({ type: 'control', payload: { 
-             state: true, 
-             dimming: preMusicLightState.brightness || 100,
-             r: preMusicLightState.r, g: preMusicLightState.g, b: preMusicLightState.b 
-           }});
-        } else {
-           await wiz?.executeAction({ type: 'control', payload: { state: false } });
+      if (config.mediaAura !== false) {
+        if (currentSpotify && !lastSpotifyState) {
+          // Music Started
+          preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
+          await triggerScene('chill'); // Deep Lounge Mood
+          logActivity(`🎵 Media Aura: Song started. Mood synced.`);
+        } else if (!currentSpotify && lastSpotifyState) {
+          // Music Stopped
+          if (preMusicLightState && preMusicLightState.status === 'on') {
+             await wiz?.executeAction({ type: 'control', payload: { 
+               state: true, 
+               dimming: preMusicLightState.brightness || 100,
+               r: preMusicLightState.r, g: preMusicLightState.g, b: preMusicLightState.b 
+             }});
+          } else {
+             await wiz?.executeAction({ type: 'control', payload: { state: false } });
+          }
+          logActivity(`🎵 Media Aura: Music stopped. Restoring original environment.`);
+          preMusicLightState = null;
         }
-        logActivity(`🎵 Media Aura: Music stopped. Restoring original environment.`);
-        preMusicLightState = null;
       }
       lastSpotifyState = currentSpotify;
 
