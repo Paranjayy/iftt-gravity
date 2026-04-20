@@ -133,9 +133,41 @@ let bot: TelegramAdapter;
 
 async function main() {
   config = loadConfig();
+<<<<<<< Updated upstream
   if (!config.hubToken) {
     config.hubToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     saveConfig(config);
+=======
+  
+  // Session Stats
+  let sessionAcMinutes = 0;
+  let sessionLightMinutes = 0;
+
+  let isPhoneOnline = true; // tracking state
+  let offlineCounter = 0;
+  let offlineSince: number | null = null; // Debounce tracking
+  
+  const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
+
+  // 🪐 Intelligence Mode Pulse
+  const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
+
+  // Init adapters (Only if not in archive-only mode)
+  if (!CLIPBOARD_ONLY) {
+    if (!TELEGRAM_TOKEN) {
+      console.error('❌ TELEGRAM_TOKEN not set');
+      process.exit(1);
+    }
+    bot = new TelegramAdapter(TELEGRAM_TOKEN);
+  } else {
+    console.log("🪐 Gravity: CLIPBOARD-ONLY MODE (Minimal Brain)");
+      bot = { 
+        sendMessage: async () => {}, 
+        setMyCommands: async () => {},
+        registerCommand: () => {},
+        startPolling: () => {} // Added Polling safety
+      } as any;
+>>>>>>> Stashed changes
   }
 
   let isPhoneOnline = true; // tracking state
