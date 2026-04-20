@@ -2007,7 +2007,7 @@ async function main() {
   runPgvclScraper();
   setInterval(runPgvclScraper, 21600000);
   let awayAcMinutes = 0;
-  let lastSpotifyState: string | null = null;
+  let lastSpotifyTrack: string | null = null;
   let preMusicLightState: any = null;
 
   setInterval(async () => {
@@ -2024,15 +2024,17 @@ async function main() {
          config.stats.lowBattAlerted = false;
       }
 
-      // 2. Media Aura Sync (Mood Restoration)
+      // 2. Media Aura Sync (Mood Restoration & Track Pulse)
       const currentSpotify = await getSpotifyStatus();
       if (config.mediaAura !== false) {
-        if (currentSpotify && !lastSpotifyState) {
-          // Music Started
-          preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
+        if (currentSpotify && currentSpotify !== lastSpotifyTrack) {
+          // New Song or Music Started
+          if (!lastSpotifyTrack) {
+            preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
+          }
           await triggerScene('chill'); // Deep Lounge Mood
-          logActivity(`🎵 Media Aura: Song started. Mood synced.`);
-        } else if (!currentSpotify && lastSpotifyState) {
+          logActivity(`🎵 Media Aura: ${currentSpotify} -> Mood Pulsed.`);
+        } else if (!currentSpotify && lastSpotifyTrack) {
           // Music Stopped
           if (preMusicLightState && preMusicLightState.status === 'on') {
              await wiz?.executeAction({ type: 'control', payload: { 
@@ -2047,7 +2049,7 @@ async function main() {
           preMusicLightState = null;
         }
       }
-      lastSpotifyState = currentSpotify;
+      lastSpotifyTrack = currentSpotify;
 
       // 3. Auto-Saver Protection (2.5h / 150m limit)
       if (!isPhoneOnline) {
@@ -2282,11 +2284,18 @@ async function main() {
   const shutdown = async (signal: string) => {
     const uptime = Math.floor(process.uptime());
     const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
+    
+    // Final Hardware Recall
+    const acFinal = config.stats.ac?.status?.toUpperCase() || 'OFF';
+    const lightFinal = config.stats.light?.status?.toUpperCase() || 'OFF';
+    const acDur = getDurationString(config.stats.ac?.lastChanged);
+    const lightDur = getDurationString(config.stats.light?.lastChanged);
+
     const acStr = sessionAcMinutes > 0 ? `\n❄️ AC Workload: *${(sessionAcMinutes/60).toFixed(1)} hrs*` : '';
     const lightStr = sessionLightMinutes > 0 ? `\n💡 Light Usage: *${(sessionLightMinutes/60).toFixed(1)} hrs*` : '';
     
     const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n⏱ Session Uptime: *${uptimeStr}*${acStr}${lightStr}\n\nHub will not respond until restarted.`;
+    const stopMsg = `🔴 *Gravity went OFFLINE*\n━━━━━━━━━━━━━━\n⏰ Stopped: *${stopTime} IST*\n❄️ AC Status: *${acFinal}* (${acDur})\n💡 Light Status: *${lightFinal}* (${lightDur})\n⏱ Session Uptime: *${uptimeStr}*${acStr}${lightStr}\n━━━━━━━━━━━━━━\nHub will not respond until restarted.`;
     
     for (const userId of (config.authorizedUsers || [])) {
       try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
