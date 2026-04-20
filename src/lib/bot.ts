@@ -1723,10 +1723,15 @@ async function main() {
         }
         if (url.pathname.includes('/status')) {
           const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
+          
+          // Calculate current live units for Raycast/Dashboard
+          const liveUnits = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
+          
           const body = JSON.stringify({
             online: isPhoneOnline,
             stats: config.stats,
-            estimatedPgBill: calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0),
+            units: liveUnits.toFixed(1),
+            estimatedPgBill: calculatePgvclBill(liveUnits),
             uptime: process.uptime(),
             pgvcl: config.stats.pgvcl,
             weather: w

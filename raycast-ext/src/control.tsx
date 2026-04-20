@@ -134,7 +134,7 @@ export default function Command() {
         <LI
           icon={Icon.Bolt}
           title="Energy Usage"
-          subtitle={state?.pgvcl?.units ? `${state.pgvcl.units} Units` : "No data yet"}
+          subtitle={state?.units ? `${state.units} Units` : (state?.pgvcl?.units ? `${state.pgvcl.units} Units` : "No data yet")}
           accessories={[{ text: state?.estimatedPgBill ? ` Est: ₹${state.estimatedPgBill}` : undefined }]}
         />
         <LI
