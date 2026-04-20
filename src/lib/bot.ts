@@ -258,19 +258,30 @@ async function main() {
   if (config.miraie?.mobile && config.miraie?.password) {
     try {
       miraie = new MiraieAdapter(config.miraie.mobile, config.miraie.password);
-      await miraie.initialize();
-      console.log(`❄️  MirAie ready: ${miraie.devices.length} device(s)`);
-    
-    // Recovery: Seed historical data if missing
-    if (!config.stats.dailyLog || config.stats.dailyLog.length === 0) {
-      config.stats.dailyLog = [
-        { date: '07/04/2026', ac: '0.0', light: '5.1' },
-        { date: '10/04/2026', ac: '0.0', light: '2.4' } // Based on last known 04/09 data
-      ];
-      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-    }
+      miraie.initialize()
+        .then(() => console.log(`❄️ AC: Connected (${miraie?.devices.length} devices)`))
+        .catch(() => console.warn('❄️ AC: Offline (Skipped)'));
+      
+      // Recovery: Seed historical data if missing
+      if (!config.stats.dailyLog || config.stats.dailyLog.length === 0) {
+        config.stats.dailyLog = [
+          { date: '07/04/2026', ac: '0.0', light: '5.1' },
+          { date: '10/04/2026', ac: '0.0', light: '2.4' }
+        ];
+        saveConfig(config);
+      }
     } catch (e) {
-      console.warn('⚠️  MirAie Init failed (Safe Mode)');
+      console.warn('⚠️ MirAie Setup failed');
+    }
+  }
+
+  let wiz: WizAdapter | null = null;
+  if (config.wiz?.ip) {
+    try {
+      wiz = new WizAdapter(config.wiz.ip);
+      console.log('💡 Lights: Adapter ready');
+    } catch (e) {
+      console.warn('⚠️ Wiz Setup failed');
     }
   }
 
