@@ -121,3 +121,17 @@
 [20/4/2026, 12:55:12 PM] 🎬 Scene Trigger: TV
 [20/4/2026, 12:55:12 PM] 🎬 Scene: TV TIME (God Build)
 [20/4/2026, 1:23:54 PM] AC State: ON (Manual/Remote)
+[20/4/2026, 2:43:36 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 2:43:41 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 2:44:29 PM] 🎬 Scene Trigger: LOGS
+[20/4/2026, 2:44:30 PM] 🎬 Scene Trigger: LOGS
+[20/4/2026, 2:57:02 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 2:57:57 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 2:58:02 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 3:40:36 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 3:42:33 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 3:45:38 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 3:59:02 PM] 🎬 Scene Trigger: LIST
+[20/4/2026, 7:54:50 PM] LIGHT State: ON (Manual/Remote)
+[21/4/2026, 12:06:10 AM] 🎬 Scene Trigger: TV
+[21/4/2026, 12:06:10 AM] 🎬 Scene: TV TIME (God Build)

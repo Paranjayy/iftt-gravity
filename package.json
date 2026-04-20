@@ -10,7 +10,9 @@
     "bot": "bun src/lib/bot.ts",
     "build:bot": "bun build --compile --target=bun-darwin-arm64 src/lib/bot.ts --outfile build/gravity-bot",
     "build:standalone": "bun build --compile --target=bun-darwin-arm64 src/lib/bot.ts --outfile gravity-hub",
-    "desktop": "electron electron/main.cjs"
+    "desktop": "electron electron/main.cjs",
+    "archive": "bun src/archive/cli.ts",
+    "archive:watch": "bun src/archive/watcher.ts"
   },
   "dependencies": {
     "electron": "^31.0.0",

@@ -142,6 +142,12 @@ export default function Command() {
           title="Family Presence"
           subtitle={state?.online ? "Owner Detected" : "AWAY Mode logic active"}
           accessories={[{ text: `Uptime: ${(state?.uptime || 0).toFixed(1)}s` }]}
+          actions={
+            <AP title="Hub Control">
+              <A icon={Icon.RotateAntiClockwise} title="Emergency Restart Hub" onAction={() => runAction("Hub Restart", "/system/restart")} />
+              <A.Push icon={Icon.Eye} title="View Gravity Logs" target={<LogsView />} />
+            </AP>
+          }
         />
       </LS>
 
@@ -166,5 +172,24 @@ export default function Command() {
         />
       </LS>
     </L>
+  );
+}
+
+function LogsView() {
+  const [logs, setLogs] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:3030/logs")
+      .then(r => r.text())
+      .then(t => setLogs(t.split("\n").filter(l => l.trim()).reverse()))
+      .catch(() => setLogs(["Error fetching logs"]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <List isLoading={loading} searchBarPlaceholder="Filter chronicle...">
+      {logs.map((log, i) => <List.Item key={i} title={log} icon={Icon.Calendar} />)}
+    </List>
   );
 }

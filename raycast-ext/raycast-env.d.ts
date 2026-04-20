@@ -17,6 +17,8 @@ declare namespace Preferences {
   export type Control = ExtensionPreferences & {}
   /** Preferences accessible in the `logs` command */
   export type Logs = ExtensionPreferences & {}
+  /** Preferences accessible in the `archive` command */
+  export type Archive = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -24,5 +26,7 @@ declare namespace Arguments {
   export type Control = {}
   /** Arguments passed to the `logs` command */
   export type Logs = {}
+  /** Arguments passed to the `archive` command */
+  export type Archive = {}
 }
 
