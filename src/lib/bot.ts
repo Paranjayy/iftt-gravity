@@ -1637,15 +1637,19 @@ async function main() {
         }
 
         // --- AUTH GUARD --- //
-        const isLocal = req.headers.get("host")?.includes("localhost") || req.headers.get("host")?.includes("127.0.0.1");
+        // Robust localhost detection for Raycast / Local Scripts
+        const host = req.headers.get("host") || "";
+        const isLocal = host.includes("localhost") || host.includes("127.0.0.1") || host.includes("::1");
+        
         const bearer = req.headers.get("Authorization");
         const urlToken = url.searchParams.get("token");
         const tokenStr = bearer ? bearer.split(" ")[1] : urlToken;
         
-        // Require valid token for all API routes except status readouts, BUT allow Localhost (Raycast) to skip
+        // Require valid token for all sensitive paths, BUT allow Localhost (Raycast) to skip
         if (!isLocal && (url.pathname.includes('/control') || url.pathname.includes('/scene') || url.pathname.includes('/trigger'))) {
            if (tokenStr !== (config.hubToken || 'gravity_unprotected')) {
-              return new Response(JSON.stringify({ error: "Unauthorized access. Invalid Hub Token." }), { 
+              console.warn(`🔐 API: Unauthorized attempt from ${host} to ${url.pathname}`);
+              return new Response(JSON.stringify({ error: "Unauthorized. Hub Token required for remote access." }), { 
                 status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
               });
            }
