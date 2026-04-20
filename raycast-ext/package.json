@@ -28,6 +28,20 @@
       "description": "Infinite history of your copies and cuts",
       "icon": "assets/icon.png",
       "mode": "view"
+    },
+    {
+      "name": "stats",
+      "title": "Hub Dashboard",
+      "description": "Real-time energy and system health",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "aura_toggle",
+      "title": "Toggle Media Aura",
+      "description": "Toggle automatic music-light sync",
+      "icon": "assets/icon.png",
+      "mode": "no-view"
     }
   ],
   "dependencies": {

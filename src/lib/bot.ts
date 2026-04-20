@@ -1792,8 +1792,19 @@ async function main() {
             return new Response(`Trigger ${hook} Executed`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
         }
+        if (url.pathname.startsWith('/media_aura/')) {
+          const state = url.pathname.split('/').pop()?.toLowerCase();
+          config.mediaAura = (state === 'on');
+          saveConfig(config);
+          logActivity(`🎵 Media Aura: Remote toggle -> ${state.toUpperCase()}`);
+          return new Response(`Media Aura: ${state}`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
         if (url.pathname.includes('/status')) {
           const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
+          const spotify = await getSpotifyStatus();
+          const jitter = await getNetworkJitter();
+          const batt = await getBatteryStatus();
           
           // Calculate current live units for Raycast/Dashboard
           const liveUnits = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
@@ -1805,7 +1816,12 @@ async function main() {
             estimatedPgBill: calculatePgvclBill(liveUnits),
             uptime: process.uptime(),
             pgvcl: config.stats.pgvcl,
-            weather: w
+            weather: w,
+            spotify,
+            jitter,
+            battery: batt,
+            mediaAura: config.mediaAura !== false,
+            platform: PLATFORM
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
