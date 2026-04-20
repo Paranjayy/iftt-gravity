@@ -2027,15 +2027,17 @@ async function main() {
       // 2. Media Aura Sync (Mood Restoration & Track Pulse)
       const currentSpotify = await getSpotifyStatus();
       if (config.mediaAura !== false) {
-        if (currentSpotify && currentSpotify !== lastSpotifyTrack) {
-          // New Song or Music Started
+        const isAd = currentSpotify?.toLowerCase().includes('advertisement') || currentSpotify?.toLowerCase().includes('spotify');
+        
+        if (currentSpotify && currentSpotify !== lastSpotifyTrack && !isAd) {
+          // New Song or Music Started (and NOT an AD)
           if (!lastSpotifyTrack) {
             preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
           }
           await triggerScene('chill'); // Deep Lounge Mood
           logActivity(`🎵 Media Aura: ${currentSpotify} -> Mood Pulsed.`);
-        } else if (!currentSpotify && lastSpotifyTrack) {
-          // Music Stopped
+        } else if ((!currentSpotify || isAd) && lastSpotifyTrack) {
+          // Music Stopped or AD started
           if (preMusicLightState && preMusicLightState.status === 'on') {
              await wiz?.executeAction({ type: 'control', payload: { 
                state: true, 
@@ -2045,7 +2047,7 @@ async function main() {
           } else {
              await wiz?.executeAction({ type: 'control', payload: { state: false } });
           }
-          logActivity(`🎵 Media Aura: Music stopped. Restoring original environment.`);
+          logActivity(`🎵 Media Aura: ${isAd ? 'Ad detected' : 'Music stopped'}. Restoring environment.`);
           preMusicLightState = null;
         }
       }
@@ -2271,9 +2273,11 @@ async function main() {
   
   const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote Hub');
   const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+  const acStatus = config.stats.ac?.status === 'on' ? '✅' : '❌';
+  const ltStatus = config.stats.light?.status === 'on' ? '✅' : '❌';
   const acDur = getDurationString(config.stats.ac?.lastChanged);
   const ltDur = getDurationString(config.stats.light?.lastChanged);
-  const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${miraie ? '✅' : '❌'} (${acDur}) | 💡 Light: ${wiz ? '✅' : '❌'} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
+  const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${acStatus} (${acDur}) | 💡 Light: ${ltStatus} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
   
   for (const userId of (config.authorizedUsers || [])) {
     try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
