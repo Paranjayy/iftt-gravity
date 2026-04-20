@@ -144,4 +144,7 @@
 [21/4/2026, 3:17:49 AM] AC State: OFF (Manual/Remote)
 [21/4/2026, 3:50:49 AM] AC State: ON (Manual/Remote)
 [21/4/2026, 4:00:39 AM] LIGHT State: ON (Manual/Remote)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
