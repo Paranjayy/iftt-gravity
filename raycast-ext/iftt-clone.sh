@@ -18,7 +18,5 @@ pkill -9 -f "bot.ts" 2>/dev/null
 cd /Users/paranjay/Developer/iftt
 nohup /Users/paranjay/.bun/bin/bun src/lib/bot.ts >> /tmp/gravity-bot.log 2>&1 &
 
-# 3. Wait for port 3030 to breathe
-sleep 2
-
-echo "🚀 Gravity Hub is now active!"
+# 3. Fire and Forget
+echo "🚀 Gravity Hub Launching..."
