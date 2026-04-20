@@ -21,6 +21,13 @@
       "description": "See the latest house activity",
       "icon": "assets/icon.png",
       "mode": "view"
+    },
+    {
+      "name": "archive",
+      "title": "Search Clipboard Archive",
+      "description": "Infinite history of your copies and cuts",
+      "icon": "assets/icon.png",
+      "mode": "view"
     }
   ],
   "dependencies": {
