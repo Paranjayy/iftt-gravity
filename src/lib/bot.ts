@@ -60,6 +60,23 @@ async function getSpotifyStatus(): Promise<string | null> {
   } catch { return null; }
 }
 
+async function getNetworkJitter(): Promise<number | null> {
+  try {
+    const { stdout } = await execAsync("ping -c 1 8.8.8.8 | awk -F'/' 'END{print $5}'");
+    return parseFloat(stdout.trim()) || null;
+  } catch { return null; }
+}
+
+async function getBatteryStatus(): Promise<{ level: number, isPlugged: boolean } | null> {
+  if (os.platform() !== 'darwin') return null;
+  try {
+    const { stdout } = await execAsync("pmset -g batt");
+    const level = parseInt(stdout.match(/\d+%/)?.[0] || '0');
+    const isPlugged = stdout.includes('AC Power');
+    return { level, isPlugged };
+  } catch { return null; }
+}
+
 function logActivity(text: string) {
   const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   const entry = `[${stamp}] ${text}\n`;
@@ -1396,6 +1413,17 @@ async function main() {
       const spotify = await getSpotifyStatus();
       if (spotify) {
         lines.push(`\n🎵 *Spotify*: ${spotify}`);
+      }
+
+      const jitter = await getNetworkJitter();
+      const batt = await getBatteryStatus();
+      
+      let systemHealth = [];
+      if (jitter) systemHealth.push(jitter > 150 ? `📡 Network: Jittery (${jitter.toFixed(0)}ms)` : `📡 Network: Stable`);
+      if (batt) systemHealth.push(batt.isPlugged ? `🔌 Power: Multi-Source` : `🔋 Power: Battery (${batt.level}%)`);
+      
+      if (systemHealth.length > 0) {
+        lines.push(`\n⚙️ *System Health*:\n${systemHealth.join('\n')}`);
       }
       
       try {
