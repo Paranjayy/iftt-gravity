@@ -2060,6 +2060,22 @@ async function main() {
   let lastSpotifyTrack: string | null = null;
   let preMusicLightState: any = null;
 
+  // 📋 Hyper-Fast Clipboard Sentry (Instant Recall)
+  setInterval(async () => {
+    try {
+      const { stdout } = await execAsync('pbpaste');
+      const currentClip = stdout.trim();
+      if (currentClip && currentClip !== config.lastClip && currentClip.length > 3) {
+        config.lastClip = currentClip;
+        archiveClipboard(currentClip);
+        // Only log if it's the full hub, to keep CLIPBOARD_ONLY silent
+        if (!CLIPBOARD_ONLY) {
+          logActivity(`📋 Memory Archive: New clip captured (${currentClip.substring(0, 20)}...)`);
+        }
+      }
+    } catch (e) { /* Sentry silent */ }
+  }, 1000);
+
   setInterval(async () => {
     try {
       // 1. Battery Guardian (Blink Red if < 15% & unplugged)
@@ -2123,16 +2139,7 @@ async function main() {
       }
       lastSpotifyTrack = currentSpotify;
 
-      // 3. Clipboard Archive Engine (Infinite Memory)
-      try {
-        const { stdout } = await execAsync('pbpaste');
-        const currentClip = stdout.trim();
-        if (currentClip && currentClip !== config.lastClip && currentClip.length > 3) {
-          config.lastClip = currentClip;
-          archiveClipboard(currentClip);
-          logActivity(`📋 Memory Archive: New clip captured (${currentClip.substring(0, 20)}...)`);
-        }
-      } catch (e) { /* Clipboard silent */ }
+      } catch (e) { /* Aura silent */ }
 
       // 3. Auto-Saver Protection (2.5h / 150m limit)
       if (!CLIPBOARD_ONLY) {
