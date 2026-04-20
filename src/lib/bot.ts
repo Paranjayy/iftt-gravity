@@ -189,21 +189,35 @@ function updateBotPulse(config: any) {
   config.stats.bot.lastPulse = new Date().toISOString();
   fs.writeFileSync(path.join(process.cwd(), 'config.json'), JSON.stringify(config, null, 2));
 }
+let config: any;
+let bot: any;
+
+async function main() {
+  config = loadConfig();
+  
+  // Session Stats
+  let sessionAcMinutes = 0;
+  let sessionLightMinutes = 0;
+  
+  const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
 
   // 🪐 Intelligence Mode Pulse
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
 
   // Init adapters (Only if not in archive-only mode)
   if (!CLIPBOARD_ONLY) {
+    if (!TELEGRAM_TOKEN) {
+      console.error('❌ TELEGRAM_TOKEN not set');
+      process.exit(1);
+    }
     bot = new TelegramAdapter(TELEGRAM_TOKEN);
-    const notifier = new NotificationManager(bot, config);
   } else {
     console.log("🪐 Gravity: CLIPBOARD-ONLY MODE (Minimal Brain)");
     // Provide a dummy bot with NO-OP handlers for isolated execution
     bot = { 
       sendMessage: async () => {}, 
       setMyCommands: async () => {},
-      registerCommand: () => {} // Prevents registration crashes
+      registerCommand: () => {} 
     } as any;
   }
 
