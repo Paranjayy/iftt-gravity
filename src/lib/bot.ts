@@ -1970,9 +1970,46 @@ async function main() {
   runPgvclScraper();
   setInterval(runPgvclScraper, 21600000);
   let awayAcMinutes = 0;
+  let lastSpotifyState: string | null = null;
+  let preMusicLightState: any = null;
 
   setInterval(async () => {
     try {
+      // 1. Battery Guardian (Blink Red if < 15% & unplugged)
+      const batt = await getBatteryStatus();
+      if (batt && batt.level < 15 && !batt.isPlugged) {
+         if (!config.stats.lowBattAlerted) {
+            config.stats.lowBattAlerted = true;
+            speak("Hub battery is critical. Please plug in.");
+            blinkLight(3, { r: 255, g: 0, b: 0 }); // Periodic Red Alert
+         }
+      } else if (batt && (batt.level > 20 || batt.isPlugged)) {
+         config.stats.lowBattAlerted = false;
+      }
+
+      // 2. Media Aura Sync (Mood Restoration)
+      const currentSpotify = await getSpotifyStatus();
+      if (currentSpotify && !lastSpotifyState) {
+        // Music Started
+        preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
+        await triggerScene('chill'); // Deep Lounge Mood
+        logActivity(`🎵 Media Aura: Song started. Mood synced.`);
+      } else if (!currentSpotify && lastSpotifyState) {
+        // Music Stopped
+        if (preMusicLightState && preMusicLightState.status === 'on') {
+           await wiz?.executeAction({ type: 'control', payload: { 
+             state: true, 
+             dimming: preMusicLightState.brightness || 100,
+             r: preMusicLightState.r, g: preMusicLightState.g, b: preMusicLightState.b 
+           }});
+        } else {
+           await wiz?.executeAction({ type: 'control', payload: { state: false } });
+        }
+        logActivity(`🎵 Media Aura: Music stopped. Restoring original environment.`);
+        preMusicLightState = null;
+      }
+      lastSpotifyState = currentSpotify;
+
       // 1. Auto-Saver Protection (2.5h / 150m limit)
       if (!isPhoneOnline) {
         // Only count if an AC is actually on
