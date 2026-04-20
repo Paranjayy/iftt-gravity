@@ -49,13 +49,13 @@ export default function Command() {
             subtitle={new Date(item.timestamp).toLocaleTimeString()}
             detail={
               <List.Item.Detail
-                markdown={`### Content Preview\n\n\`\`\`\n${item.text}\n\`\`\`\n\n---\n**Captured:** ${new Date(item.timestamp).toLocaleString()}`}
+                markdown={`### Content Preview\n\n${item.text}\n\n---\n**Captured:** ${new Date(item.timestamp).toLocaleString()}`}
                 metadata={
                   <List.Item.Detail.Metadata>
                     <List.Item.Detail.Metadata.Label title="Characters" text={String(item.text.length)} />
-                    <List.Item.Detail.Metadata.Label title="Source" icon={Icon.RaycastLogo} text="Gravity Sentry" />
+                    <List.Item.Detail.Metadata.Label title="Source" icon={Icon.RaycastLogo} text="Gravity Hub" />
                     <List.Item.Detail.Metadata.TagList title="Type">
-                       <List.Item.Detail.Metadata.TagList.Item text="Clipboard" color={Color.Magenta} />
+                       <List.Item.Detail.Metadata.TagList.Item text="Clipboard" color={Color.Blue} />
                     </List.Item.Detail.Metadata.TagList>
                   </List.Item.Detail.Metadata>
                 }

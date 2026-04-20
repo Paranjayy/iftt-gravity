@@ -205,25 +205,12 @@ async function main() {
   
   const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
 
-  // 🪐 Intelligence Mode Pulse
-  const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
-
-  // Init adapters (Only if not in archive-only mode)
-  if (!CLIPBOARD_ONLY) {
-    if (!TELEGRAM_TOKEN) {
-      console.error('❌ TELEGRAM_TOKEN not set');
-      process.exit(1);
-    }
-    bot = new TelegramAdapter(TELEGRAM_TOKEN);
-  } else {
-    console.log("🪐 Gravity: CLIPBOARD-ONLY MODE (Minimal Brain)");
-      bot = { 
-        sendMessage: async () => {}, 
-        setMyCommands: async () => {},
-        registerCommand: () => {},
-        startPolling: () => {} // Added Polling safety
-      } as any;
+  if (!TELEGRAM_TOKEN) {
+    console.error('❌ TELEGRAM_TOKEN not set');
+    process.exit(1);
   }
+  bot = new TelegramAdapter(TELEGRAM_TOKEN);
+  const notifier = new NotificationManager(bot, config);
 
   // Initialize Codex SDK
   const codex = config.codexExportPath ? new CodexSDK(config.codexExportPath) : null;
@@ -260,28 +247,25 @@ async function main() {
   // 🧱 RESILIENT STARTUP: Background all network tasks
   console.log('🧱 Intelligence Core: Waking up...');
   
-  if (!CLIPBOARD_ONLY) {
-    (async () => {
-      try {
-        await bot.initialize();
-        console.log('✅ Telegram: Connected');
-        
-        // 🪄 Sync Command Suggestions (Slash menu)
-        bot.setMyCommands([
-          { command: 'status', description: 'Show all device states' },
-          { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
-          { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
-          { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
-          { command: 'history', description: 'Show energy usage history' },
-          { command: 'ping', description: 'Check Hub health' },
-          { command: 'test_feedback', description: 'Trial Sensory Feedback' },
-          { command: 'login', description: 'Get secure token for dashboard' },
-        ]).catch(() => {});
-      } catch (e) {
-        console.warn('⚠️ Telegram handshake delayed...');
-      }
-    })();
-  }
+  (async () => {
+    try {
+      await bot.initialize();
+      console.log('✅ Telegram: Connected');
+      
+      // 🪄 Sync Command Suggestions (Slash menu v4.9.2)
+      bot.setMyCommands([
+        { command: 'status', description: 'Show all device states' },
+        { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
+        { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
+        { command: 'aura', description: '🎨 Toggle Media Aura (Media-Sync)' },
+        { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
+        { command: 'history', description: 'Show energy usage history' },
+        { command: 'ping', description: 'Check Hub health' },
+      ]).catch(() => {});
+    } catch (e) {
+      console.warn('⚠️ Telegram handshake delayed...');
+    }
+  })();
 
   // 🌙 Sleep Intelligence (Adaptive Sleep Curve)
 
@@ -590,58 +574,60 @@ async function main() {
   });
 
   // ── Presence Detection & Automations ───────────────
-  const weather = new WeatherEngine();
-  setInterval(async () => {
-    const phoneIp = config.phoneIp || '192.168.29.50';
-    try {
-      await execAsync(`ping -c 1 -t 1 ${phoneIp}`).catch(() => {});
-      const { stdout } = await execAsync(`arp -a`);
-      const isPresent = stdout.includes(`(${phoneIp})`);
+  if (!CLIPBOARD_ONLY) {
+    const weather = new WeatherEngine();
+    setInterval(async () => {
+      const phoneIp = config.phoneIp || '192.168.29.50';
+      try {
+        await execAsync(`ping -c 1 -t 1 ${phoneIp}`).catch(() => {});
+        const { stdout } = await execAsync(`arp -a`);
+        const isPresent = stdout.includes(`(${phoneIp})`);
 
-      if (isPresent) {
-        if (!CLIPBOARD_ONLY && !isPhoneOnline) {
-          isPhoneOnline = true;
-          offlineCounter = 0;
-          logActivity("📱 Presence: Phone detected (HOME)");
-          await triggerScene('HOME');
-          
-          const now = new Date();
-          const hour = now.getHours();
-          const dateStr = now.toDateString();
-          if (hour >= 5 && hour < 11 && lastBriefDate !== dateStr) {
-            lastBriefDate = dateStr;
-            setTimeout(() => triggerScene('MORNING_BRIEF'), 5000);
+        if (isPresent) {
+          if (!isPhoneOnline) {
+            isPhoneOnline = true;
+            offlineCounter = 0;
+            logActivity("📱 Presence: Phone detected (HOME)");
+            await triggerScene('HOME');
+            
+            const now = new Date();
+            const hour = now.getHours();
+            const dateStr = now.toDateString();
+            if (hour >= 5 && hour < 11 && lastBriefDate !== dateStr) {
+              lastBriefDate = dateStr;
+              setTimeout(() => triggerScene('MORNING_BRIEF'), 5000);
+            }
+          } else {
+            offlineCounter = 0;
           }
         } else {
-          offlineCounter = 0;
-        }
-      } else {
-        offlineCounter++;
-        if (offlineCounter >= 4) {
-          if (isPhoneOnline) {
-            isPhoneOnline = false;
-            logActivity("🚶 Presence: Phone disconnected (AWAY)");
-          }
-          
-          // 🕰️ Run Scheduler Check
-          await scheduler.check();
+          offlineCounter++;
+          if (offlineCounter >= 4) {
+            if (isPhoneOnline) {
+              isPhoneOnline = false;
+              logActivity("🚶 Presence: Phone disconnected (AWAY)");
+            }
+            
+            // 🕰️ Run Scheduler Check
+            await scheduler.check();
 
-          // 🛡️ Ghost Sentry Check
-          if (config.sentryActive !== false && !isPhoneOnline) {
-             const idle = await getSystemIdleTime();
-             if (idle < 10) { // Active movement detected
-                const stamp = new Date().toLocaleTimeString();
-                logActivity("🚨 SENTRY: Unauthorized activity detected!");
-                speak("Warning! Unauthorized access. Alerting the owner.");
-                await notifier.notify(`🚨 *GHOST SENTRY*: Activity detected while you are AWAY!\nTimestamp: \`${stamp}\`\nIdle Time: \`${idle.toFixed(1)}s\``, 'critical');
-             }
+            // 🛡️ Ghost Sentry Check
+            if (config.sentryActive !== false && !isPhoneOnline) {
+               const idle = await getSystemIdleTime();
+               if (idle < 10) { // Active movement detected
+                  const stamp = new Date().toLocaleTimeString();
+                  logActivity("🚨 SENTRY: Unauthorized activity detected!");
+                  speak("Warning! Unauthorized access. Alerting the owner.");
+                  await notifier.notify(`🚨 *GHOST SENTRY*: Activity detected while you are AWAY!\nTimestamp: \`${stamp}\`\nIdle Time: \`${idle.toFixed(1)}s\``, 'critical');
+               }
+            }
           }
         }
+      } catch (e) {
+        console.warn('Presence check failed', e);
       }
-    } catch (e) {
-      console.warn('Presence check failed', e);
-    }
-  }, 60000);
+    }, 60000);
+  }
 
   // ──────────────────────────────────────────────────────
   // PGVCL Scraper (Hourly)
@@ -1670,10 +1656,20 @@ async function main() {
     try { await bot.answerCallbackQuery(query.id); } catch {}
   };
 
-  // Only register bot commands if we are NOT in clipboard-only mode
-  if (!CLIPBOARD_ONLY) {
-     bot.registerCommand({
-       command: 'schedule_add',
+  // 🪐 God Commands v4.9.2
+  bot.registerCommand({
+    command: 'aura',
+    description: 'Toggle Media Aura sync',
+    handler: async (chatId, args, msg, send) => {
+       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+       config.mediaAura = !config.mediaAura;
+       saveConfig(config);
+       await send(`🎨 *Media Aura*: **${config.mediaAura ? 'ENABLED' : 'DISABLED'}**`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'schedule_add',
        // ... existing command registrations
     description: 'Add a new schedule: /schedule_add 23:00 ac_off',
     handler: async (chatId, args, msg, send) => {
@@ -1797,8 +1793,6 @@ async function main() {
     }
   });
 
-  } // CLIPBOARD_ONLY guard end
-
   // ── Web Control API (Port 3030) ─────────────────────
   // Perfect for Raycast / Siri Shortcuts (curl http://localhost:3030/scene/tv)
   try {
@@ -1872,7 +1866,7 @@ async function main() {
             jitter,
             battery: batt,
             mediaAura: config.mediaAura !== false,
-            platform: PLATFORM
+            platform: 'Local'
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
@@ -2082,7 +2076,7 @@ async function main() {
 
       // 2. Media Aura Sync (Liquid Aura 2.0 - Dynamic Cycling)
       const currentSpotify = await getSpotifyStatus();
-      if (!CLIPBOARD_ONLY && config.mediaAura !== false) {
+      if (config.mediaAura !== false) {
         const isAd = currentSpotify?.toLowerCase().includes('advertisement') || currentSpotify?.toLowerCase().includes('spotify');
         
         if (currentSpotify && currentSpotify !== lastSpotifyTrack && !isAd) {
