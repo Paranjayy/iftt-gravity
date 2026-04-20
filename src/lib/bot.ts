@@ -612,16 +612,6 @@ async function main() {
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
   }, 3600000); // Every 1 hour
 
-  let wiz: WizAdapter | null = null;
-  if (config.wiz?.ip) {
-    try {
-      wiz = new WizAdapter(config.wiz.ip);
-      await wiz.initialize();
-      console.log(`💡 WiZ ready: ${config.wiz.ip}`);
-    } catch (e) {
-      console.warn(`⚠️  WiZ Init failed for ${config.wiz.ip} (Safe Mode)`);
-    }
-  }
 
   const isAuthorized = (msg: any) => {
     const auth = config.authorizedUsers || [];
