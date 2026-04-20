@@ -7,7 +7,7 @@ interface HubState {
   uptime: number;
   stats?: { prompts: number };
   estimatedPgBill?: string;
-  pgvcl?: { usage: string; bill: string; lastUpdate: string };
+   pgvcl?: { units: string; bill: string; lastUpdate: string };
   weather?: { temp: number; condition: string; isRain: boolean };
 }
 
