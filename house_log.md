@@ -135,3 +135,6 @@
 [20/4/2026, 7:54:50 PM] LIGHT State: ON (Manual/Remote)
 [21/4/2026, 12:06:10 AM] 🎬 Scene Trigger: TV
 [21/4/2026, 12:06:10 AM] 🎬 Scene: TV TIME (God Build)
+[21/4/2026, 12:59:49 AM] AC State: OFF (Manual/Remote)
+[21/4/2026, 1:00:17 AM] 🧠 Habit Learner: Scanning manual patterns...
+[21/4/2026, 1:53:17 AM] AC State: ON (Bot)
