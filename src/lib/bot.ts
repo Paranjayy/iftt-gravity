@@ -213,12 +213,12 @@ async function main() {
     bot = new TelegramAdapter(TELEGRAM_TOKEN);
   } else {
     console.log("🪐 Gravity: CLIPBOARD-ONLY MODE (Minimal Brain)");
-    // Provide a dummy bot with NO-OP handlers for isolated execution
-    bot = { 
-      sendMessage: async () => {}, 
-      setMyCommands: async () => {},
-      registerCommand: () => {} 
-    } as any;
+      bot = { 
+        sendMessage: async () => {}, 
+        setMyCommands: async () => {},
+        registerCommand: () => {},
+        startPolling: () => {} // Added Polling safety
+      } as any;
   }
 
   // Initialize Codex SDK
@@ -2345,27 +2345,29 @@ async function main() {
   }
 
   // 🏥 Health Pulse & Maintenance
-  setInterval(() => {
-    updateBotPulse(config);
-    const now = new Date();
-    if (now.getHours() === 1 && now.getMinutes() === 0) analyzeHabits();
-  }, 60000);
+  if (!CLIPBOARD_ONLY) {
+    setInterval(() => {
+      updateBotPulse(config);
+      const now = new Date();
+      if (now.getHours() === 1 && now.getMinutes() === 0) analyzeHabits();
+    }, 60000);
 
-  // Polls
-  bot.startPolling();
-  
-  const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote Hub');
-  const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-  const acStatus = config.stats.ac?.status === 'on' ? '✅' : '❌';
-  const ltStatus = config.stats.light?.status === 'on' ? '✅' : '❌';
-  const acDur = getDurationString(config.stats.ac?.lastChanged);
-  const ltDur = getDurationString(config.stats.light?.lastChanged);
-  const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${acStatus} (${acDur}) | 💡 Light: ${ltStatus} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
-  
-  for (const userId of (config.authorizedUsers || [])) {
-    try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+    // Polls
+    bot.startPolling();
+    
+    const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote Hub');
+    const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+    const acStatus = config.stats.ac?.status === 'on' ? '✅' : '❌';
+    const ltStatus = config.stats.light?.status === 'on' ? '✅' : '❌';
+    const acDur = getDurationString(config.stats.ac?.lastChanged);
+    const ltDur = getDurationString(config.stats.light?.lastChanged);
+    const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${acStatus} (${acDur}) | 💡 Light: ${ltStatus} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
+    
+    for (const userId of (config.authorizedUsers || [])) {
+      try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+    }
+    console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Polling started.`);
   }
-  console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Polling started.`);
 
   // ── Shutdown Guardian ─────────────────────────────
   const shutdown = async (signal: string) => {
