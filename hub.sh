@@ -10,8 +10,8 @@ export PATH="$HOME/.bun/bin:/usr/local/bin:/opt/homebrew/bin:$PATH"
 cd "$PROJECT_DIR"
 echo "🪐 Gravity Hub: Initializing God Mode..."
 
-# 1. Kill any floating instances
-pkill -f "src/lib/bot.ts" 2>/dev/null
+# 1. Kill any floating instances (Total Purge)
+pkill -9 -f "bot.ts" 2>/dev/null
 
 # 2. Update dependencies
 echo "📦 Refreshing dependencies..."
