@@ -1793,6 +1793,8 @@ async function main() {
     }
   });
 
+  } // CLIPBOARD_ONLY guard end
+
   // ── Web Control API (Port 3030) ─────────────────────
   // Perfect for Raycast / Siri Shortcuts (curl http://localhost:3030/scene/tv)
   try {
