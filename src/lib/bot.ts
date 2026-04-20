@@ -149,6 +149,7 @@ async function main() {
   
   const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
 
+<<<<<<< Updated upstream
   // 🪐 Intelligence Mode Pulse
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
 
@@ -168,7 +169,14 @@ async function main() {
         startPolling: () => {} // Added Polling safety
       } as any;
 >>>>>>> Stashed changes
+=======
+  if (!TELEGRAM_TOKEN) {
+    console.error('❌ TELEGRAM_TOKEN not set');
+    process.exit(1);
+>>>>>>> Stashed changes
   }
+  bot = new TelegramAdapter(TELEGRAM_TOKEN);
+  const notifier = new NotificationManager(bot, config);
 
   let isPhoneOnline = true; // tracking state
   let offlineCounter = 0;
@@ -221,16 +229,27 @@ async function main() {
       await bot.initialize();
       console.log('✅ Telegram: Connected');
       
+<<<<<<< Updated upstream
       // 🪄 Sync Command Suggestions (Slash menu)
+=======
+      // 🪄 Sync Command Suggestions (Slash menu v4.9.2)
+>>>>>>> Stashed changes
       bot.setMyCommands([
         { command: 'status', description: 'Show all device states' },
         { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
         { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
+<<<<<<< Updated upstream
         { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
         { command: 'history', description: 'Show energy usage history' },
         { command: 'ping', description: 'Check Hub health' },
         { command: 'test_feedback', description: 'Trial Sensory Feedback' },
         { command: 'login', description: 'Get secure token for dashboard' },
+=======
+        { command: 'aura', description: '🎨 Toggle Media Aura (Media-Sync)' },
+        { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
+        { command: 'history', description: 'Show energy usage history' },
+        { command: 'ping', description: 'Check Hub health' },
+>>>>>>> Stashed changes
       ]).catch(() => {});
     } catch (e) {
       console.warn('⚠️ Telegram handshake delayed...');
@@ -1530,8 +1549,26 @@ async function main() {
     try { await bot.answerCallbackQuery(query.id); } catch {}
   };
 
+<<<<<<< Updated upstream
   bot.registerCommand({
     command: 'schedule_add',
+=======
+  // 🪐 God Commands v4.9.2
+  bot.registerCommand({
+    command: 'aura',
+    description: 'Toggle Media Aura sync',
+    handler: async (chatId, args, msg, send) => {
+       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+       config.mediaAura = !config.mediaAura;
+       saveConfig(config);
+       await send(`🎨 *Media Aura*: **${config.mediaAura ? 'ENABLED' : 'DISABLED'}**`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'schedule_add',
+       // ... existing command registrations
+>>>>>>> Stashed changes
     description: 'Add a new schedule: /schedule_add 23:00 ac_off',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
@@ -1890,6 +1927,7 @@ async function main() {
 
   setInterval(async () => {
     try {
+<<<<<<< Updated upstream
       // 1. Auto-Saver Protection (2.5h / 150m limit)
       if (!isPhoneOnline) {
         // Only count if an AC is actually on
@@ -1900,6 +1938,24 @@ async function main() {
              if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
            }
         }
+=======
+      // 1. Battery Guardian (Blink Red if < 15% & unplugged)
+      const batt = await getBatteryStatus();
+      if (batt && batt.level < 15 && !batt.isPlugged) {
+         if (!config.stats.lowBattAlerted) {
+            config.stats.lowBattAlerted = true;
+            speak("Hub battery is critical. Please plug in.");
+            blinkLight(3, { r: 255, g: 0, b: 0 }); // Periodic Red Alert
+         }
+      } else if (batt && (batt.level > 20 || batt.isPlugged)) {
+         config.stats.lowBattAlerted = false;
+      }
+
+      // 2. Media Aura Sync (Liquid Aura 2.0 - Dynamic Cycling)
+      const currentSpotify = await getSpotifyStatus();
+      if (config.mediaAura !== false) {
+        const isAd = currentSpotify?.toLowerCase().includes('advertisement') || currentSpotify?.toLowerCase().includes('spotify');
+>>>>>>> Stashed changes
         
         if (anyAcOn) {
           awayAcMinutes++;
