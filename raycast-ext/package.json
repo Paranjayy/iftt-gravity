@@ -69,6 +69,7 @@
   "scripts": {
     "build": "ray build",
     "dev": "ray develop",
+    "archive-only": "bun scripts/archive-brain.ts",
     "fix-lint": "eslint src --fix",
     "lint": "eslint src",
     "publish": "npx @raycast/api@latest publish"

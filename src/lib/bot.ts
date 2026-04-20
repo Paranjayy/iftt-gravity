@@ -214,9 +214,18 @@ async function main() {
     process.exit(1);
   }
 
+  // 🪐 Intelligence Mode Pulse
+  const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
+
   // Init adapters
-  bot = new TelegramAdapter(TELEGRAM_TOKEN);
-  const notifier = new NotificationManager(bot, config);
+  if (!CLIPBOARD_ONLY) {
+    bot = new TelegramAdapter(TELEGRAM_TOKEN);
+    const notifier = new NotificationManager(bot, config);
+  } else {
+    console.log("🪐 Gravity: CLIPBOARD-ONLY MODE (Minimal Brain)");
+    // Provide a dummy bot for logging compatibility
+    bot = { sendMessage: async () => {}, setMyCommands: async () => {} } as any;
+  }
 
   // Initialize Codex SDK
   const codex = config.codexExportPath ? new CodexSDK(config.codexExportPath) : null;
@@ -253,26 +262,28 @@ async function main() {
   // 🧱 RESILIENT STARTUP: Background all network tasks
   console.log('🧱 Intelligence Core: Waking up...');
   
-  (async () => {
-    try {
-      await bot.initialize();
-      console.log('✅ Telegram: Connected');
-      
-      // 🪄 Sync Command Suggestions (Slash menu)
-      bot.setMyCommands([
-        { command: 'status', description: 'Show all device states' },
-        { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
-        { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
-        { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
-        { command: 'history', description: 'Show energy usage history' },
-        { command: 'ping', description: 'Check Hub health' },
-        { command: 'test_feedback', description: 'Trial Sensory Feedback' },
-        { command: 'login', description: 'Get secure token for dashboard' },
-      ]).catch(() => {});
-    } catch (e) {
-      console.warn('⚠️ Telegram handshake delayed...');
-    }
-  })();
+  if (!CLIPBOARD_ONLY) {
+    (async () => {
+      try {
+        await bot.initialize();
+        console.log('✅ Telegram: Connected');
+        
+        // 🪄 Sync Command Suggestions (Slash menu)
+        bot.setMyCommands([
+          { command: 'status', description: 'Show all device states' },
+          { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
+          { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
+          { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
+          { command: 'history', description: 'Show energy usage history' },
+          { command: 'ping', description: 'Check Hub health' },
+          { command: 'test_feedback', description: 'Trial Sensory Feedback' },
+          { command: 'login', description: 'Get secure token for dashboard' },
+        ]).catch(() => {});
+      } catch (e) {
+        console.warn('⚠️ Telegram handshake delayed...');
+      }
+    })();
+  }
 
   // 🌙 Sleep Intelligence (Adaptive Sleep Curve)
 
@@ -324,7 +335,7 @@ async function main() {
   const sleepManager = new SleepCurveManager();
 
   let miraie: MiraieAdapter | null = null;
-  if (config.miraie?.mobile && config.miraie?.password) {
+  if (!CLIPBOARD_ONLY && config.miraie?.mobile && config.miraie?.password) {
     try {
       miraie = new MiraieAdapter(config.miraie.mobile, config.miraie.password);
       miraie.initialize()
@@ -345,7 +356,7 @@ async function main() {
   }
 
   let wiz: WizAdapter | null = null;
-  if (config.wiz?.ip) {
+  if (!CLIPBOARD_ONLY && config.wiz?.ip) {
     try {
       wiz = new WizAdapter(config.wiz.ip);
       console.log('💡 Lights: Adapter ready');
