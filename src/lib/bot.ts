@@ -1398,10 +1398,6 @@ async function main() {
 
       const interval = setInterval(async () => {
         remainingS -= 20;
-        if (remainingS <= 0) {
-          clearInterval(interval);
-          return;
-        }
         const m = Math.floor(remainingS / 60);
         const s = remainingS % 60;
         const timeStr = `${m}:${s.toString().padStart(2, '0')}`;
@@ -1409,7 +1405,7 @@ async function main() {
         try {
           await (bot as any).sendRequest('editMessageReplyMarkup', {
             chat_id: msg.from.id,
-            message_id: timerMsg.message_id,
+            message_id: (timerMsg as any).result?.message_id || (timerMsg as any).message_id,
             reply_markup: { inline_keyboard: [[{ text: `⏳ ${timeStr} remaining`, callback_data: 'timer_ping' }]] }
           });
         } catch {}
@@ -1428,6 +1424,43 @@ async function main() {
         await bot.sendMessage(msg.from.id, `😴 *Timer Done:* ${device.toUpperCase()} powered ${action}.`, { parse_mode: 'Markdown' });
         speak(`${device} powered ${action} by timer.`);
       }, mins * 60000);
+    }
+  });
+
+  // 📸 /screen — Remote View
+  bot.registerCommand({
+    command: 'screen',
+    description: 'Capture Mac screen',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const tempPath = '/tmp/gravity_screen.png';
+      await send('📸 *Gravity Eyes*: Capturing screen...');
+      try {
+        await execAsync(`screencapture -x ${tempPath}`);
+        await bot.sendPhoto(chatId as number, tempPath, `🖥 *Gravity Sentry View*\n⏰ Captured: ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+      } catch (e: any) {
+        await send(`❌ Capture failed: ${e.message}`);
+      }
+    }
+  });
+
+  // 🔊 /vol — System Volume Control
+  bot.registerCommand({
+    command: 'vol',
+    description: 'Control Mac volume: /vol 50|up|down',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const val = args[0] || 'status';
+      try {
+        if (val === 'up') await execAsync(`osascript -e "set volume output volume ((output volume of (get volume settings)) + 10)"`);
+        else if (val === 'down') await execAsync(`osascript -e "set volume output volume ((output volume of (get volume settings)) - 10)"`);
+        else if (!isNaN(Number(val))) await execAsync(`osascript -e "set volume output volume ${val}"`);
+        
+        const { stdout } = await execAsync(`osascript -e "output volume of (get volume settings)"`);
+        await send(`🔊 *System Volume*: ${stdout.trim()}%`);
+      } catch (e: any) {
+        await send(`❌ Volume control failed`);
+      }
     }
   });
 

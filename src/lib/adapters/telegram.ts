@@ -76,6 +76,26 @@ export class TelegramAdapter extends Adapter {
       reply_markup: options.reply_markup
     });
   }
+
+  async sendPhoto(chatId: number, photoPath: string, caption?: string): Promise<void> {
+    const form = new FormData();
+    form.append('chat_id', chatId.toString());
+    
+    // Bun-specific file handling
+    const file = Bun.file(photoPath);
+    form.append('photo', file);
+    if (caption) form.append('caption', caption);
+
+    const res = await fetch(`${BASE(this.botToken)}/sendPhoto`, {
+      method: 'POST',
+      body: form
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`Telegram Photo error: ${err.description || res.statusText}`);
+    }
+  }
   
   async answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
     await this.sendRequest('answerCallbackQuery', {
