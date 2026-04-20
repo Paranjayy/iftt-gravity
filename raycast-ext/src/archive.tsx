@@ -36,6 +36,7 @@ export default function Command() {
       searchBarPlaceholder="Search infinite clipboard history..."
       onSearchTextChange={setSearchText}
       throttle
+      isShowingDetail
     >
       {items.length === 0 ? (
         <List.EmptyView title="Nothing found" description="Try a different search or copy something new!" icon={Icon.MagnifyingGlass} />
@@ -44,12 +45,28 @@ export default function Command() {
           <List.Item
             key={item.id}
             icon={{ source: Icon.Clipboard, color: Color.Blue }}
-            title={item.text.length > 100 ? `${item.text.substring(0, 100)}...` : item.text}
+            title={item.text.length > 50 ? `${item.text.substring(0, 50)}...` : item.text}
             subtitle={new Date(item.timestamp).toLocaleTimeString()}
+            detail={
+              <List.Item.Detail
+                markdown={`### Content Preview\n\n\`\`\`\n${item.text}\n\`\`\`\n\n---\n**Captured:** ${new Date(item.timestamp).toLocaleString()}`}
+                metadata={
+                  <List.Item.Detail.Metadata>
+                    <List.Item.Detail.Metadata.Label title="Characters" text={String(item.text.length)} />
+                    <List.Item.Detail.Metadata.Label title="Source" icon={Icon.RaycastLogo} text="Gravity Sentry" />
+                    <List.Item.Detail.Metadata.TagList title="Type">
+                       <List.Item.Detail.Metadata.TagList.Item text="Clipboard" color={Color.Magenta} />
+                    </List.Item.Detail.Metadata.TagList>
+                  </List.Item.Detail.Metadata>
+                }
+              />
+            }
             actions={
               <ActionPanel>
-                <Action.CopyToClipboard title="Copy to Clipboard" content={item.text} />
-                <Action.Paste title="Paste into Active App" content={item.text} />
+                <ActionPanel.Section>
+                  <Action.CopyToClipboard title="Copy to Clipboard" content={item.text} shortcut={{ modifiers: ["cmd"], key: "." }} />
+                  <Action.Paste title="Paste into Active App" content={item.text} shortcut={{ modifiers: ["cmd"], key: "enter" }} />
+                </ActionPanel.Section>
               </ActionPanel>
             }
           />

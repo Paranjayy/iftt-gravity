@@ -198,6 +198,10 @@ async function main() {
   // Session Stats
   let sessionAcMinutes = 0;
   let sessionLightMinutes = 0;
+
+  let isPhoneOnline = true; // tracking state
+  let offlineCounter = 0;
+  let offlineSince: number | null = null; // Debounce tracking
   
   const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
 
@@ -595,7 +599,7 @@ async function main() {
       const isPresent = stdout.includes(`(${phoneIp})`);
 
       if (isPresent) {
-        if (!isPhoneOnline) {
+        if (!CLIPBOARD_ONLY && !isPhoneOnline) {
           isPhoneOnline = true;
           offlineCounter = 0;
           logActivity("📱 Presence: Phone detected (HOME)");
@@ -2078,7 +2082,7 @@ async function main() {
 
       // 2. Media Aura Sync (Liquid Aura 2.0 - Dynamic Cycling)
       const currentSpotify = await getSpotifyStatus();
-      if (config.mediaAura !== false) {
+      if (!CLIPBOARD_ONLY && config.mediaAura !== false) {
         const isAd = currentSpotify?.toLowerCase().includes('advertisement') || currentSpotify?.toLowerCase().includes('spotify');
         
         if (currentSpotify && currentSpotify !== lastSpotifyTrack && !isAd) {
@@ -2137,34 +2141,36 @@ async function main() {
       } catch (e) { /* Clipboard silent */ }
 
       // 3. Auto-Saver Protection (2.5h / 150m limit)
-      if (!isPhoneOnline) {
-        // Only count if an AC is actually on
-        let anyAcOn = false;
-        if (miraie && miraie.devices.length > 0) {
-           for (const d of miraie.devices) {
-             const s = await miraie.getDeviceStatus(d.deviceId);
-             if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
-           }
-        }
-        
-        if (anyAcOn) {
-          awayAcMinutes++;
-          if (awayAcMinutes >= 150) {
-            awayAcMinutes = 0; // reset
-            const promises = [];
-             if (miraie && miraie.devices.length > 0) {
-               promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
-             }
-             await Promise.all(promises);
-             const alert = `🛡️ *Gravity Auto-Saver:* AC was on for >2.5h while you were AWAY. High-fidelity safety shut-off triggered.`;
-             for (const uid of (config.authorizedUsers || [])) {
-               try { await bot.sendMessage(uid, alert, { parse_mode: 'Markdown' }); } catch {}
-             }
-             logActivity(`🛡️ Auto-Saver: Shutdown triggered after 150m of away-usage.`);
+      if (!CLIPBOARD_ONLY) {
+        if (!isPhoneOnline) {
+          // Only count if an AC is actually on
+          let anyAcOn = false;
+          if (miraie && miraie.devices.length > 0) {
+            for (const d of miraie.devices) {
+              const s = await miraie.getDeviceStatus(d.deviceId);
+              if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
+            }
           }
+          
+          if (anyAcOn) {
+            awayAcMinutes++;
+            if (awayAcMinutes >= 150) {
+              awayAcMinutes = 0; // reset
+              const promises = [];
+              if (miraie && miraie.devices.length > 0) {
+                promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
+              }
+              await Promise.all(promises);
+              const alert = `🛡️ *Gravity Auto-Saver:* AC was on for >2.5h while you were AWAY. High-fidelity safety shut-off triggered.`;
+              for (const uid of (config.authorizedUsers || [])) {
+                try { await bot.sendMessage(uid, alert, { parse_mode: 'Markdown' }); } catch {}
+              }
+              logActivity(`🛡️ Auto-Saver: Shutdown triggered after 150m of away-usage.`);
+            }
+          }
+        } else {
+          awayAcMinutes = 0; // Reset if anyone comes home
         }
-      } else {
-        awayAcMinutes = 0; // Reset if anyone comes home
       }
 
       // 4. Deep Device Sync (Pulse Check)
