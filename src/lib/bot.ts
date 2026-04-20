@@ -181,19 +181,29 @@ async function main() {
     }
   });
 
-  await bot.initialize();
+  // 🧱 RESILIENT STARTUP: Background all network tasks
+  console.log('🧱 Intelligence Core: Waking up...');
   
-  // 🪄 Sync Command Suggestions (Slash menu) - Background Task
-  bot.setMyCommands([
-    { command: 'status', description: 'Show all device states' },
-    { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
-    { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
-    { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
-    { command: 'history', description: 'Show energy usage history' },
-    { command: 'ping', description: 'Check Hub health' },
-    { command: 'test_feedback', description: 'Trial Sensory Feedback' },
-    { command: 'login', description: 'Get secure token for dashboard' },
-  ]).catch(err => console.warn('Command sync failed:', err.message));
+  (async () => {
+    try {
+      await bot.initialize();
+      console.log('✅ Telegram: Connected');
+      
+      // 🪄 Sync Command Suggestions (Slash menu)
+      bot.setMyCommands([
+        { command: 'status', description: 'Show all device states' },
+        { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
+        { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
+        { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
+        { command: 'history', description: 'Show energy usage history' },
+        { command: 'ping', description: 'Check Hub health' },
+        { command: 'test_feedback', description: 'Trial Sensory Feedback' },
+        { command: 'login', description: 'Get secure token for dashboard' },
+      ]).catch(() => {});
+    } catch (e) {
+      console.warn('⚠️ Telegram handshake delayed...');
+    }
+  })();
 
   // 🌙 Sleep Intelligence (Adaptive Sleep Curve)
 
