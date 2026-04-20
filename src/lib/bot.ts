@@ -190,41 +190,21 @@ function updateBotPulse(config: any) {
   fs.writeFileSync(path.join(process.cwd(), 'config.json'), JSON.stringify(config, null, 2));
 }
 
-let config: any;
-let bot: TelegramAdapter;
-
-async function main() {
-  config = loadConfig();
-  
-  // Session Stats
-  let sessionAcMinutes = 0;
-  let sessionLightMinutes = 0;
-  if (!config.hubToken) {
-    config.hubToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    saveConfig(config);
-  }
-
-  let isPhoneOnline = true; // tracking state
-  let offlineCounter = 0;
-  let offlineSince: number | null = null; // Debounce tracking
-
-  const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
-  if (!TELEGRAM_TOKEN) {
-    console.error('❌ TELEGRAM_TOKEN not set in .env.local or config.json');
-    process.exit(1);
-  }
-
   // 🪐 Intelligence Mode Pulse
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
 
-  // Init adapters
+  // Init adapters (Only if not in archive-only mode)
   if (!CLIPBOARD_ONLY) {
     bot = new TelegramAdapter(TELEGRAM_TOKEN);
     const notifier = new NotificationManager(bot, config);
   } else {
     console.log("🪐 Gravity: CLIPBOARD-ONLY MODE (Minimal Brain)");
-    // Provide a dummy bot for logging compatibility
-    bot = { sendMessage: async () => {}, setMyCommands: async () => {} } as any;
+    // Provide a dummy bot with NO-OP handlers for isolated execution
+    bot = { 
+      sendMessage: async () => {}, 
+      setMyCommands: async () => {},
+      registerCommand: () => {} // Prevents registration crashes
+    } as any;
   }
 
   // Initialize Codex SDK
@@ -1672,8 +1652,11 @@ async function main() {
     try { await bot.answerCallbackQuery(query.id); } catch {}
   };
 
-  bot.registerCommand({
-    command: 'schedule_add',
+  // Only register bot commands if we are NOT in clipboard-only mode
+  if (!CLIPBOARD_ONLY) {
+     bot.registerCommand({
+       command: 'schedule_add',
+       // ... existing command registrations
     description: 'Add a new schedule: /schedule_add 23:00 ac_off',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
