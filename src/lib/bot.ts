@@ -1986,6 +1986,17 @@ async function main() {
   };
   process.on('SIGINT', () => shutdown('manual stop'));
   process.on('SIGTERM', () => shutdown('system stop'));
+  
+  // 🆘 Global Error Guardian
+  const sos = async (err: Error, type: string) => {
+    console.error(`🆘 ${type}:`, err);
+    const alert = `🚨 *Gravity CRASH Detected*\nType: \`${type}\`\nError: \`${err.message.substring(0, 100)}\`\n\n_Hub is attempting to stay alive..._`;
+    for (const userId of (config.authorizedUsers || [])) {
+      try { await bot.sendMessage(userId, alert, { parse_mode: 'Markdown' }); } catch {}
+    }
+  };
+  process.on('uncaughtException', (err) => sos(err, 'Uncaught Exception'));
+  process.on('unhandledRejection', (reason: any) => sos(reason instanceof Error ? reason : new Error(String(reason)), 'Unhandled Rejection'));
 }
 
 main().catch(err => {
