@@ -2846,20 +2846,6 @@ async function main() {
     const ltStatusEmoji = (config.stats.light?.status === 'on') ? '✅' : '❌';
     const acDur = getDurationString(config.stats.ac?.lastChanged);
     const ltDur = getDurationString(config.stats.light?.lastChanged);
-    
-    // Calculate Off-time since last pulse
-    let offTimeStr = "";
-    try {
-      const lastPulse = config.bot?.lastPulse;
-      if (lastPulse) {
-        const last = new Date(lastPulse).getTime();
-        const diffMs = Date.now() - last;
-        const diffMins = Math.floor(diffMs / 60000);
-        if (diffMins < 1) offTimeStr = "<1m";
-        else offTimeStr = diffMins > 1440 ? `${Math.floor(diffMins/1440)}d ${Math.floor((diffMins%1440)/60)}h` : (diffMins > 60 ? `${Math.floor(diffMins/60)}h ${diffMins%60}m` : `${diffMins}m`);
-      }
-    } catch(e) {}
-
     const startMsg = `🟢 *Gravity Hub: ONLINE* — _Off for ${offTimeStr || '??' }_\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\nStarted: *${startTime} IST*\n❄️ AC: ${acStatusEmoji} (${acDur}) | 💡 Light: ${ltStatusEmoji} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
     
     for (const userId of (config.authorizedUsers || [])) {
