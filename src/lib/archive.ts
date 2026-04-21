@@ -1,7 +1,7 @@
 /**
  * Gravity Archive Engine 📦
  * 
- * Sovereign clipboard vault and vault management API.
+ * Professional clipboard vault and management API.
  * Dedicated Port: 3031
  */
 
@@ -13,7 +13,6 @@ import fetch from 'node-fetch';
 
 const execAsync = promisify(exec);
 const ROOT_DIR = "/Users/paranjay/Developer/iftt";
-const CONFIG_PATH = path.join(ROOT_DIR, 'config.json');
 const CLIPS_PATH = path.join(ROOT_DIR, 'gravity-archive', 'clips.json');
 let CLIPSTACK: any[] = [];
 
@@ -25,15 +24,6 @@ function cleanDOM(html: string) {
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/ style="[^"]*"/gi, '')
     .replace(/ data-[a-z0-9-]+="[^"]*"/gi, '')
-    .trim();
-}
-
-function cleanClipboard(text: string): string {
-  if (!text) return "";
-  return text
-    .replace(/\r\n/g, "\n")
-    .replace(/\t/g, "  ")
-    .replace(/[ \t]+$/gm, "")
     .trim();
 }
 
@@ -52,21 +42,23 @@ async function archiveClipboard(text: string) {
   const isHTML = text.includes('<') && text.includes('>');
   const processedText = isHTML ? cleanDOM(text) : text;
 
-  const isPath = processedText.startsWith('/') || processedText.startsWith('~/') || processedText.match(/^[A-Z]:\\/);
-  const isImage = processedText.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i);
-  const isApp = processedText.endsWith('.app');
-
   const existingIdx = clips.findIndex((c: any) => c.text === processedText);
   if (existingIdx !== -1) {
-    const [item] = clips.splice(existingIdx, 1);
+    const item = clips[existingIdx];
+    item.meta = item.meta || {};
+    item.meta.dupes = (item.meta.dupes || 0) + 1;
     item.timestamp = new Date().toISOString();
+    clips.splice(existingIdx, 1);
     clips.unshift(item);
   } else {
     try { exec(`afplay /System/Library/Sounds/Hasso.aiff &`); } catch(e){}
 
+    const isPath = processedText.startsWith('/') || processedText.startsWith('~/') || processedText.match(/^[A-Z]:\\/);
+    const isImage = processedText.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i);
+    const isApp = processedText.endsWith('.app');
     const mdLinkMatch = text.match(/\[.*\]\((https?:\/\/.*)\)/);
     const isLink = text.startsWith('http') || mdLinkMatch;
-    
+
     let type = 'text';
     if (isPath) type = isImage ? 'image' : isApp ? 'app' : 'file';
     else if (isLink) type = 'link';
@@ -95,6 +87,7 @@ async function archiveClipboard(text: string) {
     const itemMeta: any = {
       words: processedText.split(/\s+/).filter(x => x.length > 0).length,
       lines: processedText.split('\n').length,
+      chars: processedText.length,
       tokens: Math.ceil(processedText.length / 4),
       type,
     };
@@ -107,24 +100,19 @@ async function archiveClipboard(text: string) {
           timeout: 5000 
         });
         const html = await response.text();
-        
-        // Robust Extraction
         itemMeta.ogTitle = html.match(/<title>(.*?)<\/title>/)?.[1] || 
                            html.match(/<meta property="og:title" content="(.*?)"/)?.[1] || '';
         
-        // YouTube Specific Hunter
-        if (processedText.includes('youtube.com') || processedText.includes('youtu.be')) {
+        if (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be')) {
           itemMeta.ogImage = html.match(/<link itemprop="thumbnailUrl" href="(.*?)"/)?.[1] || 
                              html.match(/<meta property="og:image" content="(.*?)"/)?.[1] || '';
         } else {
           itemMeta.ogImage = html.match(/<meta property="og:image" content="(.*?)"/)?.[1] || 
                              html.match(/<meta name="twitter:image" content="(.*?)"/)?.[1] || '';
         }
-
         itemMeta.ogDescription = html.match(/<meta property="og:description" content="(.*?)"/)?.[1] || 
                                  html.match(/<meta name="description" content="(.*?)"/)?.[1] || '';
-
-        const domain = new URL(processedText).hostname;
+        const domain = new URL(targetUrl).hostname;
         itemMeta.favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
       } catch(e) {}
     }
@@ -144,10 +132,9 @@ async function archiveClipboard(text: string) {
 }
 
 async function main() {
-  console.log('📦 Gravity Archive Engine: Starting Sentry...');
+  console.log('📦 Gravity Archive: Sentry online.');
   let lastClip = "";
 
-  // 🚀 SOVEREIGN ARCHIVE ENGINE (Port 3031)
   try {
     (Bun as any).serve({
       port: 3031,
@@ -280,6 +267,30 @@ async function main() {
           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
+        if (url.pathname === '/archive/retro/sync') {
+          let clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
+          let count = 0;
+          (async () => {
+            for (let i = 0; i < clipsData.length; i++) {
+              const item = clipsData[i];
+              if (item.meta?.type === 'link' && !item.meta.ogImage) {
+                // Trigger a re-hoard logic silently
+                try {
+                   const response = await fetch(item.text, { timeout: 3000 });
+                   const html = await response.text();
+                   item.meta.ogTitle = html.match(/<title>(.*?)<\/title>/)?.[1] || "";
+                   item.meta.ogImage = html.match(/<meta property="og:image" content="(.*?)"/)?.[1] || "";
+                   item.meta.ogDescription = html.match(/<meta property="og:description" content="(.*?)"/)?.[1] || "";
+                   count++;
+                   if (count % 10 === 0) fs.writeFileSync(CLIPS_PATH, JSON.stringify(clipsData, null, 2));
+                } catch(e) {}
+              }
+            }
+            fs.writeFileSync(CLIPS_PATH, JSON.stringify(clipsData, null, 2));
+          })();
+          return new Response('Sync Started', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
         if (url.pathname === '/archive/nuclear/reset') {
           fs.writeFileSync(CLIPS_PATH, JSON.stringify([], null, 2));
           return new Response('Vault Purged', { headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -287,7 +298,7 @@ async function main() {
 
         if (url.pathname === '/archive/export/md') {
           let clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
-          let md = "# Gravity Sovereign Vault Export\n\n";
+          let md = "# Gravity Archive Export\n\n";
           clipsData.slice(0, 1000).forEach((c: any) => {
             md += `### ${c.label || 'Clip'} (${new Date(c.timestamp).toLocaleString()})\n**Source:** ${c.source || 'Unknown'}\n\n\`\`\`${c.meta?.type || 'text'}\n${c.text}\n\`\`\`\n\n---\n\n`;
           });
@@ -297,10 +308,9 @@ async function main() {
         return new Response('Archive API Online', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
       }
     });
-    console.log('🌌 Sovereign Archive (3031) Operational.');
+    console.log('🌌 Gravity Archive (3031) Operational.');
   } catch(e) { console.warn('API 3031 error'); }
 
-  // 📋 CLIPBOARD SENTRY LOOP
   setInterval(async () => {
     try {
       const { stdout } = await execAsync('pbpaste');

@@ -156,7 +156,11 @@ export default function Command() {
                 <List.Item.Detail.Metadata.Label title="Format" text={item.meta?.type?.toUpperCase() || "TEXT"} />
                 <List.Item.Detail.Metadata.Label title="Captured" text={new Date(item.timestamp).toLocaleString()} icon={Icon.Clock} />
                 <List.Item.Detail.Metadata.Separator />
+                <List.Item.Detail.Metadata.Label title="Characters" text={String(item.meta?.chars || item.text.length)} />
+                <List.Item.Detail.Metadata.Label title="Words" text={String(item.meta?.words || 0)} />
+                <List.Item.Detail.Metadata.Label title="Lines" text={String(item.meta?.lines || 0)} />
                 <List.Item.Detail.Metadata.Label title="Token Count" text={String(item.meta?.tokens || 0)} />
+                {(item.meta?.dupes || 0) > 0 && <List.Item.Detail.Metadata.Label title="Duplicates" text={String(item.meta.dupes)} icon={Icon.Repeat} />}
                 <List.Item.Detail.Metadata.Label title="Status" icon={item.isBookmarked ? Icon.Pin : Icon.Circle} text={item.isBookmarked ? "Pinned" : "Active"} />
               </List.Item.Detail.Metadata>
             }
@@ -188,6 +192,7 @@ export default function Command() {
               <Action title="String: camelCase" icon={Icon.Text} onAction={() => fetch(`http://localhost:3031/archive/alchemy/${item.id}?action=camel`).then(() => fetchArchive())} />
               <Action title="String: Strip Space" icon={Icon.Eraser} onAction={() => fetch(`http://localhost:3031/archive/alchemy/${item.id}?action=strip`).then(() => fetchArchive())} />
             </ActionPanel.Submenu>
+            <Action title="Retro-Sync Old Links" icon={Icon.Redo} onAction={() => fetch(`http://localhost:3031/archive/retro/sync`).then(() => showToast({ title: "Sync Started", message: "Fetching old banners in background..." }))} />
             <Action title="Edit Content" icon={Icon.Pencil} onAction={() => editContent(item)} shortcut={{ modifiers: ["cmd"], key: "e" }} />
             <Action title={item.isBookmarked ? "Unpin" : "Pin to Vault"} icon={Icon.Star} onAction={() => toggleBookmark(item.id)} shortcut={{ modifiers: ["cmd"], key: "b" }} />
             <Action title="Assign Label" icon={Icon.Tag} onAction={() => addLabel(item.id)} shortcut={{ modifiers: ["cmd"], key: "l" }} />
@@ -221,7 +226,7 @@ export default function Command() {
   return (
     <List 
       isLoading={isLoading} 
-      searchBarPlaceholder={`Search ${totalCount.toLocaleString()} clips in sovereign vault...`}
+      searchBarPlaceholder={`Search ${totalCount.toLocaleString()} clips in gravity archive...`}
       onSearchTextChange={setSearchText}
       isShowingDetail={true}
       searchBarAccessory={
