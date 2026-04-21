@@ -46,6 +46,44 @@ function logActivity(text: string) {
   fs.appendFileSync(LOG_PATH, entry);
 }
 
+<<<<<<< Updated upstream
+=======
+function archiveClipboard(text: string) {
+  const dir = path.join(process.cwd(), 'gravity-archive');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const clipsPath = path.join(dir, 'clips.json');
+  let clips: any[] = [];
+  try {
+    const data = fs.readFileSync(clipsPath, 'utf-8');
+    clips = JSON.parse(data);
+  } catch (e) { clips = []; }
+  
+  // 🧼 Duplicate Sentry: If text matches, just bump to top
+  const existingIdx = clips.findIndex((c: any) => c.text === text);
+  if (existingIdx !== -1) {
+    const [item] = clips.splice(existingIdx, 1);
+    item.timestamp = new Date().toISOString();
+    clips.unshift(item);
+  } else {
+    const type = text.startsWith('http') ? 'link' : (text.includes('{') || text.includes('function') || text.includes('=>')) ? 'code' : 'text';
+    clips.unshift({
+      id: Date.now().toString(),
+      text,
+      timestamp: new Date().toISOString(),
+      isBookmarked: false,
+      meta: {
+        words: text.split(/\s+/).filter(x => x.length > 0).length,
+        lines: text.split('\n').length,
+        type
+      }
+    });
+  }
+  
+  // Keep last 5000 clips in active recall
+  fs.writeFileSync(clipsPath, JSON.stringify(clips.slice(0, 5000), null, 2));
+}
+
+>>>>>>> Stashed changes
 let lastBriefDate = "";
 let lastEveningDate = "";
 
@@ -1772,6 +1810,7 @@ async function main() {
           ArchiveDB.delete(id);
           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
+<<<<<<< Updated upstream
         if (url.pathname.startsWith('/archive/promote/')) {
           const { ArchiveDB } = await import('../archive/db');
           const id = parseInt(url.pathname.split('/').pop() || '0');
@@ -1790,6 +1829,36 @@ async function main() {
           const labels = url.searchParams.get('labels') || '';
           ArchiveDB.updateLabels(id, labels);
           return new Response('Updated', { headers: { 'Access-Control-Allow-Origin': '*' } });
+=======
+        if (url.pathname.startsWith('/archive/label/')) {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          const id = url.pathname.split('/').pop();
+          const label = url.searchParams.get('label') || '';
+          if (!fs.existsSync(clipsPath)) return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          
+          const clips = JSON.parse(fs.readFileSync(clipsPath, 'utf-8'));
+          const idx = clips.findIndex((c: any) => String(c.id) === id);
+          if (idx !== -1) {
+            clips[idx].label = label;
+            fs.writeFileSync(clipsPath, JSON.stringify(clips, null, 2));
+          }
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.startsWith('/archive/promote/')) {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          const id = url.pathname.split('/').pop();
+          if (!fs.existsSync(clipsPath)) return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          
+          const clips = JSON.parse(fs.readFileSync(clipsPath, 'utf-8'));
+          const item = clips.find((c: any) => String(c.id) === id);
+          if (item) {
+            const entry = `\n### 🪐 Promoted [${new Date().toLocaleDateString()}]\nLabel: \`${item.label || 'None'}\`\n\n${item.text}\n\n---\n`;
+            fs.appendFileSync(path.join(process.cwd(), 'GRAVITY_MANIFEST.md'), entry);
+            return new Response('Promoted', { headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+>>>>>>> Stashed changes
         }
         if (url.pathname === '/system/lock') {
           await execAsync(`pmset displaysleepnow || /System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend`);
