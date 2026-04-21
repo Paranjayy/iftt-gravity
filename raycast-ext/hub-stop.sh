@@ -11,13 +11,11 @@
 # @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt
 
 # Documentation:
-# @raycast.description Total shutdown of all Gravity Hub processes.
+# @raycast.description Total shutdown of all Gravity processes.
 # @raycast.author antigravity
 
-# 1. Kill any process on Port 3030
+# 1. Iron Stop: Terminate all Gravity processes
+ps aux | grep "src/lib/bot.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
 lsof -ti :3030 | xargs kill -9 2>/dev/null
-
-# 2. Kill any wandering Bun processes
-pkill -f "bot.ts" 2>/dev/null
 
 echo "🌑 Gravity Stopped."

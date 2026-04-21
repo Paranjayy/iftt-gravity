@@ -258,7 +258,7 @@ async function main() {
         { command: 'status', description: 'Show current states' },
         { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
         { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
-        { command: 'media', description: '🎬 Music Sync (Aura)' },
+        { command: 'media', description: '🎬 Media Exposure (Music Sync)' },
         { command: 'flows', description: '⚡ Manage Automation' },
         { command: 'auto_ac', description: '❄️ Toggle Auto-Pilot AC' },
         { command: 'auto_light', description: '🌅 Toggle Auto-Pilot Lights' },
