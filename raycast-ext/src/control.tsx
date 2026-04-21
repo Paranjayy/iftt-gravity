@@ -83,6 +83,29 @@ export default function Command() {
         />
       </LS>
 
+      <LS title="Quick Prism Moods">
+        <LI
+          icon={Icon.Livestream}
+          title="OCEAN BLUE"
+          subtitle="Deep blue lighting aura"
+          actions={
+            <AP title="Prism Pulse">
+              <A icon={Icon.Livestream} title="Trigger Blue Aura" onAction={() => runAction("OCEAN BLUE", "/control/bulb/color?temp=6500")} />
+            </AP>
+          }
+        />
+        <LI
+          icon={Icon.SpeakerHigh}
+          title="MEDIA EXPOSURE"
+          subtitle="Full brightness cinematic aura"
+          actions={
+            <AP title="Prism Pulse">
+              <A icon={Icon.SpeakerHigh} title="Trigger High Fidelity" onAction={() => runAction("MEDIA EXPOSURE", "/control/brightness?level=100")} />
+            </AP>
+          }
+        />
+      </LS>
+
       <LS title="Deep Device Control">
         <LI
           icon={Icon.Sun}

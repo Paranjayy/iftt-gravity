@@ -1,11 +1,12 @@
-# 🪐 Gravity Hub: The God Build Manifest (v4.9.5)
+# 🪐 Gravity Hub: The God Build Manifest (v4.9.6)
 
-This document serves as the absolute context for the current state of the Gravity Hub ecosystem. Use this as a reference for any future development or troubleshooting.
+> [!IMPORTANT]
+> **Mission Objective**: Gravity has officially pivoted to become a **Local-First Automation Engine (IFTTT / Zapier / n8n Killer)**. 
 
 ## 🏗️ Core Architecture
 - **Port 3030 (The Frequency)**: The central heartbeat. Both the Local API and the Webhook Gateway live here.
 - **Minimal Brain (CLIPBOARD_ONLY)**: A lightweight mode that runs only the clipboard archiver and API, bypassing hardware (AC/Lights) and Telegram initialization.
-- **Zapit Engine**: A custom IFTTT/Zapier killer that handles incoming webhooks and executes dynamic flows.
+- **Zapit Engine (The "Killer" Core)**: A high-fidelity automation engine that handles incoming webhooks and executes dynamic flows stored in `config.zapit_flows`. 
 
 ## 📋 Clipboard Archive (Infinite Memory)
 - **Engine**: Hyper-fast 1-second polling of `pbpaste`.
@@ -21,6 +22,7 @@ This document serves as the absolute context for the current state of the Gravit
 - **Gravity Hub**: Full ecosystem startup (automatically clears Port 3030).
 - **Gravity Hub (Archive Only)**: Launches the minimal brain.
 - **Stop Gravity Hub**: Total killswitch for all Gravity processes.
+- **Gravity Pulse**: Health check for Port 3030 and Hub mode.
 
 ## 🚧 Known Integrations
 - **MirAie**: Panasonic AC Control (Local/Remote).
