@@ -2057,9 +2057,22 @@ async function main() {
           } catch (e) { clips = []; }
           
           const q = url.searchParams.get('q')?.toLowerCase();
-          const results = q ? clips.filter((c: any) => c.text.toLowerCase().includes(q)) : clips;
+          const filter = url.searchParams.get('filter') || 'recent';
           
-          return new Response(JSON.stringify(results.slice(0, 50)), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          let results = q ? clips.filter((c: any) => String(c.text).toLowerCase().includes(q)) : clips;
+
+          // 🕰️ Apply Time Filters
+          const now = new Date();
+          if (filter === 'today') {
+            const todayStr = now.toLocaleDateString();
+            results = results.filter((c: any) => new Date(c.timestamp).toLocaleDateString() === todayStr);
+          } else if (filter === 'recent') {
+             results = results.slice(-100);
+          }
+          
+          return new Response(JSON.stringify(results.reverse()), { 
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+          });
         }
         if (url.pathname.startsWith('/archive/bookmark/')) {
           const { ArchiveDB } = await import('../archive/db');

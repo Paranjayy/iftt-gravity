@@ -12,12 +12,13 @@ export default function Command() {
   const [items, setItems] = useState<ArchiveItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
+  const [filter, setFilter] = useState("recent");
 
   useEffect(() => {
     async function fetchArchive() {
       setIsLoading(true);
       try {
-        const url = `http://localhost:3030/archive/search?q=${encodeURIComponent(searchText)}`;
+        const url = `http://localhost:3030/archive/search?q=${encodeURIComponent(searchText)}&filter=${filter}`;
         const response = await fetch(url);
         const data: any = await response.json();
         setItems(data || []);
@@ -28,7 +29,7 @@ export default function Command() {
       }
     }
     fetchArchive();
-  }, [searchText]);
+  }, [searchText, filter]);
 
   return (
     <List 
@@ -36,6 +37,17 @@ export default function Command() {
       searchBarPlaceholder="Search infinite clipboard history..."
       onSearchTextChange={setSearchText}
       isShowingDetail={true}
+      searchBarAccessory={
+        <List.Dropdown
+          tooltip="Filter Search Range"
+          storeValue={true}
+          onChange={(newValue) => setFilter(newValue)}
+        >
+          <List.Dropdown.Item title="Recent Clips" value="recent" icon={Icon.Clock} />
+          <List.Dropdown.Item title="Today Only" value="today" icon={Icon.Calendar} />
+          <List.Dropdown.Item title="Deep History" value="all" icon={Icon.List} />
+        </List.Dropdown>
+      }
     >
       {items.length === 0 ? (
         <List.EmptyView title="Nothing found" description="Try a different search or copy something new!" icon={Icon.MagnifyingGlass} />
