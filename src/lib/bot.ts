@@ -14,6 +14,10 @@ import { TelegramAdapter } from './adapters/telegram';
 import { MiraieAdapter } from './adapters/miraie';
 import { WizAdapter } from './adapters/wiz';
 import { WeatherEngine } from './weather';
+<<<<<<< Updated upstream
+=======
+import { CodexSDK } from './codex';
+>>>>>>> Stashed changes
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
@@ -40,12 +44,57 @@ async function getSystemIdleTime(): Promise<number> {
   } catch { return 0; }
 }
 
+<<<<<<< Updated upstream
+=======
+async function getSpotifyStatus(): Promise<string | null> {
+  if (os.platform() !== 'darwin') return null;
+  try {
+    const script = `
+      if application "Spotify" is running then
+        tell application "Spotify"
+          try
+            set tName to name of current track
+            set aName to artist of current track
+            set pState to player state as string
+            if pState is "playing" then
+              return tName & " - " & aName
+            end if
+          end try
+        end tell
+      end if
+      return "stopped"
+    `;
+    const { stdout } = await execAsync(`osascript -e '${script}'`);
+    const res = stdout.trim();
+    return (res === "stopped" || res === "") ? null : res;
+  } catch { return null; }
+}
+
+async function getNetworkJitter(): Promise<number | null> {
+  try {
+    const { stdout } = await execAsync("ping -c 1 8.8.8.8 | awk -F'/' 'END{print $5}'");
+    return parseFloat(stdout.trim()) || null;
+  } catch { return null; }
+}
+
+async function getBatteryStatus(): Promise<{ level: number, isPlugged: boolean } | null> {
+  if (os.platform() !== 'darwin') return null;
+  try {
+    const { stdout } = await execAsync("pmset -g batt");
+    const level = parseInt(stdout.match(/\d+%/)?.[0] || '0');
+    const isPlugged = stdout.includes('AC Power');
+    return { level, isPlugged };
+  } catch { return null; }
+}
+
+>>>>>>> Stashed changes
 function logActivity(text: string) {
   const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   const entry = `[${stamp}] ${text}\n`;
   fs.appendFileSync(LOG_PATH, entry);
 }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 =======
 function archiveClipboard(text: string) {
@@ -81,6 +130,28 @@ function archiveClipboard(text: string) {
   
   // Keep last 5000 clips in active recall
   fs.writeFileSync(clipsPath, JSON.stringify(clips.slice(0, 5000), null, 2));
+}
+
+>>>>>>> Stashed changes
+=======
+function cleanDOM(html: string) {
+  // Surgical strip of scripts, styles, and data-attributes
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/ style="[^"]*"/gi, '')
+    .replace(/ data-[a-z0-9-]+="[^"]*"/gi, '')
+    .trim();
+}
+
+async function archiveClipboard(text: string) {
+  try {
+     fetch('http://localhost:3031/archive/hoard', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ text, source: "System" })
+     }).catch(() => {});
+  } catch(e) {}
 }
 
 >>>>>>> Stashed changes
@@ -165,6 +236,7 @@ function updateBotPulse(config: any) {
   config.stats.bot.lastPulse = new Date().toISOString();
   fs.writeFileSync(path.join(process.cwd(), 'config.json'), JSON.stringify(config, null, 2));
 }
+<<<<<<< Updated upstream
 
 let config: any;
 let bot: TelegramAdapter;
@@ -176,10 +248,22 @@ async function main() {
     config.hubToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     saveConfig(config);
 =======
+=======
+let config: any;
+let bot: any;
+
+async function main() {
+  config = loadConfig();
+  const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
+  
+  // 📝 PID Lock for reliable shutdown
+  fs.writeFileSync('/tmp/gravity-hub.pid', process.pid.toString());
+>>>>>>> Stashed changes
   
   // Session Stats
   let sessionAcMinutes = 0;
   let sessionLightMinutes = 0;
+<<<<<<< Updated upstream
 
   let isPhoneOnline = true; // tracking state
   let offlineCounter = 0;
@@ -208,6 +292,15 @@ async function main() {
       } as any;
 >>>>>>> Stashed changes
 =======
+=======
+
+  let isPhoneOnline = true; // tracking state
+  let offlineCounter = 0;
+  let offlineSince: number | null = null; // Debounce tracking
+  
+  const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
+
+>>>>>>> Stashed changes
   if (!TELEGRAM_TOKEN) {
     console.error('❌ TELEGRAM_TOKEN not set');
     process.exit(1);
@@ -216,6 +309,7 @@ async function main() {
   bot = new TelegramAdapter(TELEGRAM_TOKEN);
   const notifier = new NotificationManager(bot, config);
 
+<<<<<<< Updated upstream
   let isPhoneOnline = true; // tracking state
   let offlineCounter = 0;
   let offlineSince: number | null = null; // Debounce tracking
@@ -229,6 +323,10 @@ async function main() {
   // Init adapters
   bot = new TelegramAdapter(TELEGRAM_TOKEN);
   const notifier = new NotificationManager(bot, config);
+=======
+  // Initialize Codex SDK
+  const codex = config.codexExportPath ? new CodexSDK(config.codexExportPath) : null;
+>>>>>>> Stashed changes
 
   // Initialize Scheduler Actions
   const scheduler = new GravityScheduler(config, {
@@ -260,13 +358,18 @@ async function main() {
   });
 
   // 🧱 RESILIENT STARTUP: Background all network tasks
+<<<<<<< Updated upstream
   console.log('🧱 Intelligence Core: Waking up...');
+=======
+  console.log('🧱 Gravity Hub: Waking up...');
+>>>>>>> Stashed changes
   
   (async () => {
     try {
       await bot.initialize();
       console.log('✅ Telegram: Connected');
       
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
       // 🪄 Sync Command Suggestions (Slash menu)
 =======
@@ -287,6 +390,20 @@ async function main() {
         { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
         { command: 'history', description: 'Show energy usage history' },
         { command: 'ping', description: 'Check Hub health' },
+>>>>>>> Stashed changes
+=======
+      // 🪄 Sync Command Suggestions (Slash menu v4.9.2)
+      bot.setMyCommands([
+        { command: 'status', description: 'Show current states' },
+        { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
+        { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
+        { command: 'media', description: '🎬 Media Exposure (Music Sync)' },
+        { command: 'flows', description: '⚡ Manage Automation' },
+        { command: 'auto_ac', description: '❄️ Toggle Auto-Pilot AC' },
+        { command: 'auto_light', description: '🌅 Toggle Auto-Pilot Lights' },
+        { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
+        { command: 'history', description: 'Show usage history' },
+        { command: 'ping', description: 'Check Gravity health' },
 >>>>>>> Stashed changes
       ]).catch(() => {});
     } catch (e) {
@@ -344,7 +461,11 @@ async function main() {
   const sleepManager = new SleepCurveManager();
 
   let miraie: MiraieAdapter | null = null;
+<<<<<<< Updated upstream
   if (config.miraie?.mobile && config.miraie?.password) {
+=======
+  if (!CLIPBOARD_ONLY && config.miraie?.mobile && config.miraie?.password) {
+>>>>>>> Stashed changes
     try {
       miraie = new MiraieAdapter(config.miraie.mobile, config.miraie.password);
       miraie.initialize()
@@ -365,7 +486,11 @@ async function main() {
   }
 
   let wiz: WizAdapter | null = null;
+<<<<<<< Updated upstream
   if (config.wiz?.ip) {
+=======
+  if (!CLIPBOARD_ONLY && config.wiz?.ip) {
+>>>>>>> Stashed changes
     try {
       wiz = new WizAdapter(config.wiz.ip);
       console.log('💡 Lights: Adapter ready');
@@ -487,6 +612,46 @@ async function main() {
   });
 
   bot.registerCommand({
+<<<<<<< Updated upstream
+=======
+    command: 'media',
+    description: 'Activate Media Exposure (High-fidelity cinematic aura)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      
+      config.mediaAura = config.mediaAura === false ? true : false;
+      saveConfig(config);
+      
+      const status = config.mediaAura ? 'ON (Syncing with Spotify) 🌈' : 'OFF (Stable Mode) 💡';
+      await send(`🎬 *Media Exposure:* Liquid Aura is now *${status}*`);
+      logActivity(`🎬 Media Sync: Liquid Aura toggled to ${status} via Telegram.`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'auto_ac',
+    description: 'Toggle Autonomous AC (Weather-aware)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      config.autoAc = !config.autoAc;
+      saveConfig(config);
+      await send(`❄️ *Auto-AC:* Sovereignty is now *${config.autoAc ? 'ENABLED' : 'DISABLED'}*`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'auto_light',
+    description: 'Toggle Autonomous Lighting (Sunset-aware)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      config.autoLight = !config.autoLight;
+      saveConfig(config);
+      await send(`💡 *Auto-Light:* Sovereignty is now *${config.autoLight ? 'ENABLED' : 'DISABLED'}*`);
+    }
+  });
+
+  bot.registerCommand({
+>>>>>>> Stashed changes
     command: 'pgvcl',
     description: 'Show latest PGVCL bill details',
     handler: async (chatId, args, msg, send) => {
@@ -496,7 +661,11 @@ async function main() {
       
       // Fallback: Estimation Engine (v4.0.0 High-Fidelity)
       if (!pg || !config.pgvcl?.consumerId || config.pgvcl.consumerId === 'ENTER_ID') {
+<<<<<<< Updated upstream
         const units = (config.stats.acMinutes / 60 * 1.5) + (config.stats.lightMinutes / 60 * 0.015);
+=======
+        const units = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
+>>>>>>> Stashed changes
         const bill = calculatePgvclBill(units);
         const roundedBill = Math.round(Number(bill));
         
@@ -509,6 +678,28 @@ async function main() {
     }
   });
 
+<<<<<<< Updated upstream
+=======
+  bot.registerCommand({
+    command: 'flows',
+    description: 'Manage Automations',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      
+      const flows = config.zapit_flows || [];
+      if (flows.length === 0) {
+        return await send('⚡ *Gravity Flows*\n\nNo active flows found.');
+      }
+
+      let text = `⚡ *Gravity: Active Automations*\n━━━━━━━━━━━━━━\n`;
+      flows.forEach((f: any, i: number) => {
+        text += `${i+1}. *${f.id}* [Trigger: \`${f.trigger}\`]\n   🎁 Action: \`${f.action}\`\n\n`;
+      });
+      await send(text);
+    }
+  });
+
+>>>>>>> Stashed changes
   // ❄️ Mission Control Panel (Interactive v2.0)
   bot.registerCommand({
     command: 'control',
@@ -552,12 +743,32 @@ async function main() {
         }
       }
 
+<<<<<<< Updated upstream
       // Generate the Panel Content
       const acStatus = config.stats.ac?.status || 'unknown';
       const lightStatus = config.stats.light?.status || 'unknown';
       const acTemp = (await miraie?.getDeviceStatus(deviceId as string))?.actmp || '??';
       
       const panelText = `🎮 *Gravity Mission Control*\n━━━━━━━━━━━━━━\n❄️ *AC*: ${acStatus.toUpperCase()} (${acTemp}°C)\n💡 *Light*: ${lightStatus.toUpperCase()}\n━━━━━━━━━━━━━━\n_Panel auto-refreshes on click._`;
+=======
+    // Auto-Refresh UI logic for Callbacks
+    const ac = config.stats?.ac || { status: 'OFF', actmp: '24' };
+    const light = config.stats?.light || { status: 'OFF' };
+    const acDur = getDurationString(ac.lastChanged);
+    const lightDur = getDurationString(light.lastChanged);
+
+    const dashboard = `🌌 *Gravity Mission Control*\n━━━━━━━━━━━━━━\n❄️ AC: *${ac.status || 'OFF'}* (${ac.actmp || '24'}°C) — _${acDur}_\n💡 Light: *${light.status || 'OFF'}* — _${lightDur}_\n━━━━━━━━━━━━━━\n_Panel auto-refreshes on click._`;
+    
+    try {
+      await (bot as any).sendRequest('editMessageText', {
+        chat_id: chatId,
+        message_id: (msg as any).message_id,
+        text: dashboard,
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      });
+    } catch(e) {}
+>>>>>>> Stashed changes
 
       const keyboard = {
         inline_keyboard: [
@@ -601,6 +812,7 @@ async function main() {
   });
 
   // ── Presence Detection & Automations ───────────────
+<<<<<<< Updated upstream
   const weather = new WeatherEngine();
   setInterval(async () => {
     const phoneIp = config.phoneIp || '192.168.29.50';
@@ -653,6 +865,113 @@ async function main() {
       console.warn('Presence check failed', e);
     }
   }, 60000);
+=======
+  if (!CLIPBOARD_ONLY) {
+    const weather = new WeatherEngine();
+    setInterval(async () => {
+      const phoneIp = config.phoneIp || '192.168.29.50';
+      try {
+        await execAsync(`ping -c 1 -t 1 ${phoneIp}`).catch(() => {});
+        const { stdout } = await execAsync(`arp -a`);
+        const isPresent = stdout.includes(`(${phoneIp})`);
+
+        if (isPresent) {
+          if (!isPhoneOnline) {
+            isPhoneOnline = true;
+            offlineCounter = 0;
+            logActivity("📱 Presence: Phone detected (HOME)");
+            await triggerScene('HOME');
+            
+            const now = new Date();
+            const hour = now.getHours();
+            const dateStr = now.toDateString();
+            if (hour >= 5 && hour < 11 && lastBriefDate !== dateStr) {
+              lastBriefDate = dateStr;
+              setTimeout(() => triggerScene('MORNING_BRIEF'), 5000);
+            }
+          } else {
+            offlineCounter = 0;
+          }
+        } else {
+          offlineCounter++;
+          if (offlineCounter >= 4) {
+            if (isPhoneOnline) {
+              isPhoneOnline = false;
+              logActivity("🚶 Presence: Phone disconnected (AWAY)");
+            }
+            
+            // 🕰️ Run Scheduler Check
+            await scheduler.check();
+
+            // 🛡️ Ghost Sentry Check
+            if (config.sentryActive !== false && !isPhoneOnline) {
+               const idle = await getSystemIdleTime();
+               if (idle < 10) { // Active movement detected
+                  const stamp = new Date().toLocaleTimeString();
+                  logActivity("🚨 SENTRY: Unauthorized activity detected!");
+                  speak("Warning! Unauthorized access. Alerting the owner.");
+                  await notifier.notify(`🚨 *GHOST SENTRY*: Activity detected while you are AWAY!\nTimestamp: \`${stamp}\`\nIdle Time: \`${idle.toFixed(1)}s\``, 'critical');
+               }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Presence check failed', e);
+      }
+    }, 60000);
+  }
+
+  // 🛡️ Gravity Auto-Pilot: Environment & Hardware Engine
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      const hour = now.getHours();
+
+      // 0. Rapid Hardware Sync (Analog Remote Awareness)
+      if (miraie && miraie.devices.length > 0) {
+        const s = await miraie.getDeviceStatus(miraie.devices[0].deviceId);
+        const actualAcStatus = (s?.ps === 'on' || s?.ps === '1' || s?.ps === 'true') ? 'on' : 'off';
+        updateDeviceState('ac', actualAcStatus);
+      }
+      if (wiz) {
+        const p = await (wiz as any).getPilot();
+        updateDeviceState('light', p?.state ? 'on' : 'off');
+      }
+
+      // 1. Auto-AC Logic (Weather Sensitive)
+      if (config.autoAc) {
+        const w: any = await (weather as any).getWeather();
+        if (w) {
+          if (w.temp > 31 && config.stats.acStatus === 'off' && isPhoneOnline) {
+            await triggerScene('chill');
+            await notifier.notify(`🌡️ *Sovereignty:* External temp hit *${w.temp}°C*. I've engaged your AC to keep the God Build cool.`, 'low');
+          } else if (w.temp < 27 && config.stats.acStatus === 'on') {
+            const d = miraie?.devices[0]?.deviceId;
+            if (d) await miraie?.controlDevice(d, { ps: 'off' });
+            updateDeviceState('ac', 'off');
+            await notifier.notify(`🍃 *Sovereignty:* External temp dropped to *${w.temp}°C*. Turning off the AC to balance the room.`, 'low');
+          }
+        }
+      }
+
+      // 2. Auto-Light Logic (Sunset & Bedtime)
+      if (config.autoLight) {
+        // Sunset Pulse (Approx 6:30 PM - 7:30 PM)
+        if (hour === 18 && config.stats.lightStatus === 'off' && isPhoneOnline) {
+          await (wiz as any).setPilot({ state: true, temp: 3000, dimming: 80 });
+          updateDeviceState('light', 'on');
+          await notifier.notify(`🌅 *Sovereignty:* Golden Hour detected. Waking up the Hub lights.`, 'low');
+        }
+        // Bedtime Pulse (12:30 AM)
+        if (hour === 0 && config.stats.lightStatus === 'on' && !isPhoneOnline) {
+           await (wiz as any).setPilot({ state: false });
+           updateDeviceState('light', 'off');
+           await notifier.notify(`🌙 *Sovereignty:* Late-night silence. Turning off the lights for you.`, 'low');
+        }
+      }
+    } catch {}
+  }, 30000); // 🚀 Rapid Hardware Sync: 30 seconds
+>>>>>>> Stashed changes
 
   // ──────────────────────────────────────────────────────
   // PGVCL Scraper (Hourly)
@@ -754,6 +1073,21 @@ async function main() {
         if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
         if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
         break;
+<<<<<<< Updated upstream
+=======
+      case "CHILL":
+      case "chill":
+        logActivity("🎬 Scene: CHILL (Media Aura)");
+        if (wiz) {
+           // Deep Purple/Lounge Vibe
+           promises.push(wiz.executeAction({ type: 'control', payload: { 
+             state: true, 
+             r: 155, g: 48, b: 255, 
+             dimming: 40 
+           }}));
+        }
+        break;
+>>>>>>> Stashed changes
       case "MORNING_BRIEF":
         const hours = (config.stats.acMinutes / 60).toFixed(1);
         const bill = calculatePgvclBill(Number(config.stats.pgvcl?.units || 0));
@@ -777,6 +1111,58 @@ async function main() {
   });
 
   bot.registerCommand({
+<<<<<<< Updated upstream
+=======
+    command: 'search',
+    description: 'Search Telegram history via Codex SDK',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const query = args.join(' ');
+      if (!query) return await send('Usage: /search [query]');
+      
+      if (!codex) return await send('❌ Codex SDK not initialized (missing export path).');
+      
+      const results = codex.search(query);
+      if (results.length === 0) return await send(`🔍 No results found for "${query}"`);
+      
+      let response = `🔍 *Codex Search Results:* "${query}"\n━━━━━━━━━━━━━━\n`;
+      results.forEach((r, i) => {
+        const date = new Date(r.timestamp).toLocaleDateString('en-IN');
+        response += `${i+1}. [${date}] ${r.content.substring(0, 100)}${r.content.length > 100 ? '...' : ''}\n\n`;
+      });
+      await send(response);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'codex',
+    description: 'Show Codex SDK stats and pins',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!codex) return await send('❌ Codex SDK not initialized.');
+      
+      const stats = codex.getStats();
+      const pins = codex.getPinned();
+      
+      let response = `🧠 *Codex Orchestrator Intelligence*\n━━━━━━━━━━━━━━\n`;
+      response += `📊 *Stats*:\n`;
+      response += `- Messages: \`${stats.totalMessages}\`\n`;
+      response += `- Participants: \`${stats.participants.join(', ')}\`\n`;
+      response += `- Media: \`${Object.entries(stats.mediaCounts).map(([k, v]) => `${k}:${v}`).join(', ')}\`\n\n`;
+      
+      if (pins.length > 0) {
+        response += `📌 *Top Pinned Messages*:\n`;
+        pins.slice(0, 3).forEach(p => {
+          response += `- ${p.content.substring(0, 60)}...\n`;
+        });
+      }
+      
+      await send(response);
+    }
+  });
+
+  bot.registerCommand({
+>>>>>>> Stashed changes
     command: 'broadcast',
     description: 'Speak a message on the house speakers',
     handler: async (chatId, args, msg, send) => {
@@ -1391,20 +1777,52 @@ async function main() {
       
       const acStatus = config.stats.ac?.status || 'unknown';
       const acDuration = getDurationString(config.stats.ac?.lastChanged);
+<<<<<<< Updated upstream
       lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} (${acDuration}) ${miraie ? '✅' : '❌'}`);
       
       const lightStatus = config.stats.light?.status || 'unknown';
       const lightDuration = getDurationString(config.stats.light?.lastChanged);
       lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} (${lightDuration}) ${wiz ? '✅' : '❌'}`);
+=======
+      const acHw = miraie ? '✅ Live' : '🌑 Disconnected (Power Cut?)';
+      lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} (${acDuration}) [Req: ${config.ac?.temp || '24'}°C] (${acHw})`);
+      
+      const lightStatus = config.stats.light?.status || 'unknown';
+      const lightDuration = getDurationString(config.stats.light?.lastChanged);
+      const lightHw = wiz ? '✅ Live' : '🌑 Disconnected';
+      lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} (${lightDuration}) [Req: ${config.lights?.brightness || '100'}%] (${lightHw})`);
+>>>>>>> Stashed changes
       
       const botUptime = Math.floor(process.uptime());
       const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
       const bootedAt = config.stats.bot?.bootedAt ? new Date(config.stats.bot.bootedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : "Unknown";
       
+<<<<<<< Updated upstream
       lines.push(`🤖 *Bot*: ONLINE (Since ${bootedAt} IST)`);
       lines.push(`⏱ *Session Uptime*: ${Math.floor(botUptime/3600)}h ${Math.floor((botUptime%3600)/60)}m`);
       lines.push(`💤 *Bot Downtime*: Last down for ${botOffBefore}`);
       
+=======
+      lines.push(`⏱ *Session Uptime*: ${Math.floor(botUptime/3600)}h ${Math.floor((botUptime%3600)/60)}m`);
+      lines.push(`💤 *Bot Downtime*: Last down for ${botOffBefore}`);
+      
+      const spotify = await getSpotifyStatus();
+      if (spotify) {
+        lines.push(`\n🎵 *Spotify*: ${spotify}`);
+      }
+
+      const jitter = await getNetworkJitter();
+      const batt = await getBatteryStatus();
+      
+      let systemHealth = [];
+      if (jitter) systemHealth.push(jitter > 150 ? `📡 Network: Jittery (${jitter.toFixed(0)}ms)` : `📡 Network: Stable`);
+      if (batt) systemHealth.push(batt.isPlugged ? `🔌 Power: Multi-Source` : `🔋 Power: Battery (${batt.level}%)`);
+      
+      if (systemHealth.length > 0) {
+        lines.push(`\n⚙️ *System Health*:\n${systemHealth.join('\n')}`);
+      }
+      
+>>>>>>> Stashed changes
       try {
         const logs = fs.readFileSync(LOG_PATH, 'utf-8').trim().split('\n');
         const last = logs[logs.length - 1] || "No events logged yet.";
@@ -1434,6 +1852,25 @@ async function main() {
   // /remind — Delayed Telegram reminder
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
+<<<<<<< Updated upstream
+=======
+    command: 'media_aura',
+    description: 'Toggle automatic music-light sync: /media_aura on|off',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const state = args[0]?.toLowerCase();
+      if (state === 'on' || state === 'off') {
+        config.mediaAura = (state === 'on');
+        saveConfig(config);
+        await send(`🎵 *Media Aura*: Automatic mood sync is now *${state.toUpperCase()}*.`);
+      } else {
+        await send(`🎵 *Media Aura*: Currently *${config.mediaAura !== false ? 'ON' : 'OFF'}*. Use \`/media_aura on|off\` to toggle.`);
+      }
+    }
+  });
+
+  bot.registerCommand({
+>>>>>>> Stashed changes
     command: 'remind',
     description: 'Set a reminder: /remind 30m take a break',
     handler: async (chatId, args, msg, send) => {
@@ -1588,9 +2025,12 @@ async function main() {
   };
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   bot.registerCommand({
     command: 'schedule_add',
 =======
+=======
+>>>>>>> Stashed changes
   // 🪐 God Commands v4.9.2
   bot.registerCommand({
     command: 'aura',
@@ -1606,6 +2046,9 @@ async function main() {
   bot.registerCommand({
     command: 'schedule_add',
        // ... existing command registrations
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     description: 'Add a new schedule: /schedule_add 23:00 ac_off',
     handler: async (chatId, args, msg, send) => {
@@ -1773,6 +2216,7 @@ async function main() {
             return new Response(`Trigger ${hook} Executed`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
         }
+<<<<<<< Updated upstream
         if (url.pathname.includes('/status')) {
           const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
           const body = JSON.stringify({
@@ -1830,6 +2274,164 @@ async function main() {
           ArchiveDB.updateLabels(id, labels);
           return new Response('Updated', { headers: { 'Access-Control-Allow-Origin': '*' } });
 =======
+=======
+        if (url.pathname.startsWith('/media_aura/')) {
+          const state = url.pathname.split('/').pop()?.toLowerCase();
+          config.mediaAura = (state === 'on');
+          saveConfig(config);
+          logActivity(`🎵 Media Aura: Remote toggle -> ${state.toUpperCase()}`);
+          return new Response(`Media Aura: ${state}`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.includes('/status')) {
+          const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
+          const spotify = await getSpotifyStatus();
+          const jitter = await getNetworkJitter();
+          const batt = await getBatteryStatus();
+          
+          // Calculate current live units and durations
+          const liveUnits = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
+          const acDur = getDurationString(config.stats.ac?.lastChanged);
+          const lightDur = getDurationString(config.stats.light?.lastChanged);
+          
+          const body = JSON.stringify({
+            online: isPhoneOnline,
+            stats: config.stats,
+            units: liveUnits.toFixed(1),
+            estimatedPgBill: Math.round(Number(calculatePgvclBill(liveUnits))),
+            ac_duration: acDur,
+            light_duration: lightDur,
+            uptime: process.uptime(),
+            pgvcl: config.stats.pgvcl,
+            weather: w,
+            spotify,
+            jitter,
+            battery: batt,
+            autoAc: config.autoAc,
+            autoLight: config.autoLight,
+            mediaAura: config.mediaAura !== false,
+            platform: 'Local Mac'
+          }, null, 2);
+          return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        // ⚡ ZAPIT AUTOMATION GATEWAY (Dynamic Flows v2.0)
+        if (url.pathname.startsWith('/zapit/')) {
+           const triggerKey = url.pathname.split('/').pop()?.toLowerCase();
+           console.log(`⚡ ZAPIT: Incoming trigger [${triggerKey}]`);
+           
+           // 1. Search for custom flows in config
+           const flows = config.zapit_flows || [];
+           const matchedFlow = flows.find((f: any) => f.trigger.toLowerCase() === triggerKey);
+           
+           if (matchedFlow) {
+              logActivity(`⚡ ZAPIT: Executing Flow [${matchedFlow.id}] triggered by [${triggerKey}]`);
+              if (matchedFlow.action === 'scene') await triggerScene(matchedFlow.params?.scene);
+              if (matchedFlow.action === 'speak') speak(matchedFlow.params?.text);
+              if (matchedFlow.action === 'ac_off') {
+                const d = miraie?.devices[0]?.deviceId;
+                if (d) await miraie?.controlDevice(d, { ps: 'off' });
+              }
+              
+              return new Response(JSON.stringify({ status: 'executed', flow: matchedFlow.id }), { 
+                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+              });
+           }
+
+           // 2. Fallback to hardcoded legacy triggers
+           if (triggerKey === 'aura') {
+             await triggerScene('chill');
+             return new Response(JSON.stringify({ status: 'triggered', event: 'aura' }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           }
+
+           return new Response(JSON.stringify({ status: 'error', message: 'No matching flow or legacy trigger found' }), { 
+              status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+           });
+        }
+        if (url.pathname === '/control/aura/toggle') {
+           config.mediaAura = config.mediaAura === false ? true : false;
+           saveConfig(config);
+           return new Response(JSON.stringify({ status: 'toggled', mediaAura: config.mediaAura }), { 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+           });
+        }
+        if (url.pathname === '/control/auto/ac') {
+           config.autoAc = !config.autoAc;
+           saveConfig(config);
+           return new Response(JSON.stringify({ status: 'toggled', autoAc: config.autoAc }), { 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+           });
+        }
+        if (url.pathname === '/control/auto/light') {
+           config.autoLight = !config.autoLight;
+           saveConfig(config);
+           return new Response(JSON.stringify({ status: 'toggled', autoLight: config.autoLight }), { 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+           });
+        }
+
+        // 🪐 GRAVITY ARCHIVE API
+        if (url.pathname === '/archive/add') {
+          const body: any = await req.json();
+          if (body.text) {
+             archiveClipboard(body.text);
+             return new Response('Added', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          return new Response('Empty', { status: 400 });
+        }
+        if (url.pathname === '/archive/search' || url.pathname === '/archive/list') {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          let clips = [];
+          try {
+            const data = fs.readFileSync(clipsPath, 'utf-8');
+            clips = JSON.parse(data);
+          } catch (e) { clips = []; }
+          
+          const q = url.searchParams.get('q')?.toLowerCase();
+          const filter = url.searchParams.get('filter') || 'recent';
+          
+          let results = q ? clips.filter((c: any) => String(c.text).toLowerCase().includes(q)) : clips;
+
+          // 🕰️ Apply Time & Bookmark Filters
+          const now = new Date();
+          if (filter === 'today') {
+            const todayStr = now.toLocaleDateString();
+            results = results.filter((c: any) => new Date(c.timestamp).toLocaleDateString() === todayStr);
+          } else if (filter === 'bookmarks') {
+             results = results.filter((c: any) => c.isBookmarked);
+          } else if (filter === 'recent') {
+             results = results.slice(-100);
+          }
+          
+          return new Response(JSON.stringify(results.reverse()), { 
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+          });
+        }
+
+        if (url.pathname.startsWith('/archive/bookmark/')) {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          const id = url.pathname.split('/').pop();
+          if (!fs.existsSync(clipsPath)) return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          
+          const clips = JSON.parse(fs.readFileSync(clipsPath, 'utf-8'));
+          const idx = clips.findIndex((c: any) => String(c.id) === id);
+          if (idx !== -1) {
+            clips[idx].isBookmarked = !clips[idx].isBookmarked;
+            fs.writeFileSync(clipsPath, JSON.stringify(clips, null, 2));
+          }
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.startsWith('/archive/delete/')) {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          const id = url.pathname.split('/').pop();
+          if (!fs.existsSync(clipsPath)) return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          
+          let clips = JSON.parse(fs.readFileSync(clipsPath, 'utf-8'));
+          clips = clips.filter((c: any) => String(c.id) !== id);
+          fs.writeFileSync(clipsPath, JSON.stringify(clips, null, 2));
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+>>>>>>> Stashed changes
         if (url.pathname.startsWith('/archive/label/')) {
           const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
           const id = url.pathname.split('/').pop();
@@ -1858,6 +2460,9 @@ async function main() {
             return new Response('Promoted', { headers: { 'Access-Control-Allow-Origin': '*' } });
           }
           return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
         }
         if (url.pathname === '/system/lock') {
@@ -1882,6 +2487,14 @@ async function main() {
           if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: false } });
           return new Response('Bulb Off', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
+<<<<<<< Updated upstream
+=======
+        if (url.pathname === '/control/bulb/on') {
+          await wiz?.executeAction({ type: 'control', payload: { state: true } });
+          updateDeviceState('light', 'on', true);
+          return new Response('Bulb On', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+>>>>>>> Stashed changes
         if (url.pathname === '/control/temp') {
           const dir = url.searchParams.get('dir') === 'up' ? 1 : -1;
           if (miraie && (miraie as any).devices.length > 0) {
@@ -1902,6 +2515,15 @@ async function main() {
           }
           return new Response('AC Off', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
+<<<<<<< Updated upstream
+=======
+        if (url.pathname === '/control/ac/on') {
+          const deviceId = miraie?.devices[0]?.deviceId;
+          if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on' });
+          updateDeviceState('ac', 'on', true);
+          return new Response('AC On', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+>>>>>>> Stashed changes
         if (url.pathname === '/control/ac/mode') {
           const mode = url.searchParams.get('mode') || 'cool';
           if (miraie && (miraie as any).devices.length > 0) {
@@ -1987,6 +2609,7 @@ async function main() {
     } finally {
       if (browser) await browser.close();
     }
+<<<<<<< Updated upstream
   }
 
   // Run scraper on boot + every 6 hours
@@ -2232,15 +2855,373 @@ async function main() {
   
   for (const userId of (config.authorizedUsers || [])) {
     try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+=======
+>>>>>>> Stashed changes
   }
-  console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Polling started.`);
 
+<<<<<<< Updated upstream
+=======
+  // Run scraper on boot + every 6 hours
+  runPgvclScraper();
+  setInterval(runPgvclScraper, 21600000);
+  let awayAcMinutes = 0;
+  let lastSpotifyTrack: string | null = null;
+  let preMusicLightState: any = null;
+
+  // 📋 Hyper-Fast Clipboard Sentry (Instant Recall)
+  setInterval(async () => {
+    try {
+      const { stdout } = await execAsync('pbpaste');
+      const currentClip = stdout.trim();
+      
+      // 🛡️ ASCII Shield: Ignore terminal logos and high-symbol noise
+      const isNoise = (text: string) => {
+        const lines = text.split('\n');
+        if (lines.length > 4) {
+          const symbols = (text.match(/[^a-zA-Z0-9\s]/g) || []).length;
+          const ratio = symbols / text.length;
+          if (ratio > 0.25) return true; // Likely ASCII Art/Logo
+        }
+        return false;
+      };
+
+      if (currentClip && currentClip !== config.lastClip && currentClip.length > 3 && !isNoise(currentClip)) {
+        config.lastClip = currentClip;
+        archiveClipboard(currentClip);
+        // Only log if it's the full hub, to keep CLIPBOARD_ONLY silent
+        if (!CLIPBOARD_ONLY) {
+          logActivity(`📋 Memory Archive: New clip captured (${currentClip.substring(0, 20)}...)`);
+        }
+      }
+    } catch (e) { /* Sentry silent */ }
+  }, 1000);
+
+  setInterval(async () => {
+    try {
+      // 1. Battery Guardian (Blink Red if < 15% & unplugged)
+      const batt = await getBatteryStatus();
+      if (batt && batt.level < 15 && !batt.isPlugged) {
+         if (!config.stats.lowBattAlerted) {
+            config.stats.lowBattAlerted = true;
+            speak("Hub battery is critical. Please plug in.");
+            blinkLight(3, { r: 255, g: 0, b: 0 }); // Periodic Red Alert
+         }
+      } else if (batt && (batt.level > 20 || batt.isPlugged)) {
+         config.stats.lowBattAlerted = false;
+      }
+
+      // 2. Media Aura Sync (Liquid Aura 2.0 - Dynamic Cycling)
+      const currentSpotify = await getSpotifyStatus();
+      if (config.mediaAura !== false) {
+        const isAd = currentSpotify?.toLowerCase().includes('advertisement') || currentSpotify?.toLowerCase().includes('spotify');
+        
+        if (currentSpotify && currentSpotify !== lastSpotifyTrack && !isAd) {
+          if (!lastSpotifyTrack) {
+            preMusicLightState = JSON.parse(JSON.stringify(config.stats.light || {}));
+          }
+          
+          // Liquid Aura: Massive Prism Palette (10+ Colors)
+          const palette = [
+            { r: 255, g: 0, b: 127 },  // Neon Pink
+            { r: 155, g: 48, b: 255 },  // Deep Purple
+            { r: 0, g: 191, b: 255 },   // Cyber Blue
+            { r: 255, g: 105, b: 180 }, // Hot Pink
+            { r: 0, g: 255, b: 127 },   // Spring Green
+            { r: 255, g: 69, b: 0 },    // Orange Red
+            { r: 138, g: 43, b: 226 },  // Blue Violet
+            { r: 0, g: 255, b: 255 },   // Aqua
+            { r: 255, g: 20, b: 147 },  // Deep Pink
+            { r: 75, g: 0, b: 130 },    // Indigo
+            { r: 255, g: 215, b: 0 },   // gold
+            { r: 50, g: 205, b: 50 }    // Lime Green
+          ];
+          const color = palette[Math.floor(Math.random() * palette.length)];
+          
+          await wiz?.executeAction({ type: 'control', payload: { 
+            state: true, r: color.r, g: color.g, b: color.b, dimming: 40 
+          }});
+          
+          logActivity(`🎵 Liquid Aura: ${currentSpotify} -> Prism Pulse. 🌈`);
+        } else if ((!currentSpotify || isAd) && lastSpotifyTrack) {
+          // Restore original state
+          if (preMusicLightState && preMusicLightState.status === 'on') {
+             await wiz?.executeAction({ type: 'control', payload: { 
+               state: true, 
+               dimming: preMusicLightState.brightness || 100,
+               r: preMusicLightState.r, g: preMusicLightState.g, b: preMusicLightState.b 
+             }});
+          } else {
+             await wiz?.executeAction({ type: 'control', payload: { state: false } });
+          }
+          logActivity(`🎵 Liquid Aura: Restored original atmosphere.`);
+          preMusicLightState = null;
+        }
+      }
+      lastSpotifyTrack = currentSpotify;
+    } catch (e) { 
+      /* Aura silent */ 
+    }
+
+    // 3. Auto-Saver Protection (2.5h / 150m limit)
+    try {
+      if (!CLIPBOARD_ONLY) {
+        if (!isPhoneOnline) {
+          // Only count if an AC is actually on
+          let anyAcOn = false;
+          if (miraie && miraie.devices.length > 0) {
+            for (const d of miraie.devices) {
+              const s = await miraie.getDeviceStatus(d.deviceId);
+              if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
+            }
+          }
+          
+          if (anyAcOn) {
+            awayAcMinutes++;
+            if (awayAcMinutes >= 150) {
+              awayAcMinutes = 0; // reset
+              const promises = [];
+              if (miraie && miraie.devices.length > 0) {
+                promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
+              }
+              await Promise.all(promises);
+              const alert = `🛡️ *Gravity Auto-Saver:* AC was on for >2.5h while you were AWAY. High-fidelity safety shut-off triggered.`;
+              for (const uid of (config.authorizedUsers || [])) {
+                try { await bot.sendMessage(uid, alert, { parse_mode: 'Markdown' }); } catch {}
+              }
+              logActivity(`🛡️ Auto-Saver: Shutdown triggered after 150m of away-usage.`);
+            }
+          }
+        } else {
+          awayAcMinutes = 0; // Reset if anyone comes home
+        }
+      }
+
+      // 4. Deep Device Sync (Pulse Check)
+      if (miraie && miraie.devices.length > 0) {
+        const s = await miraie.getDeviceStatus(miraie.devices[0].deviceId);
+        const actualAcStatus = (s?.ps === 'on' || s?.ps === '1') ? 'on' : 'off';
+        updateDeviceState('ac', actualAcStatus);
+      }
+      if (wiz) {
+        const p = await (wiz as any).getPilot();
+        const state = p?.state ? 'on' : 'off';
+        if (p?.state) config.stats.lightMinutes++;
+        updateDeviceState('light', state);
+      }
+      // 1. Force MirAie REST refresh to ensure absolute tracking accuracy
+      if (miraie) {
+        try { await (miraie as any).refreshAllStatuses(); } catch {}
+      }
+
+      // 2. Check MirAie (Loop ALL devices)
+      if (miraie && (miraie as any).devices.length > 0) {
+        let activeAcCount = 0;
+        let currentAcTemp = 0;
+        for (const device of (miraie as any).devices) {
+          const status = await (miraie as any).getDeviceStatus(device.deviceId);
+          const ps = String(status?.ps || '').toLowerCase();
+          if (ps === 'on' || ps === '1' || ps === 'true') {
+            activeAcCount++;
+            currentAcTemp = parseInt(status?.actmp || '0');
+          }
+        }
+        
+        if (activeAcCount > 0) {
+          // Increment minutes for EACH active unit (Parallel Load Accuracy)
+          config.stats.acMinutes += activeAcCount;
+          sessionAcMinutes += activeAcCount;
+          
+          // Efficiency Monitoring (on primary unit)
+          if (acEfficiencyData.startTime && !acEfficiencyData.alerted) {
+             if (acEfficiencyData.startTemp === null) acEfficiencyData.startTemp = currentAcTemp;
+             const elapsed = (Date.now() - acEfficiencyData.startTime) / 60000;
+             if (elapsed >= 45 && currentAcTemp >= acEfficiencyData.startTemp) {
+                acEfficiencyData.alerted = true;
+                const alertBody = `🚨 *Efficiency Alert*: AC has been ON for 45m but room temperature hasn't dropped. Check doors/windows!`;
+                for (const uid of (config.authorizedUsers || [])) {
+                  try { await bot.sendMessage(uid, alertBody, { parse_mode: 'Markdown' }); } catch {}
+                }
+                speak("Attention. Air conditioning efficiency is low. Please check windows and doors.");
+                blinkLight(4, { r: 255, g: 50, b: 0 }); // Pulse Red
+             }
+          }
+        }
+        updateDeviceState('ac', activeAcCount > 0 ? 'on' : 'off');
+      }
+
+      const now = new Date();
+      // Record hourly snapshot if it's a new hour
+      if (now.getMinutes() === 0) {
+        if (!config.stats.history) config.stats.history = [];
+        const stamp = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+        config.stats.history.push({ time: stamp, ac: config.stats.acMinutes, lights: config.stats.lightMinutes });
+        if (config.stats.history.length > 24) config.stats.history.shift();
+      }
+
+      // 3. Budget Check
+      if (config.stats.budgetLimit) {
+        const estBill = Number(calculatePgvclBill(Number(config.stats.pgvcl?.units) || 0));
+        const dailyEst = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
+        const dailyCost = Number(calculatePgvclBill(dailyEst));
+        
+        if (dailyCost > config.stats.budgetLimit && !config.stats.budgetAlertSent) {
+          const alert = `⚠️ *Budget Alert:* Daily electricity cost (*₹${dailyCost.toFixed(1)}*) has exceeded your limit of ₹${config.stats.budgetLimit}. Consider switching to economy mode.`;
+          for (const uid of (config.authorizedUsers || [])) {
+            try { await bot.sendMessage(uid, alert, { parse_mode: 'Markdown' }); } catch {}
+          }
+          config.stats.budgetAlertSent = true;
+        }
+      }
+
+      // 4. Save stats
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+
+      // 4. Daily Review at 11:59 PM
+      if (now.getHours() === 23 && now.getMinutes() === 59) {
+        const stats = config.stats;
+        const dateStr = now.toLocaleDateString('en-IN');
+        
+        const msg = `🌙 *Gravity Daily Review*\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*`;
+        for (const uid of (config.authorizedUsers || [])) {
+          await bot.sendMessage(uid, msg, { parse_mode: 'Markdown' });
+        }
+
+        // Archive to Daily Log
+        if (!config.stats.dailyLog) config.stats.dailyLog = [];
+        config.stats.dailyLog.push({
+          date: dateStr,
+          ac: (stats.acMinutes/60).toFixed(1),
+          light: (stats.lightMinutes/60).toFixed(1)
+        });
+        if (config.stats.dailyLog.length > 365) config.stats.dailyLog.shift();
+
+        config.stats = { 
+          acMinutes: 0, 
+          lightMinutes: 0, 
+          lastReset: new Date(), 
+          history: config.stats.history, 
+          dailyLog: config.stats.dailyLog,
+          budgetLimit: config.stats.budgetLimit,
+          budgetAlertSent: false // Reset alert for the next day
+        };
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+      }
+    } catch (err) {
+      console.error('Stats loop error:', err);
+    }
+  }, 60000);
+
+  // ──────────────────────────────────────────────────────
+  // 🔋 Mac Battery Guardian (New Feature v2.2)
+  // ──────────────────────────────────────────────────────
+  let batteryAlertSent = false;
+  setInterval(async () => {
+    try {
+      const { stdout } = await execAsync('pmset -g batt');
+      const match = stdout.match(/(\d+)%/);
+      if (match) {
+        const level = parseInt(match[1]);
+        const isCharging = stdout.includes('AC Power') || stdout.includes('charging');
+        
+        if (level <= 20 && !isCharging && !batteryAlertSent) {
+          batteryAlertSent = true;
+          const msg = `⚠️ *Gravity Power Alert* ⚡\nYour Mac's battery is critical (*${level}%*).\nPlease plug in to keep the God build running.`;
+          for (const uid of (config.authorizedUsers || [])) {
+            await bot.sendMessage(uid, msg, { parse_mode: 'Markdown' });
+          }
+        } else if (level > 25) {
+          batteryAlertSent = false;
+        }
+      }
+    } catch {}
+  }, 300000); // Check every 5m
+
+  // 🧠 Habit Learning Analysis (Run daily at 1 AM)
+  async function analyzeHabits() {
+    if (!config.habits || (config.habits as any).length < 10) return;
+    logActivity("🧠 Habit Learner: Scanning manual patterns...");
+    const patterns: Record<string, number[]> = {};
+    (config.habits as any).forEach((h: any) => {
+      const key = `${h.command}_${h.day}`;
+      if (!patterns[key]) patterns[key] = [];
+      patterns[key].push(h.time);
+    });
+
+    for (const [key, times] of Object.entries(patterns)) {
+      if (times.length >= 3) {
+        const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+        if (times.every(t => Math.abs(t - avgTime) < 45)) {
+          const [command, dayNum] = key.split('_');
+          const timeStr = `${Math.floor(avgTime / 60).toString().padStart(2, '0')}:${Math.floor(avgTime % 60).toString().padStart(2, '0')}`;
+          const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][parseInt(dayNum)];
+          
+          const msg = `🧠 *Gravity Habit Insight*\n\nMaster, I've noticed you always use \`${command.toUpperCase()}\` around *${timeStr}* on *${dayName}s*.\n\nShould I automate this?`;
+          for (const uid of (config.authorizedUsers || [])) {
+             try {
+               await bot.sendMessage(uid, msg, {
+                 parse_mode: 'Markdown',
+                 reply_markup: {
+                   inline_keyboard: [[{ text: '✅ Schedule It', callback_data: `schedule_add ${timeStr} ${command}` }, { text: '🚫 No', callback_data: 'ignore' }]]
+                 }
+               });
+             } catch {}
+          }
+          config.habits = (config.habits as any).filter((h: any) => !key.startsWith(h.command));
+        }
+      }
+    }
+    saveConfig(config);
+  }
+
+  // 🏥 Health Pulse & Maintenance
+  if (!CLIPBOARD_ONLY) {
+    setInterval(() => {
+      updateBotPulse(config);
+      const now = new Date();
+      if (now.getHours() === 1 && now.getMinutes() === 0) analyzeHabits();
+    }, 60000);
+
+    // Polls
+    bot.startPolling();
+    
+    const PLATFORM = process.env.GITHUB_ACTIONS ? 'GitHub' : (require('os').platform() === 'darwin' ? 'Local Mac' : 'Remote Hub');
+    const startTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+    const acStatusEmoji = (config.stats.ac?.status === 'on') ? '✅' : '❌';
+    const ltStatusEmoji = (config.stats.light?.status === 'on') ? '✅' : '❌';
+    const acDur = getDurationString(config.stats.ac?.lastChanged);
+    const ltDur = getDurationString(config.stats.light?.lastChanged);
+    const startMsg = `🟢 *Gravity Hub: ONLINE*\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\n⏰ Started: *${startTime} IST*\n❄️ AC: ${acStatusEmoji} (${acDur}) | 💡 Light: ${ltStatusEmoji} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
+    
+    for (const userId of (config.authorizedUsers || [])) {
+      try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+    }
+    console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Polling started.`);
+  }
+
+>>>>>>> Stashed changes
   // ── Shutdown Guardian ─────────────────────────────
   const shutdown = async (signal: string) => {
     const uptime = Math.floor(process.uptime());
     const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
+<<<<<<< Updated upstream
     const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
     const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n⏱ Session Uptime: *${uptimeStr}*\n\nHub will not respond until restarted.`;
+=======
+    
+    // Final Hardware Recall
+    const acFinal = config.stats.ac?.status?.toUpperCase() || 'OFF';
+    const lightFinal = config.stats.light?.status?.toUpperCase() || 'OFF';
+    const acDur = getDurationString(config.stats.ac?.lastChanged);
+    const lightDur = getDurationString(config.stats.light?.lastChanged);
+
+    const acStr = sessionAcMinutes > 0 ? `\n❄️ AC Workload: *${(sessionAcMinutes/60).toFixed(1)} hrs*` : '';
+    const lightStr = sessionLightMinutes > 0 ? `\n💡 Light Usage: *${(sessionLightMinutes/60).toFixed(1)} hrs*` : '';
+    
+    const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+    
+    const stopMsg = `🔴 *Gravity went OFFLINE*\n━━━━━━━━━━━━━━\n⏰ Stopped: *${stopTime} IST*\n❄️ AC Status: *${acFinal}* (${acDur})\n💡 Light Status: *${lightFinal}* (${lightDur})\n⏱ Session Uptime: *${uptimeStr}*${acStr}${lightStr}\n━━━━━━━━━━━━━━\nHub will not respond until restarted.`;
+    
+>>>>>>> Stashed changes
     for (const userId of (config.authorizedUsers || [])) {
       try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
     }

@@ -5,10 +5,23 @@ import fetch from "node-fetch";
 interface HubState {
   online: boolean;
   uptime: number;
+<<<<<<< Updated upstream
   stats?: { prompts: number };
   estimatedPgBill?: string;
    pgvcl?: { units: string; bill: string; lastUpdate: string };
   weather?: { temp: number; condition: string; isRain: boolean };
+=======
+  autoAc: boolean;
+  autoLight: boolean;
+  ac_duration: string;
+  light_duration: string;
+  units: string;
+  estimatedPgBill: number;
+  mediaAura: boolean;
+  pgvcl?: { units: string; bill: string; lastUpdate: string };
+  weather?: { temp: number; humidity: number; condition: string };
+  stats?: { ac?: { status: string }; light?: { status: string } };
+>>>>>>> Stashed changes
 }
 
 export default function Command() {
@@ -29,6 +42,8 @@ export default function Command() {
 
   useEffect(() => {
     refresh();
+    const timer = setInterval(refresh, 30000); // 30s pulse
+    return () => clearInterval(timer);
   }, []);
 
   async function runAction(name: string, endpoint: string) {
@@ -36,19 +51,17 @@ export default function Command() {
       const res = await fetch(`http://localhost:3030${endpoint}`);
       if (!res.ok) throw new Error("Failed");
       showToast({ style: Toast.Style.Success, title: `Triggered: ${name}` });
-      setTimeout(refresh, 1000);
+      setTimeout(refresh, 500);
     } catch (e) {
       showToast({ style: Toast.Style.Failure, title: "Action Failed" });
     }
   }
 
-  const L: any = List;
-  const LI: any = List.Item;
-  const LS: any = List.Section;
-  const AP: any = ActionPanel;
-  const A: any = Action;
+  const acStatus = (state?.stats?.ac?.status || 'off').toUpperCase();
+  const ltStatus = (state?.stats?.light?.status || 'off').toUpperCase();
 
   return (
+<<<<<<< Updated upstream
     <L isLoading={isLoading} searchBarPlaceholder="Search scenes or control devices...">
       <LS title="Mission Scenes">
         <LI
@@ -70,9 +83,93 @@ export default function Command() {
               <A icon={Icon.Circle} title="Activate Scene" onAction={() => runAction("HOME", "/scene/home")} />
             </AP>
           }
+=======
+    <List isLoading={isLoading} searchBarPlaceholder="Search scenes or control devices...">
+      
+      <List.Section title="Utility Metrics">
+        <List.Item
+          icon={{ source: Icon.Bolt, color: Color.Yellow }}
+          title="PGVCL Budget"
+          subtitle={`₹${state?.estimatedPgBill || '??'} Estimated`}
+          accessories={[{ text: `${state?.units || '0'} Units Used` }]}
         />
-        <LI
+        <List.Item
+          icon={{ source: Icon.Cloud, color: Color.Blue }}
+          title="Weather Pulse"
+          subtitle={`${state?.weather?.temp || '??'}°C | Humidity: ${state?.weather?.humidity || '??'}%`}
+          accessories={[{ text: state?.weather?.condition || 'Clear' }]}
+        />
+      </List.Section>
+
+      <List.Section title="Hardware Control">
+        <List.Item
+          icon={{ source: Icon.Wind, color: acStatus === 'ON' ? Color.Blue : Color.SecondaryText }}
+          title="Air Conditioning"
+          subtitle={acStatus === 'ON' ? `Running for ${state?.ac_duration || '0m'}` : "Standby"}
+          accessories={[{ text: acStatus, color: acStatus === 'ON' ? Color.Green : Color.Red }]}
+          actions={
+            <ActionPanel>
+              <Action icon={Icon.Power} title="Toggle AC" onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
+              <Action icon={Icon.ChevronUp} title="Temp Up" onAction={() => runAction("Temp Up", "/control/temp_up")} />
+              <Action icon={Action.ChevronDown} title="Temp Down" onAction={() => runAction("Temp Down", "/control/temp_down")} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={{ source: Icon.Sun, color: ltStatus === 'ON' ? Color.Yellow : Color.SecondaryText }}
+          title="Lighting"
+          subtitle={ltStatus === 'ON' ? `Running for ${state?.light_duration || '0m'}` : "Standby"}
+          accessories={[{ text: ltStatus, color: ltStatus === 'ON' ? Color.Green : Color.Red }]}
+          actions={
+            <ActionPanel>
+              <Action icon={Icon.Power} title="Toggle Lights" onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
+              <Action icon={Icon.Plus} title="Brightness Up" onAction={() => runAction("Bright Up", "/control/bright_up")} />
+              <Action icon={Icon.Minus} title="Brightness Down" onAction={() => runAction("Bright Down", "/control/bright_down")} />
+            </ActionPanel>
+          }
+        />
+      </List.Section>
+
+      <List.Section title="Auto-Pilot Sovereignty">
+        <List.Item
+          icon={Icon.Snowflake}
+          title="Auto-AC Logic"
+          subtitle={state?.autoAc ? "Dynamic Environment Control Active" : "Manual Mode"}
+          accessories={[{ text: state?.autoAc ? "ENABLED" : "DISABLED", color: state?.autoAc ? Color.Green : Color.Red }]}
+          actions={
+            <ActionPanel>
+              <Action icon={Icon.CheckCircle} title="Toggle Auto-AC" onAction={() => runAction("Auto-AC", "/control/auto/ac")} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Livestream}
+          title="Aura Sync (Media Exposure)"
+          subtitle={state?.mediaAura ? "Cinematic RGB Sync Active" : "Static Lighting"}
+          accessories={[{ text: state?.mediaAura ? "ENABLED" : "DISABLED", color: state?.mediaAura ? Color.Green : Color.Red }]}
+          actions={
+            <ActionPanel>
+              <Action icon={Icon.Switch} title="Toggle Aura" onAction={() => runAction("Aura", "/control/aura/toggle")} />
+            </ActionPanel>
+          }
+        />
+      </List.Section>
+
+      <List.Section title="Gravity Scenes">
+        <List.Item
+          icon={Icon.Video}
+          title="TV TIME"
+          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
+>>>>>>> Stashed changes
+        />
+        <List.Item
+          icon={Icon.House}
+          title="BACK HOME"
+          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
+        />
+        <List.Item
           icon={Icon.Moon}
+<<<<<<< Updated upstream
           title="AWAY"
           subtitle="Everything off (Energy Save)"
           actions={
@@ -190,6 +287,12 @@ function LogsView() {
   return (
     <List isLoading={loading} searchBarPlaceholder="Filter chronicle...">
       {logs.map((log, i) => <List.Item key={i} title={log} icon={Icon.Calendar} />)}
+=======
+          title="AWAY MODE"
+          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("AWAY", "/scene/away")} /></ActionPanel>}
+        />
+      </List.Section>
+>>>>>>> Stashed changes
     </List>
   );
 }
