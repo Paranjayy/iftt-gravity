@@ -16,6 +16,7 @@ const ROOT_DIR = "/Users/paranjay/Developer/iftt";
 const CLIPS_PATH = path.join(ROOT_DIR, 'gravity-archive', 'clips.json');
 let CLIPSTACK: any[] = [];
 let CLIPSTACK_SOURCE = "Unknown";
+let CLIPSTACK_URL = "";
 
 function cleanDOM(html: string) {
   return html
@@ -37,14 +38,18 @@ async function archiveClipboard(text: string) {
   } catch (e) { clips = []; }
   
   const isHTML = text.includes('<') && text.includes('>');
-  const processedText = isHTML ? cleanDOM(text) : text;
+  const processedText = text.trim();
 
-  const existingIdx = clips.findIndex((c: any) => c.text === processedText);
+  const existingIdx = clips.findIndex((c: any) => c.text.trim() === processedText);
   if (existingIdx !== -1) {
     const item = clips[existingIdx];
     item.meta = item.meta || {};
     item.meta.dupes = (item.meta.dupes || 0) + 1;
     item.timestamp = new Date().toISOString();
+    // Update context if it was missing
+    if (!item.source || item.source === "Unknown") item.source = CLIPSTACK_SOURCE;
+    if (!item.url) item.url = CLIPSTACK_URL;
+
     clips.splice(existingIdx, 1);
     clips.unshift(item);
   } else {
@@ -66,13 +71,14 @@ async function archiveClipboard(text: string) {
       text: processedText,
       timestamp: new Date().toISOString(),
       isBookmarked: false,
+      source: CLIPSTACK_SOURCE || 'System',
+      url: CLIPSTACK_URL || undefined,
       meta: {
         words: processedText.split(/\s+/).filter(x => x.length > 0).length,
         lines: processedText.split('\n').length,
         chars: processedText.length,
         type,
-      },
-      source: CLIPSTACK_SOURCE || 'System'
+      }
     };
 
     if (isLink) {
@@ -213,11 +219,30 @@ async function main() {
       const { stdout } = await execAsync('pbpaste');
       const text = stdout.trim();
       if (text && text !== lastClip) {
-        // Detect Frontmost App Name
+        // Detect Frontmost App Name & Context
         try {
-          const { stdout: appName } = await execAsync("osascript -e 'tell application \"System Events\" to name of (first process whose frontmost is true)'");
-          CLIPSTACK_SOURCE = appName.trim();
-        } catch(e) { CLIPSTACK_SOURCE = "Unknown"; }
+          const script = `
+            tell application "System Events"
+              set appName to name of first process whose frontmost is true
+              set siteUrl to ""
+              if appName is "Arc" then
+                tell application "Arc" to set siteUrl to URL of active tab of first window
+              else if appName is "Google Chrome" then
+                tell application "Google Chrome" to set siteUrl to URL of active tab of first window
+              else if appName is "Safari" then
+                tell application "Safari" to set siteUrl to URL of current tab of first window
+              end if
+              return appName & "|" & siteUrl
+            end tell
+          `;
+          const { stdout: context } = await execAsync(`osascript -e '${script}'`);
+          const [appName, siteUrl] = context.trim().split('|');
+          CLIPSTACK_SOURCE = appName;
+          CLIPSTACK_URL = siteUrl;
+        } catch(e) { 
+          CLIPSTACK_SOURCE = "Unknown";
+          CLIPSTACK_URL = "";
+        }
 
         lastClip = text;
         await archiveClipboard(text);

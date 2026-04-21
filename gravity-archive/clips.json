@@ -1,5 +1,63 @@
 [
   {
+    "id": "1776792561069",
+    "text": "audit this codebase adn fix my frustrations or things ig idk mun  \n\nalso btw currently it is unable to track live matches asyncly or it isnt able to scrape either live 10mins thing idk if at the end of the match it works\n\n also u can polish entirely if u see any good bad ugly things mun",
+    "timestamp": "2026-04-21T17:30:06.208Z",
+    "isBookmarked": false,
+    "meta": {
+      "words": 57,
+      "lines": 5,
+      "chars": 287,
+      "type": "text",
+      "dupes": 2
+    },
+    "source": "Codex",
+    "url": ""
+  },
+  {
+    "id": "1776792334086",
+    "text": "in zsh thing can u show current thing directory  specific things suggestions ig idk",
+    "timestamp": "2026-04-21T17:28:30.915Z",
+    "isBookmarked": false,
+    "meta": {
+      "words": 14,
+      "lines": 1,
+      "chars": 83,
+      "type": "text",
+      "dupes": 5
+    },
+    "source": "Codex"
+  },
+  {
+    "id": "1776744374331",
+    "text": "audit this codebase adn fix my frustrations or things ig idk mun",
+    "timestamp": "2026-04-21T17:28:30.039Z",
+    "isBookmarked": false,
+    "label": "audit this codebase adn fix my frustrations or thi",
+    "source": "Electron",
+    "meta": {
+      "words": 12,
+      "lines": 1,
+      "chars": 64,
+      "tokens": 16,
+      "type": "text",
+      "dupes": 8
+    }
+  },
+  {
+    "id": "1776792334727",
+    "text": "in zsh thing can u show current thing directory  specific things suggestions ig idk ",
+    "timestamp": "2026-04-21T17:25:34.727Z",
+    "isBookmarked": false,
+    "meta": {
+      "words": 14,
+      "lines": 1,
+      "chars": 84,
+      "type": "text"
+    },
+    "source": "Codex"
+  },
+  {
     "id": "1776790069444",
     "text": "- also btw it iant refreshing same msg it would spam my whole shit which is kinda fucked uk",
     "timestamp": "2026-04-21T17:17:28.346Z",
@@ -320,22 +378,6 @@
       "tokens": 6754,
       "type": "code",
       "dupes": 1
-    }
-  },
-  {
-    "id": "1776744374331",
-    "text": "audit this codebase adn fix my frustrations or things ig idk mun",
-    "timestamp": "2026-04-21T04:16:26.601Z",
-    "isBookmarked": false,
-    "label": "audit this codebase adn fix my frustrations or thi",
-    "source": "Electron",
-    "meta": {
-      "words": 12,
-      "lines": 1,
-      "chars": 64,
-      "tokens": 16,
-      "type": "text",
-      "dupes": 6
     }
   },
   {

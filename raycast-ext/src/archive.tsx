@@ -93,11 +93,18 @@ export default function Command() {
   const getIcon = (item: ArchiveItem) => {
     if (item.isBookmarked) return { source: Icon.Star, color: Color.Yellow };
     
+    // Favicon Priority for Browser Content
+    if (item.meta?.favicon) return { source: item.meta.favicon, mask: Image.Mask.RoundedRectangle };
+
+    // App Origin Icon (v9.4.0 High-Fidelity)
+    if (item.source && item.source !== "System" && item.source !== "Unknown") {
+       return { source: { fileIcon: `/Applications/${item.source}.app` } };
+    }
+    
     // Type-specific icons
     const type = item.meta?.type || 'text';
     switch (type) {
       case 'link': 
-        if (item.meta?.favicon) return { source: item.meta.favicon, mask: Image.Mask.RoundedRectangle };
         return { source: Icon.Link, color: Color.Blue };
       case 'image':
       case 'design':
@@ -110,7 +117,6 @@ export default function Command() {
       case 'app':
         return { source: Icon.Folder, color: Color.SecondaryText };
       default:
-        // Live Color Check
         if (item.text.match(/^#(?:[0-9a-fA-F]{3}){1,2}$/)) return { source: Icon.CircleFilled, color: item.text };
         return { source: Icon.Clipboard, color: Color.Blue };
     }
@@ -137,7 +143,8 @@ export default function Command() {
 
     // Default Code/Text Preview
     const lang = item.meta?.type === 'code' ? 'typescript' : 'text';
-    return `#### Content Preview\n\`\`\`${lang}\n${item.text}\n\`\`\`\n\n---\n**Origin:** ${item.source || 'Unknown'}`;
+    const originText = item.url ? `**URL:** ${item.url}` : `**Origin:** ${item.source || 'Unknown'}`;
+    return `#### Content Preview\n\`\`\`${lang}\n${item.text}\n\`\`\`\n\n---\n${originText}`;
   };
 
   const renderItem = (item: ArchiveItem) => {
@@ -148,11 +155,15 @@ export default function Command() {
         title={item.label || item.text.trim().split('\n')[0].substring(0, 70)}
         subtitle={item.label ? item.text.substring(0, 30).trim() : ""}
         detail={
+          !item ? null : (
           <List.Item.Detail
             markdown={getPreviewMarkdown(item)}
             metadata={
               <List.Item.Detail.Metadata>
-                <List.Item.Detail.Metadata.Label title="Origin App" text={item.source || "System"} icon={Icon.AppWindow} />
+                <List.Item.Detail.Metadata.Label title="Origin App" text={item.source || "System"} icon={{ fileIcon: `/Applications/${item.source}.app` }} />
+                {item.url && (
+                  <List.Item.Detail.Metadata.Link title="Source URL" text={item.url.substring(0, 40) + "..."} target={item.url} />
+                )}
                 <List.Item.Detail.Metadata.Label title="Format" text={item.meta?.type?.toUpperCase() || "TEXT"} />
                 <List.Item.Detail.Metadata.Label title="Captured" text={new Date(item.timestamp).toLocaleString()} icon={Icon.Clock} />
                 <List.Item.Detail.Metadata.Separator />
@@ -165,6 +176,7 @@ export default function Command() {
               </List.Item.Detail.Metadata>
             }
           />
+          )
         }
       actions={
         <ActionPanel>
