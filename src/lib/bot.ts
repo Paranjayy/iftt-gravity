@@ -246,7 +246,7 @@ async function main() {
   });
 
   // 🧱 RESILIENT STARTUP: Background all network tasks
-  console.log('🧱 Intelligence Core: Waking up...');
+  console.log('🧱 Gravity Hub: Waking up...');
   
   (async () => {
     try {
@@ -727,7 +727,7 @@ async function main() {
         }
       }
     } catch {}
-  }, 300000); // Pulse every 5 minutes
+  }, 30000); // 🚀 Rapid Hardware Sync: 30 seconds
 
   // ──────────────────────────────────────────────────────
   // PGVCL Scraper (Hourly)
