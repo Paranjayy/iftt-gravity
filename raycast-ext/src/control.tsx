@@ -50,127 +50,87 @@ export default function Command() {
 
   return (
     <L isLoading={isLoading} searchBarPlaceholder="Search scenes or control devices...">
-      <LS title="Mission Scenes">
+      <LS title="Gravity Scenes">
         <LI
           icon={Icon.Video}
           title="TV TIME"
-          subtitle="Cinematic lighting & quiet AC"
+          subtitle="Cinema mode"
           actions={
-            <AP title="Scene Actions">
-              <A icon={Icon.Video} title="Activate Scene" onAction={() => runAction("TV TIME", "/scene/tv")} />
-            </AP>
-          }
-        />
-        <LI
-          icon={Icon.Circle}
-          title="HOME"
-          subtitle="Welcome back lights & AC"
-          actions={
-            <AP title="Scene Actions">
-              <A icon={Icon.Circle} title="Activate Scene" onAction={() => runAction("HOME", "/scene/home")} />
+            <AP title="Actions">
+              <A icon={Icon.Video} title="Activate" onAction={() => runAction("TV", "/scene/tv")} />
             </AP>
           }
         />
         <LI
           icon={Icon.Moon}
           title="AWAY"
-          subtitle="Everything off (Energy Save)"
+          subtitle="Power save"
           actions={
-            <AP title="Scene Actions">
-              <A icon={Icon.Moon} title="Activate Scene" onAction={() => runAction("AWAY", "/scene/away")} />
+            <AP title="Actions">
+              <A icon={Icon.Moon} title="Activate" onAction={() => runAction("AWAY", "/scene/away")} />
             </AP>
           }
         />
       </LS>
 
-      <LS title="Quick Prism Moods">
+      <LS title="Aura Moods">
         <LI
           icon={Icon.Livestream}
           title="OCEAN BLUE"
-          subtitle="Deep blue lighting aura"
           actions={
-            <AP title="Prism Pulse">
-              <A icon={Icon.Livestream} title="Trigger Blue Aura" onAction={() => runAction("OCEAN BLUE", "/control/bulb/color?temp=6500")} />
+            <AP title="Pulse">
+              <A icon={Icon.Livestream} title="Trigger" onAction={() => runAction("BLUE", "/control/bulb/color?temp=6500")} />
             </AP>
           }
         />
         <LI
           icon={Icon.SpeakerHigh}
-          title="MEDIA EXPOSURE"
-          subtitle="Full brightness cinematic aura"
+          title="MUSIC SYNC"
+          subtitle="Reactive lighting"
           actions={
-            <AP title="Prism Pulse">
-              <A icon={Icon.SpeakerHigh} title="Trigger High Fidelity" onAction={() => runAction("MEDIA EXPOSURE", "/control/brightness?level=100")} />
+            <AP title="Pulse">
+              <A icon={Icon.SpeakerHigh} title="Toggle Sync" onAction={() => runAction("SYNC", "/control/aura/toggle")} />
             </AP>
           }
         />
       </LS>
 
-      <LS title="Deep Device Control">
+      <LS title="Hardware Control">
         <LI
           icon={Icon.Sun}
-          title="Bulb Control"
-          subtitle="Precision lighting"
+          title="Lighting"
           actions={
             <AP title="Lighting">
-              <A icon={Icon.PlusCircle} title="Brightness Up" onAction={() => runAction("Brightness Up", "/control/brightness?dir=up")} />
-              <A icon={Icon.MinusCircle} title="Brightness Down" onAction={() => runAction("Brightness Down", "/control/brightness?dir=down")} />
-              <A icon={Icon.Temperature} title="Warm White" onAction={() => runAction("Warm White", "/control/bulb/color?temp=2700")} />
-              <A icon={Icon.Circle} title="Cool White" onAction={() => runAction("Cool White", "/control/bulb/color?temp=6500")} />
-              <A icon={Icon.Power} title="Turn Off Bulbs" onAction={() => runAction("Bulbs Off", "/control/bulb/off")} />
+              <A icon={Icon.PlusCircle} title="Brightness Up" onAction={() => runAction("Up", "/control/brightness?dir=up")} />
+              <A icon={Icon.MinusCircle} title="Brightness Down" onAction={() => runAction("Down", "/control/brightness?dir=down")} />
+              <A icon={Icon.Power} title="Turn Off" onAction={() => runAction("Off", "/control/bulb/off")} />
             </AP>
           }
         />
         <LI
           icon={Icon.Wind}
           title="Air Conditioning"
-          subtitle="Climate control"
           actions={
-            <AP title="AC Control">
-              <A icon={Icon.ChevronUp} title="Temp Up (+1°C)" onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
-              <A icon={Icon.ChevronDown} title="Temp Down (-1°C)" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
-              <A icon={Icon.Circle} title="Cool Mode" onAction={() => runAction("AC Cool", "/control/ac/mode?mode=cool")} />
-              <A icon={Icon.Leaf} title="Dry Mode" onAction={() => runAction("AC Dry", "/control/ac/mode?mode=dry")} />
-              <A icon={Icon.Power} title="Turn Off AC" onAction={() => runAction("AC Off", "/control/ac/off")} />
-            </AP>
-          }
-        />
-        <LI
-          icon={Icon.SpeakerHigh}
-          title="Mac Volume"
-          actions={
-            <AP title="System Volume">
-              <A icon={Icon.PlusCircle} title="Volume Up" onAction={() => runAction("Volume Up", "/control/volume?dir=up")} />
-              <A icon={Icon.MinusCircle} title="Volume Down" onAction={() => runAction("Volume Down", "/control/volume?dir=down")} />
+            <AP title="AC">
+              <A icon={Icon.ChevronUp} title="Temp Up" onAction={() => runAction("Up", "/control/temp?dir=up")} />
+              <A icon={Icon.ChevronDown} title="Temp Down" onAction={() => runAction("Down", "/control/temp?dir=down")} />
+              <A icon={Icon.Power} title="Turn Off" onAction={() => runAction("Off", "/control/ac/off")} />
             </AP>
           }
         />
       </LS>
 
-      <LS title="Hub Telemetry & Environment">
-        <LI
-          icon={Icon.Cloud}
-          title="Current Weather"
-          subtitle={state?.weather ? `${state.weather.condition} (${state.weather.temp}°C)` : "Fetching..."}
-          accessories={[{ text: state?.weather?.isRain ? "☔ Rain Forecast" : "🌤 Clear" }]}
-        />
-        <LI
-          icon={Icon.Bolt}
-          title="Energy Usage"
-          subtitle={state?.units ? `${state.units} Units` : (state?.pgvcl?.units ? `${state.pgvcl.units} Units` : "No data yet")}
-          accessories={[{ text: state?.estimatedPgBill ? ` Est: ₹${state.estimatedPgBill}` : undefined }]}
-        />
+      <LS title="Gravity Pulse">
         <LI
           icon={state?.online ? Icon.CheckCircle : Icon.Circle}
-          title="Family Presence"
-          subtitle={state?.online ? "Owner Detected" : "AWAY Mode logic active"}
-          accessories={[{ text: `Uptime: ${(state?.uptime || 0).toFixed(1)}s` }]}
+          title="Presence"
+          subtitle={state?.online ? "Home" : "Away"}
           actions={
-            <AP title="Hub Control">
+            <AP title="Hub">
               <A icon={Icon.Snowflake} title={config.autoAc ? "Disable Auto-AC" : "Enable Auto-AC"} onAction={() => runAction("Auto-AC", "/control/auto/ac")} />
               <A icon={Icon.Sun} title={config.autoLight ? "Disable Auto-Lights" : "Enable Auto-Lights"} onAction={() => runAction("Auto-Lights", "/control/auto/light")} />
-              <A icon={Icon.RotateAntiClockwise} title="Emergency Restart Hub" onAction={() => runAction("Hub Restart", "/system/restart")} />
-              <A.Push icon={Icon.Eye} title="View Gravity Logs" target={<LogsView />} />
+              <A icon={Icon.RotateAntiClockwise} title="Restart Hub" onAction={() => runAction("Restart", "/system/restart")} />
+              <A.Push icon={Icon.Eye} title="View Chronicle" target={<LogsView />} />
             </AP>
           }
         />

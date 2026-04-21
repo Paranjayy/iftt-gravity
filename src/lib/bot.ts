@@ -194,6 +194,7 @@ let bot: any;
 
 async function main() {
   config = loadConfig();
+  const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
   
   // Session Stats
   let sessionAcMinutes = 0;
@@ -254,16 +255,16 @@ async function main() {
       
       // 🪄 Sync Command Suggestions (Slash menu v4.9.2)
       bot.setMyCommands([
-        { command: 'status', description: 'Show all device states' },
+        { command: 'status', description: 'Show current states' },
         { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
         { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
-        { command: 'media', description: '🎬 Media Exposure (Sync Lighting)' },
-        { command: 'zapit', description: '⚡ Manage Automation Flows' },
-        { command: 'auto_ac', description: '❄️ Toggle Autonomous AC' },
-        { command: 'auto_light', description: '🌅 Toggle Autonomous Lights' },
+        { command: 'media', description: '🎬 Music Sync (Aura)' },
+        { command: 'flows', description: '⚡ Manage Automation' },
+        { command: 'auto_ac', description: '❄️ Toggle Auto-Pilot AC' },
+        { command: 'auto_light', description: '🌅 Toggle Auto-Pilot Lights' },
         { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
-        { command: 'history', description: 'Show energy usage history' },
-        { command: 'ping', description: 'Check Hub health' },
+        { command: 'history', description: 'Show usage history' },
+        { command: 'ping', description: 'Check Gravity health' },
       ]).catch(() => {});
     } catch (e) {
       console.warn('⚠️ Telegram handshake delayed...');
@@ -523,21 +524,20 @@ async function main() {
   });
 
   bot.registerCommand({
-    command: 'zapit',
-    description: 'Manage God Mode Automations (Zapit)',
+    command: 'flows',
+    description: 'Manage Automations',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       
       const flows = config.zapit_flows || [];
       if (flows.length === 0) {
-        return await send('⚡ *Zapit Automation Engine*\n\nNo active flows found. \n_Add flows via config.json or use /zapit_add_');
+        return await send('⚡ *Gravity Flows*\n\nNo active flows found.');
       }
 
-      let text = `⚡ *Zapit: Active Automations*\n━━━━━━━━━━━━━━\n`;
+      let text = `⚡ *Gravity: Active Automations*\n━━━━━━━━━━━━━━\n`;
       flows.forEach((f: any, i: number) => {
-        text += `${i+1}. *${f.id}* [Trigger: \`${f.trigger}\`]\n   🎁 Action: \`${f.action}\` (${JSON.stringify(f.params)})\n\n`;
+        text += `${i+1}. *${f.id}* [Trigger: \`${f.trigger}\`]\n   🎁 Action: \`${f.action}\`\n\n`;
       });
-      text += `━━━━━━━━━━━━━━\n_Pinging http://localhost:3030/zapit/<trigger> executes these flows._`;
       await send(text);
     }
   });
