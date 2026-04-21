@@ -27,7 +27,7 @@ export default function Command() {
       const data = await res.json();
       setState(data as HubState);
     } catch (e) {
-      showToast({ style: Toast.Style.Failure, title: "Hub Offline", message: "Start ./hub.sh first" });
+      // Offline fallback handled by UI
     } finally {
       setIsLoading(false);
     }
@@ -35,7 +35,7 @@ export default function Command() {
 
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, 15000); // 15s pulse
+    const timer = setInterval(refresh, 15000);
     return () => clearInterval(timer);
   }, []);
 
@@ -46,31 +46,33 @@ export default function Command() {
       showToast({ style: Toast.Style.Success, title: `Triggered: ${name}` });
       setTimeout(refresh, 500);
     } catch (e) {
-      showToast({ style: Toast.Style.Failure, title: "Action Failed" });
+      showToast({ style: Toast.Style.Failure, title: "Action Failed", message: "Hub Offline" });
     }
   }
 
   const acStatus = (state?.stats?.ac?.status || 'off').toUpperCase();
   const ltStatus = (state?.stats?.light?.status || 'off').toUpperCase();
+  const acColor = acStatus === 'ON' ? Color.Green : Color.Red;
+  const ltColor = ltStatus === 'ON' ? Color.Green : Color.Red;
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search scenes or control devices...">
       
       <List.Section title="Gravity Scenes">
         <List.Item
-          icon={{ source: Icon.Video, color: Color.Purple }}
+          icon={Icon.Video}
           title="TV TIME"
           subtitle="Cinema Lighting & AC Pulse"
           actions={<ActionPanel><Action title="Activate" onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
         />
         <List.Item
-          icon={{ source: Icon.House, color: Color.Green }}
+          icon={Icon.House}
           title="BACK HOME"
           subtitle="Welcome Sequence"
           actions={<ActionPanel><Action title="Activate" onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
         />
         <List.Item
-          icon={{ source: Icon.Moon, color: Color.Blue }}
+          icon={Icon.Moon}
           title="AWAY MODE"
           subtitle="Power Save / Sentry Active"
           actions={<ActionPanel><Action title="Activate" onAction={() => runAction("AWAY", "/scene/away")} /></ActionPanel>}
@@ -79,10 +81,10 @@ export default function Command() {
 
       <List.Section title="Hardware Control">
         <List.Item
-          icon={{ source: Icon.Wind, color: acStatus === 'ON' ? Color.Blue : Color.SecondaryText }}
+          icon={Icon.Wind}
           title="Air Conditioning"
           subtitle={acStatus === 'ON' ? `Running for ${state?.ac_duration || '0m'}` : "Standby"}
-          accessories={[{ text: acStatus, color: acStatus === 'ON' ? Color.Green : Color.Red }]}
+          accessories={[{ text: acStatus, color: acColor }]}
           actions={
             <ActionPanel>
               <Action.Submenu icon={Icon.Power} title="Toggle & Modes">
@@ -107,19 +109,19 @@ export default function Command() {
           }
         />
         <List.Item
-          icon={{ source: Icon.Sun, color: ltStatus === 'ON' ? Color.Yellow : Color.SecondaryText }}
+          icon={Icon.Sun}
           title="Lighting"
           subtitle={ltStatus === 'ON' ? `Running for ${state?.light_duration || '0m'}` : "Standby"}
-          accessories={[{ text: ltStatus, color: ltStatus === 'ON' ? Color.Green : Color.Red }]}
+          accessories={[{ text: ltStatus, color: ltColor }]}
           actions={
             <ActionPanel>
               <Action.Submenu icon={Icon.EditShape} title="Colors & Scenes">
                 <Action icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
                 <Action icon={Icon.Circle} title="Cool White" onAction={() => runAction("Cool", "/control/bulb/color?temp=6500")} />
-                <Action icon={{ source: Icon.Circle, color: Color.Red }} title="Red" onAction={() => runAction("Red", "/control/bulb/color?r=255&g=0&b=0")} />
-                <Action icon={{ source: Icon.Circle, color: Color.Blue }} title="Blue" onAction={() => runAction("Blue", "/control/bulb/color?r=0&g=0&b=255")} />
-                <Action icon={{ source: Icon.Circle, color: Color.Green }} title="Green" onAction={() => runAction("Green", "/control/bulb/color?r=0&g=255&b=0")} />
-                <Action icon={{ source: Icon.Circle, color: Color.Yellow }} title="Gold" onAction={() => runAction("Gold", "/control/bulb/color?r=255&g=215&b=0")} />
+                <Action icon={Icon.Circle} title="Red" onAction={() => runAction("Red", "/control/bulb/color?r=255&g=0&b=0")} />
+                <Action icon={Icon.Circle} title="Blue" onAction={() => runAction("Blue", "/control/bulb/color?r=0&g=0&b=255")} />
+                <Action icon={Icon.Circle} title="Green" onAction={() => runAction("Green", "/control/bulb/color?r=0&g=255&b=0")} />
+                <Action icon={Icon.Circle} title="Gold" onAction={() => runAction("Gold", "/control/bulb/color?r=255&g=215&b=0")} />
                 <Action icon={Icon.Star} title="Party Scene (Aura)" onAction={() => runAction("Party", "/control/aura/toggle")} />
               </Action.Submenu>
               <Action icon={Icon.Power} title="Toggle Lights" onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
@@ -157,16 +159,28 @@ export default function Command() {
 
       <List.Section title="Utility Pulse">
         <List.Item
-          icon={{ source: Icon.Bolt, color: Color.Yellow }}
+          icon={Icon.Bolt}
           title="PGVCL Budget"
           subtitle={`₹${state?.estimatedPgBill || '??'} Estimated`}
           accessories={[{ text: `${state?.units || '0'} Units Used` }]}
         />
         <List.Item
-          icon={{ source: Icon.Cloud, color: Color.Blue }}
+          icon={Icon.Cloud}
           title="Weather"
           subtitle={`${state?.weather?.temp || '??'}°C | ${state?.weather?.humidity || '??'}% Humid`}
           accessories={[{ text: state?.weather?.condition || 'Clear' }]}
+        />
+        <List.Item
+          icon={Icon.Desktop}
+          title="Sovereign Vault"
+          subtitle="Archive Sync & Pulse"
+          actions={
+            <ActionPanel>
+              <Action icon={Icon.Cloud} title="Sync to GitHub" onAction={() => runAction("Vault Sync", "/archive/sync")} />
+              <Action icon={Icon.BarChart} title="Show Hoarding Pulse" onAction={() => runAction("Heatmap", "/archive/stats/heatmap")} />
+              <Action icon={Icon.ArrowRight} title="Export to Markdown" onAction={() => runAction("Export", "/archive/export/md")} />
+            </ActionPanel>
+          }
         />
       </List.Section>
     </List>

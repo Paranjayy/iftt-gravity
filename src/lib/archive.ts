@@ -15,6 +15,7 @@ const execAsync = promisify(exec);
 const ROOT_DIR = "/Users/paranjay/Developer/iftt";
 const CLIPS_PATH = path.join(ROOT_DIR, 'gravity-archive', 'clips.json');
 let CLIPSTACK: any[] = [];
+let CLIPSTACK_SOURCE = "Unknown";
 
 function cleanDOM(html: string) {
   return html
@@ -69,9 +70,9 @@ async function archiveClipboard(text: string) {
         words: processedText.split(/\s+/).filter(x => x.length > 0).length,
         lines: processedText.split('\n').length,
         chars: processedText.length,
-        tokens: Math.ceil(processedText.length / 4),
         type,
-      }
+      },
+      source: CLIPSTACK_SOURCE || 'System'
     };
 
     if (isLink) {
@@ -100,7 +101,8 @@ async function archiveClipboard(text: string) {
     }
     clips.unshift(newItem);
   }
-  fs.writeFileSync(CLIPS_PATH, JSON.stringify(clips.slice(0, 10000), null, 2));
+  // Expand to Infinite Hoard (100K safety cap for performance)
+  fs.writeFileSync(CLIPS_PATH, JSON.stringify(clips.slice(0, 100000), null, 2));
 }
 
 async function main() {
@@ -163,6 +165,43 @@ async function main() {
           return new Response(md, { headers: { 'Content-Type': 'text/markdown', 'Access-Control-Allow-Origin': '*' } });
         }
 
+        if (url.pathname === '/archive/stats/heatmap') {
+          const clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
+          const counts: Record<string, number> = {};
+          
+          // Last 90 days logic
+          clipsData.forEach((c: any) => {
+            const date = c.timestamp.split('T')[0];
+            counts[date] = (counts[date] || 0) + 1;
+          });
+
+          let table = "📅 *Gravity Hoarding Pulse (90 Days)*\n\n";
+          const days = [];
+          for (let i = 0; i < 90; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const ds = d.toISOString().split('T')[0];
+            days.push({ ds, count: counts[ds] || 0 });
+          }
+
+          // Generate Markdown-friendly Heatmap (ASCII style for Tele/MD)
+          days.reverse().forEach((d, idx) => {
+             const spark = d.count === 0 ? "🌑" : d.count < 5 ? "🌘" : d.count < 15 ? "🌗" : d.count < 30 ? "🌖" : "🌕";
+             table += spark + (idx % 7 === 6 ? "\n" : " ");
+          });
+
+          return new Response(table, { headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/sync') {
+           try {
+             await execAsync(`git add gravity-archive/clips.json && git commit -m "Archive Pulse: ${new Date().toISOString()}" && git push origin master`);
+             return new Response('Vault Synced to Sovereign Cloud (GitHub)', { headers: { 'Access-Control-Allow-Origin': '*' } });
+           } catch(e: any) {
+             return new Response(`Sync Failed: ${e.message}`, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+           }
+        }
+
         return new Response('Archive API Online', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
       }
     });
@@ -174,6 +213,12 @@ async function main() {
       const { stdout } = await execAsync('pbpaste');
       const text = stdout.trim();
       if (text && text !== lastClip) {
+        // Detect Frontmost App Name
+        try {
+          const { stdout: appName } = await execAsync("osascript -e 'tell application \"System Events\" to name of (first process whose frontmost is true)'");
+          CLIPSTACK_SOURCE = appName.trim();
+        } catch(e) { CLIPSTACK_SOURCE = "Unknown"; }
+
         lastClip = text;
         await archiveClipboard(text);
       }
