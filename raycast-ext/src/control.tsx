@@ -59,13 +59,19 @@ export default function Command() {
         <List.Item
           icon={Icon.Video}
           title="TV TIME"
-          subtitle="Cinema Lighting & AC Pulse"
+          subtitle="Dim Purple & AC Cool"
           actions={<ActionPanel><Action title="Activate TV" onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
+        />
+        <List.Item
+          icon={Icon.ComputerSpeaker}
+          title="WORK MODE"
+          subtitle="Bright White & AC Fan"
+          actions={<ActionPanel><Action title="Activate Work" onAction={() => runAction("Work", "/scene/work")} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.House}
           title="BACK HOME"
-          subtitle="Welcome Sequence"
+          subtitle="Warm Welcome Sequence"
           actions={<ActionPanel><Action title="Activate Home" onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
         />
         <List.Item
@@ -96,6 +102,10 @@ export default function Command() {
                 <Action icon={Icon.Clock} title="1 Hour Timer" onAction={() => runAction("1h Timer", "/control/ac/timer?mins=60")} />
                 <Action icon={Icon.XMarkCircle} title="Cancel Timer" onAction={() => runAction("Stop Timer", "/control/ac/timer?mins=0")} />
               </ActionPanel.Section>
+              <ActionPanel.Section title="Climate Precision">
+                <Action icon={Icon.Repeat} title="Auto Mode" onAction={() => runAction("Auto", "/control/ac/mode?mode=auto")} />
+                <Action icon={Icon.Repeat} title="Vertical Swing" onAction={() => runAction("Swing", "/control/ac/swing")} />
+              </ActionPanel.Section>
               <ActionPanel.Section title="Temperature">
                 <Action icon={Icon.ChevronUp} title="Temp Up" onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
                 <Action icon={Icon.ChevronDown} title="Temp Down" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
@@ -111,12 +121,16 @@ export default function Command() {
           actions={
             <ActionPanel>
               <Action icon={Icon.Power} title="Toggle Lights" onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
-              <ActionPanel.Section title="Atmosphere">
+              <ActionPanel.Section title="Atmosphere & Colors">
+                <Action icon={{ source: Icon.Circle, color: Color.Red }} title="Red" onAction={() => runAction("Red", "/control/bulb/color?r=255&g=0&b=0")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Blue }} title="Blue" onAction={() => runAction("Blue", "/control/bulb/color?r=0&g=0&b=255")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Green }} title="Green" onAction={() => runAction("Green", "/control/bulb/color?r=0&g=255&b=0")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Yellow }} title="Gold" onAction={() => runAction("Gold", "/control/bulb/color?r=255&g=215&b=0")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Purple }} title="Purple" onAction={() => runAction("Purple", "/control/bulb/color?r=128&g=0&b=128")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Magenta }} title="Magenta" onAction={() => runAction("Magenta", "/control/bulb/color?r=255&g=0&b=255")} />
                 <Action icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
                 <Action icon={Icon.Circle} title="Cool White" onAction={() => runAction("Cool", "/control/bulb/color?temp=6500")} />
-                <Action icon={Icon.Circle} title="Red" onAction={() => runAction("Red", "/control/bulb/color?r=255&g=0&b=0")} />
-                <Action icon={Icon.Circle} title="Blue" onAction={() => runAction("Blue", "/control/bulb/color?r=0&g=0&b=255")} />
-                <Action icon={Icon.Circle} title="Green" onAction={() => runAction("Green", "/control/bulb/color?r=0&g=255&b=0")} />
+                <Action icon={Icon.Star} title="Toggle Party (Aura)" onAction={() => runAction("Party", "/control/aura/toggle")} />
               </ActionPanel.Section>
               <ActionPanel.Section title="Intensity">
                 <Action icon={Icon.Plus} title="Brightness Up" onAction={() => runAction("Bright Up", "/control/brightness?dir=up")} />

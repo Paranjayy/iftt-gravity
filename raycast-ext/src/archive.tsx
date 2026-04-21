@@ -45,6 +45,8 @@ export default function Command() {
 
   useEffect(() => {
     fetchArchive();
+    const interval = setInterval(fetchArchive, 5000); // Pulse every 5s
+    return () => clearInterval(interval);
   }, [searchText, filter]);
 
   async function toggleBookmark(id: string) {
@@ -162,7 +164,12 @@ export default function Command() {
               <List.Item.Detail.Metadata>
                 <List.Item.Detail.Metadata.Label title="Origin App" text={item.source || "System"} icon={{ fileIcon: `/Applications/${item.source}.app` }} />
                 {item.url && (
-                  <List.Item.Detail.Metadata.Link title="Source URL" text={item.url.substring(0, 40) + "..."} target={item.url} />
+                  <List.Item.Detail.Metadata.Link 
+                    title="Source URL" 
+                    text={item.url.substring(0, 40) + "..."} 
+                    target={item.url} 
+                    icon={item.meta?.favicon ? { source: item.meta.favicon, mask: Image.Mask.Circle } : Icon.Globe}
+                  />
                 )}
                 <List.Item.Detail.Metadata.Label title="Format" text={item.meta?.type?.toUpperCase() || "TEXT"} />
                 <List.Item.Detail.Metadata.Label title="Captured" text={new Date(item.timestamp).toLocaleString()} icon={Icon.Clock} />
