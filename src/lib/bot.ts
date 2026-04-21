@@ -2233,7 +2233,19 @@ async function main() {
     try {
       const { stdout } = await execAsync('pbpaste');
       const currentClip = stdout.trim();
-      if (currentClip && currentClip !== config.lastClip && currentClip.length > 3) {
+      
+      // 🛡️ ASCII Shield: Ignore terminal logos and high-symbol noise
+      const isNoise = (text: string) => {
+        const lines = text.split('\n');
+        if (lines.length > 4) {
+          const symbols = (text.match(/[^a-zA-Z0-9\s]/g) || []).length;
+          const ratio = symbols / text.length;
+          if (ratio > 0.25) return true; // Likely ASCII Art/Logo
+        }
+        return false;
+      };
+
+      if (currentClip && currentClip !== config.lastClip && currentClip.length > 3 && !isNoise(currentClip)) {
         config.lastClip = currentClip;
         archiveClipboard(currentClip);
         // Only log if it's the full hub, to keep CLIPBOARD_ONLY silent
