@@ -1697,25 +1697,47 @@ async function main() {
     }
   });
 
-  // 🌦️ /weather — Gravity Weather Intelligence
+  // 🌦️ /weather — Gravity Weather Intelligence (Unified)
   bot.registerCommand({
     command: 'weather',
-    description: 'Junagadh weather, AQI & Solar windows',
+    description: 'Junagadh weather, AQI & Sensory Sync',
     handler: async (chatId, args, msg, send) => {
       await send('🌦 *Gravity Weather*: Synchronizing with local sensors...');
       try {
         const w = await new WeatherEngine().getWeather();
         if (!w) return await send('❌ Weather data unavailable.');
         
-        let res = `🌦 *Junagadh Weather Intelligence*\n\n`;
+        const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        let res = `🌦 *Junagadh Intelligence Pulse* [${now}]\n\n`;
         res += `🌡️ Temp: *${w.temp}°C*\n`;
         res += `💧 Humidity: *${w.humidity}%*\n`;
         res += `☁️ Condition: *${w.condition}*\n`;
+        res += `☔ Rain: *${w.isRain ? 'YES' : 'NO'}*\n`;
         if (w.aqi) res += `🌫️ AQI: *${w.aqi}* (${w.aqi < 50 ? 'Good' : w.aqi < 100 ? 'Moderate' : 'Poor'})\n`;
         res += `\n🌅 Sunrise: \`${w.sunrise}\`\n`;
         res += `🌇 Sunset: \`${w.sunset}\`\n`;
-        res += `\n_Last Sync: ${new Date(w.updatedAt).toLocaleTimeString('en-IN')}_`;
         
+        // 🧬 Sensory Sync Logic
+        if (wiz) {
+          let scene = 'Warm White';
+          if (w.isRain) scene = 'Ocean';
+          else if (w.condition.includes('Clear')) scene = 'True colors';
+          await wiz.executeAction({ type: 'control', payload: { state: true, scene } });
+          res += `\n💡 *Lighting*: Synced to *${scene}*`;
+        }
+
+        if (miraie && (miraie as any).devices.length > 0) {
+          const device = (miraie as any).devices[0];
+          if (w.temp > 32) {
+             await (miraie as any).controlDevice(device.deviceId, { ps: 'on', actmp: '24', acmd: 'cool' });
+             res += `\n❄️ *AC*: Cooling engaged (*24°C*)`;
+          } else if (w.temp < 25) {
+             await (miraie as any).controlDevice(device.deviceId, { ps: 'on', actmp: '26', acmd: 'cool' });
+             res += `\n🌡️ *AC*: Warming engaged (*26°C*)`;
+          }
+        }
+        
+        res += `\n\n_Last Sensor Sync: ${new Date(w.updatedAt).toLocaleTimeString('en-IN')}_`;
         await send(res);
       } catch (e: any) {
         await send(`❌ Weather sync failed: ${e.message}`);
