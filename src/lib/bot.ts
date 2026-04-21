@@ -689,11 +689,22 @@ async function main() {
     }, 60000);
   }
 
-  // 🛡️ Gravity Sovereignty: Autonomous Engine
+  // 🛡️ Gravity Auto-Pilot: Environment & Hardware Engine
   setInterval(async () => {
     try {
       const now = new Date();
       const hour = now.getHours();
+
+      // 0. Rapid Hardware Sync (Analog Remote Awareness)
+      if (miraie && miraie.devices.length > 0) {
+        const s = await miraie.getDeviceStatus(miraie.devices[0].deviceId);
+        const actualAcStatus = (s?.ps === 'on' || s?.ps === '1' || s?.ps === 'true') ? 'on' : 'off';
+        updateDeviceState('ac', actualAcStatus);
+      }
+      if (wiz) {
+        const p = await (wiz as any).getPilot();
+        updateDeviceState('light', p?.state ? 'on' : 'off');
+      }
 
       // 1. Auto-AC Logic (Weather Sensitive)
       if (config.autoAc) {
