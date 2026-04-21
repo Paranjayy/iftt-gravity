@@ -257,7 +257,10 @@ async function main() {
         { command: 'status', description: 'Show all device states' },
         { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
         { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
-        { command: 'aura', description: '🎨 Toggle Media Aura (Media-Sync)' },
+        { command: 'media', description: '🎬 Media Exposure (Sync Lighting)' },
+        { command: 'zapit', description: '⚡ Manage Automation Flows' },
+        { command: 'auto_ac', description: '❄️ Toggle Autonomous AC' },
+        { command: 'auto_light', description: '🌅 Toggle Autonomous Lights' },
         { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
         { command: 'history', description: 'Show energy usage history' },
         { command: 'ping', description: 'Check Hub health' },
@@ -695,9 +698,16 @@ async function main() {
       // 1. Auto-AC Logic (Weather Sensitive)
       if (config.autoAc) {
         const w: any = await (weather as any).getWeather();
-        if (w && w.temp > 31 && config.stats.acStatus === 'off' && isPhoneOnline) {
-          await triggerScene('chill');
-          await notifier.notify(`🌡️ *Sovereignty:* External temp hit *${w.temp}°C*. I've engaged your AC to keep the God Build cool.`, 'low');
+        if (w) {
+          if (w.temp > 31 && config.stats.acStatus === 'off' && isPhoneOnline) {
+            await triggerScene('chill');
+            await notifier.notify(`🌡️ *Sovereignty:* External temp hit *${w.temp}°C*. I've engaged your AC to keep the God Build cool.`, 'low');
+          } else if (w.temp < 27 && config.stats.acStatus === 'on') {
+            const d = miraie?.devices[0]?.deviceId;
+            if (d) await miraie?.controlDevice(d, { ps: 'off' });
+            updateDeviceState('ac', 'off');
+            await notifier.notify(`🍃 *Sovereignty:* External temp dropped to *${w.temp}°C*. Turning off the AC to balance the room.`, 'low');
+          }
         }
       }
 
