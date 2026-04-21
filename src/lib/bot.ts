@@ -1870,7 +1870,30 @@ async function main() {
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
-        
+                // ⚡ ZAPIT AUTOMATION GATEWAY
+        if (url.pathname.startsWith('/zapit/')) {
+           const triggerKey = url.pathname.split('/').pop()?.toLowerCase();
+           console.log(`⚡ ZAPIT: Incoming trigger [${triggerKey}]`);
+           
+           if (triggerKey === 'chill' || triggerKey === 'aura') {
+             await triggerScene('chill');
+             return new Response(JSON.stringify({ status: 'triggered', event: triggerKey }), { 
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+             });
+           }
+           
+           if (triggerKey === 'sleep') {
+             await triggerScene('away');
+             return new Response(JSON.stringify({ status: 'triggered', event: triggerKey }), { 
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+             });
+           }
+
+           return new Response(JSON.stringify({ status: 'error', message: 'Trigger key not mapped' }), { 
+              status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+           });
+        }
+
         // 🪐 GRAVITY ARCHIVE API
         if (url.pathname === '/archive/add') {
           const body: any = await req.json();
