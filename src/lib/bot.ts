@@ -482,6 +482,26 @@ async function main() {
     }
   });
 
+  bot.registerCommand({
+    command: 'zapit',
+    description: 'Manage God Mode Automations (Zapit)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      
+      const flows = config.zapit_flows || [];
+      if (flows.length === 0) {
+        return await send('⚡ *Zapit Automation Engine*\n\nNo active flows found. \n_Add flows via config.json or use /zapit_add_');
+      }
+
+      let text = `⚡ *Zapit: Active Automations*\n━━━━━━━━━━━━━━\n`;
+      flows.forEach((f: any, i: number) => {
+        text += `${i+1}. *${f.id}* [Trigger: \`${f.trigger}\`]\n   🎁 Action: \`${f.action}\` (${JSON.stringify(f.params)})\n\n`;
+      });
+      text += `━━━━━━━━━━━━━━\n_Pinging http://localhost:3030/zapit/<trigger> executes these flows._`;
+      await send(text);
+    }
+  });
+
   // ❄️ Mission Control Panel (Interactive v2.0)
   bot.registerCommand({
     command: 'control',
@@ -1870,26 +1890,36 @@ async function main() {
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
-                // ⚡ ZAPIT AUTOMATION GATEWAY
+        // ⚡ ZAPIT AUTOMATION GATEWAY (Dynamic Flows v2.0)
         if (url.pathname.startsWith('/zapit/')) {
            const triggerKey = url.pathname.split('/').pop()?.toLowerCase();
            console.log(`⚡ ZAPIT: Incoming trigger [${triggerKey}]`);
            
-           if (triggerKey === 'chill' || triggerKey === 'aura') {
-             await triggerScene('chill');
-             return new Response(JSON.stringify({ status: 'triggered', event: triggerKey }), { 
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
-             });
-           }
+           // 1. Search for custom flows in config
+           const flows = config.zapit_flows || [];
+           const matchedFlow = flows.find((f: any) => f.trigger.toLowerCase() === triggerKey);
            
-           if (triggerKey === 'sleep') {
-             await triggerScene('away');
-             return new Response(JSON.stringify({ status: 'triggered', event: triggerKey }), { 
-                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
-             });
+           if (matchedFlow) {
+              logActivity(`⚡ ZAPIT: Executing Flow [${matchedFlow.id}] triggered by [${triggerKey}]`);
+              if (matchedFlow.action === 'scene') await triggerScene(matchedFlow.params?.scene);
+              if (matchedFlow.action === 'speak') speak(matchedFlow.params?.text);
+              if (matchedFlow.action === 'ac_off') {
+                const d = miraie?.devices[0]?.deviceId;
+                if (d) await miraie?.controlDevice(d, { ps: 'off' });
+              }
+              
+              return new Response(JSON.stringify({ status: 'executed', flow: matchedFlow.id }), { 
+                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+              });
            }
 
-           return new Response(JSON.stringify({ status: 'error', message: 'Trigger key not mapped' }), { 
+           // 2. Fallback to hardcoded legacy triggers
+           if (triggerKey === 'aura') {
+             await triggerScene('chill');
+             return new Response(JSON.stringify({ status: 'triggered', event: 'aura' }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           }
+
+           return new Response(JSON.stringify({ status: 'error', message: 'No matching flow or legacy trigger found' }), { 
               status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
            });
         }
