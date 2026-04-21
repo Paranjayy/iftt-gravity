@@ -1510,43 +1510,8 @@ async function main() {
   });
 
   // ──────────────────────────────────────────────────────
-  // /weather — Sync lights to Junagadh weather + Time
+  // Unified Sensory Pulse Integration
   // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'weather',
-    description: 'Explicitly sync lights & AC to Junagadh environment',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const weather = new WeatherEngine();
-      const w = await weather.getWeather();
-      if (!w) return await send('🌦 *Weather*: Service temporarily unavailable.');
-      
-      let res = `🌡️ *Gravity Explicit Sync (Junagadh)*\nTemperature: *${w.temp}°C*\nCondition: *${w.condition}*\nRain: ${w.isRain ? '☔ YES' : '🌤 NO'}`;
-      
-      // 1. Sync Lights (WiZ)
-      if (wiz) {
-        let scene = 'Warm White';
-        if (w.isRain) scene = 'Ocean';
-        else if (w.condition.includes('Clear')) scene = 'True colors';
-        await wiz.executeAction({ type: 'control', payload: { state: true, scene } });
-        res += `\n\n💡 *Lighting*: Adjusted to *${scene}* scene.`;
-      }
-
-      // 2. Sync AC (MirAie) if extreme
-      if (miraie && (miraie as any).devices.length > 0) {
-        if (w.temp > 35) {
-          await (miraie as any).controlDevice((miraie as any).devices[0].deviceId, { ps: 'on', actmp: '23' });
-          res += `\n❄️ *Air Con*: Heat trigger! Set to *23°C* for relief.`;
-        } else if (w.temp < 25) {
-          await (miraie as any).controlDevice((miraie as any).devices[0].deviceId, { ps: 'on', actmp: '26' });
-          res += `\n🌡️ *Air Con*: Cool breeze! Set to *26°C* for comfort.`;
-        }
-      }
-      
-      await send(res);
-      logActivity(`🌦 Explicit Weather Sync: ${w.temp}°C [Manual Trigger]`);
-    }
-  });
 
   // ──────────────────────────────────────────────────────
   // /energy — Usage Analytics
