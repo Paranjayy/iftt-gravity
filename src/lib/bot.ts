@@ -460,6 +460,21 @@ async function main() {
   });
 
   bot.registerCommand({
+    command: 'media',
+    description: 'Activate Media Exposure (High-fidelity cinematic aura)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await send('🎬 *Media Exposure Activated.* Setting cinematic aura...');
+      
+      // Hardware: Max Brightness
+      if (wiz) {
+        await (wiz as any).setBrightness(100);
+      }
+      logActivity('🎬 Media: High-fidelity cinematic aura activated via Telegram.');
+    }
+  });
+
+  bot.registerCommand({
     command: 'pgvcl',
     description: 'Show latest PGVCL bill details',
     handler: async (chatId, args, msg, send) => {
