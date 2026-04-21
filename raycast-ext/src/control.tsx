@@ -1,4 +1,4 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Image } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 
@@ -54,7 +54,7 @@ export default function Command() {
   const ltColor = ltStatus === 'ON' ? Color.Green : Color.Red;
 
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Search Gravity Hub (Scenes, Commands)...">
+    <List isLoading={isLoading} searchBarPlaceholder="Precision Control Center...">
       
       <List.Section title="Sovereignty Dashboard">
         <List.Item
@@ -69,47 +69,41 @@ export default function Command() {
           title="Archive Intelligence"
           subtitle={`Vault Velocity: HIGH | ${state?.stats?.archiveCount || '41K+'} fragments`}
           accessories={[{ text: "🕵️ HOARDING ACTIVE" }]}
-          actions={<ActionPanel><Action icon={Icon.MagnifyingGlass} title="Deep Audit" onAction={() => {}} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.Sun}
           title="SolisCloud Solar Intel"
           subtitle={`${state?.solis?.today || '--'} kWh Today | ${state?.solis?.current || '--'} kW Now`}
-          accessories={[{ text: state?.solis?.status || "SYNCING SOLIS..." }]}
-          actions={<ActionPanel><Action icon={Icon.ChevronRight} title="Full Solar Report" onAction={() => {}} /></ActionPanel>}
+          accessories={[{ text: state?.solis?.status || "OPTIMAL" }]}
         />
         <List.Item
           icon={Icon.Cloud}
           title="Atmospheric Context"
-          subtitle={`${state?.weather?.temp || '??'}°C | AQI: ${state?.weather?.aqi || '??'} | Hum: ${state?.weather?.humidity || '??'}%`}
+          subtitle={`${state?.weather?.temp || '??'}°C | AQI: ${state?.weather?.aqi || '??'}`}
           accessories={[{ text: `🌇 ${state?.weather?.sunset || '--'} | 🌅 ${state?.weather?.sunrise || '--'}` }]}
         />
       </List.Section>
 
-      <List.Section title="Hardware Controls (Unified)">
+      <List.Section title="Precision Hardware Control">
         <List.Item
           icon={Icon.Wind}
-          title="Panasonic AC Controller"
+          title="Panasonic AC Control"
           subtitle={acStatus === 'ON' ? `Running for ${state?.ac_duration || '0m'}` : "Standby"}
           accessories={[{ text: acStatus, color: acColor }]}
           actions={
             <ActionPanel>
-              <Action icon={Icon.Power} title="Toggle AC" onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
-              <Action.Submenu icon={Icon.Snowflake} title="Modes & Precision">
-                <Action key="cool" icon={Icon.Snowflake} title="Cool Mode" onAction={() => runAction("Cool", "/control/ac/mode?mode=cool")} />
-                <Action key="dry" icon={Icon.Drop} title="Dry Mode" onAction={() => runAction("Dry", "/control/ac/mode?mode=dry")} />
-                <Action key="fan" icon={Icon.Livestream} title="Fan Mode" onAction={() => runAction("Fan", "/control/ac/mode?mode=fan")} />
-                <Action key="auto" icon={Icon.Repeat} title="Auto Mode" onAction={() => runAction("Auto", "/control/ac/mode?mode=auto")} />
-                <Action key="swing" icon={Icon.Repeat} title="Vertical Swing" onAction={() => runAction("Swing", "/control/ac/swing")} />
-              </Action.Submenu>
-              <Action.Submenu icon={Icon.Clock} title="Power & Timers">
-                <Action key="powerful" icon={Icon.Bolt} title="Powerful Mode" onAction={() => runAction("Powerful", "/control/ac/powerful?ps=on")} />
-                <Action key="eco" icon={Icon.Leaf} title="Economical Mode" onAction={() => runAction("Eco", "/control/ac/powerful?ps=off")} />
-                <Action key="t1" icon={Icon.Clock} title="1 Hour Timer" onAction={() => runAction("1h Timer", "/control/ac/timer?mins=60")} />
-                <Action key="t0" icon={Icon.XMarkCircle} title="Cancel Timer" onAction={() => runAction("Stop Timer", "/control/ac/timer?mins=0")} />
-              </Action.Submenu>
-              <Action key="tup" icon={Icon.ChevronUp} title="Temp Up" onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
-              <Action key="tdown" icon={Icon.ChevronDown} title="Temp Down" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
+              {/* PRIMARY BINDINGS (ENTER / CMD+ENTER) */}
+              <Action icon={Icon.ChevronDown} title="Temperature DOWN" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
+              <Action icon={Icon.ChevronUp} title="Temperature UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
+              
+              <ActionPanel.Section title="Climate Precision">
+                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "t" }} onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
+                <Action icon={Icon.Snowflake} title="Cool Mode" onAction={() => runAction("Cool", "/control/ac/mode?mode=cool")} />
+                <Action icon={Icon.Repeat} title="Auto Mode" onAction={() => runAction("Auto", "/control/ac/mode?mode=auto")} />
+                <Action icon={Icon.Repeat} title="Vertical Swing" onAction={() => runAction("Swing", "/control/ac/swing")} />
+                <Action icon={Icon.Bolt} title="Powerful Mode" onAction={() => runAction("Powerful", "/control/ac/powerful?ps=on")} />
+                <Action icon={Icon.Clock} title="1h Sleep Timer" onAction={() => runAction("1h Timer", "/control/ac/timer?mins=60")} />
+              </ActionPanel.Section>
             </ActionPanel>
           }
         />
@@ -120,41 +114,41 @@ export default function Command() {
           accessories={[{ text: ltStatus, color: ltColor }]}
           actions={
             <ActionPanel>
-              <Action icon={Icon.Power} title="Toggle Lights" onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
-              <Action.Submenu icon={Icon.EditShape} title="Chromatic Vault">
-                <Action key="red" icon={{ source: Icon.Circle, color: Color.Red }} title="Set Red" onAction={() => runAction("Red", "/control/bulb/color?r=255&g=0&b=0")} />
-                <Action key="blue" icon={{ source: Icon.Circle, color: Color.Blue }} title="Set Blue" onAction={() => runAction("Blue", "/control/bulb/color?r=0&g=0&b=255")} />
-                <Action key="green" icon={{ source: Icon.Circle, color: Color.Green }} title="Set Green" onAction={() => runAction("Green", "/control/bulb/color?r=0&g=255&b=0")} />
-                <Action key="gold" icon={{ source: Icon.Circle, color: Color.Yellow }} title="Set Gold" onAction={() => runAction("Gold", "/control/bulb/color?r=255&g=215&b=0")} />
-                <Action key="purple" icon={{ source: Icon.Circle, color: Color.Purple }} title="Set Purple" onAction={() => runAction("Purple", "/control/bulb/color?r=128&g=0&b=128")} />
-              </Action.Submenu>
-              <Action.Submenu icon={Icon.Brightness} title="Atmospheric Whites">
-                <Action key="warm" icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
-                <Action key="cool" icon={Icon.Circle} title="Cool White" onAction={() => runAction("Cool", "/control/bulb/color?temp=6500")} />
-                <Action key="party" icon={Icon.Star} title="Aura Sync (Media)" onAction={() => runAction("Aura", "/control/aura/toggle")} />
-              </Action.Submenu>
-              <Action key="bup" icon={Icon.Plus} title="Brightness Up" onAction={() => runAction("Bright Up", "/control/brightness?dir=up")} />
-              <Action key="bdown" icon={Icon.Minus} title="Brightness Down" onAction={() => runAction("Bright Down", "/control/brightness?dir=down")} />
+              {/* PRIMARY BINDINGS (ENTER / CMD+ENTER) */}
+              <Action icon={Icon.Minus} title="Brightness DOWN" onAction={() => runAction("Bright Down", "/control/brightness?dir=down")} />
+              <Action icon={Icon.Plus} title="Brightness UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Bright Up", "/control/brightness?dir=up")} />
+
+              <ActionPanel.Section title="Atmospheric Controls">
+                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Red }} title="Color: Red" onAction={() => runAction("Red", "/control/bulb/color?r=255&g=0&b=0")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Blue }} title="Color: Blue" onAction={() => runAction("Blue", "/control/bulb/color?r=0&g=0&b=255")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Green }} title="Color: Green" onAction={() => runAction("Green", "/control/bulb/color?r=0&g=255&b=0")} />
+                <Action icon={{ source: Icon.Circle, color: Color.Yellow }} title="Color: Gold" onAction={() => runAction("Gold", "/control/bulb/color?r=255&g=215&b=0")} />
+                <Action icon={Icon.Star} title="Aura Sync (Media)" onAction={() => runAction("Aura", "/control/aura/toggle")} />
+                <Action icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
+              </ActionPanel.Section>
             </ActionPanel>
           }
         />
       </List.Section>
 
-      <List.Section title="Sovereign Hub Scenes">
+      <List.Section title="Gravity Scenes">
         <List.Item
           icon={Icon.Video}
-          title="Scene: TV TIME"
+          title="TV TIME"
+          subtitle="Dim Purple & AC Cool"
           actions={<ActionPanel><Action title="Activate" onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
         />
         <List.Item
-          icon={Icon.ComputerSpeaker}
-          title="Scene: WORK MODE"
-          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("Work", "/scene/work")} /></ActionPanel>}
+          icon={Icon.House}
+          title="BACK HOME"
+          subtitle="Warm Welcome Sequence"
+          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
         />
         <List.Item
-          icon={Icon.House}
-          title="Scene: BACK HOME"
-          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
+          icon={Icon.Clock}
+          title="Sync Vault Metadata"
+          actions={<ActionPanel><Action title="Pulse Sync" onAction={() => runAction("Vault Sync", "/archive/sync")} /></ActionPanel>}
         />
       </List.Section>
     </List>
