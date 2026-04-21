@@ -167,6 +167,8 @@ export default function Command() {
           accessories={[{ text: `Uptime: ${(state?.uptime || 0).toFixed(1)}s` }]}
           actions={
             <AP title="Hub Control">
+              <A icon={Icon.Snowflake} title={config.autoAc ? "Disable Auto-AC" : "Enable Auto-AC"} onAction={() => runAction("Auto-AC", "/control/auto/ac")} />
+              <A icon={Icon.Sun} title={config.autoLight ? "Disable Auto-Lights" : "Enable Auto-Lights"} onAction={() => runAction("Auto-Lights", "/control/auto/light")} />
               <A icon={Icon.RotateAntiClockwise} title="Emergency Restart Hub" onAction={() => runAction("Hub Restart", "/system/restart")} />
               <A.Push icon={Icon.Eye} title="View Gravity Logs" target={<LogsView />} />
             </AP>

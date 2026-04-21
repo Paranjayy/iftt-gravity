@@ -475,6 +475,28 @@ async function main() {
   });
 
   bot.registerCommand({
+    command: 'auto_ac',
+    description: 'Toggle Autonomous AC (Weather-aware)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      config.autoAc = !config.autoAc;
+      saveConfig(config);
+      await send(`❄️ *Auto-AC:* Sovereignty is now *${config.autoAc ? 'ENABLED' : 'DISABLED'}*`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'auto_light',
+    description: 'Toggle Autonomous Lighting (Sunset-aware)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      config.autoLight = !config.autoLight;
+      saveConfig(config);
+      await send(`💡 *Auto-Light:* Sovereignty is now *${config.autoLight ? 'ENABLED' : 'DISABLED'}*`);
+    }
+  });
+
+  bot.registerCommand({
     command: 'pgvcl',
     description: 'Show latest PGVCL bill details',
     handler: async (chatId, args, msg, send) => {
@@ -663,6 +685,39 @@ async function main() {
       }
     }, 60000);
   }
+
+  // 🛡️ Gravity Sovereignty: Autonomous Engine
+  setInterval(async () => {
+    try {
+      const now = new Date();
+      const hour = now.getHours();
+
+      // 1. Auto-AC Logic (Weather Sensitive)
+      if (config.autoAc) {
+        const w: any = await (weather as any).getWeather();
+        if (w && w.temp > 31 && config.stats.acStatus === 'off' && isPhoneOnline) {
+          await triggerScene('chill');
+          await notifier.notify(`🌡️ *Sovereignty:* External temp hit *${w.temp}°C*. I've engaged your AC to keep the God Build cool.`, 'low');
+        }
+      }
+
+      // 2. Auto-Light Logic (Sunset & Bedtime)
+      if (config.autoLight) {
+        // Sunset Pulse (Approx 6:30 PM - 7:30 PM)
+        if (hour === 18 && config.stats.lightStatus === 'off' && isPhoneOnline) {
+          await (wiz as any).setPilot({ state: true, temp: 3000, dimming: 80 });
+          updateDeviceState('light', 'on');
+          await notifier.notify(`🌅 *Sovereignty:* Golden Hour detected. Waking up the Hub lights.`, 'low');
+        }
+        // Bedtime Pulse (12:30 AM)
+        if (hour === 0 && config.stats.lightStatus === 'on' && !isPhoneOnline) {
+           await (wiz as any).setPilot({ state: false });
+           updateDeviceState('light', 'off');
+           await notifier.notify(`🌙 *Sovereignty:* Late-night silence. Turning off the lights for you.`, 'low');
+        }
+      }
+    } catch {}
+  }, 300000); // Pulse every 5 minutes
 
   // ──────────────────────────────────────────────────────
   // PGVCL Scraper (Hourly)
@@ -1942,6 +1997,20 @@ async function main() {
            config.mediaAura = config.mediaAura === false ? true : false;
            saveConfig(config);
            return new Response(JSON.stringify({ status: 'toggled', mediaAura: config.mediaAura }), { 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+           });
+        }
+        if (url.pathname === '/control/auto/ac') {
+           config.autoAc = !config.autoAc;
+           saveConfig(config);
+           return new Response(JSON.stringify({ status: 'toggled', autoAc: config.autoAc }), { 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+           });
+        }
+        if (url.pathname === '/control/auto/light') {
+           config.autoLight = !config.autoLight;
+           saveConfig(config);
+           return new Response(JSON.stringify({ status: 'toggled', autoLight: config.autoLight }), { 
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
            });
         }
