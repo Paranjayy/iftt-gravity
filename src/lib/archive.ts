@@ -219,11 +219,12 @@ async function main() {
       const { stdout } = await execAsync('pbpaste');
       const text = stdout.trim();
       if (text && text !== lastClip) {
-        // Detect Frontmost App Name & Context
+        // Detect Frontmost User Application & Context
         try {
           const script = `
             tell application "System Events"
-              set appName to name of first process whose frontmost is true
+              set frontApp to first application process whose frontmost is true
+              set appName to name of frontApp
               set siteUrl to ""
               if appName is "Arc" then
                 tell application "Arc" to set siteUrl to URL of active tab of first window
