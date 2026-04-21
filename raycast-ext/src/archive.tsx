@@ -35,8 +35,7 @@ export default function Command() {
       isLoading={isLoading} 
       searchBarPlaceholder="Search infinite clipboard history..."
       onSearchTextChange={setSearchText}
-      throttle
-      isShowingDetail
+      isShowingDetail={true}
     >
       {items.length === 0 ? (
         <List.EmptyView title="Nothing found" description="Try a different search or copy something new!" icon={Icon.MagnifyingGlass} />
@@ -45,18 +44,16 @@ export default function Command() {
           <List.Item
             key={item.id}
             icon={{ source: Icon.Clipboard, color: Color.Blue }}
-            title={item.text.length > 50 ? `${item.text.substring(0, 50)}...` : item.text}
-            subtitle={new Date(item.timestamp).toLocaleTimeString()}
+            title={item.text.trim().split('\n')[0].substring(0, 50)}
+            accessories={[{ text: new Date(item.timestamp).toLocaleTimeString(), icon: Icon.Clock }]}
             detail={
               <List.Item.Detail
-                markdown={`### Content Preview\n\n${item.text}\n\n---\n**Captured:** ${new Date(item.timestamp).toLocaleString()}`}
+                markdown={`#### Content\n\`\`\`\n${item.text}\n\`\`\`\n\n---\n**Captured:** ${new Date(item.timestamp).toLocaleString()}`}
                 metadata={
                   <List.Item.Detail.Metadata>
-                    <List.Item.Detail.Metadata.Label title="Characters" text={String(item.text.length)} />
-                    <List.Item.Detail.Metadata.Label title="Source" icon={Icon.RaycastLogo} text="Gravity Hub" />
-                    <List.Item.Detail.Metadata.TagList title="Type">
-                       <List.Item.Detail.Metadata.TagList.Item text="Clipboard" color={Color.Blue} />
-                    </List.Item.Detail.Metadata.TagList>
+                    <List.Item.Detail.Metadata.Label title="Length" text={`${item.text.length} chars`} />
+                    <List.Item.Detail.Metadata.Separator />
+                    <List.Item.Detail.Metadata.Label title="Source" icon={Icon.RaycastLogo} text="Gravity Archive" />
                   </List.Item.Detail.Metadata>
                 }
               />
@@ -64,8 +61,8 @@ export default function Command() {
             actions={
               <ActionPanel>
                 <ActionPanel.Section>
-                  <Action.CopyToClipboard title="Copy to Clipboard" content={item.text} shortcut={{ modifiers: ["cmd"], key: "." }} />
-                  <Action.Paste title="Paste into Active App" content={item.text} shortcut={{ modifiers: ["cmd"], key: "enter" }} />
+                  <Action.CopyToClipboard title="Copy to Clipboard" content={item.text} />
+                  <Action.Paste title="Paste into App" content={item.text} />
                 </ActionPanel.Section>
               </ActionPanel>
             }
