@@ -37,13 +37,34 @@ async function archiveClipboard(text: string) {
     clips = JSON.parse(data);
   } catch (e) { clips = []; }
   
-  const isHTML = text.includes('<') && text.includes('>');
-  const processedText = text.trim();
+  // 🧬 Intelligence: Folder/File Awareness via osascript
+  let resolvedText = text.trim();
+  try {
+     const { stdout: fileList } = await execAsync(`osascript -e '
+      set resultList to {}
+      try
+        set theItems to (the clipboard as «class furl»)
+        if class of theItems is not list then set theItems to {theItems}
+        repeat with p in theItems
+          set end of resultList to POSIX path of p
+        end repeat
+        return resultList
+      on error
+        return ""
+      end try'`);
+      
+      const filePaths = fileList.trim();
+      if (filePaths && filePaths.length > 5) {
+        resolvedText = filePaths;
+      }
+  } catch(e) {}
+
+  const processedText = resolvedText;
 
   const existingIdx = clips.findIndex((c: any) => c.text.trim() === processedText);
   if (existingIdx !== -1) {
     const item = clips[existingIdx];
-    item.meta = item.meta || {};
+    item.meta = item.meta || { type: 'text' };
     item.meta.dupes = (item.meta.dupes || 0) + 1;
     item.timestamp = new Date().toISOString();
     // Update context if it was missing
@@ -62,9 +83,22 @@ async function archiveClipboard(text: string) {
     const isLink = text.startsWith('http') || mdLinkMatch;
 
     let type = 'text';
-    if (isPath) type = isImage ? 'image' : isApp ? 'app' : 'file';
-    else if (isLink) type = 'link';
-    else if (text.includes('{') || text.includes('function') || text.includes('=>')) type = 'code';
+    let project = undefined;
+    
+    if (isPath) {
+      type = isImage ? 'image' : isApp ? 'app' : 'file';
+      if (processedText.includes('SocialHoardr')) project = 'SocialHoardr';
+      else if (processedText.includes('iftt')) project = 'Gravity';
+      else if (processedText.includes('Antigravity')) project = 'Antigravity';
+    } else if (isLink) {
+      type = 'link';
+    } else if (text.includes('{') || text.includes('function') || text.includes('=>')) {
+      type = 'code';
+    }
+
+    const words = processedText.split(/\s+/).filter(x => x.length > 0).length;
+    const lines = processedText.split('\n').length;
+    const tokens = Math.ceil(processedText.length / 4);
 
     const newItem: any = {
       id: Date.now().toString(),
@@ -74,10 +108,12 @@ async function archiveClipboard(text: string) {
       source: CLIPSTACK_SOURCE || 'System',
       url: CLIPSTACK_URL || undefined,
       meta: {
-        words: processedText.split(/\s+/).filter(x => x.length > 0).length,
-        lines: processedText.split('\n').length,
+        words,
+        lines,
         chars: processedText.length,
+        tokens,
         type,
+        project
       }
     };
 
@@ -121,11 +157,53 @@ async function main() {
       async fetch(req: any) {
         const url = new URL(req.url);
         
+        if (url.pathname === '/archive') {
+          const clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
+          return new Response(JSON.stringify(clipsData), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
         if (url.pathname === '/archive/search') {
           const query = url.searchParams.get('q')?.toLowerCase() || "";
           const clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
           const filtered = clipsData.filter((c: any) => c.text.toLowerCase().includes(query)).slice(0, 50);
           return new Response(JSON.stringify(filtered), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.startsWith('/archive/bookmark/')) {
+          const id = url.pathname.split('/')[3];
+          const clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
+          const item = clipsData.find((c: any) => c.id === id);
+          if (item) item.isBookmarked = !item.isBookmarked;
+          fs.writeFileSync(CLIPS_PATH, JSON.stringify(clipsData, null, 2));
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.startsWith('/archive/label/')) {
+          const id = url.pathname.split('/')[3];
+          const label = url.searchParams.get('label');
+          const clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
+          const item = clipsData.find((c: any) => c.id === id);
+          if (item) item.label = label;
+          fs.writeFileSync(CLIPS_PATH, JSON.stringify(clipsData, null, 2));
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.startsWith('/archive/update/')) {
+          const id = url.pathname.split('/')[3];
+          const text = url.searchParams.get('text');
+          const clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
+          const item = clipsData.find((c: any) => c.id === id);
+          if (item) item.text = text;
+          fs.writeFileSync(CLIPS_PATH, JSON.stringify(clipsData, null, 2));
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.startsWith('/archive/delete/')) {
+          const id = url.pathname.split('/')[3];
+          let clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
+          clipsData = clipsData.filter((c: any) => c.id !== id);
+          fs.writeFileSync(CLIPS_PATH, JSON.stringify(clipsData, null, 2));
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/hoard' && req.method === 'POST') {

@@ -24,7 +24,7 @@ export default function Command() {
 
   async function refresh() {
     try {
-      const res = await fetch("http://localhost:3030/status");
+      const res = await fetch("http://127.0.0.1:3030/status");
       const data = await res.json();
       setState(data as HubState);
       setError(null);
@@ -43,7 +43,7 @@ export default function Command() {
   async function runAction(name: string, endpoint: string) {
     showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
-      const res = await fetch(`http://localhost:3030${endpoint}`);
+      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
       if (!res.ok) throw new Error("Failed");
       showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
       setTimeout(refresh, 500);
@@ -71,19 +71,19 @@ export default function Command() {
           icon={Icon.Video}
           title="TV TIME"
           subtitle="Dim Purple & AC Cool"
-          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
+          actions={<ActionPanel><Action title="Activate" icon={Icon.Video} onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.ComputerSpeaker}
           title="WORK MODE"
           subtitle="Bright White & AC Fan"
-          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("Work", "/scene/work")} /></ActionPanel>}
+          actions={<ActionPanel><Action title="Activate" icon={Icon.ComputerSpeaker} onAction={() => runAction("Work", "/scene/work")} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.House}
           title="BACK HOME"
           subtitle="Warm Welcome"
-          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
+          actions={<ActionPanel><Action title="Activate" icon={Icon.House} onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
         />
       </List.Section>
 
@@ -98,6 +98,7 @@ export default function Command() {
               <Action icon={Icon.ChevronDown} title="Temperature DOWN" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
               <Action icon={Icon.ChevronUp} title="Temperature UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
               <ActionPanel.Section title="Climate Precision">
+                <Action icon={Icon.Video} title="TV Mode (Cool & Quiet)" onAction={() => runAction("TV AC", "/control/ac_tv")} />
                 <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "t" }} onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
                 <Action icon={Icon.Snowflake} title="Cool Mode" onAction={() => runAction("Cool", "/control/ac/mode?mode=cool")} />
                 <Action icon={Icon.Repeat} title="Vertical Swing" onAction={() => runAction("Swing", "/control/ac/swing")} />
@@ -116,6 +117,7 @@ export default function Command() {
               <Action icon={Icon.Minus} title="Brightness DOWN" onAction={() => runAction("Bright Down", "/control/brightness?dir=down")} />
               <Action icon={Icon.Plus} title="Brightness UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Bright Up", "/control/brightness?dir=up")} />
               <ActionPanel.Section title="Atmospheric Controls">
+                <Action icon={Icon.Video} title="TV Mode (Dim to 10%)" onAction={() => runAction("TV Lights", "/control/bulb_tv")} />
                 <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
                 <Action icon={Icon.Star} title="Aura Sync (Media)" onAction={() => runAction("Aura", "/control/aura/toggle")} />
                 <Action icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
@@ -178,24 +180,28 @@ export default function Command() {
 
 function SolisSetupGuide() {
   const guide = `
-# SolisCloud Integration Guide ☀️🔋
+# SolisCloud API Activation Guide ☀️📨
 
-To get your API credentials for standalone sovereignty:
+Looking at your dashboard, it seems the **API Management** menu is currently hidden. This is common for personal accounts and requires a one-time activation from their side.
 
-1. **Login** to [SolisCloud](https://www.soliscloud.com/).
-2. Click on your **User Icon** (top right) or the **Service Center** tab.
-3. Look for **API Management** or **API** in the sidebar.
-4. **Generate API Key**:
-   - You'll see a **KeyId** and a **SecretKey**. 
-   - *Note: You might need to accept a disclaimer to enable API access.*
-5. **Get Plant ID**:
-   - Go to **Plant Overview**.
-   - Your Plant ID for **Praduman Khachar** is: \`1298491919450000328\` 🧬
-6. **Update Config**:
-   - Enter these into your \`.env.local\` in the \`iftt\` root.
-   - Restart the Hub using the **Re-Pulse** action in Raycast.
+### 🛑 **Step 1: Apply for Access** (Mandatory)
+According to Solis documentation, you must first contact their technical support to "Verify and Activate" API access for your account:
+- **Email**: \`ussupport@solisinv.com\` (or your regional Solis support).
+- **Subject**: Request for API Access Activation - Praduman Khachar
+- **Content**: "Please activate the API Management portal for my account (\`pkhachar@gmail.com\`) to allow integration with my personal dashboard."
 
-Once integrated, you'll see real-time generation counts instead of mock data!
+### 🔧 **Step 2: Activation (Once Unlocked)**
+Once they reply, you will see a new **API Management** option under the **Service** tab:
+1.  Go to **Service** -> **API Management**.
+2.  Click **Activate Now**.
+3.  Complete the Email Verification (Puzzle + Code).
+4.  Copy your **KeyId** and **SecretKey**.
+
+### 🧬 **Plant Details**
+- **Plant ID**: \`1298491919450000328\`
+- **Current Flow**: Currently syncing via **Session Pulse** (18.7 kWh) until your persistent keys are live.
+
+Restart the Hub once you have the keys!
   `;
-  return <List.Item.Detail markdown={guide} />;
+  return <Detail markdown={guide} />;
 }

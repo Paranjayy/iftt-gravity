@@ -259,6 +259,7 @@ async function main() {
       // 🪄 Sync Command Suggestions (Slash menu v4.9.2)
       bot.setMyCommands([
         { command: 'status', description: 'Show current states' },
+        { command: 'tv', description: '🌘 Cinematic Mode (Dimmest & Cool)' },
         { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
         { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
         { command: 'media', description: '🎬 Media Exposure (Music Sync)' },
@@ -266,7 +267,6 @@ async function main() {
         { command: 'auto_ac', description: '❄️ Toggle Auto-Pilot AC' },
         { command: 'auto_light', description: '🌅 Toggle Auto-Pilot Lights' },
         { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
-        { command: 'history', description: 'Show usage history' },
         { command: 'ping', description: 'Check Gravity health' },
       ]).catch(() => {});
     } catch (e) {
@@ -610,6 +610,12 @@ async function main() {
            const color = subCommand.replace('color_', '');
            const colors: any = { red: { r: 255, g: 0, b: 0 }, blue: { r: 0, g: 0, b: 255 }, green: { r: 0, g: 255, b: 0 }, gold: { r: 255, g: 215, b: 0 } };
            if (wiz && colors[color]) await wiz.executeAction({ type: 'control', payload: { state: true, ...colors[color] } });
+        } else if (subCommand === 'bulb_tv') {
+           if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
+           recordHabit(subCommand);
+        } else if (subCommand === 'ac_tv') {
+           if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on', actmp: '24', acmd: 'cool', acfs: 'low' });
+           recordHabit(subCommand);
         }
 
         // If it was a button click, we want to REFRESH the control panel instead of sending a new one
@@ -644,6 +650,9 @@ async function main() {
           { text: '💡 Lighting Vault', callback_data: 'control:none:level:light' }
         ],
         [
+          { text: '🎭 Scene Intelligence', callback_data: 'control:none:level:scenes' }
+        ],
+        [
           { text: '📅 Schedules', callback_data: 'schedule' },
           { text: '🧠 Habits', callback_data: 'habits' }
         ],
@@ -670,7 +679,23 @@ async function main() {
           { text: '🟡 Warm (2K)', callback_data: 'control:bulb_warm:level:light' }
         ],
         [
+          { text: '🌘 TV Mode (Dimmest)', callback_data: 'control:bulb_tv:level:light' },
           { text: '🌈 Aura Sync', callback_data: 'control:aura_toggle:level:light' }
+        ],
+        [
+          { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'scenes') {
+      dashboard = `🎭 *Gravity: Scene Selection*\n━━━━━━━━━━━━━━\nSelect a multi-device orchestration flow.`;
+      keyboard.inline_keyboard = [
+        [
+          { text: '📽️ TV Mode', callback_data: 'scene:tv:level:scenes' },
+          { text: '🧠 Focus', callback_data: 'scene:focus:level:scenes' }
+        ],
+        [
+          { text: '🏠 Home', callback_data: 'scene:home:level:scenes' },
+          { text: '🏃 Away', callback_data: 'scene:away:level:scenes' }
         ],
         [
           { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
@@ -690,6 +715,9 @@ async function main() {
         [
           { text: '🤖 Auto Pilot', callback_data: 'control:auto_ac:level:ac' },
           { text: '🔄 Swing', callback_data: 'control:ac_swing:level:ac' }
+        ],
+        [
+          { text: '🌘 TV Mode (Quiet)', callback_data: 'control:ac_tv:level:ac' }
         ],
         [
           { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
@@ -889,12 +917,12 @@ async function main() {
       case 'TV_TIME':
         logActivity("🎬 Scene: TV TIME (God Build)");
         if (wiz) {
-          // Classic TV Bias lighting (Warm/Comfortable)
-          promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 30 } }));
+          // Classic TV Bias lighting (Deep Dim / Warm)
+          promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } }));
         }
         if (miraie && miraie.devices.length > 0) {
           // Quiet mode for movies
-          await miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '24', acmd: 'cool', acfs: 'low' });
+          promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '24', acmd: 'cool', acfs: 'low' }));
         }
         speak("Cinematic mode active. Enjoy your movie.");
         break;
@@ -1054,6 +1082,16 @@ async function main() {
       } else {
         await send('❌ Invalid or expired PIN.');
       }
+    }
+  });
+
+  bot.registerCommand({
+    command: 'tv',
+    description: 'Cinematic mode (Dimmest & Cool)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await triggerScene('TV_TIME');
+      await send('📽️ *TV Mode:* Engaged. Lights dimmed to 10%, AC silent & cool.');
     }
   });
 
@@ -1659,40 +1697,170 @@ async function main() {
     }
   });
 
+  // 📸 /screen — Remote View
   bot.registerCommand({
-    command: 'logs',
-    description: 'View last 10 house events',
+    command: 'screen',
+    description: 'Capture Mac screen',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const tempPath = '/tmp/gravity_screen.png';
+      await send('📸 *Gravity Eyes*: Capturing screen...');
       try {
-        const logs = fs.readFileSync(LOG_PATH, 'utf-8').trim().split('\n');
-        const last10 = logs.slice(-10).join('\n');
-        await send(`📜 *Recent House Activities:*\n\n\`\`\`\n${last10}\n\`\`\``);
-      } catch {
-        await send('📜 No logs found yet.');
+        await execAsync(`screencapture -x ${tempPath}`);
+        await bot.sendPhoto(chatId as number, tempPath, `🖥 *Gravity Sentry View*\n⏰ Captured: ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+      } catch (e: any) {
+        await send(`❌ Capture failed: ${e.message}`);
       }
+    }
+  });
+
+  // 🔊 /vol — System Volume Control
+  bot.registerCommand({
+    command: 'vol',
+    description: 'Control Mac volume: /vol 50|up|down',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const val = args[0] || 'status';
+      try {
+        if (val === 'up') await execAsync(`osascript -e "set volume output volume ((output volume of (get volume settings)) + 10)"`);
+        else if (val === 'down') await execAsync(`osascript -e "set volume output volume ((output volume of (get volume settings)) - 10)"`);
+        else if (!isNaN(Number(val))) await execAsync(`osascript -e "set volume output volume ${val}"`);
+        
+        const { stdout } = await execAsync(`osascript -e "output volume of (get volume settings)"`);
+        await send(`🔊 *System Volume*: ${stdout.trim()}%`);
+      } catch (e: any) {
+        await send(`❌ Volume control failed`);
+      }
+    }
+  });
+
+  // 📜 /logs — Activity Stream
+  bot.registerCommand({
+    command: 'logs',
+    description: 'Show last N activity log entries (default 10)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const count = parseInt(args[0] || '10');
+      try {
+        const data = fs.readFileSync(LOG_PATH, 'utf-8');
+        const lines = data.trim().split('\n').filter(l => l.length > 0).slice(-count);
+        const filtered = lines.map(l => l.replace(/\[.*\]\s*/, '🔹 ')).join('\n');
+        await send(`📜 *Recent Activity (Last ${lines.length})*\n━━━━━━━━━━━━━━\n${filtered || '_No logs found._'}`);
+      } catch (e) {
+        await send('❌ Failed to read log file.');
+      }
+    }
+  });
+
+  // ✏️ /jot — Quick Hoard
+  bot.registerCommand({
+    command: 'jot',
+    description: 'Quickly save a thought to Gravity Archive',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const text = args.join(' ');
+      if (!text) return await send('✏️ Usage: `/jot My thought here`');
+      
+      try {
+        await fetch('http://localhost:3031/archive/hoard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, meta: { type: 'jot' }, source: 'Telegram' })
+        });
+        await send('✅ *Jot Stored.* Sent to Sovereign Vault.');
+      } catch (e) {
+        await send('❌ Archive engine is offline.');
+      }
+    }
+  });
+
+  // 🕰️ /schedule — Management
+  bot.registerCommand({
+    command: 'schedule',
+    description: 'View active routines and schedules',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const jobs = config.scheduler || [];
+      if (jobs.length === 0) return await send('🕰 *Schedules*: No routines active.');
+      
+      let res = '🕰 *Active Hub Routines*\n\n';
+      jobs.forEach((j: any, i: number) => {
+        res += `${i+1}. [${j.time}] \`${j.action.toUpperCase()}\`\n`;
+      });
+      res += '\n_Use the buttons below to manage mission routines._';
+      
+      await bot.sendMessage(chatId, res, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '➕ Add Routine', callback_data: 'schedule_prompt' }],
+            [{ text: '🧹 Clear All', callback_data: 'schedule_clear_confirm' }]
+          ]
+        }
+      });
+    }
+  });
+
+  // 🎨 /aura — Media Sync
+  bot.registerCommand({
+    command: 'aura',
+    description: 'Toggle Media Aura sync',
+    handler: async (chatId, args, msg, send) => {
+       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+       config.mediaAura = !config.mediaAura;
+       saveConfig(config);
+       await send(`🎨 *Media Aura*: **${config.mediaAura ? 'ENABLED' : 'DISABLED'}**`);
+    }
+  });
+
+  // ❄️ /temp — AC Status
+  bot.registerCommand({
+    command: 'temp',
+    description: 'Show current AC set temperature',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!miraie || miraie.devices.length === 0) return await send('❌ AC not configured.');
+      const device = miraie.devices[0];
+      const status = (device as any).status;
+      if (status) {
+        const isOn = status.ps === 'on';
+        const acTemp = status.actmp || '?';
+        const mode = status.acmd || '?';
+        await send(`❄️ *AC Status*\nPower: ${isOn ? '✅ ON' : '❌ OFF'}\nSet Temp: *${acTemp}°C*\nMode: *${mode.toUpperCase()}*`);
+      } else {
+        await send(`❄️ AC is configured (${device.deviceName})\n_Status polling not available for this device._`);
+      }
+    }
+  });
+
+  // 📈 /history — Usage History
+  bot.registerCommand({
+    command: 'history',
+    description: 'Show multi-day energy totals',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const log = config.stats.dailyLog || [];
+      const todayAC = (config.stats.acMinutes / 60);
+      const todayLight = (config.stats.lightMinutes / 60);
+      
+      let totalAC = todayAC;
+      let totalLight = todayLight;
+      log.forEach((entry: any) => {
+        totalAC += parseFloat(entry.ac || 0);
+        totalLight += parseFloat(entry.light || 0);
+      });
+
+      let table = '📊 *Gravity Multi-Day Totals*\n\n';
+      table += `✨ *TODAY (Live)*\n❄️ AC: \`${todayAC.toFixed(1)}h\` | 💡 Light: \`${todayLight.toFixed(1)}h\`\n\n`;
+      table += `🏆 *ULTIMATE TOTALS*\n_(Processed from ${log.length + 1} days of data)_\n\n`;
+      table += `❄️ Total AC: *${totalAC.toFixed(1)} hrs*\n💡 Total Light: *${totalLight.toFixed(1)} hrs*`;
+      await send(table);
     }
   });
 
   // ──────────────────────────────────────────────────────
   // /remind — Delayed Telegram reminder
   // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'media_aura',
-    description: 'Toggle automatic music-light sync: /media_aura on|off',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const state = args[0]?.toLowerCase();
-      if (state === 'on' || state === 'off') {
-        config.mediaAura = (state === 'on');
-        saveConfig(config);
-        await send(`🎵 *Media Aura*: Automatic mood sync is now *${state.toUpperCase()}*.`);
-      } else {
-        await send(`🎵 *Media Aura*: Currently *${config.mediaAura !== false ? 'ON' : 'OFF'}*. Use \`/media_aura on|off\` to toggle.`);
-      }
-    }
-  });
-
   bot.registerCommand({
     command: 'remind',
     description: 'Set a reminder: /remind 30m take a break',
@@ -1763,72 +1931,6 @@ async function main() {
         await bot.sendMessage(msg.from.id, `😴 *Timer Done:* ${device.toUpperCase()} powered ${action}.`, { parse_mode: 'Markdown' });
         speak(`${device} powered ${action} by timer.`);
       }, mins * 60000);
-    }
-  });
-
-  // 📸 /screen — Remote View
-  bot.registerCommand({
-    command: 'screen',
-    description: 'Capture Mac screen',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const tempPath = '/tmp/gravity_screen.png';
-      await send('📸 *Gravity Eyes*: Capturing screen...');
-      try {
-        await execAsync(`screencapture -x ${tempPath}`);
-        await bot.sendPhoto(chatId as number, tempPath, `🖥 *Gravity Sentry View*\n⏰ Captured: ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
-      } catch (e: any) {
-        await send(`❌ Capture failed: ${e.message}`);
-      }
-    }
-  });
-
-  // 🔊 /vol — System Volume Control
-  bot.registerCommand({
-    command: 'vol',
-    description: 'Control Mac volume: /vol 50|up|down',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const val = args[0] || 'status';
-      try {
-        if (val === 'up') await execAsync(`osascript -e "set volume output volume ((output volume of (get volume settings)) + 10)"`);
-        else if (val === 'down') await execAsync(`osascript -e "set volume output volume ((output volume of (get volume settings)) - 10)"`);
-        else if (!isNaN(Number(val))) await execAsync(`osascript -e "set volume output volume ${val}"`);
-        
-        const { stdout } = await execAsync(`osascript -e "output volume of (get volume settings)"`);
-        await send(`🔊 *System Volume*: ${stdout.trim()}%`);
-      } catch (e: any) {
-        await send(`❌ Volume control failed`);
-      }
-    }
-  });
-
-  // ──────────────────────────────────────────────────────
-  // /schedule — Management
-  // ──────────────────────────────────────────────────────
-  bot.registerCommand({
-    command: 'schedule',
-    description: 'View active routines and schedules',
-    handler: async (chatId, args, msg, send) => {
-      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      const jobs = config.scheduler || [];
-      if (jobs.length === 0) return await send('🕰 *Schedules*: No routines active.');
-      
-      let res = '🕰 *Active Hub Routines*\n\n';
-      jobs.forEach((j: any, i: number) => {
-        res += `${i+1}. [${j.time}] \`${j.action.toUpperCase()}\`\n`;
-      });
-      res += '\n_Use the buttons below to manage mission routines._';
-      
-      await bot.sendMessage(chatId, res, {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '➕ Add Routine', callback_data: 'schedule_prompt' }],
-            [{ text: '🧹 Clear All', callback_data: 'schedule_clear_confirm' }]
-          ]
-        }
-      });
     }
   });
 
@@ -2772,6 +2874,7 @@ async function main() {
   process.on('SIGTERM', () => shutdown('system stop'));
   
   // 🆘 Global Error Guardian
+  // 🆘 Global Error Guardian
   const sos = async (err: Error, type: string) => {
     console.error(`🆘 ${type}:`, err);
     const alert = `🚨 *Gravity CRASH Detected*\nType: \`${type}\`\nError: \`${err.message.substring(0, 100)}\`\n\n_Hub is attempting to stay alive..._`;
@@ -2781,6 +2884,19 @@ async function main() {
   };
   process.on('uncaughtException', (err) => sos(err, 'Uncaught Exception'));
   process.on('unhandledRejection', (reason: any) => sos(reason instanceof Error ? reason : new Error(String(reason)), 'Unhandled Rejection'));
+
+  // 🧬 Sync Commands with Telegram Menu
+  const allCommands = bot.getHandlers().map((h: any) => ({
+    command: h.command,
+    description: h.description
+  }));
+  await bot.setMyCommands(allCommands).catch((e: Error) => console.error('Failed to sync TG commands:', e));
+
+  // 📝 Refresh stats every hour
+  setInterval(() => {
+    config = loadConfig();
+    scheduler.refresh();
+  }, 3600000);
 }
 
 main().catch(err => {
