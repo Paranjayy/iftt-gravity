@@ -1697,6 +1697,32 @@ async function main() {
     }
   });
 
+  // 🌦️ /weather — Gravity Weather Intelligence
+  bot.registerCommand({
+    command: 'weather',
+    description: 'Junagadh weather, AQI & Solar windows',
+    handler: async (chatId, args, msg, send) => {
+      await send('🌦 *Gravity Weather*: Synchronizing with local sensors...');
+      try {
+        const w = await new WeatherEngine().getWeather();
+        if (!w) return await send('❌ Weather data unavailable.');
+        
+        let res = `🌦 *Junagadh Weather Intelligence*\n\n`;
+        res += `🌡️ Temp: *${w.temp}°C*\n`;
+        res += `💧 Humidity: *${w.humidity}%*\n`;
+        res += `☁️ Condition: *${w.condition}*\n`;
+        if (w.aqi) res += `🌫️ AQI: *${w.aqi}* (${w.aqi < 50 ? 'Good' : w.aqi < 100 ? 'Moderate' : 'Poor'})\n`;
+        res += `\n🌅 Sunrise: \`${w.sunrise}\`\n`;
+        res += `🌇 Sunset: \`${w.sunset}\`\n`;
+        res += `\n_Last Sync: ${new Date(w.updatedAt).toLocaleTimeString('en-IN')}_`;
+        
+        await send(res);
+      } catch (e: any) {
+        await send(`❌ Weather sync failed: ${e.message}`);
+      }
+    }
+  });
+
   // 📸 /screen — Remote View
   bot.registerCommand({
     command: 'screen',
