@@ -11,13 +11,21 @@
 # @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt
 
 # Documentation:
-# @raycast.description Precision shutdown via PID Lock.
+# @raycast.description Polite shutdown via PID Lock.
 # @raycast.author antigravity
 
-# 1. PID Strike: Kill the exact process
+# 1. PID Pulse: Send SIGTERM to allow for final Telegram sync
 if [ -f /tmp/gravity-hub.pid ]; then
   PID=$(cat /tmp/gravity-hub.pid)
-  kill -9 $PID 2>/dev/null
+  kill -15 $PID 2>/dev/null
+  
+  # Wait for polite shutdown
+  sleep 2
+  
+  # If still alive, execute Iron Strike
+  if ps -p $PID > /dev/null; then
+    kill -9 $PID 2>/dev/null
+  fi
   rm /tmp/gravity-hub.pid
 fi
 
