@@ -168,10 +168,10 @@ export class TelegramAdapter extends Adapter {
       const matched = this.handlers.find(h => h.command === cmd);
       if (matched) {
         try {
-          // IMPORTANT: Capture the actual user who clicked the button (cb.from)
-          // and merge it into the message context for authorization checks.
-          const msgContext = { ...cb.message, from: cb.from };
+          // IMPORTANT: Capture the callback ID so handlers can use editMessageText
+          const msgContext = { ...cb.message, from: cb.from, callback_query_id: cb.id };
           await matched.handler(chatId, args, msgContext, (text) => this.sendMessage(chatId, text));
+          
           // Answer the callback to remove loading state
           await this.sendRequest('answerCallbackQuery', { callback_query_id: cb.id });
         } catch (e) {}
