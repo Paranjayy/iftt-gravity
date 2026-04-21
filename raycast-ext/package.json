@@ -49,6 +49,20 @@
       "description": "Toggle automatic music-light sync",
       "icon": "assets/icon.png",
       "mode": "no-view"
+    },
+    {
+      "name": "stack",
+      "title": "Paste Stack (Sequence)",
+      "description": "Manage and paste your queued clipboard items",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "jot",
+      "title": "Gravity Jot (Notes)",
+      "description": "Distraction-free vault notepad",
+      "icon": "assets/icon.png",
+      "mode": "view"
     }
   ],
   "dependencies": {

@@ -16,18 +16,32 @@
 
 # Rebuild the extension to bake in latest logic/UI
 echo "⚒️ Gravity: Rebuilding Iron Vault..."
-cd raycast-ext && /Users/paranjay/.bun/bin/bun run build > /dev/null 2>&1
+cd /Users/paranjay/Developer/iftt/raycast-ext && /Users/paranjay/.bun/bin/bun run build > /dev/null 2>&1
 if [ $? -ne 0 ]; then
   echo "❌ Gravity: BUILD ERROR. Fix raycast-ext first."
   exit 1
 fi
-cd ..
 
-# Evict any existing process on 3030 surgically
-if lsof -ti :3030 > /dev/null; then
-  lsof -ti :3030 | xargs kill -9 2>/dev/null
-fi
+# Evict any existing process on 3030 and 3031 surgically
+echo "☢️ Gravity: Purging existing pulses..."
+for port in 3030 3031; do
+  PIDS=$(lsof -t -i:$port)
+  if [ ! -z "$PIDS" ]; then
+    echo "  ↳ Killing stragglers on Port $port: $PIDS"
+    echo $PIDS | xargs kill -9 2>/dev/null
+  fi
+done
+ps aux | grep -E "src/lib/bot.ts|src/lib/archive.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
+sleep 1
 
-# Launch the Brain in the background
-echo "🟢 Gravity: Pulse Active. Sentry Engaged (Port 3030)."
-CLIPBOARD_ONLY=true /Users/paranjay/.bun/bin/bun src/lib/bot.ts > /tmp/gravity-archive.log 2>&1 &
+# Launch the Dual-Core Hub
+echo "🟢 Gravity: Launching Heart & Mind..."
+cd /Users/paranjay/Developer/iftt
+
+# Start Archive Engine (Port 3031)
+/Users/paranjay/.bun/bin/bun src/lib/archive.ts > /tmp/gravity-archive.log 2>&1 &
+echo "  ↳ 📂 Sovereign Vault engaged."
+
+# Start Main Hub (Port 3030)
+/Users/paranjay/.bun/bin/bun src/lib/bot.ts > /tmp/gravity-bot.log 2>&1 &
+echo "  ↳ 🤖 Gravity Bot ambassador live."

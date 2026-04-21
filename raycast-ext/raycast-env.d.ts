@@ -25,6 +25,10 @@ declare namespace Preferences {
   export type Cortex = ExtensionPreferences & {}
   /** Preferences accessible in the `aura_toggle` command */
   export type AuraToggle = ExtensionPreferences & {}
+  /** Preferences accessible in the `stack` command */
+  export type Stack = ExtensionPreferences & {}
+  /** Preferences accessible in the `jot` command */
+  export type Jot = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -40,5 +44,9 @@ declare namespace Arguments {
   export type Cortex = {}
   /** Arguments passed to the `aura_toggle` command */
   export type AuraToggle = {}
+  /** Arguments passed to the `stack` command */
+  export type Stack = {}
+  /** Arguments passed to the `jot` command */
+  export type Jot = {}
 }
 

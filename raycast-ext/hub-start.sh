@@ -8,18 +8,13 @@
 
 # Optional parameters:
 # @raycast.icon 🪐
-# @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt
+# @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt/raycast-ext
 
 # Documentation:
-# @raycast.description Launch the Full Gravity Hub.
+# @raycast.description Launch the Dual-Core Gravity Hub (Bot + Archive).
 # @raycast.author antigravity
 
-# 1. Iron Stop: Kill any existing Hubs first
-ps aux | grep "src/lib/bot.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
-lsof -ti :3030 | xargs kill -9 2>/dev/null
-sleep 1
+# Execute Master Launcher
+./iftt-clone.sh
 
-# 2. Start Gravity
-/Users/paranjay/.bun/bin/bun src/lib/bot.ts > /tmp/gravity-hub.log 2>&1 &
-
-echo "🪐 Gravity Online."
+echo "🪐 Dual-Core Gravity Online."

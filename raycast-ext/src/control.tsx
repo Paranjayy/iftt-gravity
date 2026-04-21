@@ -5,9 +5,13 @@ import fetch from "node-fetch";
 interface HubState {
   online: boolean;
   uptime: number;
+  autoAc: boolean;
+  autoLight: boolean;
+  ac_duration: number;
+  light_duration: number;
   stats?: { prompts: number };
   estimatedPgBill?: string;
-   pgvcl?: { units: string; bill: string; lastUpdate: string };
+  pgvcl?: { units: string; bill: string; lastUpdate: string };
   weather?: { temp: number; condition: string; isRain: boolean };
 }
 
@@ -99,6 +103,7 @@ export default function Command() {
         <LI
           icon={Icon.Sun}
           title="Lighting"
+          subtitle={state?.light_duration ? `Running for ${state.light_duration}m` : "Standby"}
           actions={
             <AP title="Lighting">
               <A icon={Icon.PlusCircle} title="Brightness Up" onAction={() => runAction("Up", "/control/brightness?dir=up")} />
@@ -110,6 +115,7 @@ export default function Command() {
         <LI
           icon={Icon.Wind}
           title="Air Conditioning"
+          subtitle={state?.ac_duration ? `Running for ${state.ac_duration}m` : "Standby"}
           actions={
             <AP title="AC">
               <A icon={Icon.ChevronUp} title="Temp Up" onAction={() => runAction("Up", "/control/temp?dir=up")} />
@@ -127,8 +133,8 @@ export default function Command() {
           subtitle={state?.online ? "Home" : "Away"}
           actions={
             <AP title="Hub">
-              <A icon={Icon.Snowflake} title={config.autoAc ? "Disable Auto-AC" : "Enable Auto-AC"} onAction={() => runAction("Auto-AC", "/control/auto/ac")} />
-              <A icon={Icon.Sun} title={config.autoLight ? "Disable Auto-Lights" : "Enable Auto-Lights"} onAction={() => runAction("Auto-Lights", "/control/auto/light")} />
+              <A icon={Icon.Snowflake} title={state?.autoAc ? "Disable Auto-AC" : "Enable Auto-AC"} onAction={() => runAction("Auto-AC", "/control/auto/ac")} />
+              <A icon={Icon.Sun} title={state?.autoLight ? "Disable Auto-Lights" : "Enable Auto-Lights"} onAction={() => runAction("Auto-Lights", "/control/auto/light")} />
               <A icon={Icon.RotateAntiClockwise} title="Restart Hub" onAction={() => runAction("Restart", "/system/restart")} />
               <A.Push icon={Icon.Eye} title="View Chronicle" target={<LogsView />} />
             </AP>

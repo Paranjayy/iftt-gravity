@@ -8,29 +8,31 @@
 
 # Optional parameters:
 # @raycast.icon 🛑
-# @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt
+# @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt/raycast-ext
 
 # Documentation:
-# @raycast.description Polite shutdown via PID Lock.
+# @raycast.description Graceful shutdown for Bot and Archive.
 # @raycast.author antigravity
 
-# 1. PID Pulse: Send SIGTERM to allow for final Telegram sync
-if [ -f /tmp/gravity-hub.pid ]; then
-  PID=$(cat /tmp/gravity-hub.pid)
-  kill -15 $PID 2>/dev/null
-  
-  # Wait for polite shutdown
+# 1. Polite Stop (Bot - Port 3030)
+# Use SIGINT to trigger the 'Gravity went OFFLINE' Telegram broadcast
+BOT_PID=$(lsof -t -i:3030)
+if [ ! -z "$BOT_PID" ]; then
+  kill -INT $BOT_PID 2>/dev/null
+  echo "📡 Signaling Bot for graceful exit..."
   sleep 2
-  
-  # If still alive, execute Iron Strike
-  if ps -p $PID > /dev/null; then
-    kill -9 $PID 2>/dev/null
-  fi
-  rm /tmp/gravity-hub.pid
 fi
 
-# 2. Iron Backup: Kill any stragglers
-lsof -ti :3030 | xargs kill -9 2>/dev/null
-ps aux | grep "src/lib/bot.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
+# 2. Archive Stop (Port 3031)
+ARCH_PID=$(lsof -t -i:3031)
+if [ ! -z "$ARCH_PID" ]; then
+  kill -INT $ARCH_PID 2>/dev/null
+  echo "📂 Signaling Archive to park database..."
+fi
 
-echo "🌑 Gravity Stopped."
+# 3. Iron Sweep: Kill any stragglers if they refuse to die
+sleep 1
+lsof -ti :3030,3031 | xargs kill -9 2>/dev/null
+ps aux | grep -E "src/lib/bot.ts|src/lib/archive.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
+
+echo "🌑 Gravity Sovereign Shutdown Complete."

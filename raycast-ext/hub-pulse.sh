@@ -8,21 +8,27 @@
 
 # Optional parameters:
 # @raycast.icon 💓
-# @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt
+# @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt/raycast-ext
 
 # Documentation:
-# @raycast.description Verify the status of the Hub, Zapit engine, and Clipboard Archive.
+# @raycast.description Verify the status of the Dual-Core Hub (Bot + Archive).
 # @raycast.author antigravity
 
-STATUS=$(curl -s http://localhost:3030/status 2>/dev/null)
+BOT_STATUS=$(curl -s http://localhost:3030/status 2>/dev/null)
+ARCH_STATUS=$(curl -s http://localhost:3031/ 2>/dev/null)
 
-if [ -z "$STATUS" ]; then
-  echo "🌑 Gravity Hub is OFFLINE"
-  exit 0
+MSG=""
+
+if [ ! -z "$BOT_STATUS" ]; then
+  MSG="🤖 Ambassador: ONLINE"
+else
+  MSG="🤖 Ambassador: OFFLINE"
 fi
 
-PORT_CHECK=$(lsof -ti :3030)
-HUB_MODE=$(echo $STATUS | grep -q "CLIPBOARD_ONLY" && echo "Minimal Brain" || echo "Full Hub")
+if [ ! -z "$ARCH_STATUS" ]; then
+  MSG="$MSG | 📂 Archive: ONLINE"
+else
+  MSG="$MSG | 📂 Archive: OFFLINE"
+fi
 
-echo "🟢 Gravity Hub: ONLINE ($HUB_MODE)"
-echo "📡 Port 3030 PID: $PORT_CHECK"
+echo "$MSG"

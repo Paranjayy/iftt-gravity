@@ -1,5 +1,187 @@
 [
   {
+    "id": "1776735958429",
+    "text": "https://www.youtube.com/watch?v=4hjG21yTuoI",
+    "timestamp": "2026-04-21T02:28:16.220Z",
+    "isBookmarked": false,
+    "label": "",
+    "source": "Unknown",
+    "meta": {
+      "words": 1,
+      "lines": 1,
+      "tokens": 11,
+      "type": "link"
+    }
+  },
+  {
+    "id": "1776737733680",
+    "text": "https://github.com/barutsrb/omniwm/",
+    "timestamp": "2026-04-21T02:15:33.680Z",
+    "isBookmarked": false,
+    "label": "",
+    "source": "Electron",
+    "meta": {
+      "words": 1,
+      "lines": 1,
+      "tokens": 9,
+      "type": "link",
+      "ogTitle": "GitHub - BarutSRB/OmniWM: MacOS Niri and Hyprland inspired tiling window manager that&#39;s developer signed and notorized (safe for managed enterprise environments). Aiming for parity and extra innovation. · GitHub",
+      "ogImage": "https://opengraph.githubassets.com/6cb7801c75cb59d0e92e0e7cb0f4747be26082baab695a21e314f7fa70388f9a/BarutSRB/OmniWM",
+      "ogDescription": "MacOS Niri and Hyprland inspired tiling window manager that&#39;s developer signed and notorized (safe for managed enterprise environments). Aiming for parity and extra innovation. - BarutSRB/OmniWM",
+      "favicon": "https://www.google.com/s2/favicons?domain=github.com&sz=128"
+    }
+  },
+  {
+    "id": "1776737216770",
+    "text": "- still missing those topbar icons those 6things mun :( \n- the current bottom right button still opening same new popup but i want. it to open instead old one",
+    "timestamp": "2026-04-21T02:06:56.770Z",
+    "isBookmarked": false,
+    "label": "- still missing those topbar icons those 6things m",
+    "source": "Unknown",
+    "meta": {
+      "words": 30,
+      "lines": 2,
+      "tokens": 40,
+      "type": "text"
+    }
+  },
+  {
+    "id": "1776737034266",
+    "text": "[Community Letter from Tim - Apple](https://www.apple.com/community-letter-from-tim/)",
+    "timestamp": "2026-04-21T02:03:54.266Z",
+    "isBookmarked": false,
+    "label": "[Community Letter from Tim - Apple](https://www.ap",
+    "source": "Unknown",
+    "meta": {
+      "words": 6,
+      "lines": 1,
+      "tokens": 22,
+      "type": "text"
+    }
+  },
+  {
+    "id": "1776736282329",
+    "text": "archi",
+    "timestamp": "2026-04-21T01:51:23.683Z",
+    "isBookmarked": false,
+    "label": "",
+    "source": "Unknown",
+    "meta": {
+      "words": 1,
+      "lines": 1,
+      "tokens": 2,
+      "type": "text"
+    }
+  },
+  {
+    "id": "1776734687598",
+    "text": "#735C9F",
+    "timestamp": "2026-04-21T01:51:15.459Z",
+    "label": ""
+  },
+  {
+    "id": "1776735783530",
+    "text": "what further things are in ur future plan would u like to do or any ideas for this or any other proj mun \n\ncontinue iteratin dawg makin it goatest thing ever and more mun\n",
+    "timestamp": "2026-04-21T01:43:03.535Z",
+    "isBookmarked": false,
+    "label": "what further things are in ur future plan would u",
+    "source": "Unknown",
+    "meta": {
+      "words": 34,
+      "lines": 4,
+      "tokens": 43,
+      "type": "text"
+    }
+  },
+  {
+    "id": "1776734857861",
+    "text": "what further things are in ur future plan would u like to do or any ideas for this or any other proj mun \n\ncontinue iteratin dawg makin it goatest thing ever and more mun",
+    "timestamp": "2026-04-21T01:40:28.649Z"
+  },
+  {
+    "id": "1776735626647",
+    "text": "also on restarting clipboard backend u removed old things :( u nuked just like that",
+    "timestamp": "2026-04-21T01:40:26.647Z",
+    "isBookmarked": false,
+    "label": "also on restarting clipboard backend u removed old",
+    "source": "Unknown",
+    "meta": {
+      "words": 15,
+      "lines": 1,
+      "tokens": 21,
+      "type": "text"
+    }
+  },
+  {
+    "id": "1776735626544",
+    "text": "also on restarting clipboard backend u removed old things :( u nuked just like that ",
+    "timestamp": "2026-04-21T01:40:26.545Z",
+    "isBookmarked": false,
+    "label": "also on restarting clipboard backend u removed old",
+    "source": "Unknown",
+    "meta": {
+      "words": 15,
+      "lines": 1,
+      "tokens": 21,
+      "type": "text"
+    }
+  },
+  {
+    "id": "1776734687554",
+    "text": "#735C9F",
+    "timestamp": "2026-04-21T01:24:47.554Z"
+  },
+  {
+    "id": "1776734660957",
+    "text": "#CCC",
+    "timestamp": "2026-04-21T01:24:20.957Z"
+  },
+  {
+    "id": "1776734659479",
+    "text": "#CCC",
+    "timestamp": "2026-04-21T01:24:19.479Z"
+  },
+  {
+    "id": "1776734164801",
+    "text": "what further things are in ur future plan would u like to do or any ideas for this or any other proj mun \n\ncontinue iteratin dawg makin it goatest thing ever and more mun",
+    "timestamp": "2026-04-21T01:16:04.801Z"
+  },
+  {
+    "id": "1776734162940",
+    "text": "continue iteratin dawg makin it goatest thing ever and more mun",
+    "timestamp": "2026-04-21T01:16:02.940Z"
+  },
+  {
+    "id": "1776734161831",
+    "text": "continue iteratin dawg makin it goatest thing ever and more mun",
+    "timestamp": "2026-04-21T01:16:01.832Z"
+  },
+  {
+    "id": "1776734073054",
+    "text": "what further things are in ur future plan would u like to do or any ideas for this or any other proj mun ",
+    "timestamp": "2026-04-21T01:14:33.054Z"
+  },
+  {
+    "id": "1776734071516",
+    "text": "what further things are in ur future plan would u like to do or any ideas for this or any other proj mun",
+    "timestamp": "2026-04-21T01:14:31.516Z"
+  },
+  {
+    "id": "1776734061450",
+    "text": "what further things would u like to do or any ideas for this or any other proj mun",
+    "timestamp": "2026-04-21T01:14:21.450Z"
+  },
+  {
+    "id": "1776733791416",
+    "text": "Screenshot 2026-04-21 at 00.33.11.png",
+    "timestamp": "2026-04-21T01:09:51.416Z"
+  },
+  {
+    "id": "1776733791410",
+    "text": "Screenshot 2026-04-21 at 00.33.11.png",
+    "timestamp": "2026-04-21T01:09:51.410Z"
+  },
+  {
     "id": "1776732060345",
     "text": "oh i see it cool mun",
     "timestamp": "2026-04-21T00:41:00.345Z"
