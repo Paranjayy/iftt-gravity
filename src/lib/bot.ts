@@ -2292,10 +2292,12 @@ async function main() {
         }
       }
       lastSpotifyTrack = currentSpotify;
+    } catch (e) { 
+      /* Aura silent */ 
+    }
 
-      } catch (e) { /* Aura silent */ }
-
-      // 3. Auto-Saver Protection (2.5h / 150m limit)
+    // 3. Auto-Saver Protection (2.5h / 150m limit)
+    try {
       if (!CLIPBOARD_ONLY) {
         if (!isPhoneOnline) {
           // Only count if an AC is actually on
