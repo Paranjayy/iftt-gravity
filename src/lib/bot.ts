@@ -2838,7 +2838,33 @@ async function main() {
       }
     } catch(e) { offTimeStr = "??"; }
 
-    // 🚀 Gravity Hub SILENT BOOT (v10.15.3)
+    // COMMIT PULSE IMMEDIATELY ON WAKEUP
+    config.bot = { ...config.bot, lastPulse: new Date().toISOString() };
+    saveConfig(config);
+
+    const acStatusEmoji = (config.stats.ac?.status === 'on') ? '✅' : '❌';
+    const ltStatusEmoji = (config.stats.light?.status === 'on') ? '✅' : '❌';
+    const acDur = getDurationString(config.stats.ac?.lastChanged);
+    const ltDur = getDurationString(config.stats.light?.lastChanged);
+    
+    // Calculate Off-time since last pulse
+    let offTimeStr = "";
+    try {
+      const lastPulse = config.bot?.lastPulse;
+      if (lastPulse) {
+        const last = new Date(lastPulse).getTime();
+        const diffMs = Date.now() - last;
+        const diffMins = Math.floor(diffMs / 60000);
+        if (diffMins < 1) offTimeStr = "<1m";
+        else offTimeStr = diffMins > 1440 ? `${Math.floor(diffMins/1440)}d ${Math.floor((diffMins%1440)/60)}h` : (diffMins > 60 ? `${Math.floor(diffMins/60)}h ${diffMins%60}m` : `${diffMins}m`);
+      }
+    } catch(e) {}
+
+    const startMsg = `🟢 *Gravity Hub: ONLINE* — _Off for ${offTimeStr || '??' }_\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\nStarted: *${startTime} IST*\n❄️ AC: ${acStatusEmoji} (${acDur}) | 💡 Light: ${ltStatusEmoji} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
+    
+    for (const userId of (config.authorizedUsers || [])) {
+      try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+    }
     console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Polling started.`);
 
     // 💓 Sovereign Heartbeat & Persistence
@@ -2850,7 +2876,20 @@ async function main() {
 
   // ── Shutdown Guardian ─────────────────────────────
   const shutdown = async (signal: string) => {
-    console.log(`🛑 Gravity Hub shutting down (${signal})...`);
+    const uptime = Math.floor(process.uptime());
+    const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
+    
+    const acFinal = config.stats.ac?.status?.toUpperCase() || 'OFF';
+    const lightFinal = config.stats.light?.status?.toUpperCase() || 'OFF';
+    const acDur = getDurationString(config.stats.ac?.lastChanged);
+    const lightDur = getDurationString(config.stats.light?.lastChanged);
+    const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+    
+    const stopMsg = `🔴 *Gravity went OFFLINE*\n━━━━━━━━━━━━━━\n⏰ Stopped: *${stopTime} IST*\n❄️ AC Status: *${acFinal}* (${acDur})\n💡 Light Status: *${lightFinal}* (${lightDur})\n⏱ Session Uptime: *${uptimeStr}*\n━━━━━━━━━━━━━━\nHub will not respond until restarted.`;
+    
+    for (const userId of (config.authorizedUsers || [])) {
+      try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
+    }
     process.exit(0);
   };
   process.on('SIGINT', () => shutdown('manual stop'));
