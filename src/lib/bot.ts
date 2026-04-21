@@ -196,6 +196,9 @@ async function main() {
   config = loadConfig();
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
   
+  // 📝 PID Lock for reliable shutdown
+  fs.writeFileSync('/tmp/gravity-hub.pid', process.pid.toString());
+  
   // Session Stats
   let sessionAcMinutes = 0;
   let sessionLightMinutes = 0;
