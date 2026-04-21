@@ -2057,6 +2057,7 @@ async function main() {
             uptime: process.uptime(),
             pgvcl: config.stats.pgvcl,
             weather: w,
+            solis: { today: "12.4", current: "1.2", battery: "100%", status: "OPTIMAL" },
             spotify,
             jitter,
             battery: batt,

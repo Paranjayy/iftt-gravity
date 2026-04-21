@@ -8,6 +8,9 @@ export interface WeatherData {
   humidity: number;
   condition: string;
   isRain: boolean;
+  aqi?: number;
+  sunrise?: string;
+  sunset?: string;
   updatedAt: number;
 }
 
@@ -24,21 +27,33 @@ export class WeatherEngine {
     }
 
     try {
-      // Fetching temperature and relative humidity
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${this.LAT}&longitude=${this.LON}&current=temperature_2m,relative_humidity_2m,weather_code`;
-      const response = await fetch(url);
-      const data = await response.json();
+      // Parallel fetch for weather and air quality
+      const [wRes, aRes] = await Promise.all([
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${this.LAT}&longitude=${this.LON}&current=temperature_2m,relative_humidity_2m,weather_code&daily=sunrise,sunset&timezone=auto`),
+        fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${this.LAT}&longitude=${this.LON}&current=us_aqi`)
+      ]);
 
-      if (data.current) {
-        const cur = data.current;
+      const wData = await wRes.json();
+      const aData = await aRes.json();
+
+      if (wData.current) {
+        const cur = wData.current;
         const code = cur.weather_code;
         const isRain = [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code);
         
+        // Extract sunrise/sunset (daily[0])
+        const sunrise = wData.daily?.sunrise?.[0] ? new Date(wData.daily.sunrise[0]).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : undefined;
+        const sunset = wData.daily?.sunset?.[0] ? new Date(wData.daily.sunset[0]).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : undefined;
+        const aqi = aData.current?.us_aqi;
+
         this.cache = {
           temp: cur.temperature_2m,
           humidity: cur.relative_humidity_2m,
           condition: this.mapCode(code),
           isRain,
+          aqi,
+          sunrise,
+          sunset,
           updatedAt: now
         };
         return this.cache;
@@ -46,7 +61,7 @@ export class WeatherEngine {
       return null;
     } catch (e) {
       console.error('[WeatherEngine] Failed to fetch weather:', e);
-      return this.cache; // return stale cache if available
+      return this.cache; 
     }
   }
 
