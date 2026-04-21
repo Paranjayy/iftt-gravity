@@ -464,13 +464,13 @@ async function main() {
     description: 'Activate Media Exposure (High-fidelity cinematic aura)',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      await send('🎬 *Media Exposure Activated.* Setting cinematic aura...');
       
-      // Hardware: Max Brightness
-      if (wiz) {
-        await (wiz as any).setBrightness(100);
-      }
-      logActivity('🎬 Media: High-fidelity cinematic aura activated via Telegram.');
+      config.mediaAura = config.mediaAura === false ? true : false;
+      saveConfig(config);
+      
+      const status = config.mediaAura ? 'ON (Syncing with Spotify) 🌈' : 'OFF (Stable Mode) 💡';
+      await send(`🎬 *Media Exposure:* Liquid Aura is now *${status}*`);
+      logActivity(`🎬 Media Sync: Liquid Aura toggled to ${status} via Telegram.`);
     }
   });
 
@@ -1936,6 +1936,13 @@ async function main() {
 
            return new Response(JSON.stringify({ status: 'error', message: 'No matching flow or legacy trigger found' }), { 
               status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+           });
+        }
+        if (url.pathname === '/control/aura/toggle') {
+           config.mediaAura = config.mediaAura === false ? true : false;
+           saveConfig(config);
+           return new Response(JSON.stringify({ status: 'toggled', mediaAura: config.mediaAura }), { 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
            });
         }
 
