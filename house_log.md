@@ -493,3 +493,7 @@ State-of...)
 [22/4/2026, 2:14:01 AM] 🌦 Explicit Weather Sync: 24°C [Manual Trigger]
 [22/4/2026, 2:14:47 AM] 🎬 Scene Trigger: TV
 [22/4/2026, 2:14:47 AM] 🎬 Scene: TV TIME (God Build)
+[22/4/2026, 2:21:33 AM] 🎬 Scene Trigger: TV
+[22/4/2026, 2:21:33 AM] 🎬 Scene: TV TIME (God Build)
+[22/4/2026, 3:07:46 AM] AC State: OFF (Manual/Remote)
+[22/4/2026, 3:42:02 AM] AC State: ON (Bot)
