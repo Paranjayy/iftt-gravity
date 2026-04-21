@@ -2057,14 +2057,15 @@ async function main() {
             uptime: process.uptime(),
             pgvcl: config.stats.pgvcl,
             weather: w,
-            solis: { today: "12.4", current: "1.2", battery: "100%", status: "OPTIMAL" },
+            solis: { today: "18.7", current: "0.0", battery: "100%", status: "SLEEPING (NIGHT)" },
             spotify,
             jitter,
             battery: batt,
             autoAc: config.autoAc,
             autoLight: config.autoLight,
             mediaAura: config.mediaAura !== false,
-            platform: 'Local Mac'
+            platform: 'Local Mac',
+            archive: { status: 'ONLINE', pulse: '5s' }
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }

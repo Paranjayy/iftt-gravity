@@ -32,7 +32,7 @@ export default function Command() {
 
   async function fetchArchive() {
     try {
-      const res = await fetch("http://localhost:3030/archive");
+      const res = await fetch("http://localhost:3031/archive");
       const data = await res.json() as ArchiveItem[];
       setClips(data);
     } catch (e) {
@@ -49,12 +49,12 @@ export default function Command() {
   }, [searchText, filter]);
 
   async function toggleBookmark(id: string) {
-    await fetch(`http://localhost:3030/archive/bookmark/${id}`);
+    await fetch(`http://localhost:3031/archive/bookmark/${id}`);
     fetchArchive();
   }
 
   async function deleteClip(id: string) {
-    await fetch(`http://localhost:3030/archive/delete/${id}`);
+    await fetch(`http://localhost:3031/archive/delete/${id}`);
     fetchArchive();
   }
 
@@ -215,10 +215,10 @@ function LabelForm(props: { id: string; onComplete: () => void }) {
   const { pop } = useNavigation();
 
   async function handleSubmit(values: { label: string }) {
-    await fetch(`http://localhost:3030/archive/label/${props.id}?label=${encodeURIComponent(values.label)}`);
+    await fetch(`http://localhost:3031/archive/label/${props.id}?label=${encodeURIComponent(values.label)}`);
+    showToast({ title: "Identified", style: Toast.Style.Success });
     props.onComplete();
     pop();
-    showToast({ title: "Identified", style: Toast.Style.Success });
   }
 
   return (
@@ -237,10 +237,10 @@ function LabelForm(props: { id: string; onComplete: () => void }) {
 function EditForm({ item, onUpdate }: { item: ArchiveItem, onUpdate: () => void }) {
   const { pop } = useNavigation();
   async function handleSubmit(values: { text: string }) {
-    await fetch(`http://localhost:3030/archive/update/${item.id}?text=${encodeURIComponent(values.text)}`);
+    await fetch(`http://localhost:3031/archive/update/${item.id}?text=${encodeURIComponent(values.text)}`);
     onUpdate();
     pop();
-    showToast({ title: "Updated", style: Toast.Style.Success });
+    showToast({ title: "Updated Note", style: Toast.Style.Success });
   }
 
   return (

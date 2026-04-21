@@ -2,7 +2,7 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title Gravity Hub (Archive Only)
+# @raycast.title Gravity Hub Reset
 # @raycast.mode silent
 # @raycast.packageName Gravity Tools
 
@@ -11,16 +11,12 @@
 # @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt
 
 # Documentation:
-# @raycast.description Start the Gravity Hub in minimal CLIPBOARD_ONLY mode.
+# @raycast.description Purge and Restart the Gravity Hub & Archive.
 # @raycast.author antigravity
 
 # Rebuild the extension to bake in latest logic/UI
 echo "⚒️ Gravity: Syncing Archive UI..."
 cd /Users/paranjay/Developer/iftt/raycast-ext && /Users/paranjay/.bun/bin/bun run build > /dev/null 2>&1
-if [ $? -ne 0 ]; then
-  echo "❌ Gravity: BUILD ERROR. Fix raycast-ext first."
-  exit 1
-fi
 
 # Evict any existing process on 3030 and 3031 surgically
 echo "☢️ Gravity: Purging active pulses..."
@@ -38,10 +34,9 @@ sleep 1
 echo "🟢 Gravity: Launching Heart & Archive..."
 cd /Users/paranjay/Developer/iftt
 
-# Start Gravity Archive (Port 3031)
-/Users/paranjay/.bun/bin/bun src/lib/archive.ts > /tmp/gravity-archive.log 2>&1 &
-echo "  ↳ 📂 Gravity Archive engaged."
+# Spawn as detached background processes with logging
+nohup /Users/paranjay/.bun/bin/bun src/lib/archive.ts > /tmp/gravity-archive.log 2>&1 &
+nohup /Users/paranjay/.bun/bin/bun src/lib/bot.ts > /tmp/gravity-bot.log 2>&1 &
 
-# Start Gravity Hub (Port 3030)
-/Users/paranjay/.bun/bin/bun src/lib/bot.ts > /tmp/gravity-bot.log 2>&1 &
+echo "  ↳ 📂 Gravity Archive engaged."
 echo "  ↳ 🤖 Gravity Hub ambassador live."
