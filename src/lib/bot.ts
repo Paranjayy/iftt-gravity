@@ -88,9 +88,19 @@ function logActivity(text: string) {
   fs.appendFileSync(LOG_PATH, entry);
 }
 
+function cleanDOM(html: string) {
+  // Surgical strip of scripts, styles, and data-attributes
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/ style="[^"]*"/gi, '')
+    .replace(/ data-[a-z0-9-]+="[^"]*"/gi, '')
+    .trim();
+}
+
 function archiveClipboard(text: string) {
   const dir = path.join(process.cwd(), 'gravity-archive');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const clipsPath = path.join(dir, 'clips.json');
   let clips: any[] = [];
   try {
@@ -98,14 +108,42 @@ function archiveClipboard(text: string) {
     clips = JSON.parse(data);
   } catch (e) { clips = []; }
   
-  clips.unshift({
-    id: Date.now().toString(),
-    text,
-    timestamp: new Date().toISOString()
-  });
+  const isHTML = text.includes('<') && text.includes('>');
+  const processedText = isHTML ? cleanDOM(text) : text;
+
+  // 📂 Smart Path Detection
+  const isPath = processedText.startsWith('/') || processedText.startsWith('~/') || processedText.match(/^[A-Z]:\\/);
+  const isImage = processedText.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i);
+  const isApp = processedText.endsWith('.app');
+
+  // 🧼 Duplicate Sentry: If text matches, just bump to top
+  const existingIdx = clips.findIndex((c: any) => c.text === processedText);
+  if (existingIdx !== -1) {
+    const [item] = clips.splice(existingIdx, 1);
+    item.timestamp = new Date().toISOString();
+    clips.unshift(item);
+  } else {
+    let type = 'text';
+    if (isPath) type = isImage ? 'image' : isApp ? 'app' : 'file';
+    else if (text.startsWith('http')) type = 'link';
+    else if (text.includes('{') || text.includes('function') || text.includes('=>')) type = 'code';
+
+    clips.unshift({
+      id: Date.now().toString(),
+      text: processedText,
+      timestamp: new Date().toISOString(),
+      isBookmarked: false,
+      meta: {
+        words: processedText.split(/\s+/).filter(x => x.length > 0).length,
+        lines: processedText.split('\n').length,
+        tokens: Math.ceil(processedText.length / 4),
+        type
+      }
+    });
+  }
   
-  // Keep last 1000 clips
-  fs.writeFileSync(clipsPath, JSON.stringify(clips.slice(0, 1000), null, 2));
+  // Keep last 5000 clips in active recall
+  fs.writeFileSync(clipsPath, JSON.stringify(clips.slice(0, 5000), null, 2));
 }
 
 let lastBriefDate = "";
@@ -2101,12 +2139,34 @@ async function main() {
           fs.writeFileSync(clipsPath, JSON.stringify(clips, null, 2));
           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
-        if (url.pathname.startsWith('/archive/update-labels/')) {
-          const { ArchiveDB } = await import('../archive/db');
-          const id = parseInt(url.pathname.split('/').pop() || '0');
-          const labels = url.searchParams.get('labels') || '';
-          ArchiveDB.updateLabels(id, labels);
-          return new Response('Updated', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        if (url.pathname.startsWith('/archive/label/')) {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          const id = url.pathname.split('/').pop();
+          const label = url.searchParams.get('label') || '';
+          if (!fs.existsSync(clipsPath)) return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          
+          const clips = JSON.parse(fs.readFileSync(clipsPath, 'utf-8'));
+          const idx = clips.findIndex((c: any) => String(c.id) === id);
+          if (idx !== -1) {
+            clips[idx].label = label;
+            fs.writeFileSync(clipsPath, JSON.stringify(clips, null, 2));
+          }
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.startsWith('/archive/promote/')) {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          const id = url.pathname.split('/').pop();
+          if (!fs.existsSync(clipsPath)) return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          
+          const clips = JSON.parse(fs.readFileSync(clipsPath, 'utf-8'));
+          const item = clips.find((c: any) => String(c.id) === id);
+          if (item) {
+            const entry = `\n### 🪐 Promoted [${new Date().toLocaleDateString()}]\nLabel: \`${item.label || 'None'}\`\n\n${item.text}\n\n---\n`;
+            fs.appendFileSync(path.join(process.cwd(), 'GRAVITY_MANIFEST.md'), entry);
+            return new Response('Promoted', { headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/system/lock') {
           await execAsync(`pmset displaysleepnow || /System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend`);
