@@ -2061,11 +2061,13 @@ async function main() {
           
           let results = q ? clips.filter((c: any) => String(c.text).toLowerCase().includes(q)) : clips;
 
-          // 🕰️ Apply Time Filters
+          // 🕰️ Apply Time & Bookmark Filters
           const now = new Date();
           if (filter === 'today') {
             const todayStr = now.toLocaleDateString();
             results = results.filter((c: any) => new Date(c.timestamp).toLocaleDateString() === todayStr);
+          } else if (filter === 'bookmarks') {
+             results = results.filter((c: any) => c.isBookmarked);
           } else if (filter === 'recent') {
              results = results.slice(-100);
           }
@@ -2074,29 +2076,30 @@ async function main() {
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
           });
         }
+
         if (url.pathname.startsWith('/archive/bookmark/')) {
-          const { ArchiveDB } = await import('../archive/db');
-          const id = parseInt(url.pathname.split('/').pop() || '0');
-          ArchiveDB.toggleBookmark(id);
-          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
-        }
-        if (url.pathname.startsWith('/archive/delete/')) {
-          const { ArchiveDB } = await import('../archive/db');
-          const id = parseInt(url.pathname.split('/').pop() || '0');
-          ArchiveDB.delete(id);
-          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
-        }
-        if (url.pathname.startsWith('/archive/promote/')) {
-          const { ArchiveDB } = await import('../archive/db');
-          const id = parseInt(url.pathname.split('/').pop() || '0');
-          const items = ArchiveDB.list(1000);
-          const item = items.find(i => i.id === id);
-          if (item) {
-            const entry = `\n### 🪐 Promoted from Archive (${new Date().toLocaleDateString()})\nSource: \`${item.source_app}\`\n\n${item.content}\n\n---\n`;
-            fs.appendFileSync(path.join(process.cwd(), 'prompt_vault.md'), entry);
-            return new Response('Promoted', { headers: { 'Access-Control-Allow-Origin': '*' } });
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          const id = url.pathname.split('/').pop();
+          if (!fs.existsSync(clipsPath)) return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          
+          const clips = JSON.parse(fs.readFileSync(clipsPath, 'utf-8'));
+          const idx = clips.findIndex((c: any) => String(c.id) === id);
+          if (idx !== -1) {
+            clips[idx].isBookmarked = !clips[idx].isBookmarked;
+            fs.writeFileSync(clipsPath, JSON.stringify(clips, null, 2));
           }
-          return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname.startsWith('/archive/delete/')) {
+          const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
+          const id = url.pathname.split('/').pop();
+          if (!fs.existsSync(clipsPath)) return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          
+          let clips = JSON.parse(fs.readFileSync(clipsPath, 'utf-8'));
+          clips = clips.filter((c: any) => String(c.id) !== id);
+          fs.writeFileSync(clipsPath, JSON.stringify(clips, null, 2));
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname.startsWith('/archive/update-labels/')) {
           const { ArchiveDB } = await import('../archive/db');
