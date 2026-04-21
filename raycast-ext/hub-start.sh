@@ -15,6 +15,7 @@
 # @raycast.author antigravity
 
 # Execute Master Launcher
-./iftt-clone.sh
+nohup ./iftt-clone.sh >/dev/null 2>&1 &
+disown
 
 echo "🪐 Dual-Core Gravity Online."

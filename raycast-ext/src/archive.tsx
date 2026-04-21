@@ -1,4 +1,4 @@
-import { List, ActionPanel, Action, Icon, Color, showInput, showToast, Toast, Form, useNavigation, Clipboard, Image } from "@raycast/api";
+import { List, ActionPanel, Action, Icon, Color, Detail, showToast, Toast, open, Image, useNavigation, Form } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 
@@ -6,38 +6,37 @@ interface ArchiveItem {
   id: string;
   text: string;
   timestamp: string;
-  isBookmarked?: boolean;
+  isBookmarked: boolean;
   label?: string;
-  meta?: {
+  source?: string;
+  url?: string;
+  meta: {
     words: number;
     lines: number;
-    tokens: number;
-    type: string;
+    chars: number;
+    tokens?: number;
+    type: "text" | "link" | "code" | "jot" | "image" | "file" | "app";
     ogTitle?: string;
     ogImage?: string;
+    ogDescription?: string;
     favicon?: string;
+    dupes?: number;
   };
-  source?: string;
 }
 
 export default function Command() {
-  const [items, setItems] = useState<ArchiveItem[]>([]);
+  const [clips, setClips] = useState<ArchiveItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-  const [filter, setFilter] = useState("recent");
-  const [totalCount, setTotalCount] = useState(0);
+  const [filter, setFilter] = useState<"all" | "today" | "jot" | "bookmarks" | "code" | "link">("all");
 
   async function fetchArchive() {
-    setIsLoading(true);
     try {
-      const url = `http://localhost:3031/archive/search?q=${encodeURIComponent(searchText)}&filter=${filter}`;
-      const response = await fetch(url);
-      const total = response.headers.get('X-Total-Count');
-      if (total) setTotalCount(parseInt(total));
-      const data: any = await response.json();
-      setItems(data || []);
+      const res = await fetch("http://localhost:3030/archive");
+      const data = await res.json() as ArchiveItem[];
+      setClips(data);
     } catch (e) {
-      console.error(e);
+      showToast({ title: "Failed to connect to Gravity Archive", style: Toast.Style.Failure });
     } finally {
       setIsLoading(false);
     }
@@ -50,46 +49,30 @@ export default function Command() {
   }, [searchText, filter]);
 
   async function toggleBookmark(id: string) {
-    await fetch(`http://localhost:3031/archive/bookmark/${id}`);
-    await fetchArchive();
+    await fetch(`http://localhost:3030/archive/bookmark/${id}`);
+    fetchArchive();
   }
 
-  async function addLabel(id: string) {
-    push(<LabelForm id={id} onComplete={fetchArchive} />);
+  async function deleteClip(id: string) {
+    await fetch(`http://localhost:3030/archive/delete/${id}`);
+    fetchArchive();
   }
 
-  async function promote(id: string) {
-    await fetch(`http://localhost:3031/archive/promote/${id}`);
-    await showToast({ title: "Promoted to Manifest", style: Toast.Style.Success });
-  }
-
-  async function deleteItem(id: string) {
-    await fetch(`http://localhost:3031/archive/delete/${id}`);
-    await fetchArchive();
-  }
-
-  async function editContent(item: ArchiveItem) {
-    push(<EditForm item={item} onUpdate={fetchArchive} />);
-  }
-
-  const { push } = useNavigation();
-
-  // 🕰️ Temporal Grouping Logic
-  const pinned = items.filter(i => i.isBookmarked);
-  const others = items.filter(i => !i.isBookmarked);
-  const now = new Date();
-  const today = others.filter(i => new Date(i.timestamp).toDateString() === now.toDateString());
-  const yesterday = others.filter(i => {
-    const d = new Date(i.timestamp);
-    const yest = new Date();
-    yest.setDate(now.getDate() - 1);
-    return d.toDateString() === yest.toDateString();
-  });
-  const earlier = others.filter(i => {
-    const d = new Date(i.timestamp);
-    const yest = new Date();
-    yest.setDate(now.getDate() - 1);
-    return d < yest && d.toDateString() !== yest.toDateString();
+  const filteredClips = clips.filter((item) => {
+    const searchMatch = item.text.toLowerCase().includes(searchText.toLowerCase()) || 
+                      (item.label || "").toLowerCase().includes(searchText.toLowerCase());
+    
+    if (!searchMatch) return false;
+    if (filter === "all") return true;
+    if (filter === "bookmarks") return item.isBookmarked;
+    if (filter === "today") {
+       const today = new Date().toDateString();
+       return new Date(item.timestamp).toDateString() === today;
+    }
+    if (filter === "jot") return item.meta.type === "jot";
+    if (filter === "code") return item.meta.type === "code";
+    if (filter === "link") return item.meta.type === "link";
+    return true;
   });
 
   const getIcon = (item: ArchiveItem) => {
@@ -125,33 +108,18 @@ export default function Command() {
   };
 
   const getPreviewMarkdown = (item: ArchiveItem) => {
-    const isImage = item.meta?.type === 'image' || item.meta?.type === 'design';
-    const isColor = item.text.match(/^#(?:[0-9a-fA-F]{3}){1,2}$/);
-    const isLink = item.meta?.type === 'link';
-
-    if (isImage) {
-      return `![Asset Preview](file://${item.text})\n\n---\n**Local Path:** \`${item.text}\``;
+    if (item.meta.type === 'image' || item.meta.type === 'link') {
+       if (item.meta.ogImage) return `![OG Image](${item.meta.ogImage})\n\n### ${item.meta.ogTitle || 'Linked Item'}\n${item.meta.ogDescription || item.text}`;
     }
-
-    if (isColor) {
-      return `## Color: ${item.text.toUpperCase()}\n![Swatch](https://singlecolorimage.com/get/${item.text.replace('#', '')}/400x120)`;
-    }
-
-    if (isLink) {
-       const banner = item.meta?.ogImage ? `![](${item.meta.ogImage})` : ``;
-       const description = item.meta?.ogDescription ? `\n\n> ${item.meta.ogDescription}` : '';
-       return `${banner}\n# ${item.meta?.ogTitle || item.text}\n${description}\n\n---\n\`${item.text}\``;
-    }
-
+    
     // Default Code/Text Preview
     const lang = item.meta?.type === 'code' ? 'typescript' : 'text';
     const originText = item.url ? `**URL:** ${item.url}` : `**Origin:** ${item.source || 'Unknown'}`;
     return `#### Content Preview\n\`\`\`${lang}\n${item.text}\n\`\`\`\n\n---\n${originText}`;
   };
 
-  const renderItem = (item: ArchiveItem) => {
-    return (
-      <List.Item
+  const renderItem = (item: ArchiveItem) => (
+    <List.Item
         key={item.id}
         icon={getIcon(item)}
         title={item.label || item.text.trim().split('\n')[0].substring(0, 70)}
@@ -187,91 +155,58 @@ export default function Command() {
         }
       actions={
         <ActionPanel>
-          <ActionPanel.Section>
-            <Action.CopyToClipboard title="Copy Content" content={item.text} />
-            <Action.Paste title="Paste into Active" content={item.text} />
-            {(item.meta?.type === 'image' || item.meta?.type === 'file') && (
-              <Action.Open title="Quick Look / Open" target={item.text} icon={Icon.Eye} shortcut={{ modifiers: ["cmd"], key: "y" }} />
-            )}
-            {item.meta?.type === 'link' && <Action.OpenInBrowser url={item.text} title="Open in Browser" icon={Icon.Globe} />}
-            {item.text.match(/^#(?:[0-9a-fA-F]{3}){1,2}$/) && (
-               <Action title="IoT: Cast Color" icon={Icon.LightBulb} onAction={() => fetch(`http://localhost:3031/lights/color?hex=${item.text.replace('#', '')}`).then(() => showToast({ title: "Color Casted!" }))} />
-            )}
-            <Action 
-              title="Add to Stack" 
-              icon={Icon.Layers} 
-              onAction={() => fetch(`http://localhost:3031/archive/stack/add/${item.id}`).then(() => showToast({ title: "Added to Stack" }))} 
-              shortcut={{ modifiers: ["cmd"], key: "s" }}
-            />
-          </ActionPanel.Section>
-          <ActionPanel.Section title="Management">
-            <ActionPanel.Submenu title="Alchemy: Transform" icon={Icon.BullsEye} shortcut={{ modifiers: ["cmd"], key: "t" }}>
-              <Action title="JSON: Prettify" icon={Icon.Code} onAction={() => fetch(`http://localhost:3031/archive/alchemy/${item.id}?action=prettify`).then(() => fetchArchive())} />
-              <Action title="String: snake_case" icon={Icon.Text} onAction={() => fetch(`http://localhost:3031/archive/alchemy/${item.id}?action=snake`).then(() => fetchArchive())} />
-              <Action title="String: camelCase" icon={Icon.Text} onAction={() => fetch(`http://localhost:3031/archive/alchemy/${item.id}?action=camel`).then(() => fetchArchive())} />
-              <Action title="String: Strip Space" icon={Icon.Eraser} onAction={() => fetch(`http://localhost:3031/archive/alchemy/${item.id}?action=strip`).then(() => fetchArchive())} />
-            </ActionPanel.Submenu>
-            <Action title="Retro-Sync Old Links" icon={Icon.Redo} onAction={() => fetch(`http://localhost:3031/archive/retro/sync`).then(() => showToast({ title: "Sync Started", message: "Fetching old banners in background..." }))} />
-            <Action title="Edit Content" icon={Icon.Pencil} onAction={() => editContent(item)} shortcut={{ modifiers: ["cmd"], key: "e" }} />
-            <Action title={item.isBookmarked ? "Unpin" : "Pin to Vault"} icon={Icon.Star} onAction={() => toggleBookmark(item.id)} shortcut={{ modifiers: ["cmd"], key: "b" }} />
-            <Action title="Assign Label" icon={Icon.Tag} onAction={() => addLabel(item.id)} shortcut={{ modifiers: ["cmd"], key: "l" }} />
-          </ActionPanel.Section>
-          <ActionPanel.Section title="Vault Operations">
-            <Action.ShowInFinder title="Show Vault in Finder" path="/Users/paranjay/Developer/iftt/gravity-archive" shortcut={{ modifiers: ["cmd", "shift"], key: "f" }} />
-            <Action.OpenInBrowser title="Vault: Export MD" icon={Icon.Download} url="http://localhost:3031/archive/export/md" shortcut={{ modifiers: ["cmd", "shift"], key: "m" }} />
-            <Action.OpenInBrowser title="Vault: Export JSON" icon={Icon.Download} url="http://localhost:3031/archive/export" shortcut={{ modifiers: ["cmd", "shift"], key: "e" }} />
-            <Action title="Clear Search" icon={Icon.XMarkCircle} onAction={() => setSearchText("")} />
-          </ActionPanel.Section>
-          <ActionPanel.Section title="Cleanup">
-            <Action 
-              title="Sovereign Wipe: Reset Vault" 
-              icon={Icon.Stop} 
-              style={Action.Style.Destructive} 
-              onAction={async () => {
-                const confirmed = await showToast({ title: "Nuclear Reset?", message: "This clears everything. Proceed?", style: Toast.Style.Failure });
-                await fetch(`http://localhost:3031/archive/nuclear/reset`);
-                fetchArchive();
-              }}
-              shortcut={{ modifiers: ["cmd", "shift"], key: "del" }}
-            />
-            <Action title="Delete Forever" icon={Icon.Trash} style={Action.Style.Destructive} onAction={() => deleteItem(item.id)} shortcut={{ modifiers: ["ctrl"], key: "x" }} />
+          <Action.CopyToClipboard title="Hoard Record" content={item.text} />
+          <Action title={item.isBookmarked ? "Unpin" : "Pin Record"} icon={Icon.Pin} onAction={() => toggleBookmark(item.id)} />
+          <Action.Push title="Identify Record" icon={Icon.Tag} target={<LabelForm id={item.id} onComplete={fetchArchive} />} />
+          <Action.Push title="Edit Note" icon={Icon.Pencil} target={<EditForm item={item} onUpdate={fetchArchive} />} />
+          <ActionPanel.Section title="Sovereign Control">
+             <Action icon={Icon.Trash} title="Purge Record" style={Action.Style.Destructive} onAction={() => deleteClip(item.id)} />
+             <Action icon={Icon.Globe} title="Open Source URL" onAction={() => item.url && open(item.url)} />
           </ActionPanel.Section>
         </ActionPanel>
       }
     />
-    );
-  };
+  );
+
+  // Grouping Logic (v9.8.0 Intelligence)
+  const groupedItems = filteredClips.reduce((acc, item) => {
+    const source = item.source || 'Unknown';
+    if (!acc[source]) acc[source] = [];
+    acc[source].push(item);
+    return acc;
+  }, {} as Record<string, ArchiveItem[]>);
 
   return (
-    <List 
-      isLoading={isLoading} 
-      searchBarPlaceholder={`Search ${totalCount.toLocaleString()} clips in gravity archive...`}
+    <List
+      isLoading={isLoading}
+      searchText={searchText}
       onSearchTextChange={setSearchText}
-      isShowingDetail={true}
+      searchBarPlaceholder={`Search ${clips.length} fragments in vault...`}
+      isShowingDetail={clips.length > 0}
       searchBarAccessory={
         <List.Dropdown
-          tooltip="Filter Archive"
+          tooltip="Filter Intelligence"
           storeValue={true}
-          onChange={(newValue) => setFilter(newValue)}
+          onChange={(newValue) => setFilter(newValue as any)}
         >
-          <List.Dropdown.Item title="All History" value="all" icon={Icon.List} />
-          <List.Dropdown.Item title="Today's Work" value="today" icon={Icon.Calendar} />
-          <List.Dropdown.Item title="Manual Jots" value="jot" icon={Icon.Pencil} />
-          <List.Dropdown.Item title="Pinned Items" value="bookmarks" icon={Icon.Star} />
-          <List.Dropdown.Item title="Code Snippets" value="code" icon={Icon.Code} />
-          <List.Dropdown.Item title="Files Only" value="file" icon={Icon.Folder} />
-          <List.Dropdown.Item title="Apps Only" value="app" icon={Icon.AppWindow} />
-          <List.Dropdown.Item title="Links Only" value="link" icon={Icon.Link} />
-          <List.Dropdown.Item title="Colors Only" value="color" icon={Icon.Circle} />
-          <List.Dropdown.Item title="DOM Only" value="dom" icon={Icon.Globe} />
-          <List.Dropdown.Item title="Images Only" value="image" icon={Icon.Image} />
+          <List.Dropdown.Item title="All History" value="all" icon={Icon.Bullseye} />
+          <List.Dropdown.Item title="Pinned Records" value="bookmarks" icon={Icon.Pin} />
+          <List.Dropdown.Item title="Today's Hoards" value="today" icon={Icon.Clock} />
+          <List.Dropdown.Item title="Quick Jots" value="jot" icon={Icon.Pencil} />
+          <List.Dropdown.Item title="Code Vault" value="code" icon={Icon.Terminal} />
+          <List.Dropdown.Item title="Intelligence Links" value="link" icon={Icon.Globe} />
         </List.Dropdown>
       }
     >
-      {pinned.length > 0 && <List.Section title="Pinned">{pinned.map(renderItem)}</List.Section>}
-      {today.length > 0 && <List.Section title="Today">{today.map(renderItem)}</List.Section>}
-      {yesterday.length > 0 && <List.Section title="Yesterday">{yesterday.map(renderItem)}</List.Section>}
-      {earlier.length > 0 && <List.Section title="Earlier History">{earlier.map(renderItem)}</List.Section>}
+      {Object.entries(groupedItems).map(([source, items]) => (
+        <List.Section key={source} title={source} subtitle={`${items.length} items`}>
+          {items.map(renderItem)}
+        </List.Section>
+      ))}
+      
+      {clips.length === 0 && !isLoading && (
+        <List.EmptyView title="No fragments found in the void." description="Start hoarding intelligence to populate the vault." icon={Icon.Tray} />
+      )}
     </List>
   );
 }
