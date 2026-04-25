@@ -4017,7 +4017,7 @@ async function main() {
             if (currentOver && currentOver !== lastIplOver) {
               lastIplOver = currentOver;
               lastBlinkSignal = { text: "🏏 Over Started", time: Date.now() };
-              if (config.cricketMode) await blinkLight(1, { r: 255, g: 255, b: 255 });
+              if (config.cricketMode) await blinkLight(2, { r: 255, g: 255, b: 255 });
             }
 
             if (run.includes('TOSS') || (ball.commentary || '').toLowerCase().includes('toss won')) {
