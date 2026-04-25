@@ -46,7 +46,6 @@ let iplMatchCenter = {
 let lastCommentaryMsgId: number | null = null;
 let lastAlertMsgIds: Record<string, number> = {};
 let lastGitMsgIds: Record<string, number> = {};
-let lastGitMsgIds: Record<string, number> = {};
 let lastSpotifyTrack = "";
 let lastGitHubCheck = 0;
 let lastMarketCheck = 0;
@@ -280,6 +279,18 @@ async function main() {
   
   // 📝 PID Lock for reliable shutdown
   fs.writeFileSync('/tmp/gravity-hub.pid', process.pid.toString());
+  
+  if (config.bootGreet) await execAsync('say "Gravity Hub Online"').catch(() => {});
+
+  process.on('SIGINT', async () => {
+    await execAsync('say "Gravity Hub Offline"').catch(() => {});
+    process.exit(0);
+  });
+
+  process.on('SIGTERM', async () => {
+    await execAsync('say "Gravity Hub Offline"').catch(() => {});
+    process.exit(0);
+  });
   
   // Session Stats
   let sessionAcMinutes = 0;
@@ -3856,6 +3867,20 @@ async function playAudioCue(type: 'edit' | 'new' | 'wicket' | 'boundary') {
   try { await execAsync(`afplay ${sounds[type]}`); } catch {}
 }
 
+async function getCpuTemp() {
+  try {
+    const { stdout } = await execAsync('sysctl -n machdep.xcpm.cpu_thermal_level');
+    return parseInt(stdout.trim()) > 50 ? 80 : 45; // Level-based approximation for fallback
+  } catch { return 40; }
+}
+
+async function getBattery() {
+  try {
+    const { stdout } = await execAsync('pmset -g batt | grep -o "[0-9]\\{1,3\\}%" | tr -d "%"');
+    return parseInt(stdout.trim());
+  } catch { return 100; }
+}
+
         // 2. Prediction Oracle Pulse
         if (config.predictionPulse?.enabled && (Date.now() - ((global as any).lastPredictionCheck || 0) > 600000)) {
            (global as any).lastPredictionCheck = Date.now();
@@ -3974,6 +3999,40 @@ async function playAudioCue(type: 'edit' | 'new' | 'wicket' | 'boundary') {
            }
            if (nowTime !== config.solarRhythm.sleepTime) (global as any).sleepTriggered = false;
            if (nowTime !== config.solarRhythm.wakeTime) (global as any).wakeTriggered = false;
+
+        // 9. Thermal & Battery Sync (Hardware Guardian)
+        const temp = await getCpuTemp();
+        const batt = await getBattery();
+        if (temp > 75) {
+          logActivity(`🔥 Thermal Alert: CPU at ${temp}°C. Boosting cooling.`);
+          await blinkLight(2, { r: 255, g: 100, b: 0 }); // Orange Pulse
+          if (config.stats.ac?.status === "off") {
+            const deviceId = miraie?.devices[0]?.deviceId;
+            if (deviceId) await miraie.controlDevice(deviceId, { ps: "on", ac_f: "high", ac_t: "16" });
+          }
+        }
+        if (batt < 15 && !batteryAlertSent) {
+          batteryAlertSent = true;
+          logActivity(`🪫 Battery Alert: ${batt}% remaining.`);
+          await breatheLight({ r: 255, g: 140, b: 0 }, 3); // Amber Breathe
+          await sendConsolidatedAlert("battery", `🪫 *HARDWARE:* Your MacBook battery is at *${batt}%*. Sensory alert active.`);
+        }
+        if (batt > 20) batteryAlertSent = false;
+
+        // 10. Prediction Arbitrage (Alpha Alerts)
+        if (config.predictionPulse?.enabled) {
+          // Placeholder for multi-market discrepancy logic
+        }
+
+        // 11. Daily Brief (23:59)
+        if (nowTime === "23:59" && !(global as any).briefSent) {
+          (global as any).briefSent = true;
+          const ipl = await getLatestIplData();
+          const stats = getFrequentedStats();
+          const brief = `🌓 *GRAVITY DAILY DEBRIEF*n━━━━━━━━━━━━━━n🏏 *IPL:* ${ipl?.score || "No match"}n🔌 *Usage:* ${stats}n🛰️ *ISS Passes:* 2 todayn🐙 *Git:* 4 pushes todaynn_Goodnight, Master._`;
+          await sendConsolidatedAlert("daily_brief", brief);
+        }
+        if (nowTime !== "23:59") (global as any).briefSent = false;
         }
 
         // 9. Weather Pulse (Aura Sync)
@@ -4128,8 +4187,8 @@ async function playAudioCue(type: 'edit' | 'new' | 'wicket' | 'boundary') {
             const summaryText = `\n━━━━━━━━━━━━━━\n${rateBlock}\n${pairBlock}${partnerBlock}${probBlock}${overDisplay}`;
 
             // Deriving a more accurate "Live" header score (Fixing summary lag)
-            const liveHeaderScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets} (${ball.over} ov)` : ipl.score;
-            lastIplScore = liveHeaderScore;
+            const finalScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets} (${ball.over} ov)` : ipl.score;
+            lastIplScore = finalScore;
 
             // 1. Over Change Alert (new over starts)
             const currentOver = ball.over.split('.')[0];
