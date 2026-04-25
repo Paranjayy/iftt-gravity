@@ -36,3 +36,4 @@ Gravity looks into this file periodically to evolve.
 - [ ] [4/18/2026] User: "energy budget" (NEW IDEA: Alert if daily cost exceeds ₹X)
 - [x] [4/18/2026] User: "AC OFF ON NOT WORKING FROM CONTROL"
 - [25/4/2026] User: "- it is still chaotic can u prolly add one more dynamic line which would work for submenus which would say recent command thing if it turned or off thing uk wecant add current status for that many commands so uk what i mean wouldnt it wokr?"
+- [25/4/2026] User: "add commentary mode and shits toggle in layer 2 of control"

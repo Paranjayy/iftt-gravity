@@ -76,3 +76,11 @@
 
 ---
 _Vault restored and expanded. Add more ideas as they come!_
+23. **Caffeine Crash Predictor**: Tracking coffee intake signals and predicting metabolic dips. Bot shifts lights to a soft, restorative amber 2 hours post-intake to cushion the crash.
+24. **Wind Chill Whisper**: High-velocity wind detection via weather sensors. Bot proactively suggests sealing digital curtains (smart blinds) or pre-warming the chamber.
+25. **Zenith Pulse**: Capturing the exact moment of solar noon. A momentary 10,000-lumen equivalent burst (all lights max cool) to reset the circadian clock.
+26. **Phantom Power Purge**: Intelligence that detects idle "vampire" loads via smart plugs and suggests a total energy blackout during deep sleep cycles.
+27. **Aura Mood Ring**: Sentiment analysis on the latest God-Commit. If the commit message is aggressive, lights turn a warning crimson; if productive, a serene teal.
+28. **Delivery Drone Watch**: Real-time logistics tracking. Gravity flashes a cautionary yellow pulse when a parcel enters the "last-mile" radius.
+29. **Lunar Sleep Sentry**: On full moon nights, bot automatically increases "Shield" intensity to block extra ambient light and suggests a 15-minute earlier bedtime.
+30. **Digital Detox Deadlock**: At 2 AM, bot suggests locking down all non-essential smart-switches and switching to "Static Candlelight" mode for forced relaxation.

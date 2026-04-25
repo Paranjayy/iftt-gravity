@@ -13,6 +13,7 @@
 import { TelegramAdapter } from './adapters/telegram';
 import { MiraieAdapter } from './adapters/miraie';
 import { WizAdapter } from './adapters/wiz';
+import { getFrequentedStats } from './stats';
 import { WeatherEngine } from './weather';
 import { CodexSDK } from './codex';
 import fs from 'fs';
@@ -241,6 +242,8 @@ let bot: any;
 
 async function main() {
   config = loadConfig();
+  if (config.commentaryMode === undefined) config.commentaryMode = false;
+  if (!config.rejectedHabits) config.rejectedHabits = [];
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
   
   // 📝 PID Lock for reliable shutdown
@@ -785,6 +788,27 @@ async function main() {
         } else if (subCommand === 'ac_tv') {
            await triggerScene('TV');
            recordHabit(subCommand);
+        } else if (subCommand === 'commentary_toggle') {
+           config.commentaryMode = !config.commentaryMode;
+           saveConfig(config);
+        } else if (subCommand === 'log_stats') {
+           const stats = getFrequentedStats();
+           await bot.sendMessage(chatId, stats, { parse_mode: 'Markdown' });
+           return;
+        } else if (subCommand.startsWith('ignore:')) {
+           const habitKey = subCommand.replace('ignore:', '');
+           if (!config.rejectedHabits) config.rejectedHabits = [];
+           if (!config.rejectedHabits.includes(habitKey)) {
+              config.rejectedHabits.push(habitKey);
+              saveConfig(config);
+           }
+           await bot.sendMessage(chatId, "🚫 Understood. I'll stop suggesting this pattern.");
+           return;
+        } else if (subCommand === 'habits_reset_rejected') {
+           config.rejectedHabits = [];
+           saveConfig(config);
+           await bot.sendMessage(chatId, "🔄 *Rejected patterns cleared.* I will scan everything again.");
+           // Fall through to refresh menu
         }
         
         const formatted = formatAction(subCommand, config);
@@ -859,6 +883,10 @@ async function main() {
         [
           { text: config.weatherAura?.enabled ? '🌦️ Weather: ✅ ON' : '🌦️ Weather: ❌ OFF', callback_data: 'control:weather_aura_toggle:level:intel' },
           { text: config.cricketMode ? '🏏 Cricket: ✅ ON' : '🏏 Cricket: ❌ OFF', callback_data: 'control:cricket_toggle:level:intel' }
+        ],
+        [
+          { text: config.commentaryMode ? '💬 Commentary: ✅ ON' : '💬 Commentary: ❌ OFF', callback_data: 'control:commentary_toggle:level:intel' },
+          { text: '📊 Frequency Stats', callback_data: 'control:log_stats:level:intel' }
         ],
         [
           { text: '🔙 Back', callback_data: 'control:none:level:root' }
@@ -957,14 +985,15 @@ async function main() {
           }
         });
       }
-      dashboard = `🧠 *Habit Intelligence*\n━━━━━━━━━━━━━━\nTracking: *${habits.length} events*\n\n*Unreviewed Suggestions:*\n${suggestions.length ? suggestions.join('\n') : '_No new patterns detected yet._'}`;
+      dashboard = `🧠 *Habit Intelligence*\n━━━━━━━━━━━━━━\nTracking: *${habits.length} events*\nRejected: *${config.rejectedHabits?.length || 0} patterns*\n\n*Unreviewed Suggestions:*\n${suggestions.length ? suggestions.join('\n') : '_No new patterns detected yet._'}`;
       keyboard.inline_keyboard = [
         [
           { text: '📊 Full Analysis', callback_data: 'habits_full' },
           { text: '🗑️ Clear Data', callback_data: 'habits_clear' }
         ],
         [
-          { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
+          { text: '🔄 Reset Rejected', callback_data: 'control:habits_reset_rejected:level:habits' },
+          { text: '🔙 Back', callback_data: 'control:none:level:root' }
         ]
       ];
     } else if (menuLevel === 'schedules') {
@@ -3653,6 +3682,41 @@ async function main() {
 
   // 🧠 Habit Learning Analysis (Run daily at 1 AM)
   async function analyzeHabits() {
+    if (!config.habits || (config.habits as any).length < 10) return;
+    logActivity("🧠 Habit Learner: Scanning manual patterns...");
+    const patterns: Record<string, number[]> = {};
+    (config.habits as any).forEach((h: any) => {
+      const key = `${h.command}_${h.day}`;
+      if (!patterns[key]) patterns[key] = [];
+      patterns[key].push(h.time);
+    });
+
+    for (const [key, times] of Object.entries(patterns)) {
+      if (times.length >= 3) {
+        if (config.rejectedHabits?.includes(key)) continue;
+        const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+        if (times.every(t => Math.abs(t - avgTime) < 45)) {
+          const [command, dayNum] = key.split('_');
+          const timeStr = `${Math.floor(avgTime / 60).toString().padStart(2, '0')}:${Math.floor(avgTime % 60).toString().padStart(2, '0')}`;
+          const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][parseInt(dayNum)];
+          
+          const msg = `🧠 *Gravity Habit Insight*\n\nMaster, I've noticed you always use \`${command.toUpperCase()}\` around *${timeStr}* on *${dayName}s*.\n\nShould I automate this?`;
+          for (const uid of (config.authorizedUsers || [])) {
+             try {
+               await bot.sendMessage(uid, msg, {
+                 parse_mode: 'Markdown',
+                 reply_markup: {
+                   inline_keyboard: [[{ text: '✅ Schedule It', callback_data: `schedule_add ${timeStr} ${command}` }, { text: '🚫 No', callback_data: `ignore:${key}` }]]
+                 }
+               });
+             } catch {}
+          }
+          config.habits = (config.habits as any).filter((h: any) => !key.startsWith(h.command));
+        }
+      }
+    }
+    saveConfig(config);
+  }
 
   // ── 📡 Signal Intelligence Hub (Vibe Engine v4.6.2) ──
   setInterval(async () => {
@@ -3808,40 +3872,7 @@ async function main() {
 
     } catch (e) {}
   }, 60000);
-    if (!config.habits || (config.habits as any).length < 10) return;
-    logActivity("🧠 Habit Learner: Scanning manual patterns...");
-    const patterns: Record<string, number[]> = {};
-    (config.habits as any).forEach((h: any) => {
-      const key = `${h.command}_${h.day}`;
-      if (!patterns[key]) patterns[key] = [];
-      patterns[key].push(h.time);
-    });
 
-    for (const [key, times] of Object.entries(patterns)) {
-      if (times.length >= 3) {
-        const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
-        if (times.every(t => Math.abs(t - avgTime) < 45)) {
-          const [command, dayNum] = key.split('_');
-          const timeStr = `${Math.floor(avgTime / 60).toString().padStart(2, '0')}:${Math.floor(avgTime % 60).toString().padStart(2, '0')}`;
-          const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][parseInt(dayNum)];
-          
-          const msg = `🧠 *Gravity Habit Insight*\n\nMaster, I've noticed you always use \`${command.toUpperCase()}\` around *${timeStr}* on *${dayName}s*.\n\nShould I automate this?`;
-          for (const uid of (config.authorizedUsers || [])) {
-             try {
-               await bot.sendMessage(uid, msg, {
-                 parse_mode: 'Markdown',
-                 reply_markup: {
-                   inline_keyboard: [[{ text: '✅ Schedule It', callback_data: `schedule_add ${timeStr} ${command}` }, { text: '🚫 No', callback_data: 'ignore' }]]
-                 }
-               });
-             } catch {}
-          }
-          config.habits = (config.habits as any).filter((h: any) => !key.startsWith(h.command));
-        }
-      }
-    }
-    saveConfig(config);
-  }
 
   // 🏥 Health Pulse & Maintenance
   if (!CLIPBOARD_ONLY) {
