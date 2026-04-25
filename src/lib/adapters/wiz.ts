@@ -70,8 +70,17 @@ export class WizAdapter extends Adapter {
     const payload: any = { method: 'setPilot', params: {} };
     if (params.state !== undefined) payload.params.state = params.state;
     if (params.dimming !== undefined) payload.params.dimming = Math.min(100, Math.max(0, params.dimming));
-    if (params.r !== undefined) { payload.params.r = params.r; payload.params.g = params.g; payload.params.b = params.b; }
-    if (params.temp !== undefined) payload.params.temp = Math.min(6500, Math.max(2200, params.temp));
+    
+    // Switch between Color and Temp modes
+    if (params.r !== undefined) { 
+      payload.params.r = params.r; 
+      payload.params.g = params.g; 
+      payload.params.b = params.b;
+      // When setting RGB, we should not send temp
+    } else if (params.temp !== undefined) {
+      payload.params.temp = Math.min(6500, Math.max(2200, params.temp));
+    }
+    
     if (params.sceneId !== undefined) payload.params.sceneId = params.sceneId;
     await sendUDP(this.bulbIp, payload, false);
   }

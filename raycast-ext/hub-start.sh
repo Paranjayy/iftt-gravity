@@ -2,8 +2,8 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title Gravity Hub
-# @raycast.mode silent
+# @raycast.title Gravity Hub(Start)
+# @raycast.mode compact
 # @raycast.packageName Gravity Tools
 
 # Optional parameters:
@@ -15,7 +15,7 @@
 # @raycast.author antigravity
 
 # Execute Master Launcher
-nohup ./iftt-clone.sh >/dev/null 2>&1 &
+nohup /Users/paranjay/Developer/iftt/raycast-ext/iftt-clone.sh >/dev/null 2>&1 &
 disown
 
-echo "🪐 Dual-Core Gravity Online."
+echo "🪐 Dual-Core Gravity Online.(Bot + Archive)"
