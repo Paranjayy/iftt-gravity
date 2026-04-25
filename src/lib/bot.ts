@@ -183,8 +183,16 @@ class NotificationManager {
     
     // Only send if high priority, critical, or not quiet hours
     if (priority === 'critical' || priority === 'high' || !isQuietHours) {
+      // 📱 Telegram Mobile
       for (const userId of (this.config.authorizedUsers || [])) {
         try { await this.bot.sendMessage(userId, text, { parse_mode: 'Markdown' }); } catch {}
+      }
+      
+      // 💻 Native Mac (if running locally)
+      if (process.platform === 'darwin') {
+        const cleanText = text.replace(/[*_`#]/g, '').replace(/"/g, '\\"');
+        const { exec } = require('child_process');
+        exec(`osascript -e 'display notification "${cleanText}" with title "🌌 Gravity Hub" subtitle "${priority.toUpperCase()} Priority"'`);
       }
     } else {
       logActivity(`[Suppressed] Quiet Mode: ${text.substring(0, 30)}...`);
@@ -244,6 +252,7 @@ async function main() {
   config = loadConfig();
   if (config.commentaryMode === undefined) config.commentaryMode = false;
   if (!config.rejectedHabits) config.rejectedHabits = [];
+  if (!config.deliveryWatch) config.deliveryWatch = { enabled: false };
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
   
   // 📝 PID Lock for reliable shutdown
@@ -795,6 +804,12 @@ async function main() {
            const stats = getFrequentedStats();
            await bot.sendMessage(chatId, stats, { parse_mode: 'Markdown' });
            return;
+        } else if (subCommand === 'delivery_watch_toggle') {
+            config.deliveryWatch.enabled = !config.deliveryWatch.enabled;
+            saveConfig(config);
+        } else if (subCommand === 'delivery_test') {
+            await notifier.notify(`📦 *DELIVERY ALERT:* Your package is out for delivery! (Test Signal)`, 'high');
+            return;
         } else if (subCommand.startsWith('ignore:')) {
            const habitKey = subCommand.replace('ignore:', '');
            if (!config.rejectedHabits) config.rejectedHabits = [];
@@ -887,6 +902,10 @@ async function main() {
         [
           { text: config.commentaryMode ? '💬 Commentary: ✅ ON' : '💬 Commentary: ❌ OFF', callback_data: 'control:commentary_toggle:level:intel' },
           { text: '📊 Frequency Stats', callback_data: 'control:log_stats:level:intel' }
+        ],
+        [
+          { text: config.deliveryWatch?.enabled ? '📦 Delivery: ✅ ON' : '📦 Delivery: ❌ OFF', callback_data: 'control:delivery_watch_toggle:level:intel' },
+          { text: '🧪 Test Delivery', callback_data: 'control:delivery_test:level:intel' }
         ],
         [
           { text: '🔙 Back', callback_data: 'control:none:level:root' }
@@ -3829,6 +3848,7 @@ async function main() {
              if (detected.length > 0) {
                 logActivity(`🛡️ Focus Shield: Procrastination detected (${detected.join(', ')})`);
                 await blinkLight(2, { r: 255, g: 0, b: 0 }); // Red Alert
+                await notifier.notify(`🛡️ *FOCUS SHIELD:* Master, I detect \`${detected.join(', ')}\` is active. Get back to work!`, 'high');
              }
            } catch {}
         }

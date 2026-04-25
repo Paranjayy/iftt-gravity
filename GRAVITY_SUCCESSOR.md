@@ -6,6 +6,7 @@ This document outlines the radical, future-proof vision for the Gravity Intellig
 - **Standalone GUI**: Move beyond Raycast into a dedicated, low-latency macOS app (Swift/Native) for ultimate control.
 - **Binary Distribution**: Create a one-click installer for general users to build their own local vault.
 - **Zero-Dependency Core**: Ensure the backend can run entirely without internet, completely local-first.
+- **Native Notifications**: Real-time macOS native alerts for critical signals (Focus Shield breaches, Delivery alerts, Ghost Sentries).
 
 ## 🧠 Phase 2: Cognitive Synthesis
 - **Semantic Search**: Integrate a local vector DB (like Chroma or LanceDB) to search clips by *meaning* rather than just keywords.
@@ -19,6 +20,7 @@ This document outlines the radical, future-proof vision for the Gravity Intellig
 ## 🪐 Phase 4: Universal Sync
 - **Gravity Mobile**: iOS Shortcut bridge to sync the "Sovereign Vault" between Mac and iPhone without cloud-dependency using local SSH or P2P.
 - **Peer Perception**: P2P sync between multiple Macs on the same network.
+- **Unified Push Fabric**: Low-latency mobile push notifications (iOS/Android) for all intelligence signals without external server dependency.
 
 ---
 *"Build something that matters today."* — **Gravity Core**
