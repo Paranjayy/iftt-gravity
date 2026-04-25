@@ -66,7 +66,10 @@ const formatAction = (cmd: string, config: any) => {
     'ac_mode_eco': 'Economy Mode 🍃', 
     'auto_ac': `Auto Pilot 🤖: ${config.autoAc ? '✅ ON' : '❌ OFF'}`,
     'ac_swing': 'Swing 🔄', 
-    'ac_tv': 'TV Mode (Quiet) 🌘'
+    'ac_tv': 'TV Mode (Quiet) 🌘',
+    'moon_toggle': `Moon Phase 🌑: ${config.moonPhaseMood?.enabled ? '✅ ON' : '❌ OFF'}`,
+    'solar_toggle': `Solar Rhythm 🌅: ${config.solarRhythm?.enabled ? '✅ ON' : '❌ OFF'}`,
+    'karaoke_toggle': `Karaoke 🎤: ${config.karaokeMode?.enabled ? '✅ ON' : '❌ OFF'}`
   };
   return map[cmd] || cmd.replace(/_/g, ' ');
 };
@@ -657,8 +660,11 @@ async function main() {
       config.marketPulse = config.marketPulse || { enabled: false };
       config.issPulse = config.issPulse || { enabled: false };
       config.goldenHour = config.goldenHour || { enabled: false };
-      config.focusShield = config.focusShield || { enabled: false };
-      config.cricketMode = config.cricketMode || false;
+      config.focusShield = config.focusShield || { enabled: false, apps: ['Discord', 'YouTube', 'Twitter'] };
+      config.moonPhaseMood = config.moonPhaseMood || { enabled: false };
+      config.solarRhythm = config.solarRhythm || { enabled: false, wakeTime: '07:30', sleepTime: '23:30' };
+      config.karaokeMode = config.karaokeMode || { enabled: false };
+      config.weatherAura = config.weatherAura || { enabled: false };
       config.stats = config.stats || {};
 
       const send = async (text: string, opts: any = {}) => {
@@ -760,6 +766,18 @@ async function main() {
         } else if (subCommand === 'focus_shield_toggle') {
             config.focusShield.enabled = !config.focusShield.enabled;
             saveConfig(config);
+         } else if (subCommand === 'moon_toggle') {
+             config.moonPhaseMood.enabled = !config.moonPhaseMood.enabled;
+             saveConfig(config);
+         } else if (subCommand === 'solar_toggle') {
+             config.solarRhythm.enabled = !config.solarRhythm.enabled;
+             saveConfig(config);
+         } else if (subCommand === 'karaoke_toggle') {
+             config.karaokeMode.enabled = !config.karaokeMode.enabled;
+             saveConfig(config);
+         } else if (subCommand === 'weather_aura_toggle') {
+             config.weatherAura.enabled = !config.weatherAura.enabled;
+             saveConfig(config);
         } else if (subCommand === 'cricket_scores_toggle') {
            config.automaticScoreUpdates = !config.automaticScoreUpdates;
            saveConfig(config);
@@ -827,11 +845,19 @@ async function main() {
           { text: config.marketPulse.enabled ? '📈 Market: ✅ ON' : '📈 Market: ❌ OFF', callback_data: 'control:market_pulse_toggle:level:intel' }
         ],
         [
+          { text: config.moonPhaseMood?.enabled ? '🌑 Moon: ✅ ON' : '🌑 Moon: ❌ OFF', callback_data: 'control:moon_toggle:level:intel' },
+          { text: config.solarRhythm?.enabled ? '🌅 Solar: ✅ ON' : '🌅 Solar: ❌ OFF', callback_data: 'control:solar_toggle:level:intel' }
+        ],
+        [
           { text: config.issPulse.enabled ? '🛰️ ISS: ✅ ON' : '🛰️ ISS: ❌ OFF', callback_data: 'control:iss_pulse_toggle:level:intel' },
           { text: config.goldenHour.enabled ? '🌅 Golden: ✅ ON' : '🌅 Golden: ❌ OFF', callback_data: 'control:golden_hour_toggle:level:intel' }
         ],
         [
           { text: config.focusShield.enabled ? '🛡️ Shield: ✅ ON' : '🛡️ Shield: ❌ OFF', callback_data: 'control:focus_shield_toggle:level:intel' },
+          { text: config.karaokeMode?.enabled ? '🎤 Karaoke: ✅ ON' : '🎤 Karaoke: ❌ OFF', callback_data: 'control:karaoke_toggle:level:intel' }
+        ],
+        [
+          { text: config.weatherAura?.enabled ? '🌦️ Weather: ✅ ON' : '🌦️ Weather: ❌ OFF', callback_data: 'control:weather_aura_toggle:level:intel' },
           { text: config.cricketMode ? '🏏 Cricket: ✅ ON' : '🏏 Cricket: ❌ OFF', callback_data: 'control:cricket_toggle:level:intel' }
         ],
         [
@@ -3715,6 +3741,70 @@ async function main() {
           await (bot as any).sendMessage(config.telegram.chatId, `🧠 *Nightly Rabbit Hole*\n\n*${(page as any).title}*\n${(page as any).extract}\n\n🔗 [Read More](${(page as any).content_urls.desktop.page})`, { parse_mode: 'Markdown' });
         }
         if (h !== 22) (global as any).wikiToday = false;
+        
+        // 6. Moon Phase Mood (Circadian Night)
+        if (config.moonPhaseMood?.enabled && h >= 0 && h < 4) {
+           const lp = 2551442.8; 
+           const now = new Date();
+           const new_moon = new Date(2000, 0, 6, 18, 14, 0);
+           const phase = ((now.getTime() - new_moon.getTime()) / 1000) % lp / lp;
+           const dimming = Math.round(5 + (35 * (1 - Math.abs(2 * phase - 1))));
+           if (config.stats.light?.status === 'on' && (global as any).lastMoonDim !== dimming) {
+              (global as any).lastMoonDim = dimming;
+              await wiz.setDimming(dimming);
+              logActivity(`🌑 Moon Mood: Phase ${phase.toFixed(2)}, Dimming to ${dimming}%`);
+           }
+        }
+
+        // 7. Focus Shield (Mac Process Monitor)
+        if (config.focusShield?.enabled && (Date.now() - ((global as any).lastShieldCheck || 0) > 15000)) {
+           (global as any).lastShieldCheck = Date.now();
+           try {
+             const { stdout: psOut } = await execAsync('ps -axco command');
+             const detected = config.focusShield.apps.filter(app => psOut.toLowerCase().includes(app.toLowerCase()));
+             if (detected.length > 0) {
+                logActivity(`🛡️ Focus Shield: Procrastination detected (${detected.join(', ')})`);
+                await blinkLight(2, { r: 255, g: 0, b: 0 }); // Red Alert
+             }
+           } catch {}
+        }
+
+        // 8. Solar Rhythms (Wake/Sleep)
+        const nowTime = new Date().toLocaleTimeString('en-IN', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+        if (config.solarRhythm?.enabled) {
+           if (nowTime === config.solarRhythm.sleepTime && !(global as any).sleepTriggered) {
+              (global as any).sleepTriggered = true;
+              logActivity("🌅 Solar Rhythm: Commencing sleep transition...");
+              await wiz.setDimming(5); 
+           }
+           if (nowTime === config.solarRhythm.wakeTime && !(global as any).wakeTriggered) {
+              (global as any).wakeTriggered = true;
+              logActivity("🌅 Solar Rhythm: Commencing sunrise simulation...");
+              await wiz.turnOn();
+              await wiz.setDimming(10);
+              setTimeout(() => wiz.setDimming(50), 300000); 
+           }
+           if (nowTime !== config.solarRhythm.sleepTime) (global as any).sleepTriggered = false;
+           if (nowTime !== config.solarRhythm.wakeTime) (global as any).wakeTriggered = false;
+        }
+
+        // 9. Weather Pulse (Aura Sync)
+        if (config.weatherAura?.enabled && (Date.now() - ((global as any).lastWeatherCheck || 0) > 1800000)) {
+           (global as any).lastWeatherCheck = Date.now();
+           try {
+             const res = await fetch('https://wttr.in/Mumbai?format=j1');
+             const weather = await res.json();
+             const desc = (weather as any).current_condition[0].weatherDesc[0].value.toLowerCase();
+             logActivity(`🌦️ Weather Aura: ${desc}`);
+             if (desc.includes('rain') || desc.includes('drizzle')) {
+                await wiz.setPilot(config.wiz.ip, { r: 0, g: 100, b: 255 }); 
+             } else if (desc.includes('clear') || desc.includes('sunny')) {
+                await wiz.setPilot(config.wiz.ip, { temp: 3000 }); 
+             } else if (desc.includes('cloud') || desc.includes('overcast')) {
+                await wiz.setPilot(config.wiz.ip, { temp: 5000 }); 
+             }
+           } catch {}
+        }
 
     } catch (e) {}
   }, 60000);
