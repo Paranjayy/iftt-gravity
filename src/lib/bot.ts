@@ -941,6 +941,10 @@ async function main() {
           { text: config.marketPulse.enabled ? '📈 Market: ✅ ON' : '📈 Market: ❌ OFF', callback_data: 'control:market_pulse_toggle:level:light' }
         ],
         [
+          { text: config.focusShield.enabled ? '🛡️ Shield: ✅ ON' : '🛡️ Shield: ❌ OFF', callback_data: 'control:focus_shield_toggle:level:light' },
+          { text: config.deliveryWatch?.enabled ? '📦 Delivery: ✅ ON' : '📦 Delivery: ❌ OFF', callback_data: 'control:delivery_watch_toggle:level:light' }
+        ],
+        [
           { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
         ]
       ];
