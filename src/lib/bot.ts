@@ -3837,6 +3837,25 @@ async function main() {
            }
         }
 
+function getDurationString(lastChanged?: number) {
+  if (!lastChanged) return "Just now";
+  const now = Date.now();
+  const diffMs = now - lastChanged;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  return `${diffMins}m`;
+}
+
+async function playAudioCue(type: 'edit' | 'new' | 'wicket' | 'boundary') {
+  const sounds: Record<string, string> = {
+    edit: '/System/Library/Sounds/Tink.aiff',
+    new: '/System/Library/Sounds/Glass.aiff',
+    wicket: '/System/Library/Sounds/Basso.aiff',
+    boundary: '/System/Library/Sounds/Ping.aiff'
+  };
+  try { await execAsync(`afplay ${sounds[type]}`); } catch {}
+}
+
         // 2. Prediction Oracle Pulse
         if (config.predictionPulse?.enabled && (Date.now() - ((global as any).lastPredictionCheck || 0) > 600000)) {
            (global as any).lastPredictionCheck = Date.now();
@@ -4148,6 +4167,7 @@ async function main() {
               lastGlobalSignal = { text: 'IPL Wicket', time: Date.now() };
               lastBlinkSignal = { text: 'Wicket Red Blink', time: Date.now() };
               if (config.cricketMode) await blinkLight(3, { r: 255, g: 0, b: 0 });
+              await playAudioCue('wicket');
               if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `☝️ *WICKET!* (${ball.over})`));
             } else if (run === '6') {
               iplMatchCenter.highlights.unshift(`🚀 *SIX! (${ball.over}):* ${ball.commentary.split('.')[0]}`);
@@ -4155,6 +4175,7 @@ async function main() {
               lastGlobalSignal = { text: 'IPL Sixer', time: Date.now() };
               lastBlinkSignal = { text: 'Sixer Gold Blink', time: Date.now() };
               if (config.cricketMode) await blinkLight(3, { r: 255, g: 215, b: 0 });
+              await playAudioCue('boundary');
               if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `🚀 *SIX!* (${ball.over})`));
             } else if (run === '4') {
               iplMatchCenter.highlights.unshift(`🔥 *FOUR! (${ball.over}):* ${ball.commentary.split('.')[0]}`);
@@ -4162,6 +4183,7 @@ async function main() {
               lastGlobalSignal = { text: 'IPL Four', time: Date.now() };
               lastBlinkSignal = { text: 'Four Blue Blink', time: Date.now() };
               if (config.cricketMode) await blinkLight(2, { r: 0, g: 100, b: 255 });
+              await playAudioCue('boundary');
               if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `🔥 *FOUR!* (${ball.over})`));
             } else {
               // Normal ball
@@ -4231,22 +4253,28 @@ async function sendConsolidatedAlert(category: string, text: string) {
   if (lastMsgId) {
     try {
       await (bot as any).editMessageText(text, { chat_id: config.telegram.chatId, message_id: lastMsgId, parse_mode: 'Markdown' });
+      await playAudioCue('edit');
       return;
     } catch { /* stale or deleted */ }
   }
   const sent = await (bot as any).sendMessage(config.telegram.chatId, text, { parse_mode: 'Markdown' });
   lastAlertMsgIds[category] = sent.message_id;
+  await playAudioCue('new');
 }
 
 async function sendConsolidatedCommentary(text: string) {
   const config = loadConfig();
   const keyboard = { inline_keyboard: getMatchCenterKeyboard() };
   if (lastCommentaryMsgId) {
-    try { await (bot as any).editMessageText(text, { chat_id: config.telegram.chatId, message_id: lastCommentaryMsgId, parse_mode: 'Markdown', reply_markup: keyboard }); }
-    catch { const sent = await (bot as any).sendMessage(config.telegram.chatId, text, { parse_mode: 'Markdown', reply_markup: keyboard }); lastCommentaryMsgId = sent.message_id; }
+    try { 
+      await (bot as any).editMessageText(text, { chat_id: config.telegram.chatId, message_id: lastCommentaryMsgId, parse_mode: 'Markdown', reply_markup: keyboard }); 
+      await playAudioCue('edit');
+    }
+    catch { const sent = await (bot as any).sendMessage(config.telegram.chatId, text, { parse_mode: 'Markdown', reply_markup: keyboard }); lastCommentaryMsgId = sent.message_id; await playAudioCue('new'); }
   } else {
     const sent = await (bot as any).sendMessage(config.telegram.chatId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
     lastCommentaryMsgId = sent.message_id;
+    await playAudioCue('new');
   }
 }
 
