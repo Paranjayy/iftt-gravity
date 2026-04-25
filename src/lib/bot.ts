@@ -253,6 +253,8 @@ async function main() {
   if (config.commentaryMode === undefined) config.commentaryMode = false;
   if (!config.rejectedHabits) config.rejectedHabits = [];
   if (!config.deliveryWatch) config.deliveryWatch = { enabled: false };
+  if (config.githubPulse.silent === undefined) config.githubPulse.silent = false;
+  if (config.bootGreet === undefined) config.bootGreet = true;
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
   
   // 📝 PID Lock for reliable shutdown
@@ -766,6 +768,9 @@ async function main() {
         } else if (subCommand === 'github_pulse_toggle') {
             config.githubPulse.enabled = !config.githubPulse.enabled;
             saveConfig(config);
+        } else if (subCommand === 'github_silent_toggle') {
+            config.githubPulse.silent = !config.githubPulse.silent;
+            saveConfig(config);
         } else if (subCommand === 'market_pulse_toggle') {
             config.marketPulse.enabled = !config.marketPulse.enabled;
             saveConfig(config);
@@ -794,6 +799,19 @@ async function main() {
            config.automaticScoreUpdates = !config.automaticScoreUpdates;
            saveConfig(config);
            recordHabit(subCommand);
+        } else if (subCommand === 'cricket_mode_lights') {
+           config.cricketMode = true;
+           saveConfig(config);
+        } else if (subCommand === 'cricket_mode_commentary') {
+           config.cricketMode = 'commentary';
+           saveConfig(config);
+        } else if (subCommand === 'cricket_mode_off') {
+           config.cricketMode = false;
+           saveConfig(config);
+        } else if (subCommand === 'cricket_live') {
+           // Manually trigger a score update if match is live
+           await (bot as any).handleCommand(chatId, 'cricket', ['score'], msg, send);
+           return;
         } else if (subCommand === 'ac_tv') {
            await triggerScene('TV');
            recordHabit(subCommand);
@@ -810,6 +828,9 @@ async function main() {
         } else if (subCommand === 'delivery_test') {
             await notifier.notify(`📦 *DELIVERY ALERT:* Your package is out for delivery! (Test Signal)`, 'high');
             return;
+        } else if (subCommand === 'boot_greet_toggle') {
+            config.bootGreet = !config.bootGreet;
+            saveConfig(config);
         } else if (subCommand.startsWith('ignore:')) {
            const habitKey = subCommand.replace('ignore:', '');
            if (!config.rejectedHabits) config.rejectedHabits = [];
@@ -881,7 +902,11 @@ async function main() {
       keyboard.inline_keyboard = [
         [
           { text: config.githubPulse.enabled ? '🐙 Git: ✅ ON' : '🐙 Git: ❌ OFF', callback_data: 'control:github_pulse_toggle:level:intel' },
-          { text: config.marketPulse.enabled ? '📈 Market: ✅ ON' : '📈 Market: ❌ OFF', callback_data: 'control:market_pulse_toggle:level:intel' }
+          { text: config.githubPulse.silent ? '🔇 Git Silent: ON' : '🔔 Git Silent: OFF', callback_data: 'control:github_silent_toggle:level:intel' }
+        ],
+        [
+          { text: config.marketPulse.enabled ? '📈 Market: ✅ ON' : '📈 Market: ❌ OFF', callback_data: 'control:market_pulse_toggle:level:intel' },
+          { text: '🏏 Cricket Vault', callback_data: 'control:none:level:cricket' }
         ],
         [
           { text: config.moonPhaseMood?.enabled ? '🌑 Moon: ✅ ON' : '🌑 Moon: ❌ OFF', callback_data: 'control:moon_toggle:level:intel' },
@@ -897,7 +922,7 @@ async function main() {
         ],
         [
           { text: config.weatherAura?.enabled ? '🌦️ Weather: ✅ ON' : '🌦️ Weather: ❌ OFF', callback_data: 'control:weather_aura_toggle:level:intel' },
-          { text: config.cricketMode ? '🏏 Cricket: ✅ ON' : '🏏 Cricket: ❌ OFF', callback_data: 'control:cricket_toggle:level:intel' }
+          { text: config.commentaryMode ? '💬 Commentary: ✅ ON' : '💬 Commentary: ❌ OFF', callback_data: 'control:commentary_toggle:level:intel' }
         ],
         [
           { text: config.commentaryMode ? '💬 Commentary: ✅ ON' : '💬 Commentary: ❌ OFF', callback_data: 'control:commentary_toggle:level:intel' },
@@ -909,6 +934,24 @@ async function main() {
         ],
         [
           { text: '🔙 Back', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'cricket') {
+      dashboard = `🏏 *Cricket Vault*\n━━━━━━━━━━━━━━\nMode: *${config.cricketMode === 'commentary' ? 'LIGHTS + AUDIO' : (config.cricketMode ? 'LIGHTS ONLY' : 'OFF')}*\nScores: *${config.automaticScoreUpdates ? 'ENABLED' : 'DISABLED'}*\n━━━━━━━━━━━━━━\n_Precision IPL & International match sync._`;
+      keyboard.inline_keyboard = [
+        [
+          { text: '💡 Lights Only', callback_data: 'control:cricket_mode_lights:level:cricket' },
+          { text: '🎙️ Lights + Audio', callback_data: 'control:cricket_mode_commentary:level:cricket' }
+        ],
+        [
+          { text: '🌑 Mode: OFF', callback_data: 'control:cricket_mode_off:level:cricket' },
+          { text: config.automaticScoreUpdates ? '📊 Scores: ✅ ON' : '📊 Scores: ❌ OFF', callback_data: 'control:cricket_scores_toggle:level:cricket' }
+        ],
+        [
+          { text: '📣 Live Score', callback_data: 'control:cricket_live:level:cricket' }
+        ],
+        [
+          { text: '🔙 Back', callback_data: 'control:none:level:intel' }
         ]
       ];
     } else if (menuLevel === 'light') {
@@ -1036,9 +1079,15 @@ async function main() {
        const matched = (bot as any).getHandlers().find((h: any) => h.command === 'today');
        if (matched) return await matched.handler(chatId, [], msg, send);
     } else if (menuLevel === 'status_intel') {
-       // Status summary
-       const matched = (bot as any).getHandlers().find((h: any) => h.command === 'status');
-       if (matched) return await matched.handler(chatId, [], msg, send);
+       dashboard = `📊 *System Status & Core*\n━━━━━━━━━━━━━━\nBoot Greet: *${config.bootGreet !== false ? 'ENABLED' : 'DISABLED'}*\nPlatform: *${process.platform}*\n━━━━━━━━━━━━━━\n_Toggle system-level behavior._`;
+       keyboard.inline_keyboard = [
+         [
+           { text: config.bootGreet !== false ? '🔔 Greet: ON' : '🔕 Greet: OFF', callback_data: 'control:boot_greet_toggle:level:status_intel' }
+         ],
+         [
+           { text: '🔙 Back', callback_data: 'control:none:level:intel' }
+         ]
+       ];
     }
 
     if (isCallback) {
@@ -1834,7 +1883,7 @@ async function main() {
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
     command: 'scene',
-    description: 'WiZ scene: /scene tv, /scene cozy, /scene party, /scene list',
+    description: 'WiZ scene: /scene tv, /scene cozy, /scene party, /scene relax, /scene focus, /scene warm, /scene cool, /scene bedtime, /scene fireplace, /scene ocean, /scene sunrise',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       if (!wiz) return await send('❌ WiZ not configured.');
@@ -3445,7 +3494,14 @@ async function main() {
                   if (config.cricketMode) await blinkLight(1, { r: 255, g: 255, b: 255 }); // Single White Pulse
                 }
 
-                // 3. Event Visuals & Messages
+                // 3. Toss Alert
+                if (run.includes('TOSS') || (event.commentary || '').toLowerCase().includes('toss won')) {
+                  logActivity(`🏏 Cricket Alert: TOSS!`);
+                  if (config.cricketMode) await blinkLight(3, { r: 0, g: 255, b: 255 }); // Cyan for Toss
+                  await (bot as any).sendMessage(config.telegram.chatId, `🪙 *TOSS UPDATE:* \n_${event.commentary}_`, { parse_mode: 'Markdown' });
+                }
+
+                // 4. Event Visuals & Messages
                 if (run.includes('W')) {
                   logActivity(`🏏 Cricket Alert: WICKET!`);
                   if (config.cricketMode) await blinkLight(2, { r: 255, g: 0, b: 0 }); // Red for Wicket
@@ -3937,8 +3993,10 @@ async function main() {
     const ltDur = getDurationString(config.stats.light?.lastChanged);
     const startMsg = `🟢 *Gravity Hub: ONLINE* — _Off for ${offTimeStr || '??' }_\n━━━━━━━━━━━━━━\n🏗 Platform: *${PLATFORM}*\nStarted: *${startTime} IST*\n❄️ AC: ${acStatusEmoji} (${acDur}) | 💡 Light: ${ltStatusEmoji} (${ltDur})\n━━━━━━━━━━━━━━\nType /help for God Mode v4.6`;
     
-    for (const userId of (config.authorizedUsers || [])) {
-      try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+    if (config.bootGreet !== false) {
+      for (const userId of (config.authorizedUsers || [])) {
+        try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
+      }
     }
     console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Polling started.`);
 
@@ -3962,8 +4020,10 @@ async function main() {
     
     const stopMsg = `🔴 *Gravity went OFFLINE*\n━━━━━━━━━━━━━━\n⏰ Stopped: *${stopTime} IST*\n❄️ AC Status: *${acFinal}* (${acDur})\n💡 Light Status: *${lightFinal}* (${lightDur})\n⏱ Session Uptime: *${uptimeStr}*\n━━━━━━━━━━━━━━\nHub will not respond until restarted.`;
     
-    for (const userId of (config.authorizedUsers || [])) {
-      try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
+    if (config.bootGreet !== false) {
+      for (const userId of (config.authorizedUsers || [])) {
+        try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
+      }
     }
     process.exit(0);
   };
