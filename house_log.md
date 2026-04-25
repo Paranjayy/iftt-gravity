@@ -1139,10 +1139,13 @@ Fin...)
 [25/4/2026, 4:23:39 PM] 🧠 Cortex: Wishlist updated - i dont have thermostat btw so temp would be only from weather u will get
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
+=======
+>>>>>>> Stashed changes
 [25/4/2026, 5:05:29 PM] 📋 Memory Archive: New clip captured (<img src="https://cd...)
 [25/4/2026, 5:06:28 PM] 📱 Presence: Phone detected (HOME)
 [25/4/2026, 5:06:28 PM] 🎬 Scene Trigger: HOME
@@ -1161,4 +1164,33 @@ Fin...)
 [25/4/2026, 5:33:15 PM] 📋 Memory Archive: New clip captured (r
                   ...)
 [25/4/2026, 5:33:22 PM] 📋 Memory Archive: New clip captured (https://github.com/r...)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+[25/4/2026, 5:46:12 PM] LIGHT State: OFF (Manual/Remote)
+[25/4/2026, 5:48:08 PM] 📋 Memory Archive: New clip captured (Skip to content
+rayc...)
+[25/4/2026, 5:54:46 PM] 📋 Memory Archive: New clip captured (cd /Users/paranjay/D...)
+[25/4/2026, 5:55:21 PM] 📋 Memory Archive: New clip captured (r
+                  ...)
+[25/4/2026, 5:58:18 PM] 📋 Memory Archive: New clip captured (Skip to content
+rayc...)
+[25/4/2026, 5:59:09 PM] AC State: OFF (Manual/Remote)
+[25/4/2026, 6:17:57 PM] 📋 Memory Archive: New clip captured (Skip to content
+rayc...)
+[25/4/2026, 6:21:46 PM] 📋 Memory Archive: New clip captured (/Users/paranjay/Down...)
+[25/4/2026, 6:31:24 PM] 📋 Memory Archive: New clip captured (/Users/paranjay/Down...)
+[25/4/2026, 6:31:46 PM] 📋 Memory Archive: New clip captured (/Users/paranjay/Down...)
+[25/4/2026, 6:33:10 PM] 📋 Memory Archive: New clip captured (Skip to content
+rayc...)
+[25/4/2026, 6:34:12 PM] 📋 Memory Archive: New clip captured (<img src="https://cd...)
+[25/4/2026, 6:34:26 PM] 📋 Memory Archive: New clip captured (<img src="https://cd...)
+[25/4/2026, 6:35:38 PM] 📋 Memory Archive: New clip captured (./scripts/iftt-clone...)
+[25/4/2026, 6:35:55 PM] 📋 Memory Archive: New clip captured (./scripts/iftt-clone...)
+[25/4/2026, 6:36:54 PM] LIGHT State: ON (Manual/Remote)
+[25/4/2026, 6:36:54 PM] 📱 Presence: Phone detected (HOME)
+[25/4/2026, 6:36:54 PM] 🎬 Scene Trigger: HOME
+[25/4/2026, 6:37:24 PM] AC State: ON (Manual/Remote)
+[25/4/2026, 6:41:23 PM] 📋 Memory Archive: New clip captured (Skip to content
+rayc...)
 >>>>>>> Stashed changes
