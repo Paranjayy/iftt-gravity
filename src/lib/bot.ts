@@ -44,6 +44,8 @@ let iplMatchCenter = {
   currentTab: 'live' as 'live' | 'highlights' | 'wickets' | 'timeline'
 };
 let lastCommentaryMsgId: number | null = null;
+let lastAlertMsgIds: Record<string, number> = {};
+let lastGitMsgIds: Record<string, number> = {};
 let lastGitMsgIds: Record<string, number> = {};
 let lastSpotifyTrack = "";
 let lastGitHubCheck = 0;
@@ -3697,6 +3699,7 @@ async function main() {
         const stamp = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
         config.stats.history.push({ time: stamp, ac: config.stats.acMinutes, lights: config.stats.lightMinutes });
         if (config.stats.history.length > 24) config.stats.history.shift();
+        lastAlertMsgIds = {}; // Reset alert thread freshness
       }
 
       // 3. Budget Check
@@ -3830,7 +3833,7 @@ async function main() {
              logActivity("🛰️ ISS overhead detected!");
              lastGlobalSignal = { text: "🛰️ ISS Overhead", time: Date.now() };
              await blinkLight(2, { r: 255, g: 255, b: 255 }); // White Flash
-             await (bot as any).sendMessage(config.telegram.chatId, "🛰️ *Sovereignty:* The International Space Station is currently over your Hub.");
+             await sendConsolidatedAlert('iss', "🛰️ *Sovereignty:* The International Space Station is currently over your Hub.");
            }
         }
 
@@ -3848,8 +3851,8 @@ async function main() {
                if (Math.abs(prob - lastProb) > 0.15) {
                  logActivity(`🔮 Oracle Pulse: Sentiment Shift on ${m.question}`);
                  lastGlobalSignal = { text: `🔮 Oracle: ${m.question.slice(0, 20)}...`, time: Date.now() };
-                 await blinkLight(2, { r: 255, g: 0, b: 255 }); // Magenta Pulse
-                 await (bot as any).sendMessage(config.telegram.chatId, `🔮 *ORACLE ALERT:* Sentiment shift detected on "${m.question}"\nProb: *${(prob*100).toFixed(0)}%* (was ${(lastProb*100).toFixed(0)}%)`);
+                 await breatheLight({ r: 255, g: 0, b: 255 }, 2); // Magenta Pulse
+                 await sendConsolidatedAlert('prediction', `🔮 *ORACLE PULSE:* Sentiment shift detected on "${m.question}"\nProb: *${(prob*100).toFixed(0)}%* (was ${(lastProb*100).toFixed(0)}%)`);
                }
                config.predictionPulse.lastOdds[m.id] = prob; saveConfig(config);
              }
@@ -4215,7 +4218,24 @@ async function main() {
   process.on('unhandledRejection', (reason: any) => sos(reason instanceof Error ? reason : new Error(String(reason)), 'Unhandled Rejection'));
   const allCommands = bot.getHandlers().map((h: any) => ({ command: h.command, description: h.description }));
   await bot.setMyCommands(allCommands).catch((e: Error) => console.error('Failed to sync TG commands:', e));
-  setInterval(() => { config = loadConfig(); scheduler.refresh(); }, 3600000);
+  setInterval(() => { 
+    config = loadConfig(); 
+    scheduler.refresh(); 
+    lastAlertMsgIds = {}; // Fresh threads every hour
+  }, 3600000);
+}
+
+async function sendConsolidatedAlert(category: string, text: string) {
+  const config = loadConfig();
+  const lastMsgId = lastAlertMsgIds[category];
+  if (lastMsgId) {
+    try {
+      await (bot as any).editMessageText(text, { chat_id: config.telegram.chatId, message_id: lastMsgId, parse_mode: 'Markdown' });
+      return;
+    } catch { /* stale or deleted */ }
+  }
+  const sent = await (bot as any).sendMessage(config.telegram.chatId, text, { parse_mode: 'Markdown' });
+  lastAlertMsgIds[category] = sent.message_id;
 }
 
 async function sendConsolidatedCommentary(text: string) {
@@ -4265,10 +4285,10 @@ function renderMatchCenter(ipl: any, prefix: string = '') {
     return `${header}\n🎯 *Last 20 Deliveries*\n━━━━━━━━━━━━━━\n${logs}`;
   }
 
-  // Live Tab (Default)
   if (ipl.status === 'result') {
     const s = ipl.summary;
-    return `🏆 *MATCH FINISHED*\n*Match:* ${ipl.matchName}\n━━━━━━━━━━━━━━\n1️⃣ ${s.inn1}\n2️⃣ ${s.inn2}\n\n🌟 *Top Performers:*\n🏏 Bat: ${s.topScorers}\n⚾ Bowl: ${s.topBowlers}\n\n_Match center frozen._`;
+    const nextMsg = ipl.nextMatch ? `\n\n📅 *Next Match:* ${ipl.nextMatch.MatchName}\n⏰ *Starts:* ${ipl.nextMatch.MatchDate} ${ipl.nextMatch.MatchTime}` : '';
+    return `🏆 *MATCH FINISHED*\n*Match:* ${ipl.matchName}\n━━━━━━━━━━━━━━\n1️⃣ ${s.inn1}\n2️⃣ ${s.inn2}\n\n🌟 *Top Performers:*\n🏏 Bat: ${s.topScorers}\n⚾ Bowl: ${s.topBowlers}${nextMsg}\n\n_Match center frozen._`;
   }
   return `${prefix ? prefix + '\n' : ''}${formatIplSummary(ipl)}`;
 }
@@ -4283,6 +4303,19 @@ function formatIplSummary(ipl: any) {
   if (currentProj > 0 && lastIplProjected > 0) {
     if (currentProj > lastIplProjected) trend = " 📈";
     else if (currentProj < lastIplProjected) trend = " 📉";
+  }
+
+  // Momentum Meter (CRR vs RRR or Score progress)
+  let momentum = "[───|───]";
+  if (ipl.target) {
+    const c = parseFloat(ipl.crr);
+    const r = parseFloat(ipl.rrr);
+    const diff = c - r;
+    if (diff > 2) momentum = "[====|----]";
+    else if (diff > 0.5) momentum = "[===|-----]";
+    else if (diff < -2) momentum = "[----|====]";
+    else if (diff < -0.5) momentum = "[-----|===]";
+    else momentum = "[---|=---]";
   }
 
   // Build rich over-ball breakdown
@@ -4309,7 +4342,9 @@ function formatIplSummary(ipl: any) {
   const liveHeaderScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets} (${ball.over} ov)` : ipl.score;
   const runEmoji = String(ball.run).toUpperCase() === '0' ? '·' : String(ball.run).toUpperCase().includes('WD') ? '🌀 Wd' : String(ball.run).toUpperCase().includes('NB') ? '📌 Nb' : String(ball.run).toUpperCase().includes('LB') ? '🦵 Lb' : `${ball.run} run${ball.run === '1' ? '' : 's'}`;
 
-  return `🏏 *LIVE:* ${liveHeaderScore} — ${runEmoji}\n_${ball.commentary}_\n━━━━━━━━━━━━━━\n${rateBlock}\n${pairBlock}${partnerBlock}${probBlock}${overDisplay}`;
+  const momentumLine = ipl.target ? `\n🚀 *Momentum:* ${momentum}` : '';
+
+  return `🏏 *LIVE:* ${liveHeaderScore} — ${runEmoji}\n_${ball.commentary}_\n━━━━━━━━━━━━━━\n${rateBlock}${momentumLine}\n${pairBlock}${partnerBlock}${probBlock}${overDisplay}`;
 }
 
 function parseJsonp(text: string) {
@@ -4433,7 +4468,8 @@ async function getLatestIplData() {
         result: targetMatch.MatchStatus?.toLowerCase() === 'result' ? targetMatch.MatchStatus || '' : '',
         topScorers: (activeInnings.Batsmen || []).sort((a: any, b: any) => parseInt(b.Runs) - parseInt(a.Runs)).slice(0, 2).map((b: any) => `${b.FullName || b.Name} (${b.Runs}/${b.Balls})`).join(', '),
         topBowlers: (activeInnings.Bowlers || []).sort((a: any, b: any) => parseInt(b.Wickets) - parseInt(a.Wickets)).slice(0, 1).map((b: any) => `${b.FullName || b.Name} (${b.Wickets}/${b.RunsConceded})`).join(', ')
-      }
+      },
+      nextMatch: matches.filter((m: any) => (m.MatchStatus || '').toLowerCase() === 'upcoming').sort((a: any, b: any) => a.RowNo - b.RowNo)[0]
     };
   } catch (e) {
     const IPL_ROOT = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/public/data/balls";
