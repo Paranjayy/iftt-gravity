@@ -1137,4 +1137,7 @@ Para...)
 Fin...)
 [25/4/2026, 4:23:02 PM] LIGHT State: OFF (Manual/Remote)
 [25/4/2026, 4:23:39 PM] 🧠 Cortex: Wishlist updated - i dont have thermostat btw so temp would be only from weather u will get
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

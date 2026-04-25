@@ -83,6 +83,11 @@ async function speak(text: string) {
   catch (e) { console.warn('Voice output failed (not on Mac?)'); }
 }
 
+async function speak(text: string) {
+  try { await execAsync(`say "${text.replace(/"/g, '')}"`); }
+  catch (e) { console.warn('Voice output failed (not on Mac?)'); }
+}
+
 async function getSystemIdleTime(): Promise<number> {
   try {
     const { stdout } = await execAsync("ioreg -c IOHIDSystem | awk '/HIDIdleTime/ {print $NF/1000000000; exit}'");
@@ -339,7 +344,6 @@ async function main() {
 =======
 =======
 
-  let isPhoneOnline = true; // tracking state
   let offlineCounter = 0;
   let offlineSince: number | null = null; // Debounce tracking
   
@@ -3484,6 +3488,7 @@ async function main() {
   setInterval(runPgvclScraper, 21600000);
   let awayAcMinutes = 0;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
   setInterval(async () => {
     try {
@@ -3735,6 +3740,8 @@ async function main() {
   let awayAcMinutes = 0;
   let lastSpotifyTrack: string | null = null;
   let preMusicLightState: any = null;
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 
