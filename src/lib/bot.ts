@@ -29,8 +29,54 @@ const execAsync = promisify(exec);
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');
 const LOG_PATH = path.join(process.cwd(), 'house_log.md');
 const WISHLIST_PATH = path.join(process.cwd(), 'house_wishlist.md');
+<<<<<<< Updated upstream
 const VAULT_PATH = path.join(process.cwd(), 'prompt_vault.md');
 declare const Bun: any;
+=======
+const IPL_FEED = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/liveFeed.json";
+
+let lastIplEventTs = 0;
+let lastIplPhase = "";
+let lastIplOver = "";
+let lastGitHubCheck = 0;
+let lastMarketCheck = 0;
+let lastIssCheck = 0;
+let lastGoldenHourCheck = 0;
+let lastFocusShieldCheck = 0;
+let lastIplEventTs = 0;
+let lastSpotifyTrack = "";
+let preMusicLightState: any = null;
+let isPhoneOnline = false;
+let batteryAlertSent = false;
+let globalLastAction: string = 'None';
+const formatAction = (cmd: string, config: any) => {
+  const map: Record<string, string> = {
+    'ac_on': 'AC ❄️: ✅ ON', 'ac_off': 'AC 🚫: ❌ OFF',
+    'bulb_on': 'Lights 💡: ✅ ON', 'bulb_off': 'Lights 🌑: ❌ OFF',
+    'temp_up': 'Temp 🌡️ +1°', 'temp_down': 'Temp 🌡️ -1°',
+    'bright_up': 'Brighten ➕', 'bright_down': 'Dim ➖',
+    'bulb_warm': 'Warm Aura 🕯️', 'bulb_cool': 'Cool Aura ❄️',
+    'bulb_tv': 'TV Mode 🌘', 
+    'aura_toggle': `Aura Sync 🌈: ${config.mediaAura !== false ? '✅ ON' : '❌ OFF'}`,
+    'cricket_toggle': `Cricket Mode 🏏: ${config.cricketMode ? '✅ ON' : '❌ OFF'}`, 
+    'github_pulse_toggle': `Git Pulse 🐙: ${config.githubPulse.enabled ? '✅ ON' : '❌ OFF'}`,
+    'market_pulse_toggle': `Market Pulse 📈: ${config.marketPulse.enabled ? '✅ ON' : '❌ OFF'}`, 
+    'iss_pulse_toggle': `ISS Alert 🛰️: ${config.issPulse.enabled ? '✅ ON' : '❌ OFF'}`,
+    'golden_hour_toggle': `Golden Hour 🌅: ${config.goldenHour.enabled ? '✅ ON' : '❌ OFF'}`, 
+    'focus_shield_toggle': `Focus Shield 🛡️: ${config.focusShield.enabled ? '✅ ON' : '❌ OFF'}`,
+    'cricket_scores_toggle': `Scores 📊: ${config.automaticScoreUpdates ? '✅ ON' : '❌ OFF'}`, 
+    'ac_mode_powerful': 'Powerful Mode ⚡',
+    'ac_mode_eco': 'Economy Mode 🍃', 
+    'auto_ac': `Auto Pilot 🤖: ${config.autoAc ? '✅ ON' : '❌ OFF'}`,
+    'ac_swing': 'Swing 🔄', 
+    'ac_tv': 'TV Mode (Quiet) 🌘',
+    'moon_toggle': `Moon Phase 🌑: ${config.moonPhaseMood?.enabled ? '✅ ON' : '❌ OFF'}`,
+    'solar_toggle': `Solar Rhythm 🌅: ${config.solarRhythm?.enabled ? '✅ ON' : '❌ OFF'}`,
+    'karaoke_toggle': `Karaoke 🎤: ${config.karaokeMode?.enabled ? '✅ ON' : '❌ OFF'}`
+  };
+  return map[cmd] || cmd.replace(/_/g, ' ');
+};
+>>>>>>> Stashed changes
 
 async function speak(text: string) {
   try { await execAsync(`say "${text.replace(/"/g, '')}"`); }
@@ -265,7 +311,6 @@ async function main() {
   let sessionLightMinutes = 0;
 <<<<<<< Updated upstream
 
-  let isPhoneOnline = true; // tracking state
   let offlineCounter = 0;
   let offlineSince: number | null = null; // Debounce tracking
   
@@ -734,6 +779,13 @@ async function main() {
            const finalTemp = Math.min(30, Math.max(16, subCommand === 'temp_up' ? cur + 1 : cur - 1));
            if (deviceId) await miraie?.controlDevice(deviceId as string, { actmp: String(finalTemp), ps: 'on' });
         }
+<<<<<<< Updated upstream
+=======
+        
+        const formatted = formatAction(subCommand, config);
+        lastLevelActions[menuLevel] = { text: formatted, time: Date.now() };
+        globalLastAction = formatted;
+>>>>>>> Stashed changes
 
         // If it was a button click, we want to REFRESH the control panel instead of sending a new one
         if (msg.callback_query_id || args.includes('refresh')) {
@@ -743,6 +795,7 @@ async function main() {
         }
       }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
       // Generate the Panel Content
       const acStatus = config.stats.ac?.status || 'unknown';
@@ -769,6 +822,17 @@ async function main() {
       });
     } catch(e) {}
 >>>>>>> Stashed changes
+=======
+    // 🛰️ The Sovereign Dashboard Engine
+    const acStats = config.stats?.ac || { status: 'off', actmp: '24' };
+    const lightStats = config.stats?.light || { status: 'off' };
+    const recentAction = lastLevelActions['root'];
+    const actionStr = recentAction ? `${recentAction.text} (${getDurationString(recentAction.time)})` : 'None';
+    const signalStr = lastGlobalSignal ? `\n📡 *Last Signal:* ${lastGlobalSignal.text} (${getDurationString(lastGlobalSignal.time)})` : '';
+    
+    let dashboard = `🌌 *Gravity Mission Control*\n━━━━━━━━━━━━━━\n❄️ AC: *${acStats.status.toUpperCase()}* (${acStats.actmp || '24'}°C) — _${getDurationString(config.stats.ac?.lastChanged)}_\n💡 Light: *${lightStats.status.toUpperCase()}* — _${getDurationString(config.stats.light?.lastChanged)}_\nRecent: *${actionStr}*${signalStr}\n━━━━━━━━━━━━━━\n_Select a Vault for granular control._`;
+    let keyboard: any = { inline_keyboard: [] };
+>>>>>>> Stashed changes
 
       const keyboard = {
         inline_keyboard: [
@@ -791,6 +855,7 @@ async function main() {
         ]
       };
 
+<<<<<<< Updated upstream
       if (isCallback) {
         // Edit existing message for smooth transitions
         try {
@@ -808,6 +873,246 @@ async function main() {
       } else {
         await (bot as any).sendMessage(chatId, panelText, { reply_markup: keyboard });
       }
+=======
+    if (menuLevel === 'root') {
+      keyboard.inline_keyboard = [
+        [
+          { text: acStats.status === 'on' ? '🚫 AC OFF' : '❄️ AC ON', callback_data: `control:ac_${acStats.status === 'on' ? 'off' : 'on'}:level:root` },
+          { text: lightStats.status === 'on' ? '🌑 Light OFF' : '💡 Light ON', callback_data: `control:bulb_${lightStats.status === 'on' ? 'off' : 'on'}:level:root` }
+        ],
+        [
+          { text: '🌡️ Climate Control', callback_data: 'control:none:level:ac' },
+          { text: '💡 Lighting Vault', callback_data: 'control:none:level:light' }
+        ],
+        [
+          { text: '🎭 Scene Intelligence', callback_data: 'control:none:level:scenes' },
+          { text: '📡 Signal Vault', callback_data: 'control:none:level:intel' }
+        ],
+        [
+          { text: '📅 Schedules', callback_data: 'control:none:level:schedules' },
+          { text: '🧠 Habits', callback_data: 'control:none:level:habits' }
+        ],
+        [
+          { text: '✨ Today', callback_data: 'control:none:level:today_intel' },
+          { text: '📊 Status', callback_data: 'control:none:level:status_intel' }
+        ]
+      ];
+    } else if (menuLevel === 'main') {
+        // Redirect main to root for robustness
+        return await matched.handler(chatId, ['none', 'level', 'root'], msg, send);
+    } else if (menuLevel === 'intel') {
+      const recentAction = lastLevelActions['intel'];
+      const actionStr = recentAction ? `${recentAction.text} (${getDurationString(recentAction.time)})` : 'None';
+      const signalStr = lastGlobalSignal ? `\n📡 *Last Signal:* ${lastGlobalSignal.text} (${getDurationString(lastGlobalSignal.time)})` : '';
+      
+      dashboard = `📡 *Signal Vault*\n━━━━━━━━━━━━━━\nRecent: *${actionStr}*${signalStr}\n━━━━━━━━━━━━━━\n_Toggle real-world event synchronization._`;
+      keyboard.inline_keyboard = [
+        [
+          { text: config.githubPulse.enabled ? '🐙 Git: ✅ ON' : '🐙 Git: ❌ OFF', callback_data: 'control:github_pulse_toggle:level:intel' },
+          { text: config.githubPulse.silent ? '🔇 Git Silent: ON' : '🔔 Git Silent: OFF', callback_data: 'control:github_silent_toggle:level:intel' }
+        ],
+        [
+          { text: config.marketPulse.enabled ? '📈 Market: ✅ ON' : '📈 Market: ❌ OFF', callback_data: 'control:market_pulse_toggle:level:intel' },
+          { text: '🏏 Cricket Vault', callback_data: 'control:none:level:cricket' }
+        ],
+        [
+          { text: config.moonPhaseMood?.enabled ? '🌑 Moon: ✅ ON' : '🌑 Moon: ❌ OFF', callback_data: 'control:moon_toggle:level:intel' },
+          { text: config.solarRhythm?.enabled ? '🌅 Solar: ✅ ON' : '🌅 Solar: ❌ OFF', callback_data: 'control:solar_toggle:level:intel' }
+        ],
+        [
+          { text: config.issPulse.enabled ? '🛰️ ISS: ✅ ON' : '🛰️ ISS: ❌ OFF', callback_data: 'control:iss_pulse_toggle:level:intel' },
+          { text: config.goldenHour.enabled ? '🌅 Golden: ✅ ON' : '🌅 Golden: ❌ OFF', callback_data: 'control:golden_hour_toggle:level:intel' }
+        ],
+        [
+          { text: config.focusShield.enabled ? '🛡️ Shield: ✅ ON' : '🛡️ Shield: ❌ OFF', callback_data: 'control:focus_shield_toggle:level:intel' },
+          { text: config.karaokeMode?.enabled ? '🎤 Karaoke: ✅ ON' : '🎤 Karaoke: ❌ OFF', callback_data: 'control:karaoke_toggle:level:intel' }
+        ],
+        [
+          { text: config.weatherAura?.enabled ? '🌦️ Weather: ✅ ON' : '🌦️ Weather: ❌ OFF', callback_data: 'control:weather_aura_toggle:level:intel' },
+          { text: config.commentaryMode ? '💬 Commentary: ✅ ON' : '💬 Commentary: ❌ OFF', callback_data: 'control:commentary_toggle:level:intel' }
+        ],
+        [
+          { text: '📊 Frequency Stats', callback_data: 'control:log_stats:level:intel' }
+        ],
+        [
+          { text: config.deliveryWatch?.enabled ? '📦 Delivery: ✅ ON' : '📦 Delivery: ❌ OFF', callback_data: 'control:delivery_watch_toggle:level:intel' },
+          { text: '🧪 Test Delivery', callback_data: 'control:delivery_test:level:intel' }
+        ],
+        [
+          { text: '🔙 Back', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'cricket') {
+      dashboard = `🏏 *Cricket Vault*\n━━━━━━━━━━━━━━\nMode: *${config.cricketMode === 'commentary' ? 'LIGHTS + AUDIO' : (config.cricketMode ? 'LIGHTS ONLY' : 'OFF')}*\nScores: *${config.automaticScoreUpdates ? 'ENABLED' : 'DISABLED'}*\n━━━━━━━━━━━━━━\n_Precision IPL & International match sync._`;
+      keyboard.inline_keyboard = [
+        [
+          { text: '💡 Lights Only', callback_data: 'control:cricket_mode_lights:level:cricket' },
+          { text: '🎙️ Lights + Audio', callback_data: 'control:cricket_mode_commentary:level:cricket' }
+        ],
+        [
+          { text: '🌑 Mode: OFF', callback_data: 'control:cricket_mode_off:level:cricket' },
+          { text: config.automaticScoreUpdates ? '📊 Scores: ✅ ON' : '📊 Scores: ❌ OFF', callback_data: 'control:cricket_scores_toggle:level:cricket' }
+        ],
+        [
+          { text: '📣 Live Score', callback_data: 'control:cricket_live:level:cricket' }
+        ],
+        [
+          { text: '🔙 Back', callback_data: 'control:none:level:intel' }
+        ]
+      ];
+    } else if (menuLevel === 'light') {
+      dashboard = `💡 *Lighting Vault*\n━━━━━━━━━━━━━━\nStatus: *${lightStats.status.toUpperCase()}*\nAura: *${config.mediaAura !== false ? 'SYNC' : 'STATIC'}*\nRecent: *${lastLevelActions['light']?.text || 'None'}*\n━━━━━━━━━━━━━━\n_Adjust brightness or atmosphere._`;
+      keyboard.inline_keyboard = [
+        [
+          { text: '➕ Brighten', callback_data: 'control:bright_up:level:light' },
+          { text: '➖ Dim', callback_data: 'control:bright_down:level:light' }
+        ],
+        [
+          { text: '🔴 Red', callback_data: 'control:color_red:level:light' },
+          { text: '🔵 Blue', callback_data: 'control:color_blue:level:light' },
+          { text: '🟢 Green', callback_data: 'control:color_green:level:light' },
+          { text: '🟡 Gold', callback_data: 'control:color_gold:level:light' }
+        ],
+        [
+          { text: '❄️ Cool (6K)', callback_data: 'control:bulb_cool:level:light' },
+          { text: '🕯️ Warm (2K)', callback_data: 'control:bulb_warm:level:light' }
+        ],
+        [
+          { text: '🌘 TV Mode', callback_data: 'control:bulb_tv:level:light' },
+          { text: config.cricketMode ? '🏏 Cricket: ✅ ON' : '🏏 Cricket: ❌ OFF', callback_data: 'control:cricket_toggle:level:light' }
+        ],
+        [
+          { text: config.automaticScoreUpdates ? '📊 Scores: ✅ ON' : '📊 Scores: ❌ OFF', callback_data: 'control:cricket_scores_toggle:level:light' },
+          { text: config.mediaAura !== false ? '🌈 Aura: ✅ ON' : '🌈 Aura: ❌ OFF', callback_data: 'control:aura_toggle:level:light' }
+        ],
+        [
+          { text: config.githubPulse.enabled ? '🐙 Git: ✅ ON' : '🐙 Git: ❌ OFF', callback_data: 'control:github_pulse_toggle:level:light' },
+          { text: config.marketPulse.enabled ? '📈 Market: ✅ ON' : '📈 Market: ❌ OFF', callback_data: 'control:market_pulse_toggle:level:light' }
+        ],
+        [
+          { text: config.focusShield.enabled ? '🛡️ Shield: ✅ ON' : '🛡️ Shield: ❌ OFF', callback_data: 'control:focus_shield_toggle:level:light' },
+          { text: config.deliveryWatch?.enabled ? '📦 Delivery: ✅ ON' : '📦 Delivery: ❌ OFF', callback_data: 'control:delivery_watch_toggle:level:light' }
+        ],
+        [
+          { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'scenes') {
+      dashboard = `🎭 *Gravity: Scene Selection*\n━━━━━━━━━━━━━━\nRecent: *${lastLevelActions['scenes']?.text || 'None'}*\n━━━━━━━━━━━━━━\nSelect a multi-device orchestration flow.`;
+      keyboard.inline_keyboard = [
+        [
+          { text: '📽️ TV Mode', callback_data: 'scene:tv:level:scenes' },
+          { text: '🧠 Focus', callback_data: 'scene:focus:level:scenes' }
+        ],
+        [
+          { text: '🏠 Home', callback_data: 'scene:home:level:scenes' },
+          { text: '🏃 Away', callback_data: 'scene:away:level:scenes' }
+        ],
+        [
+          { text: config.cricketMode ? '🏏 Stop Cricket Mode' : '🏏 Start Cricket Mode', callback_data: 'control:cricket_toggle:level:scenes' }
+        ],
+        [
+          { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'ac') {
+      dashboard = `❄️ *Climate Control*\n━━━━━━━━━━━━━━\nStatus: *${acStats.status.toUpperCase()}* (${acStats.actmp || '24'}°C)\nAuto-Guard: *${config.autoAc ? 'ACTIVE' : 'OFF'}*\nRecent: *${lastLevelActions['ac']?.text || 'None'}*\n━━━━━━━━━━━━━━\n_Precision cooling & modes._`;
+      keyboard.inline_keyboard = [
+        [
+          { text: '🌡️ Temp -1°', callback_data: 'control:temp_down:level:ac' },
+          { text: '🌡️ Temp +1°', callback_data: 'control:temp_up:level:ac' }
+        ],
+        [
+          { text: '⚡ Powerful', callback_data: 'control:ac_mode_powerful:level:ac' },
+          { text: '🍃 Economy', callback_data: 'control:ac_mode_eco:level:ac' }
+        ],
+        [
+          { text: config.autoAc ? '🤖 Auto Pilot: ✅ ON' : '🤖 Auto Pilot: ❌ OFF', callback_data: 'control:auto_ac:level:ac' },
+          { text: '🔄 Swing', callback_data: 'control:ac_swing:level:ac' }
+        ],
+        [
+          { text: '🌘 TV Mode (Quiet)', callback_data: 'control:ac_tv:level:ac' }
+        ],
+        [
+          { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'habits') {
+      const habits = config.habits || [];
+      const suggestions: string[] = [];
+      if (habits.length > 20) {
+        // Simple suggestion engine: find actions done 3+ times at the same hour
+        const hourMap: Record<string, number> = {};
+        habits.forEach((h: any) => {
+          const hour = Math.floor(h.time / 60);
+          const key = `${h.command}@${hour}`;
+          hourMap[key] = (hourMap[key] || 0) + 1;
+        });
+        Object.entries(hourMap).forEach(([key, count]) => {
+          if (count >= 3) {
+             const [cmd, hour] = key.split('@');
+             const timeStr = `${hour.padStart(2, '0')}:00`;
+             const exists = (config.scheduler || []).some((j: any) => j.time === timeStr && j.action === cmd);
+             if (!exists) suggestions.push(`💡 Schedule *${cmd}* at *${timeStr}*? (Count: ${count})`);
+          }
+        });
+      }
+      dashboard = `🧠 *Habit Intelligence*\n━━━━━━━━━━━━━━\nTracking: *${habits.length} events*\nRejected: *${config.rejectedHabits?.length || 0} patterns*\n\n*Unreviewed Suggestions:*\n${suggestions.length ? suggestions.join('\n') : '_No new patterns detected yet._'}`;
+      keyboard.inline_keyboard = [
+        [
+          { text: '📊 Full Analysis', callback_data: 'habits_full' },
+          { text: '🗑️ Clear Data', callback_data: 'habits_clear' }
+        ],
+        [
+          { text: '🔄 Reset Rejected', callback_data: 'control:habits_reset_rejected:level:habits' },
+          { text: '🔙 Back', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'schedules') {
+      const jobs = config.scheduler || [];
+      dashboard = `📅 *Sovereign Schedules*\n━━━━━━━━━━━━━━\nActive: *${jobs.length} routines*\n\n${jobs.map((j: any) => `• ${j.time} [${j.days}] -> *${j.action}*`).join('\n')}`;
+      keyboard.inline_keyboard = [
+        [
+          { text: '➕ Add Routine', callback_data: 'schedule_add' },
+          { text: '🗑️ Manage All', callback_data: 'schedule_manage' }
+        ],
+        [
+          { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'today_intel') {
+       // Today summary
+       const matched = (bot as any).getHandlers().find((h: any) => h.command === 'today');
+       if (matched) return await matched.handler(chatId, [], msg, send);
+    } else if (menuLevel === 'status_intel') {
+       const recentAction = lastLevelActions['status_intel'];
+       const actionStr = recentAction ? `${recentAction.text} (${getDurationString(recentAction.time)})` : 'None';
+       dashboard = `📊 *System Status*\n━━━━━━━━━━━━━━\nRecent: *${actionStr}*\n━━━━━━━━━━━━━━\n_Toggle system-level responses._`;
+       keyboard.inline_keyboard = [
+         [
+           { text: config.bootGreet ? '👋 Greet: ✅ ON' : '👋 Greet: ❌ OFF', callback_data: 'control:boot_greet_toggle:level:status_intel' },
+           { text: '📜 View Logs', callback_data: 'control:none:level:root' } // Placeholder
+         ],
+         [
+           { text: '🔙 Back', callback_data: 'control:none:level:intel' }
+         ]
+       ];
+    }
+
+    if (isCallback) {
+      try {
+        await (bot as any).sendRequest('editMessageText', {
+          chat_id: chatId,
+          message_id: (msg as any).message_id,
+          text: dashboard,
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
+      } catch (e) {}
+    } else {
+      await (bot as any).sendMessage(chatId, dashboard, { parse_mode: 'Markdown', reply_markup: keyboard });
+    }
+>>>>>>> Stashed changes
     }
   });
 
@@ -1848,6 +2153,568 @@ async function main() {
     }
   });
 
+<<<<<<< Updated upstream
+=======
+  // ✨ /today — Quick Stats
+  bot.registerCommand({
+    command: 'today',
+    description: 'Show today\'s energy usage and costs',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const stats = config.stats;
+      const acH = (stats.acMinutes / 60).toFixed(1);
+      const ltH = (stats.lightMinutes / 60).toFixed(1);
+      const units = (stats.acMinutes / 60 * 1.65) + (stats.lightMinutes / 60 * 0.012);
+      const bill = calculatePgvclBill(units, false); // Exclude fixed charge for daily view
+      
+      const res = [
+        `✨ *Gravity Today's Usage*`,
+        `━━━━━━━━━━━━━━`,
+        `❄️ AC Runtime: *${acH} hrs*`,
+        `💡 Light Runtime: *${ltH} hrs*`,
+        `🔌 Est. Consumption: *${units.toFixed(2)} units*`,
+        `💰 Est. Energy Cost: *₹${bill}*`,
+        `━━━━━━━━━━━━━━`,
+        `_Note: Excludes monthly fixed charges._`,
+        `_Last Reset: ${new Date(stats.lastReset || Date.now()).toLocaleTimeString('en-IN')}_`
+      ].join('\n');
+      await send(res);
+    }
+  });
+
+  // 🏏 /cricket — Toggle IPL Mode / Score Updates
+  bot.registerCommand({
+    command: 'cricket',
+    description: 'Toggle IPL Mode / Score Updates',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const sub = args[0]?.toLowerCase();
+      
+      if (sub === 'mode') {
+        const mode = args[1]?.toLowerCase();
+        if (mode === 'commentary') {
+          config.cricketMode = 'commentary';
+          await send('🏏 *Cricket Mode:* LIGHTS + COMMENTARY 🎙️');
+        } else if (mode === 'lights') {
+          config.cricketMode = true;
+          await send('🏏 *Cricket Mode:* LIGHTS ONLY 💡');
+        } else {
+          config.cricketMode = false;
+          await send('🏏 *Cricket Mode:* OFF 🌑');
+        }
+        saveConfig(config);
+        return;
+      }
+
+      if (sub === 'player' || sub === 'follow') {
+        const name = args.slice(1).join(' ').toLowerCase();
+        if (!name) return await send('❌ Usage: `/cricket follow <player name>`');
+        config.cricketFollow = config.cricketFollow || [];
+        if (config.cricketFollow.includes(name)) {
+          config.cricketFollow = config.cricketFollow.filter((n: string) => n !== name);
+          await send(`✅ Stopped following: *${name.toUpperCase()}*`);
+        } else {
+          config.cricketFollow.push(name);
+          await send(`✅ Now following: *${name.toUpperCase()}*`);
+        }
+        saveConfig(config);
+        return;
+      }
+
+      if (sub === 'scores') {
+        config.automaticScoreUpdates = !config.automaticScoreUpdates;
+        saveConfig(config);
+        return await send(`📊 Automatic Score Updates: *${config.automaticScoreUpdates ? 'ENABLED' : 'DISABLED'}*`);
+      }
+
+      // Cycle Logic: Lights -> Commentary -> Off
+      if (args.length === 0) {
+        if (!config.cricketMode) {
+          config.cricketMode = true; // Lights Only
+          await send('🏏 *Cricket Mode:* LIGHTS ONLY 💡');
+        } else if (config.cricketMode === true) {
+          config.cricketMode = 'commentary';
+          await send('🏏 *Cricket Mode:* LIGHTS + COMMENTARY 🎙️');
+        } else {
+          config.cricketMode = false;
+          await send('🏏 *Cricket Mode:* OFF 🌑');
+        }
+        saveConfig(config);
+        logActivity(`🏏 Cricket Mode Cycle: ${config.cricketMode}`);
+        return;
+      }
+    }
+  });
+
+  // 📈 /track — Add stock/crypto to Market Pulse
+  bot.registerCommand({
+    command: 'track',
+    description: 'Track stock/crypto. Tip: Use .NS for India (e.g. TCS.NS)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const type = args[0]?.toLowerCase();
+      const symbol = args[1]?.toLowerCase();
+      if (type === 'stock') {
+        if (!config.marketPulse.stocks.includes(symbol.toUpperCase())) {
+          config.marketPulse.stocks.push(symbol.toUpperCase());
+          saveConfig(config); await send(`✅ Added Stock: *${symbol.toUpperCase()}*`);
+        } else { await send('⚠️ Stock already being tracked.'); }
+      } else if (type === 'crypto') {
+        if (!config.marketPulse.crypto.includes(symbol)) {
+          config.marketPulse.crypto.push(symbol);
+          saveConfig(config); await send(`✅ Added Crypto: *${symbol}*`);
+        } else { await send('⚠️ Crypto already being tracked.'); }
+      } else {
+        await send('❌ *Usage:* /track <stock|crypto> <symbol>\n\n💡 *Tips:*\n• US Stocks: `AAPL`\n• Indian Stocks: `RELIANCE.NS`\n• Crypto: `bitcoin`');
+      }
+    }
+  });
+
+  // 📉 /untrack — Remove stock/crypto from Market Pulse
+  bot.registerCommand({
+    command: 'untrack',
+    description: 'Remove a stock or crypto from Market Pulse',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const type = args[0]?.toLowerCase();
+      const symbol = args[1]?.toLowerCase();
+      if (type === 'stock') {
+        config.marketPulse.stocks = config.marketPulse.stocks.filter(s => s !== symbol.toUpperCase());
+        saveConfig(config); await send(`✅ Removed Stock: *${symbol.toUpperCase()}*`);
+      } else if (type === 'crypto') {
+        config.marketPulse.crypto = config.marketPulse.crypto.filter(c => c !== symbol);
+        saveConfig(config); await send(`✅ Removed Crypto: *${symbol}*`);
+      } else { await send('❌ Usage: /untrack <stock|crypto> <symbol>'); }
+    }
+  });
+
+  // 🔥 /trending — GitHub Trends
+  bot.registerCommand({
+    command: 'trending',
+    description: 'Fetch top trending repositories on GitHub',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const lang = args[0] || '';
+      await send(`🔍 *Scraping GitHub Trending* ${lang ? 'for ' + lang : ''}...`);
+      try {
+        const browser = await puppeteer.launch({ headless: true });
+        const page = await browser.newPage();
+        await page.goto(`https://github.com/trending/${lang}`, { waitUntil: 'networkidle2' });
+        const repos = await page.evaluate(() => {
+          const items = Array.from(document.querySelectorAll('article.Box-row'));
+          return items.slice(0, 5).map(item => ({
+            name: item.querySelector('h2 a')?.innerText.trim().replace(/\s+/g, ''),
+            desc: item.querySelector('p')?.innerText.trim() || 'No description',
+            link: 'https://github.com' + item.querySelector('h2 a')?.getAttribute('href')
+          }));
+        });
+        await browser.close();
+        if (repos.length === 0) return await send('❌ No trending repos found.');
+        let res = `🔥 *GitHub Trending* ${lang ? '(' + lang + ')' : ''}\n━━━━━━━━━━━━━━\n`;
+        repos.forEach((r, i) => {
+          res += `${i+1}. [${r.name}](${r.link})\n_${r.desc.slice(0, 80)}..._\n\n`;
+        });
+        await send(res, { parse_mode: 'Markdown', disable_web_page_preview: true });
+      } catch (e) {
+        await send('❌ Scraper failed: ' + e.message);
+      }
+    }
+  });
+
+  // 🔮 /odds — Prediction Markets (v4.8)
+  const oddsHandler = async (chatId: number, args: string[], msg: any, send: any, forceSource?: 'poly' | 'kalshi') => {
+    if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+    const query = args.join(' ').toLowerCase();
+    const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
+    
+    await send(`🔮 *Consulting the Oracles...* [${dateStr}]`);
+    
+    try {
+      let res = `🔮 *Gravity Oracle Pulse*\n📅 *${dateStr}*\n━━━━━━━━━━━━━━\n`;
+      
+      if (!forceSource || forceSource === 'poly') {
+        const polyRes = await fetch('https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=20');
+        const polyMarkets = await polyRes.json();
+        const polyFiltered = (polyMarkets as any).filter((m: any) => !query || m.question.toLowerCase().includes(query)).slice(0, 6);
+        
+        res += `*Polymarket (% probability)*\n`;
+        polyFiltered.forEach((m: any) => {
+          const prob = m.outcomePrices ? (JSON.parse(m.outcomePrices)[0] * 100).toFixed(0) : '?';
+          const url = m.slug ? `[${m.question.slice(0, 45)}...](https://polymarket.com/event/${m.slug})` : m.question.slice(0, 45);
+          res += `• ${url}: *${prob}%*\n`;
+        });
+      }
+
+      if (!forceSource || forceSource === 'kalshi') {
+        if (!forceSource) res += '\n';
+        try {
+          const kalshiRes = await fetch('https://api.elections.kalshi.com/trade-api/v2/markets?status=open&limit=20');
+          const kalshiMarkets = await kalshiRes.json();
+          if (kalshiMarkets && kalshiMarkets.markets) {
+            const kalFiltered = (kalshiMarkets.markets as any).filter((m: any) => !query || m.title.toLowerCase().includes(query)).slice(0, 6);
+            if (kalFiltered.length > 0) {
+              res += `*Kalshi (cents)*\n`;
+              kalFiltered.forEach((m: any) => {
+                const prob = (m.yes_price || 0);
+                const url = m.ticker ? `[${m.title.slice(0, 45)}...](https://kalshi.com/markets/${m.ticker})` : m.title.slice(0, 45);
+                res += `• ${url}: *${prob}%*\n`;
+              });
+            }
+          }
+        } catch (e) {
+          logActivity(`⚠️ Kalshi Error: ${e.message}`);
+        }
+      }
+
+      await bot.sendMessage(chatId, res, { parse_mode: 'Markdown', disable_web_page_preview: true });
+    } catch (e) { await send('❌ Oracle failure: ' + e.message); }
+  };
+
+  bot.registerCommand({
+    command: 'odds',
+    description: 'Check top prediction market odds (Global)',
+    handler: (chatId, args, msg, send) => oddsHandler(chatId, args, msg, send)
+  });
+
+  bot.registerCommand({
+    command: 'polymarket',
+    description: 'Check Polymarket odds specifically',
+    handler: (chatId, args, msg, send) => oddsHandler(chatId, args, msg, send, 'poly')
+  });
+
+  bot.registerCommand({
+    command: 'kalshi',
+    description: 'Check Kalshi odds specifically',
+    handler: (chatId, args, msg, send) => oddsHandler(chatId, args, msg, send, 'kalshi')
+  });
+
+  // 🔮 /follow — Follow keyword
+  bot.registerCommand({
+    command: 'follow',
+    description: 'Follow a prediction market keyword for Oracle Pulse alerts',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const keyword = args.join(' ').toLowerCase();
+      if (!keyword) return await send('❌ Usage: /follow <keyword>');
+      if (!config.predictionPulse.markets.includes(keyword)) {
+        config.predictionPulse.markets.push(keyword);
+        saveConfig(config); await send(`✅ Now following: *${keyword}* for Oracle alerts.`);
+      } else { await send('⚠️ Already following this keyword.'); }
+    }
+  });
+
+  // 🔮 /unfollow — Unfollow keyword
+  bot.registerCommand({
+    command: 'unfollow',
+    description: 'Stop following a prediction market keyword',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const keyword = args.join(' ').toLowerCase();
+      config.predictionPulse.markets = config.predictionPulse.markets.filter(m => m !== keyword);
+      saveConfig(config); await send(`✅ Unfollowed: *${keyword}*`);
+    }
+  });
+
+  // 🚚 /deliver — Simulate Delivery
+  bot.registerCommand({
+    command: 'deliver',
+    description: 'Simulate a delivery arrival for visual alert testing',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await send('🚚 *Simulating Delivery Arrival...*');
+      await blinkLight(3, { r: 255, g: 165, b: 0 }); // Orange Pulse
+    }
+  });
+
+  // 🏟️ /ipl — Quick Score Overview
+  bot.registerCommand({
+    command: 'ipl',
+    description: 'Manual score check from Gravity Engine',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const CENTERS_PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/match_centers.json";
+      try {
+        let feed: any = {};
+        if (fs.existsSync(IPL_FEED)) {
+           feed = JSON.parse(fs.readFileSync(IPL_FEED, 'utf-8'));
+        }
+        
+        let res = `🏟️ *Gravity IPL Intel*\n━━━━━━━━━━━━━━\n`;
+        if (feed.currentScore) {
+           res += `🏏 *Score:* ${feed.currentScore}\n`;
+           res += `🎾 Latest: *${feed.latestEvent?.run || 'N/A'}*\n`;
+           res += `🎙️ _${feed.latestEvent?.commentary || 'Waiting for pulse...'}_ \n\n`;
+        }
+
+        // Try to get pairs from match_centers for the current match
+        if (fs.existsSync(CENTERS_PATH)) {
+           const centers = JSON.parse(fs.readFileSync(CENTERS_PATH, 'utf-8'));
+           // Assuming matchNum 1 for now or find the latest 'ongoing' one
+           const latest = centers[centers.length - 1];
+           if (latest && latest.innings) {
+             const batting = latest.innings.find((i: any) => i.type === 'batting');
+             const bowling = latest.innings.find((i: any) => i.type === 'bowling');
+             if (batting) {
+               const pairs = batting.rows.filter((r: any) => r[1] === 'not out').map((r: any) => r[0]);
+               if (pairs.length) res += `🏏 *Batting:* ${pairs.join(' & ')}\n`;
+             }
+             if (bowling) {
+               const bowler = bowling.rows[bowling.rows.length - 1][0];
+               res += `🎾 *Bowling:* ${bowler}\n`;
+             }
+           }
+        }
+        
+        if (feed.winForecast) {
+          res += `\n🔮 *Win Forecast:* ${feed.winForecast.team1}% vs ${feed.winForecast.team2}%\n`;
+        }
+        res += `━━━━━━━━━━━━━━\n_Data Source: Gravity Pulse Engine_`;
+        await send(res);
+      } catch (e) {
+        await send('❌ Failed to fetch IPL feed.');
+      }
+    }
+  });
+
+  // 🏆 /results — Recent Match Results
+  bot.registerCommand({
+    command: 'results',
+    description: 'Show recent IPL match results',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const RESULTS_PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/parsed_matches.json";
+      const CENTERS_PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/match_centers.json";
+      try {
+        if (!fs.existsSync(RESULTS_PATH)) return await send('⚠️ *Gravity Archive:* No match history found.');
+        const matches = JSON.parse(fs.readFileSync(RESULTS_PATH, 'utf-8'));
+        const centers = fs.existsSync(CENTERS_PATH) ? JSON.parse(fs.readFileSync(CENTERS_PATH, 'utf-8')) : [];
+        
+        const recent = matches.filter((m: any) => m.status === 'completed').slice(-3).reverse();
+        
+        let res = `🏆 *Recent IPL Results*\n━━━━━━━━━━━━━━\n`;
+        recent.forEach((m: any) => {
+          const center = centers.find((c: any) => c.matchNum === m.matchNum);
+          res += `📍 *${m.name}*\n`;
+          res += `⚔️ ${m.team1.toUpperCase()} ${m.score1} vs ${m.team2.toUpperCase()} ${m.score2}\n`;
+          res += `✅ ${m.result}\n`;
+          if (center && center.potmText) res += `🌟 _${center.potmText}_\n`;
+          
+          if (center && center.innings) {
+             const batting = center.innings.find((i: any) => i.type === 'batting');
+             if (batting) {
+                const lastPair = batting.rows.filter((r: any) => r[1] === 'not out').map((r: any) => r[0]);
+                if (lastPair.length) res += `🏏 *Last Stand:* ${lastPair.join(' & ')}\n`;
+             }
+          }
+          res += `\n`;
+        });
+        res += `━━━━━━━━━━━━━━\n_Sync complete with Engine Archive._`;
+        await send(res);
+      } catch (e) {
+        await send('❌ Failed to read match history.');
+      }
+    }
+  });
+
+  // 📅 /upcoming — Future Matches
+  bot.registerCommand({
+    command: 'upcoming',
+    description: 'Show scheduled IPL matches',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/parsed_matches.json";
+      try {
+        if (!fs.existsSync(PATH)) return await send('⚠️ No schedule found.');
+        const matches = JSON.parse(fs.readFileSync(PATH, 'utf-8'));
+        const upcoming = matches.filter((m: any) => m.status === 'scheduled').slice(0, 5);
+        
+        let res = `📅 *Upcoming IPL Fixtures*\n━━━━━━━━━━━━━━\n`;
+        upcoming.forEach((m: any) => {
+          res += `🔹 *Match ${m.matchNum}:* ${m.name}\n`;
+          res += `📍 ${m.city} | ⏰ ${m.time}\n\n`;
+        });
+        res += `━━━━━━━━━━━━━━\n_Use /match <number> for details._`;
+        await send(res);
+      } catch (e) { await send('❌ Error fetching schedule.'); }
+    }
+  });
+
+  // ⚔️ /match — Specific Match Details
+  bot.registerCommand({
+    command: 'match',
+    description: 'Get details for a specific match number',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const num = parseInt(args[0]);
+      if (isNaN(num)) return await send('❌ Usage: `/match <number>`');
+      
+      const PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/parsed_matches.json";
+      const CENTERS_PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/match_centers.json";
+      try {
+        const matches = JSON.parse(fs.readFileSync(PATH, 'utf-8'));
+        const m = matches.find((x: any) => x.matchNum === num);
+        if (!m) return await send('❌ Match not found.');
+        
+        let res = `🏏 *Match ${m.matchNum} Intelligence*\n━━━━━━━━━━━━━━\n`;
+        res += `⚔️ *${m.name}*\n`;
+        res += `📍 ${m.city} | ${m.time}\n`;
+        res += `📊 Status: *${m.status.toUpperCase()}*\n`;
+        
+        if (m.status === 'completed') {
+           res += `🔢 Score: ${m.score1} vs ${m.score2}\n`;
+           res += `✅ Result: ${m.result}\n`;
+        }
+        
+        const centers = fs.existsSync(CENTERS_PATH) ? JSON.parse(fs.readFileSync(CENTERS_PATH, 'utf-8')) : [];
+        const center = centers.find((c: any) => c.matchNum === num);
+        if (center && center.url) res += `\n🔗 [Full Scorecard](${center.url})\n`;
+        
+        res += `━━━━━━━━━━━━━━`;
+        await send(res);
+      } catch (e) { await send('❌ Error.'); }
+    }
+  });
+
+  // 🛡️ /team — Team Pulse
+  bot.registerCommand({
+    command: 'team',
+    description: 'Show upcoming/recent matches for a team',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const team = args.join(' ').toLowerCase();
+      if (!team) return await send('❌ Usage: `/team <name>` (e.g. RCB)');
+      
+      const PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/parsed_matches.json";
+      try {
+        const matches = JSON.parse(fs.readFileSync(PATH, 'utf-8'));
+        const filter = matches.filter((m: any) => m.name.toLowerCase().includes(team));
+        if (!filter.length) return await send('❌ No matches found for this team.');
+        
+        const recent = filter.filter((m: any) => m.status === 'completed').slice(-2).reverse();
+        const next = filter.filter((m: any) => m.status === 'scheduled').slice(0, 2);
+        
+        let res = `🛡️ *${team.toUpperCase()} Pulse*\n━━━━━━━━━━━━━━\n`;
+        if (recent.length) {
+          res += `⏪ *Recent:*\n`;
+          recent.forEach((m: any) => res += `• vs ${m.name.replace(new RegExp(team, 'gi'), '').replace('vs', '').trim()}: ${m.result}\n`);
+        }
+        if (next.length) {
+          res += `\n⏩ *Next:*\n`;
+          next.forEach((m: any) => res += `• ${m.time} | vs ${m.name.replace(new RegExp(team, 'gi'), '').replace('vs', '').trim()}\n`);
+        }
+        res += `━━━━━━━━━━━━━━`;
+        await send(res);
+      } catch (e) { await send('❌ Error.'); }
+    }
+  });
+
+  // ✏️ /jot — Quick Hoard
+  bot.registerCommand({
+    command: 'jot',
+    description: 'Quickly save a thought to Gravity Archive',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const text = args.join(' ');
+      if (!text) return await send('✏️ Usage: `/jot My thought here`');
+      
+      try {
+        await fetch('http://localhost:3031/archive/hoard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, meta: { type: 'jot' }, source: 'Telegram' })
+        });
+        await send('✅ *Jot Stored.* Sent to Sovereign Vault.');
+      } catch (e) {
+        await send('❌ Archive engine is offline.');
+      }
+    }
+  });
+
+  // 🕰️ /schedule — Management
+  bot.registerCommand({
+    command: 'schedule',
+    description: 'View active routines and schedules',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const jobs = config.scheduler || [];
+      if (jobs.length === 0) return await send('🕰 *Schedules*: No routines active.');
+      
+      let res = '🕰 *Active Hub Routines*\n\n';
+      jobs.forEach((j: any, i: number) => {
+        res += `${i+1}. [${j.time}] \`${j.action.toUpperCase()}\`\n`;
+      });
+      res += '\n_Use the buttons below to manage mission routines._';
+      
+      await bot.sendMessage(chatId, res, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '➕ Add Routine', callback_data: 'schedule_prompt' }],
+            [{ text: '🧹 Clear All', callback_data: 'schedule_clear_confirm' }]
+          ]
+        }
+      });
+    }
+  });
+
+  // 🎨 /aura — Media Sync
+  bot.registerCommand({
+    command: 'aura',
+    description: 'Toggle Media Aura sync',
+    handler: async (chatId, args, msg, send) => {
+       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+       config.mediaAura = !config.mediaAura;
+       saveConfig(config);
+       await send(`🎨 *Media Aura*: **${config.mediaAura ? 'ENABLED' : 'DISABLED'}**`);
+    }
+  });
+
+  // ❄️ /temp — AC Status
+  bot.registerCommand({
+    command: 'temp',
+    description: 'Show current AC set temperature',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (!miraie || miraie.devices.length === 0) return await send('❌ AC not configured.');
+      const device = miraie.devices[0];
+      const status = (device as any).status;
+      if (status) {
+        const isOn = status.ps === 'on';
+        const acTemp = status.actmp || '?';
+        const mode = status.acmd || '?';
+        await send(`❄️ *AC Status*\nPower: ${isOn ? '✅ ON' : '❌ OFF'}\nSet Temp: *${acTemp}°C*\nMode: *${mode.toUpperCase()}*`);
+      } else {
+        await send(`❄️ AC is configured (${device.deviceName})\n_Status polling not available for this device._`);
+      }
+    }
+  });
+
+  // 📈 /history — Usage History
+  bot.registerCommand({
+    command: 'history',
+    description: 'Show multi-day energy totals',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const log = config.stats.dailyLog || [];
+      const todayAC = (config.stats.acMinutes / 60);
+      const todayLight = (config.stats.lightMinutes / 60);
+      
+      let totalAC = todayAC;
+      let totalLight = todayLight;
+      log.forEach((entry: any) => {
+        totalAC += parseFloat(entry.ac || 0);
+        totalLight += parseFloat(entry.light || 0);
+      });
+
+      let table = '📊 *Gravity Multi-Day Totals*\n\n';
+      table += `✨ *TODAY (Live)*\n❄️ AC: \`${todayAC.toFixed(1)}h\` | 💡 Light: \`${todayLight.toFixed(1)}h\`\n\n`;
+      table += `🏆 *ULTIMATE TOTALS*\n_(Processed from ${log.length + 1} days of data)_\n\n`;
+      table += `❄️ Total AC: *${totalAC.toFixed(1)} hrs*\n💡 Total Light: *${totalLight.toFixed(1)} hrs*`;
+      await send(table);
+    }
+  });
+
+>>>>>>> Stashed changes
   // ──────────────────────────────────────────────────────
   // /remind — Delayed Telegram reminder
   // ──────────────────────────────────────────────────────
@@ -2616,6 +3483,7 @@ async function main() {
   runPgvclScraper();
   setInterval(runPgvclScraper, 21600000);
   let awayAcMinutes = 0;
+<<<<<<< Updated upstream
 
   setInterval(async () => {
     try {
@@ -2867,6 +3735,8 @@ async function main() {
   let awayAcMinutes = 0;
   let lastSpotifyTrack: string | null = null;
   let preMusicLightState: any = null;
+=======
+>>>>>>> Stashed changes
 
   // 📋 Hyper-Fast Clipboard Sentry (Instant Recall)
   setInterval(async () => {
@@ -2910,6 +3780,76 @@ async function main() {
          config.stats.lowBattAlerted = false;
       }
 
+<<<<<<< Updated upstream
+=======
+       // 1.5 IPL Live Pulse (Cricket Mode)
+       if (config.cricketMode || config.automaticScoreUpdates) {
+          try {
+            if (fs.existsSync(IPL_FEED)) {
+              const feed = JSON.parse(fs.readFileSync(IPL_FEED, 'utf-8'));
+              if (feed.timestamp > lastIplEventTs) {
+                lastIplEventTs = feed.timestamp;
+                const event = feed.latestEvent;
+                const run = String(event.run || '').toUpperCase();
+                
+                // 1. Phase Change Alert
+                if (feed.phase && feed.phase !== lastIplPhase) {
+                  lastIplPhase = feed.phase;
+                  logActivity(`🏏 IPL Phase Change: ${lastIplPhase}`);
+                  lastGlobalSignal = { text: `🏏 IPL Phase: ${lastIplPhase}`, time: Date.now() };
+                  if (config.cricketMode) await blinkLight(1, { r: 0, g: 255, b: 0 }); // Single Green Pulse
+                  await (bot as any).sendMessage(config.telegram.chatId, `🏟️ *IPL PHASE CHANGE:* ${lastIplPhase.toUpperCase()}`, { parse_mode: 'Markdown' });
+                }
+
+                // 2. Over Change Alert
+                const currentOver = (feed.over || "").split('.')[0];
+                if (currentOver && currentOver !== lastIplOver) {
+                  lastIplOver = currentOver;
+                  if (config.cricketMode) await blinkLight(1, { r: 255, g: 255, b: 255 }); // Single White Pulse
+                }
+
+                // 3. Toss Alert
+                if (run.includes('TOSS') || (event.commentary || '').toLowerCase().includes('toss won')) {
+                  logActivity(`🏏 Cricket Alert: TOSS!`);
+                  lastGlobalSignal = { text: `🪙 IPL Toss`, time: Date.now() };
+                  if (config.cricketMode) await blinkLight(3, { r: 0, g: 255, b: 255 }); // Cyan for Toss
+                  await (bot as any).sendMessage(config.telegram.chatId, `🪙 *TOSS UPDATE:* \n_${event.commentary}_`, { parse_mode: 'Markdown' });
+                }
+
+                // 4. Event Visuals & Messages
+                if (run.includes('W')) {
+                  logActivity(`🏏 Cricket Alert: WICKET!`);
+                  lastGlobalSignal = { text: `☝️ IPL Wicket`, time: Date.now() };
+                  if (config.cricketMode) await blinkLight(2, { r: 255, g: 0, b: 0 }); // Red for Wicket
+                  if (config.automaticScoreUpdates || run.includes('DROP') || run.includes('CHANCE') || run.includes('RUN OUT')) {
+                    await (bot as any).sendMessage(config.telegram.chatId, `☝️ *WICKET!* (${feed.over}) \n_${event.commentary}_`, { parse_mode: 'Markdown' });
+                  }
+                } else if (run === '6') {
+                  logActivity(`🏏 Cricket Alert: SIXER!`);
+                  lastGlobalSignal = { text: `🚀 IPL Sixer`, time: Date.now() };
+                  if (config.cricketMode) await blinkLight(2, { r: 255, g: 215, b: 0 }); // Gold for 6
+                  if (config.automaticScoreUpdates) {
+                    await (bot as any).sendMessage(config.telegram.chatId, `🚀 *SIX!* (${feed.over}) \n_${event.commentary}_`, { parse_mode: 'Markdown' });
+                  }
+                } else if (run === '4') {
+                  logActivity(`🏏 Cricket Alert: FOUR!`);
+                  lastGlobalSignal = { text: `🔥 IPL Four`, time: Date.now() };
+                  if (config.cricketMode) await blinkLight(2, { r: 0, g: 0, b: 255 }); // Blue for 4
+                  if (config.automaticScoreUpdates) {
+                    await (bot as any).sendMessage(config.telegram.chatId, `🔥 *FOUR!* (${feed.over}) \n_${event.commentary}_`, { parse_mode: 'Markdown' });
+                  }
+                } else if (run === '0' || run === 'DOT') {
+                  // Subtle pulse for dot balls
+                  if (config.cricketMode) {
+                    await pulseLight(70, 400);
+                  }
+                }
+              }
+            }
+          } catch (e) { /* Feed silent */ }
+       }
+
+>>>>>>> Stashed changes
       // 2. Media Aura Sync (Liquid Aura 2.0 - Dynamic Cycling)
       const currentSpotify = await getSpotifyStatus();
       if (config.mediaAura !== false) {
@@ -2957,7 +3897,7 @@ async function main() {
           preMusicLightState = null;
         }
       }
-      lastSpotifyTrack = currentSpotify;
+      lastSpotifyTrack = currentSpotify || "";
     } catch (e) { 
       /* Aura silent */ 
     }
@@ -3114,7 +4054,6 @@ async function main() {
   // ──────────────────────────────────────────────────────
   // 🔋 Mac Battery Guardian (New Feature v2.2)
   // ──────────────────────────────────────────────────────
-  let batteryAlertSent = false;
   setInterval(async () => {
     try {
       const { stdout } = await execAsync('pmset -g batt');
@@ -3173,6 +4112,169 @@ async function main() {
     saveConfig(config);
   }
 
+<<<<<<< Updated upstream
+=======
+  // ── 📡 Signal Intelligence Hub (Vibe Engine v4.6.2) ──
+  setInterval(async () => {
+    try {
+        // 1. ISS Pulse
+        if (config.issPulse?.enabled && (Date.now() - ((global as any).lastIssCheck || 0) > 300000)) {
+           (global as any).lastIssCheck = Date.now();
+           const res = await fetch('http://api.open-notify.org/iss-now.json');
+           const data = await res.json();
+           const { latitude, longitude } = (data as any).iss_position;
+           const dist = Math.sqrt(Math.pow(latitude - 21.5, 2) + Math.pow(longitude - 70.4, 2));
+           if (dist < 5) {
+             logActivity("🛰️ ISS overhead detected!");
+             lastGlobalSignal = { text: "🛰️ ISS Overhead", time: Date.now() };
+             await blinkLight(2, { r: 255, g: 255, b: 255 }); // White Flash
+             await (bot as any).sendMessage(config.telegram.chatId, "🛰️ *Sovereignty:* The International Space Station is currently over your Hub.");
+           }
+        }
+
+        // 2. Prediction Oracle Pulse
+        if (config.predictionPulse?.enabled && (Date.now() - ((global as any).lastPredictionCheck || 0) > 600000)) {
+           (global as any).lastPredictionCheck = Date.now();
+           const res = await fetch('https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=20');
+           const markets = await res.json();
+           for (const m of (markets as any)) {
+             const isFollowed = config.predictionPulse.markets.some((k: string) => m.question.toLowerCase().includes(k.toLowerCase()));
+             if (isFollowed) {
+               const price = m.outcomePrices ? JSON.parse(m.outcomePrices)[0] : 0.5;
+               const prob = parseFloat(price);
+               const lastProb = config.predictionPulse.lastOdds[m.id] || prob;
+               if (Math.abs(prob - lastProb) > 0.15) {
+                 logActivity(`🔮 Oracle Pulse: Sentiment Shift on ${m.question}`);
+                 lastGlobalSignal = { text: `🔮 Oracle: ${m.question.slice(0, 20)}...`, time: Date.now() };
+                 await blinkLight(2, { r: 255, g: 0, b: 255 }); // Magenta Pulse
+                 await (bot as any).sendMessage(config.telegram.chatId, `🔮 *ORACLE ALERT:* Sentiment shift detected on "${m.question}"\nProb: *${(prob*100).toFixed(0)}%* (was ${(lastProb*100).toFixed(0)}%)`);
+               }
+               config.predictionPulse.lastOdds[m.id] = prob; saveConfig(config);
+             }
+           }
+        }
+
+        // 3. Market Pulse (Moon Alert)
+        if (config.marketPulse?.enabled && (Date.now() - ((global as any).lastMarketCheck || 0) > 900000)) {
+           (global as any).lastMarketCheck = Date.now();
+           for (const symbol of config.marketPulse.crypto) {
+             const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${symbol}&include_24hr_change=true`);
+             const data = await res.json();
+             const change = data[symbol]?.usd_24h_change || 0;
+             if (change > 10) {
+               logActivity(`🚀 MOON ALERT: ${symbol.toUpperCase()} is pumping!`);
+               lastGlobalSignal = { text: `🚀 Moon: ${symbol.toUpperCase()}`, time: Date.now() };
+               await blinkLight(5, { r: 255, g: 215, b: 0 }); // Gold Pulse
+               await (bot as any).sendMessage(config.telegram.chatId, `🚀 *MOON ALERT:* ${symbol.toUpperCase()} is up *${change.toFixed(1)}%*! 🌕`);
+             }
+           }
+        }
+
+        // 4. GitHub Pulse (Sovereign Watcher)
+        if (config.githubPulse?.enabled && (Date.now() - ((global as any).lastGitCheck || 0) > 300000)) {
+           (global as any).lastGitCheck = Date.now();
+           const username = 'paranjayy';
+           try {
+             const res = await fetch(`https://api.github.com/users/${username}/events/public`);
+             const events: any = await res.json();
+             if (Array.isArray(events) && events.length > 0) {
+               const lastId = config.githubPulse.lastEventId;
+               const currentEvent = events[0];
+               if (currentEvent.id !== lastId) {
+                 if (currentEvent.type === 'PushEvent' || currentEvent.type === 'CreateEvent') {
+                   logActivity(`🐙 GitHub Pulse: Activity detected for ${username}`);
+                   await blinkLight(3, { r: 120, g: 0, b: 255 }); // Purple Blink
+                   const repoName = currentEvent.repo.name.split('/').pop();
+                   await (bot as any).sendMessage(config.telegram.chatId, `🐙 *GITHUB PULSE:* New code pushed to \`${repoName}\`!\n_Sensory sync engaged._`);
+                 }
+                 config.githubPulse.lastEventId = currentEvent.id;
+                 saveConfig(config);
+               }
+             }
+           } catch (e) { console.error("Git Pulse Error:", e); }
+        }
+
+        // 5. Wikipedia Rabbit Hole
+        const h = new Date().getHours();
+        if (h === 22 && !(global as any).wikiToday) {
+          (global as any).wikiToday = true;
+          const res = await fetch('https://en.wikipedia.org/api/rest_v1/page/random/summary');
+          const page = await res.json();
+          await breatheLight({ r: 0, g: 255, b: 255 }, 2); // Cyan Breathe
+          await (bot as any).sendMessage(config.telegram.chatId, `🧠 *Nightly Rabbit Hole*\n\n*${(page as any).title}*\n${(page as any).extract}\n\n🔗 [Read More](${(page as any).content_urls.desktop.page})`, { parse_mode: 'Markdown' });
+        }
+        if (h !== 22) (global as any).wikiToday = false;
+        
+        // 6. Moon Phase Mood (Circadian Night)
+        if (config.moonPhaseMood?.enabled && h >= 0 && h < 4) {
+           const lp = 2551442.8; 
+           const now = new Date();
+           const new_moon = new Date(2000, 0, 6, 18, 14, 0);
+           const phase = ((now.getTime() - new_moon.getTime()) / 1000) % lp / lp;
+           const dimming = Math.round(5 + (35 * (1 - Math.abs(2 * phase - 1))));
+           if (config.stats.light?.status === 'on' && (global as any).lastMoonDim !== dimming) {
+              (global as any).lastMoonDim = dimming;
+              await wiz.setDimming(dimming);
+              logActivity(`🌑 Moon Mood: Phase ${phase.toFixed(2)}, Dimming to ${dimming}%`);
+           }
+        }
+
+        // 7. Focus Shield (Mac Process Monitor)
+        if (config.focusShield?.enabled && (Date.now() - ((global as any).lastShieldCheck || 0) > 15000)) {
+           (global as any).lastShieldCheck = Date.now();
+           try {
+             const { stdout: psOut } = await execAsync('ps -axco command');
+             const detected = config.focusShield.apps.filter(app => psOut.toLowerCase().includes(app.toLowerCase()));
+             if (detected.length > 0) {
+                logActivity(`🛡️ Focus Shield: Procrastination detected (${detected.join(', ')})`);
+                await blinkLight(2, { r: 255, g: 0, b: 0 }); // Red Alert
+                await notifier.notify(`🛡️ *FOCUS SHIELD:* Master, I detect \`${detected.join(', ')}\` is active. Get back to work!`, 'high');
+             }
+           } catch {}
+        }
+
+        // 8. Solar Rhythms (Wake/Sleep)
+        const nowTime = new Date().toLocaleTimeString('en-IN', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+        if (config.solarRhythm?.enabled) {
+           if (nowTime === config.solarRhythm.sleepTime && !(global as any).sleepTriggered) {
+              (global as any).sleepTriggered = true;
+              logActivity("🌅 Solar Rhythm: Commencing sleep transition...");
+              await wiz.setDimming(5); 
+           }
+           if (nowTime === config.solarRhythm.wakeTime && !(global as any).wakeTriggered) {
+              (global as any).wakeTriggered = true;
+              logActivity("🌅 Solar Rhythm: Commencing sunrise simulation...");
+              await wiz.turnOn();
+              await wiz.setDimming(10);
+              setTimeout(() => wiz.setDimming(50), 300000); 
+           }
+           if (nowTime !== config.solarRhythm.sleepTime) (global as any).sleepTriggered = false;
+           if (nowTime !== config.solarRhythm.wakeTime) (global as any).wakeTriggered = false;
+        }
+
+        // 9. Weather Pulse (Aura Sync)
+        if (config.weatherAura?.enabled && (Date.now() - ((global as any).lastWeatherCheck || 0) > 1800000)) {
+           (global as any).lastWeatherCheck = Date.now();
+           try {
+             const res = await fetch('https://wttr.in/Mumbai?format=j1');
+             const weather = await res.json();
+             const desc = (weather as any).current_condition[0].weatherDesc[0].value.toLowerCase();
+             logActivity(`🌦️ Weather Aura: ${desc}`);
+             if (desc.includes('rain') || desc.includes('drizzle')) {
+                await wiz.setPilot(config.wiz.ip, { r: 0, g: 100, b: 255 }); 
+             } else if (desc.includes('clear') || desc.includes('sunny')) {
+                await wiz.setPilot(config.wiz.ip, { temp: 3000 }); 
+             } else if (desc.includes('cloud') || desc.includes('overcast')) {
+                await wiz.setPilot(config.wiz.ip, { temp: 5000 }); 
+             }
+           } catch {}
+        }
+
+    } catch (e) {}
+  }, 60000);
+
+
+>>>>>>> Stashed changes
   // 🏥 Health Pulse & Maintenance
   if (!CLIPBOARD_ONLY) {
     setInterval(() => {
