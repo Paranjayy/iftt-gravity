@@ -32,6 +32,10 @@ let lastIplBallId = "";
 let lastIplPhase = "";
 let lastIplOver = "";
 let lastIplScore = "";
+let lastIplMatchId = "";
+let lastIplWicketBall = false; // true = next ball after wicket
+let lastIplProjected = 0;
+let lastIplMilestones = new Set<string>();
 let lastCommentaryMsgId: number | null = null;
 let lastGitMsgIds: Record<string, number> = {};
 let lastSpotifyTrack = "";
@@ -40,7 +44,7 @@ let lastMarketCheck = 0;
 let lastIssCheck = 0;
 let lastGoldenHourCheck = 0;
 let lastFocusShieldCheck = 0;
-let lastBlinkSignal = { text: "None", time: 0 };
+let lastBlinkSignal = { text: "None", time: Date.now() };
 let preMusicLightState: any = null;
 let isPhoneOnline = false;
 let batteryAlertSent = false;
@@ -452,13 +456,24 @@ async function main() {
   }
 
   // Helper to calculate duration string
-  const getDurationString = (lastChangedIso: string) => {
-    if (!lastChangedIso) return "Unknown";
-    const diff = Date.now() - new Date(lastChangedIso).getTime();
+  const getDurationString = (lastChangedIso: string | number) => {
+    if (!lastChangedIso || lastChangedIso === "null" || lastChangedIso === "undefined" || lastChangedIso === "0") return "Just now";
+    // Handle both ISO strings and numeric timestamps (as strings or numbers)
+    let dateObj: Date;
+    const num = Number(lastChangedIso);
+    if (!isNaN(num) && num > 0) {
+      dateObj = new Date(num);
+    } else {
+      dateObj = new Date(lastChangedIso);
+    }
+    const diff = Date.now() - dateObj.getTime();
+    if (isNaN(diff) || diff < 0) return "Just now";
     const hours = Math.floor(diff / 3600000);
     const mins = Math.floor((diff % 3600000) / 60000);
+    if (hours > 24) return dateObj.toLocaleDateString('en-IN');
     if (hours > 0) return `${hours}h ${mins}m`;
-    return `${mins}m`;
+    if (mins > 0) return `${mins}m`;
+    return "Just now";
   };
 
   // Helper to update state with timestamp
@@ -807,14 +822,14 @@ async function main() {
            saveConfig(config);
            recordHabit(subCommand);
         } else if (subCommand === 'cricket_live') {
-           const ipl = await getLatestIplData();
-           if (!ipl || !ipl.latestBall) {
-             await bot.sendMessage(chatId, "🏏 *Cricket Pulse:* No live match detected or engine offline.");
-           } else {
-             const ball = ipl.latestBall;
-             const score = `🏏 *LIVE SCORE:* ${ipl.matchName || 'IPL 2026'}\n━━━━━━━━━━━━━━\n${ipl.score}\nLast: *${ball.run}* (${ball.over} ov)\n\n_${ball.commentary || 'Awaiting next delivery...'}_`;
-             await bot.sendMessage(chatId, score, { parse_mode: 'Markdown' });
-           }
+            await bot.sendChatAction(chatId, "typing").catch(() => {});
+            const ipl = await getLatestIplData();
+            if (!ipl || !ipl.latestBall) {
+              await bot.sendMessage(chatId, "🏏 *Cricket Pulse:* No live match detected or engine offline.");
+            } else {
+              const summary = formatIplSummary(ipl);
+              await bot.sendMessage(chatId, summary, { parse_mode: "Markdown" });
+            }
            return;
         } else if (subCommand === 'ac_tv') {
            await triggerScene('TV');
@@ -947,7 +962,8 @@ async function main() {
       const actionStr = globalLastAction !== 'None' ? `${globalLastAction} (${getDurationString(String(globalLastActionTime))})` : 'None';
       const signalStr = lastGlobalSignal ? `\n📡 *Last Signal:* ${lastGlobalSignal.text} (${getDurationString(String(lastGlobalSignal.time))})` : '';
       const blinkStr = lastBlinkSignal.text !== 'None' ? `\n⚡ *Recent Blink:* ${lastBlinkSignal.text} (${getDurationString(String(lastBlinkSignal.time))})` : '';
-      const liveStr = lastIplScore ? `\n🏏 *Live Score:* ${lastIplScore}` : '';
+      const projTrend = lastIplProjected > 0 ? ` (Proj: ${lastIplProjected})` : '';
+      const liveStr = lastIplScore ? `\n🏏 *Live Score:* ${lastIplScore}${projTrend}` : '';
       
       dashboard = `🏏 *Cricket Vault*\n━━━━━━━━━━━━━━\nMode: *${config.cricketMode === 'commentary' ? 'LIGHTS + AUDIO' : (config.cricketMode ? 'LIGHTS ONLY' : 'OFF')}*\nScores: *${config.automaticScoreUpdates ? 'ENABLED' : 'DISABLED'}*\nRecent: *${actionStr}*${signalStr}${blinkStr}${liveStr}\n━━━━━━━━━━━━━━\n_Precision IPL & International match sync._`;
       keyboard.inline_keyboard = [
@@ -3997,67 +4013,143 @@ async function main() {
     const runIplPulse = async () => {
       if (!config.cricketMode && !config.automaticScoreUpdates) return;
       try {
+        const config = loadConfig();
+        if (config.authorizedUsers?.[0]) {
+          await bot.sendChatAction(config.authorizedUsers[0], 'typing').catch(() => {});
+        }
         const ipl = await getLatestIplData();
         if (ipl && ipl.latestBall) {
           const ball = ipl.latestBall;
+
+          // Match change → reset commentary thread so new match gets a fresh msg
+          if (ipl.matchId && ipl.matchId !== lastIplMatchId) {
+            lastIplMatchId = ipl.matchId;
+            lastIplBallId = "";
+            lastIplOver = "";
+            lastCommentaryMsgId = null;
+            lastIplWicketBall = false;
+            lastIplProjected = 0;
+            lastIplScore = "";
+            lastIplMilestones.clear();
+          }
+
+          // First boot seed — don't fire stale events
           if (lastIplBallId === "") {
             lastIplBallId = ball.ballId;
-            lastIplScore = ipl.score || "";
+            const derivedScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets} (${ball.over} ov)` : (ipl.score || "");
+            lastIplScore = derivedScore;
             lastIplOver = ball.over.split('.')[0];
             return;
           }
 
           if (ball.ballId !== lastIplBallId) {
+            const prevWasWicket = lastIplWicketBall;
             lastIplBallId = ball.ballId;
-            lastIplScore = ipl.score || "";
+            const liveHeaderScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets}` : ipl.score;
+            lastIplScore = liveHeaderScore;
             const run = String(ball.run).toUpperCase();
-            
-            // 1. Over Change Alert
+            lastIplWicketBall = ball.isWicket;
+
+            // Trend and Projection
+            let trend = "";
+            const currentProj = parseInt(ipl.projected || "0");
+            if (currentProj > 0 && lastIplProjected > 0) {
+              if (currentProj > lastIplProjected) trend = " 📈";
+              else if (currentProj < lastIplProjected) trend = " 📉";
+            }
+            if (currentProj > 0) lastIplProjected = currentProj;
+
+            // Build rich over-ball breakdown
+            const overBallsStr = (ipl.currentOverBalls || []).map((b: any) => {
+              const r = String(b.run).toUpperCase();
+              if (b.isWicket) return 'W';
+              if (r === '6') return '6';
+              if (r === '4') return '4';
+              if (r === '0') return '·';
+              if (r.includes('WD')) return 'Wd';
+              if (r.includes('NB')) return 'Nb';
+              if (r.includes('LB')) return 'Lb';
+              return r;
+            }).join(' | ');
+            const overDisplay = overBallsStr ? `\n🎯 *Over ${ball.over.split('.')[0]}:* ${overBallsStr}` : '';
+
+            // Rich summary block
+            const probBlock = ipl.winProb ? `\n📊 *Win Prob:* ${ipl.winProb}` : '';
+            const partnerBlock = ipl.partnership ? `\n🤝 *Partner:* ${ipl.partnership}` : '';
+            const rateBlock = ipl.target
+              ? `*Target:* ${ipl.target} | *Need:* ${parseInt(ipl.target) - (parseInt(ipl.latestBall?.totalRuns || '0'))} off ${Math.max(0, 120 - Math.round(parseFloat(ball.over) * 6))} balls\n*CRR:* ${ipl.crr} | *RRR:* ${ipl.rrr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`
+              : `*CRR:* ${ipl.crr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`;
+            const pairBlock = `*🏏 Bat:* ${ipl.batters || 'N/A'}\n*⚾ Bowl:* ${ipl.bowler || 'N/A'}`;
+            const summaryText = `\n━━━━━━━━━━━━━━\n${rateBlock}\n${pairBlock}${partnerBlock}${probBlock}${overDisplay}`;
+
+            // Deriving a more accurate "Live" header score (Fixing summary lag)
+            const liveHeaderScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets} (${ball.over} ov)` : ipl.score;
+            lastIplScore = liveHeaderScore;
+
+            // 1. Over Change Alert (new over starts)
             const currentOver = ball.over.split('.')[0];
             if (currentOver && currentOver !== lastIplOver) {
               lastIplOver = currentOver;
-              lastBlinkSignal = { text: "🏏 Over Started", time: Date.now() };
+              lastBlinkSignal = { text: 'Over Started', time: Date.now() };
               if (config.cricketMode) await blinkLight(2, { r: 255, g: 255, b: 255 });
             }
 
+            // 2. Toss
             if (run.includes('TOSS') || (ball.commentary || '').toLowerCase().includes('toss won')) {
-              lastGlobalSignal = { text: `🪙 IPL Toss`, time: Date.now() };
-              lastBlinkSignal = { text: "🪙 Toss Blink", time: Date.now() };
+              lastGlobalSignal = { text: 'IPL Toss', time: Date.now() };
+              lastBlinkSignal = { text: 'Toss Blink', time: Date.now() };
               if (config.cricketMode) await blinkLight(3, { r: 0, g: 255, b: 255 });
-              await sendConsolidatedCommentary(`🪙 *TOSS UPDATE:* \n_${ball.commentary}_`);
+              await sendConsolidatedCommentary(`🪙 *TOSS:* _${ball.commentary}_`);
+              return;
             }
 
-            const projected = ipl.projected ? ` | *Proj:* ${ipl.projected}` : "";
-            const summaryText = ipl.target ? `\n*Target:* ${ipl.target} | *CRR:* ${ipl.crr} | *RRR:* ${ipl.rrr}${projected}\n*Batting:* ${ipl.batters}\n*Bowling:* ${ipl.bowler}` : `\n*CRR:* ${ipl.crr}${projected}\n*Batting:* ${ipl.batters}\n*Bowling:* ${ipl.bowler}`;
+            // 3. Post-wicket awareness pulse (first ball after wicket, before checking 4/6)
+            if (prevWasWicket && !ball.isWicket && run !== '6' && run !== '4') {
+              if (config.cricketMode) await pulseLight(85, 500);
+            }
 
+            const baseSummary = formatIplSummary(ipl);
+
+            // 4. Main event dispatch
             if (ball.isWicket) {
-              lastGlobalSignal = { text: `☝️ IPL Wicket`, time: Date.now() };
-              lastBlinkSignal = { text: "☝️ Wicket Red Blink", time: Date.now() };
-              if (config.cricketMode) await blinkLight(2, { r: 255, g: 0, b: 0 });
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(`☝️ *WICKET!* (${ball.over}) — ${ipl.score}\n_${ball.commentary}_${summaryText}`);
+              lastGlobalSignal = { text: 'IPL Wicket', time: Date.now() };
+              lastBlinkSignal = { text: 'Wicket Red Blink', time: Date.now() };
+              if (config.cricketMode) await blinkLight(3, { r: 255, g: 0, b: 0 });
+              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(`☝️ *WICKET!* (${ball.over})\n${baseSummary}`);
             } else if (run === '6') {
-              lastGlobalSignal = { text: `🚀 IPL Sixer`, time: Date.now() };
-              lastBlinkSignal = { text: "🚀 Sixer Gold Blink", time: Date.now() };
-              if (config.cricketMode) await blinkLight(2, { r: 255, g: 215, b: 0 });
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(`🚀 *SIX!* (${ball.over}) — ${ipl.score}\n_${ball.commentary}_${summaryText}`);
+              lastGlobalSignal = { text: 'IPL Sixer', time: Date.now() };
+              lastBlinkSignal = { text: 'Sixer Gold Blink', time: Date.now() };
+              if (config.cricketMode) await blinkLight(3, { r: 255, g: 215, b: 0 });
+              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(`🚀 *SIX!* (${ball.over})\n${baseSummary}`);
             } else if (run === '4') {
-              lastGlobalSignal = { text: `🔥 IPL Four`, time: Date.now() };
-              lastBlinkSignal = { text: "🔥 Four Blue Blink", time: Date.now() };
-              if (config.cricketMode) await blinkLight(2, { r: 0, g: 0, b: 255 });
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(`🔥 *FOUR!* (${ball.over}) — ${ipl.score}\n_${ball.commentary}_${summaryText}`);
-            } else if (run === '0' || run === 'DOT') {
-              if (config.cricketMode) await pulseLight(70, 400);
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(`🏏 *LIVE SCORE:* ${ipl.score} (${ball.over} ov)\n_${ball.commentary}_${summaryText}`);
+              lastGlobalSignal = { text: 'IPL Four', time: Date.now() };
+              lastBlinkSignal = { text: 'Four Blue Blink', time: Date.now() };
+              if (config.cricketMode) await blinkLight(2, { r: 0, g: 100, b: 255 });
+              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(`🔥 *FOUR!* (${ball.over})\n${baseSummary}`);
             } else {
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(`🏏 *LIVE SCORE:* ${ipl.score} (${ball.over} ov)\n_${ball.commentary}_${summaryText}`);
+              // Normal ball
+              if (config.cricketMode) await pulseLight(70, 350);
+              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(baseSummary);
             }
+
+            // 5. Milestone Detection (50s/100s)
+            (ipl.inningsData?.Batsmen || []).forEach(async (b: any) => {
+              const r = parseInt(b.Runs || '0');
+              const key = `${ipl.matchId}-${b.FullName}-${r}`;
+              if ((r === 50 || r === 100) && !lastIplMilestones.has(key)) {
+                lastIplMilestones.add(key);
+                lastGlobalSignal = { text: `⭐ Milestone: ${b.FullName} (${r})`, time: Date.now() };
+                if (config.cricketMode) await blinkLight(4, { r: 120, g: 0, b: 255 }); // Purple for Stars
+                await (bot as any).sendMessage(config.telegram.chatId, `⭐ *MILESTONE:* ${b.FullName} reaches *${r}* runs! 👏\nMatch: ${ipl.matchName}`);
+              }
+            });
           }
         }
       } catch (e) { }
     };
 
     runIplPulse();
-    setInterval(runIplPulse, 5000);
+    setInterval(runIplPulse, 3000); // 3s hyper-sync
   }
 
   const shutdown = async (signal: string) => {
@@ -4103,12 +4195,66 @@ async function sendConsolidatedCommentary(text: string) {
   }
 }
 
+function formatIplSummary(ipl: any) {
+  const ball = ipl.latestBall;
+  if (!ball) return "🏏 *Cricket Pulse:* No live match detected.";
+  
+  // Trend and Projection
+  let trend = "";
+  const currentProj = parseInt(ipl.projected || "0");
+  if (currentProj > 0 && lastIplProjected > 0) {
+    if (currentProj > lastIplProjected) trend = " 📈";
+    else if (currentProj < lastIplProjected) trend = " 📉";
+  }
+
+  // Build rich over-ball breakdown
+  const overBallsStr = (ipl.currentOverBalls || []).map((b: any) => {
+    const r = String(b.run).toUpperCase();
+    if (b.isWicket) return 'W';
+    if (r === '6') return '6';
+    if (r === '4') return '4';
+    if (r === '0') return '·';
+    if (r.includes('WD')) return 'Wd';
+    if (r.includes('NB')) return 'Nb';
+    if (r.includes('LB')) return 'Lb';
+    return r;
+  }).join(' | ');
+  const overDisplay = overBallsStr ? `\n🎯 *Over ${ball.over.split('.')[0]}:* ${overBallsStr}` : '';
+
+  const probBlock = ipl.winProb ? `\n📊 *Win Prob:* ${ipl.winProb}` : '';
+  const partnerBlock = ipl.partnership ? `\n🤝 *Partner:* ${ipl.partnership}` : '';
+  const rateBlock = ipl.target
+    ? `*Target:* ${ipl.target} | *Need:* ${parseInt(ipl.target) - (parseInt(ball.totalRuns || '0'))} off ${Math.max(0, 120 - Math.round(parseFloat(ball.over) * 6))} balls\n*CRR:* ${ipl.crr} | *RRR:* ${ipl.rrr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`
+    : `*CRR:* ${ipl.crr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`;
+  const pairBlock = `*🏏 Bat:* ${ipl.batters || 'N/A'}\n*⚾ Bowl:* ${ipl.bowler || 'N/A'}`;
+  
+  const liveHeaderScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets} (${ball.over} ov)` : ipl.score;
+  const runEmoji = String(ball.run).toUpperCase() === '0' ? '·' : String(ball.run).toUpperCase().includes('WD') ? '🌀 Wd' : String(ball.run).toUpperCase().includes('NB') ? '📌 Nb' : String(ball.run).toUpperCase().includes('LB') ? '🦵 Lb' : `${ball.run} run${ball.run === '1' ? '' : 's'}`;
+
+  return `🏏 *LIVE:* ${liveHeaderScore} — ${runEmoji}\n_${ball.commentary}_\n━━━━━━━━━━━━━━\n${rateBlock}\n${pairBlock}${partnerBlock}${probBlock}${overDisplay}`;
+}
+
 function parseJsonp(text: string) {
+  if (!text) return null;
+  // Standard JSONP callback(data)
   const match = text.match(/^[^(]+\(([\s\S]*)\)[^)]*$/);
   if (match) { try { return JSON.parse(match[1]); } catch (e) {} }
+  // Loose search for any JSON object
   const firstBrace = text.indexOf('{');
   const lastBrace = text.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace !== -1) { try { return JSON.parse(text.substring(firstBrace, lastBrace + 1)); } catch (e) {} }
+  if (firstBrace !== -1 && lastBrace !== -1) { 
+    try { 
+      const candidate = text.substring(firstBrace, lastBrace + 1);
+      return JSON.parse(candidate); 
+    } catch (e) {} 
+  }
+  // Try cleaning up common JSONP artifacts like quotes or semi-colons
+  try {
+    const cleaned = text.trim().replace(/^[^({]+/, '').replace(/[^)}]+$/, '');
+    if (cleaned.startsWith('(') && cleaned.endsWith(')')) {
+       return JSON.parse(cleaned.substring(1, cleaned.length - 1));
+    }
+  } catch (e) {}
   return null;
 }
 
@@ -4130,8 +4276,18 @@ async function getLatestIplData() {
     const scheduleUrl = `${competition.feedsource}/${competition.CompetitionID}-matchschedule.js`;
     const scheduleData = await fetchOfficialIpl(scheduleUrl);
     const matches = scheduleData?.Matchsummary || [];
-    const liveMatch = matches.find((m: any) => m.MatchStatus?.toLowerCase() === 'live' || m.MatchStatus?.toLowerCase() === 'in progress');
-    const targetMatch = liveMatch || matches.sort((a: any, b: any) => b.RowNo - a.RowNo)[0];
+    // Multi-match support: collect all live matches, pick the most recent live one.
+    // On double-header days (Sat/Sun), this ensures we track the currently live game.
+    const liveMatches = matches.filter((m: any) => {
+      const s = (m.MatchStatus || '').toLowerCase();
+      return s === 'live' || s === 'in progress';
+    });
+    // Pick the live match with the highest RowNo (most recently started)
+    const liveMatch = liveMatches.sort((a: any, b: any) => b.RowNo - a.RowNo)[0];
+    // Fallback: next upcoming, then most-recently-completed
+    const targetMatch = liveMatch ||
+      matches.filter((m: any) => (m.MatchStatus || '').toLowerCase() === 'upcoming').sort((a: any, b: any) => a.RowNo - b.RowNo)[0] ||
+      matches.sort((a: any, b: any) => b.RowNo - a.RowNo)[0];
     if (!targetMatch) return null;
     const [inn1, inn2] = await Promise.all([
       fetchOfficialIpl(`${competition.feedsource}/${targetMatch.MatchID}-Innings1.js`),
@@ -4140,39 +4296,55 @@ async function getLatestIplData() {
     const i1 = inn1?.Innings1 || { OverHistory: [], Batsmen: [], Bowlers: [] };
     const i2 = inn2?.Innings2 || { OverHistory: [], Batsmen: [], Bowlers: [] };
     const activeInnings = i2.OverHistory.length > 0 ? i2 : i1;
-    const balls = activeInnings.OverHistory || [];
+    const balls: any[] = activeInnings.OverHistory || [];
     const latestBall = balls[balls.length - 1];
-    const batterPair = (activeInnings.Batsmen || []).filter((b: any) => b.IsBatting === "1").map((b: any) => `${b.FullName} (${b.Runs}/${b.Balls})`).join(" & ");
-    const bowler = (activeInnings.Bowlers || []).find((b: any) => b.IsBowling === "1");
-    const bowlerStr = bowler ? `${bowler.FullName} (${bowler.Wickets}/${bowler.RunsConceded})` : "N/A";
-    const crr = targetMatch.CRR || "0.00";
-    const rrr = targetMatch.RRR || "0.00";
-    const target = targetMatch.Target || "";
 
-    // Projected score calculation
+    // Batter/Bowler pair
+    const batterPair = (activeInnings.Batsmen || []).filter((b: any) => b.IsBatting === '1' || b.IsBatting === 1).map((b: any) => `${b.FullName || b.Name} (${b.Runs}/${b.Balls})`).join(' & ') || 'N/A';
+    const activeBowler = (activeInnings.Bowlers || []).find((b: any) => b.IsBowling === '1' || b.IsBowling === 1);
+    const bowlerStr = activeBowler ? `${activeBowler.FullName || activeBowler.Name} (${activeBowler.Wickets}/${activeBowler.RunsConceded})` : 'N/A';
+
+    const crr = targetMatch.CRR || '0.00';
+    const rrr = targetMatch.RRR || '0.00';
+    const target = targetMatch.Target || '';
+
+    // Current over ball-by-ball breakdown (balls from the current over)
+    const currentOverNo = latestBall ? String(latestBall.OverNo) : '';
+    const currentOverBalls = currentOverNo
+      ? balls.filter((b: any) => String(b.OverNo) === currentOverNo).map((b: any) => ({
+          run: b.ActualRuns || b.BallRuns || b.Runs || '0',
+          isWicket: String(b.IsWicket) === '1'
+        }))
+      : [];
+
+    // Projected score (first innings only)
     let projected = 0;
-    if (latestBall) {
+    if (latestBall && !target) {
       try {
-        const ovParts = latestBall.over.split('.');
-        const ovNum = parseInt(ovParts[0]) + (parseInt(ovParts[1] || '0') / 6);
-        if (ovNum > 0) projected = Math.round((parseInt(latestBall.totalRuns) / ovNum) * 20);
+        const ovNum = parseInt(latestBall.OverNo) + (parseInt(latestBall.BallNo || '0') / 6);
+        if (ovNum > 0) projected = Math.round((parseInt(latestBall.TotalRuns || '0') / ovNum) * 20);
       } catch(e) {}
     }
 
     return {
-      matchId: targetMatch.MatchID,
+      matchId: String(targetMatch.MatchID),
       matchName: targetMatch.MatchName,
       status: targetMatch.MatchStatus?.toLowerCase(),
       innings: [i1, i2],
-      crr, rrr, target, projected,
+      crr, rrr, target,
+      projected: projected > 0 ? String(projected) : '',
       batters: batterPair,
       bowler: bowlerStr,
+      currentOverBalls,
+      winProb: targetMatch.Equation || targetMatch.WinProbability || '',
+      partnership: activeInnings.CurrentPartnership || '',
+      inningsData: activeInnings,
       latestBall: latestBall ? {
         ballId: latestBall.BallID || latestBall.BallUniqueID || `${latestBall.OverNo}.${latestBall.BallNo}`,
         over: `${latestBall.OverNo}.${latestBall.BallNo}`,
-        run: latestBall.ActualRuns || latestBall.BallRuns || latestBall.Runs || "0",
-        isWicket: String(latestBall.IsWicket) === "1",
-        commentary: latestBall.Commentry || latestBall.NewCommentry || "",
+        run: latestBall.ActualRuns || latestBall.BallRuns || latestBall.Runs || '0',
+        isWicket: String(latestBall.IsWicket) === '1',
+        commentary: latestBall.Commentry || latestBall.NewCommentry || '',
         totalRuns: latestBall.TotalRuns,
         totalWickets: latestBall.TotalWickets
       } : null,
