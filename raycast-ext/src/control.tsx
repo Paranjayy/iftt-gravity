@@ -15,6 +15,7 @@ interface HubState {
   solis?: { today: string; current: string; battery: string; status: string };
   weather?: { temp: number; humidity: number; condition: string; aqi: number; sunrise: string; sunset: string };
   stats?: { ac?: { status: string }; light?: { status: string }; archiveCount?: number };
+  pgvcl?: { units: string; bill: string };
 }
 
 export default function Command() {
@@ -131,7 +132,7 @@ export default function Command() {
         <List.Item
           icon={Icon.Bolt}
           title="PGVCL Energy Pulse"
-          subtitle={`₹${state?.estimatedPgBill || '??'} Est. Bill | ${state?.units || '0'} Units`}
+          subtitle={`₹${state?.pgvcl?.bill || state?.estimatedPgBill || '??'} ${state?.pgvcl?.bill ? 'Actual' : 'Est.'} Bill | ${state?.pgvcl?.units || state?.units || '0'} Units`}
           accessories={[{ text: "⚡ BILLING ACTIVE" }]}
           actions={<ActionPanel><Action icon={Icon.Cloud} title="Sync Vault" onAction={() => runAction("Vault Sync", "/archive/sync")} /></ActionPanel>}
         />

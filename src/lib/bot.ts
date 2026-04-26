@@ -3472,7 +3472,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           if (wiz) await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
           return new Response('Bulb TV Mode Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
-        if (url.pathname === '/control/actmpv' || url.pathname === '/scene/tv' || url.pathname === '/scene/TV') {
+        if (url.pathname === '/control/ac_tv' || url.pathname === '/control/actmpv' || url.pathname === '/scene/tv' || url.pathname === '/scene/TV') {
           await triggerScene('TV');
           return new Response('Global TV Mode Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
