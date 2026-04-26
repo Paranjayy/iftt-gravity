@@ -908,8 +908,9 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             await notifier.notify(`📦 *DELIVERY ALERT:* Your package is out for delivery! (Test Signal)`, 'high');
             return;
         } else if (subCommand === 'ipl_next' || subCommand === 'ipl_prev') {
+            lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
             const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
-            const target = subCommand === 'ipl_next' ? ipl?.prevMatch : ipl?.nextMatch;
+            const target = subCommand === 'ipl_next' ? ipl?.nextMatch : ipl?.prevMatch;
             if (target) {
                iplMatchCenter.browsingMatchId = String(target.MatchID || target.matchId);
                const newData = await getLatestIplData(iplMatchCenter.browsingMatchId);
@@ -917,7 +918,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                   const text = renderMatchCenter(newData);
                   await (bot as any).editMessageText(text, {
                     chat_id: chatId,
-                    message_id: (msg as any).message_id || lastCommentaryMsgId,
+                    message_id: lastCommentaryMsgId,
                     parse_mode: "Markdown",
                     reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
                   });
@@ -927,13 +928,14 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             }
             return;
         } else if (subCommand === 'ipl_live_mode') {
+            lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
             iplMatchCenter.browsingMatchId = undefined;
             const ipl = await getLatestIplData();
             if (ipl) {
                const text = renderMatchCenter(ipl);
                await (bot as any).editMessageText(text, {
                  chat_id: chatId,
-                 message_id: (msg as any).message_id || lastCommentaryMsgId,
+                 message_id: lastCommentaryMsgId,
                  parse_mode: "Markdown",
                  reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
                });
@@ -943,6 +945,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             config.githubPulse.silent = !config.githubPulse.silent;
             saveConfig(config);
         } else if (subCommand === 'ipl_record') {
+             lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
              const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
              if (ipl?.latestBall) {
                const ball = ipl.latestBall;
@@ -953,7 +956,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                const text = renderMatchCenter(ipl, "✅ *MOMENT RECORDED*");
                await (bot as any).editMessageText(text, {
                  chat_id: chatId,
-                 message_id: (msg as any).message_id || lastCommentaryMsgId,
+                 message_id: lastCommentaryMsgId,
                  parse_mode: "Markdown",
                  reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
                }).catch(() => {});
@@ -968,7 +971,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                const text = renderMatchCenter(ipl);
                await (bot as any).editMessageText(text, {
                  chat_id: chatId,
-                 message_id: (msg as any).message_id || lastCommentaryMsgId,
+                 message_id: lastCommentaryMsgId,
                  parse_mode: "Markdown",
                  reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
                }).catch(() => {});
@@ -4211,7 +4214,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     // Hyper-Live Cricket Engine (5s Frequency)
     // ──────────────────────────────────────────────────────
     const runIplPulse = async () => {
-      if (!config.cricketMode && !config.automaticScoreUpdates) return;
+      if (!config.cricketMode && !config.automaticScoreUpdates && !iplMatchCenter.browsingMatchId) return;
       try {
         const config = loadConfig();
         if (config.authorizedUsers?.[0]) {
@@ -4369,7 +4372,8 @@ function getMatchCenterKeyboard() {
     ],
     [
       { text: t === 'wickets' ? '☝️ WKT' : '☝️ Wkt', callback_data: 'control:ipl_tab_wickets:level:cricket' },
-      { text: t === 'timeline' ? '📜 TIMELINE' : '📜 Timeline', callback_data: 'control:ipl_tab_timeline:level:cricket' }
+      { text: t === 'timeline' ? '📜 TML' : '📜 Tml', callback_data: 'control:ipl_tab_timeline:level:cricket' },
+      { text: t === 'records' ? '📸 REC' : '📸 Rec', callback_data: 'control:ipl_tab_records:level:cricket' }
     ],
     [
       { text: '⏮ PREV', callback_data: 'control:ipl_prev:level:cricket' },
@@ -4578,25 +4582,48 @@ async function getLatestIplData(targetMatchId?: string) {
         }))
       : [];
 
-    // Projected score (first innings only)
+    // Extract historical data for seeding
+    const historicalHighlights: string[] = [];
+    const historicalWickets: string[] = [];
+    const historicalTimeline: string[] = [];
+    balls.forEach((b: any) => {
+      const ov = `${b.OverNo || b.overNumber}.${b.BallNo || b.ballNumber}`;
+      const r = String(b.ActualRuns || b.BallRuns || b.Runs || '0');
+      const isW = String(b.IsWicket) === '1' || b.isWicket;
+      if (isW) historicalWickets.unshift(`☝️ *Wicket (${ov}):* ${b.Commentry || b.commentary || 'Out!'}`);
+      else if (r === '6') historicalHighlights.unshift(`🚀 *SIX! (${ov}):* ${b.Commentry || b.commentary || 'Smashed!'}`);
+      else if (r === '4') historicalHighlights.unshift(`🔥 *FOUR! (${ov}):* ${b.Commentry || b.commentary || 'Boundary!'}`);
+      historicalTimeline.unshift(`[${ov}] ${isW ? 'W' : r} - ${(b.Commentry || b.commentary || '').split('.')[0]}`);
+    });
+
+    // Seed state if match changed or empty
+    const currentId = iplMatchCenter.browsingMatchId || iplMatchCenter.matchId;
+    if (String(targetMatch.MatchID) === currentId && iplMatchCenter.highlights.length === 0) {
+      iplMatchCenter.highlights = historicalHighlights.slice(0, 10);
+      iplMatchCenter.wickets = historicalWickets.slice(0, 10);
+      iplMatchCenter.timeline = historicalTimeline.slice(0, 20);
+    }
+
     let projected = 0;
     if (latestBall && !target) {
       try {
         const overNo = latestBall.OverNo !== undefined ? latestBall.OverNo : latestBall.overNumber;
-        const ballNo = latestBall.BallNo !== undefined ? latestBall.BallNo : latestBall.ballNumber;
         const totalRuns = latestBall.TotalRuns !== undefined ? latestBall.TotalRuns : latestBall.totalRuns;
-        
-        const ovNum = Math.max(0.1, parseInt(overNo) + (parseInt(ballNo || '0') / 6));
-        if (ovNum > 0) projected = Math.round((parseInt(totalRuns || '0') / ovNum) * 20);
+        const ballsCount = (parseInt(overNo) * 6) + parseInt(latestBall.BallNo || '0');
+        if (ballsCount > 0) projected = Math.round((parseInt(totalRuns || '0') / ballsCount) * 120);
       } catch(e) {}
     }
+
+    const calcCrr = (latestBall?.TotalRuns !== undefined && latestBall?.OverNo !== undefined) 
+      ? (parseInt(latestBall.TotalRuns) / (parseInt(latestBall.OverNo) + (parseInt(latestBall.BallNo || '0')/6))).toFixed(2)
+      : crr;
 
     return {
       matchId: String(targetMatch.MatchID),
       matchName: targetMatch.MatchName,
       status: targetMatch.MatchStatus?.toLowerCase(),
       innings: [i1, i2],
-      crr, rrr, target,
+      crr: calcCrr, rrr, target,
       projected: projected > 0 ? String(projected) : '',
       batters: batterPair,
       bowler: bowlerStr,
@@ -4680,8 +4707,9 @@ async function getLatestIplData(targetMatchId?: string) {
     const crr = totalBalls > 0 ? ((currentInnings.totalRuns || 0) / (balls.length / 6)).toFixed(2) : '0.00';
     const projected = parseFloat(crr) * 20;
 
-    // Seed state if empty
-    if (iplMatchCenter.matchId === String(data.matchId) && iplMatchCenter.highlights.length === 0) {
+    // Seed state if match changed or empty
+    const currentId = iplMatchCenter.browsingMatchId || iplMatchCenter.matchId;
+    if (String(data.matchId) === currentId && iplMatchCenter.highlights.length === 0) {
       iplMatchCenter.highlights = historicalHighlights.slice(0, 10);
       iplMatchCenter.wickets = historicalWickets.slice(0, 10);
       iplMatchCenter.timeline = historicalTimeline.slice(0, 20);
