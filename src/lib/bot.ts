@@ -50,14 +50,22 @@ let lastIplMatchId = "";
 let lastIplWicketBall = false; // true = next ball after wicket
 let lastIplProjected = 0;
 let lastIplMilestones = new Set<string>();
-let iplMatchCenter = {
+let iplMatchCenter: {
+  matchId: string;
+  browsingMatchId?: string;
+  currentTab: 'live' | 'highlights' | 'wickets' | 'timeline' | 'records';
+  highlights: string[];
+  wickets: string[];
+  timeline: string[];
+  records: string[];
+  lastSeededMatchId?: string;
+} = {
   matchId: '',
-  browsingMatchId: undefined as string | undefined,
-  highlights: [] as string[],
-  wickets: [] as string[],
-  timeline: [] as string[],
-  records: [] as string[],
-  currentTab: 'live' as 'live' | 'highlights' | 'wickets' | 'timeline' | 'records'
+  currentTab: 'live',
+  highlights: [],
+  wickets: [],
+  timeline: [],
+  records: []
 };
 let lastCommentaryMsgId: number | null = null;
 let lastAlertMsgIds: Record<string, number> = {};
@@ -518,9 +526,12 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     }
     const diff = Date.now() - dateObj.getTime();
     if (isNaN(diff) || diff < 0) return "Just now";
-    const hours = Math.floor(diff / 3600000);
-    const mins = Math.floor((diff % 3600000) / 60000);
-    if (hours > 24) return dateObj.toLocaleDateString('en-IN');
+    const totalMins = Math.floor(diff / 60000);
+    const days = Math.floor(totalMins / 1440);
+    const hours = Math.floor((totalMins % 1440) / 60);
+    const mins = totalMins % 60;
+    
+    if (days > 0) return `${days}d ${hours}h`;
     if (hours > 0) return `${hours}h ${mins}m`;
     if (mins > 0) return `${mins}m`;
     return "Just now";
@@ -743,7 +754,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     const ipl = await getLatestIplData();
     const text = renderMatchCenter(ipl);
     const keyboard = { inline_keyboard: getMatchCenterKeyboard() };
-    await bot.sendMessage(chatId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
+    const sent = await bot.sendMessage(chatId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
+    lastCommentaryMsgId = (sent as any).message_id;
   }});
 
   bot.registerCommand({ command: 'health', description: '🧬 Hub Health', handler: async (chatId: number) => {
@@ -889,7 +901,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             const ipl = await getLatestIplData();
             const text = renderMatchCenter(ipl);
             const keyboard = { inline_keyboard: getMatchCenterKeyboard() };
-            await send(text, { reply_markup: keyboard });
+            const sent = await send(text, { reply_markup: keyboard });
+            if (sent) lastCommentaryMsgId = (sent as any).message_id;
             return;
         } else if (subCommand === 'actmpv') {
            await triggerScene('TV');
@@ -1366,7 +1379,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       }
 
       // 1. Auto-AC Logic (Weather Sensitive)
-      if (config.autoAc) {
+      if (config.autoAc && (Date.now() - bootTime > 300000)) {
         const w: any = await (weather as any).getWeather();
         if (w) {
           if (w.temp > 31 && config.stats.ac?.status === 'off' && isPhoneOnline) {
@@ -1382,7 +1395,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       }
 
       // 2. Auto-Light Logic (Sunset & Bedtime)
-      if (config.autoLight) {
+      if (config.autoLight && (Date.now() - bootTime > 300000)) {
         // Sunset Pulse (Approx 6:30 PM - 7:30 PM)
         if (hour === 18 && config.stats.lightStatus === 'off' && isPhoneOnline) {
           await (wiz as any).setPilot({ state: true, temp: 3000, dimming: 80 });
@@ -4231,12 +4244,12 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           const ball = ipl.latestBall;
           const isLiveMatch = !iplMatchCenter.browsingMatchId || iplMatchCenter.browsingMatchId === ipl.matchId;
 
-          // Match change → reset
+          // Match change → reset but KEEP message ID
           if (ipl.matchId && ipl.matchId !== iplMatchCenter.matchId) {
             iplMatchCenter = { ...iplMatchCenter, matchId: ipl.matchId, highlights: [], wickets: [], timeline: [], records: [] };
             lastIplBallId = "";
             lastIplMatchId = ipl.matchId;
-            lastCommentaryMsgId = null;
+            // lastCommentaryMsgId = null; // Don't nullify, keep editing the same message
             lastIplWicketBall = false;
             lastIplProjected = 0;
             lastIplScore = "";
@@ -4289,17 +4302,35 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               }
             }
 
-            // Always update UI if in Match Center or if new ball
+            // Always update UI if in Match Center
             if (config.automaticScoreUpdates || iplMatchCenter.browsingMatchId) {
-               await sendConsolidatedCommentary(renderMatchCenter(ipl));
+               const syncTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+               await sendConsolidatedCommentary(renderMatchCenter(ipl, `🔄 _Synced at ${syncTime}_\n`));
             }
+          } else if (config.automaticScoreUpdates || iplMatchCenter.browsingMatchId) {
+            // Even if no new ball, update sync time
+            const syncTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            await sendConsolidatedCommentary(renderMatchCenter(ipl, `🔄 _Synced at ${syncTime}_\n`));
           }
         }
       } catch (e) { }
     };
 
     runIplPulse();
-    setInterval(runIplPulse, 1000); // 1s Hyper-Sync
+    const startPulse = (ms: number) => {
+        if ((bot as any)._iplInterval) clearInterval((bot as any)._iplInterval);
+        (bot as any)._iplInterval = setInterval(runIplPulse, ms);
+    };
+    startPulse(1000); // Default 1s Hyper-Sync
+    
+    // Speed control via command
+    bot.registerCommand({ command: 'cricket', description: '🏏 Cricket Settings', handler: async (chatId: number, args: string[]) => {
+        if (args[0] === 'speed') {
+            const ms = args[1] === 'low' ? 5000 : 1000;
+            startPulse(ms);
+            await bot.sendMessage(chatId, `⚡ *Hyper-Sync:* Refresh rate set to ${ms/1000}s`);
+        }
+    }});
   }
 
   const shutdown = async (signal: string) => {
@@ -4512,9 +4543,15 @@ function parseJsonp(text: string) {
 
 async function fetchOfficialIpl(url: string) {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5s Timeout
     const buster = `cb_${Date.now()}`;
     const finalUrl = url.includes('?') ? `${url}&cb=${buster}` : `${url}?cb=${buster}`;
-    const res = await fetch(finalUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const res = await fetch(finalUrl, { 
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0' } 
+    });
+    clearTimeout(timeout);
     const text = await res.text();
     return parseJsonp(text);
   } catch (e) { return null; }
@@ -4565,15 +4602,25 @@ async function getLatestIplData(targetMatchId?: string) {
     const balls: any[] = activeInnings.OverHistory || activeInnings.balls || [];
     const latestBall = balls[balls.length - 1];
 
-    const batters = (activeInnings.Batsmen || []).filter((b: any) => b.IsBatting === '1' || b.IsBatting === 1 || b.Batting === 'active');
-    const batterPair = batters.length > 0 
+    const batters = (activeInnings.Batsmen || []).filter((b: any) => b.IsBatting === '1' || b.IsBatting === 1 || b.Batting === 'active' || b.IsBatting === true);
+    let batterPair = batters.length > 0 
       ? batters.map((b: any) => `${b.FullName || b.Name} (${b.Runs || '0'}/${b.Balls || '0'})`).join(' & ')
       : (latestBall?.batsmanName ? `${latestBall.batsmanName}*` : 'N/A');
 
-    const activeBowler = (activeInnings.Bowlers || []).find((b: any) => b.IsBowling === '1' || b.IsBowling === 1 || b.Bowling === 'active');
-    const bowlerStr = activeBowler 
+    const activeBowler = (activeInnings.Bowlers || []).find((b: any) => b.IsBowling === '1' || b.IsBowling === 1 || b.Bowling === 'active' || b.IsBowling === true);
+    let bowlerStr = activeBowler 
       ? `${activeBowler.FullName || activeBowler.Name} (${activeBowler.Wickets || '0'}/${activeBowler.RunsConceded || '0'})` 
       : (latestBall?.bowlerName ? `${latestBall.bowlerName}*` : 'N/A');
+
+    // Fallback: Extract from commentary if N/A
+    if ((!batterPair || batterPair.includes('N/A')) && latestBall?.commentary) {
+       const m = latestBall.commentary.match(/to ([^,]*)/i);
+       if (m) batterPair = `${m[1].trim()}*`;
+    }
+    if ((!bowlerStr || bowlerStr.includes('N/A')) && latestBall?.commentary) {
+       const m = latestBall.commentary.match(/^([^ ]* [^ ]*) bowling/i) || latestBall.commentary.match(/^([^ ]*) bowling/i);
+       if (m) bowlerStr = `${m[1].trim()}*`;
+    }
 
     const crr = targetMatch.CRR || '0.00';
     const rrr = targetMatch.RRR || '0.00';
@@ -4604,10 +4651,11 @@ async function getLatestIplData(targetMatchId?: string) {
 
     // Seed state if match changed or empty
     const currentId = iplMatchCenter.browsingMatchId || iplMatchCenter.matchId;
-    if (String(targetMatch.MatchID) === currentId && iplMatchCenter.highlights.length === 0) {
+    if (String(targetMatch.MatchID) === currentId && (iplMatchCenter.lastSeededMatchId !== currentId || iplMatchCenter.highlights.length === 0)) {
       iplMatchCenter.highlights = historicalHighlights.slice(0, 10);
       iplMatchCenter.wickets = historicalWickets.slice(0, 10);
       iplMatchCenter.timeline = historicalTimeline.slice(0, 20);
+      iplMatchCenter.lastSeededMatchId = currentId;
     }
 
     let projected = 0;
@@ -4715,10 +4763,11 @@ async function getLatestIplData(targetMatchId?: string) {
 
     // Seed state if match changed or empty
     const currentId = iplMatchCenter.browsingMatchId || iplMatchCenter.matchId;
-    if (String(data.matchId) === currentId && iplMatchCenter.highlights.length === 0) {
+    if (String(data.matchId) === currentId && (iplMatchCenter.lastSeededMatchId !== currentId || iplMatchCenter.highlights.length === 0)) {
       iplMatchCenter.highlights = historicalHighlights.slice(0, 10);
       iplMatchCenter.wickets = historicalWickets.slice(0, 10);
       iplMatchCenter.timeline = historicalTimeline.slice(0, 20);
+      iplMatchCenter.lastSeededMatchId = currentId;
     }
 
     return {
