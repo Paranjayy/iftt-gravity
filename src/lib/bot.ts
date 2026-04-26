@@ -38,6 +38,7 @@ let lastIplProjected = 0;
 let lastIplMilestones = new Set<string>();
 let iplMatchCenter = {
   matchId: '',
+  browsingMatchId: undefined as string | undefined,
   highlights: [] as string[],
   wickets: [] as string[],
   timeline: [] as string[],
@@ -93,13 +94,7 @@ const formatAction = (cmd: string, config: any) => {
     'boot_greet_toggle': `Boot Greet 👋: ${config.bootGreet !== false ? '✅ ON' : '❌ OFF'}`
   };
   let res = map[cmd] || cmd.replace(/_/g, ' ');
-  if (cmd === 'ac_on' || cmd === 'ac_off') {
-    const prev = config.stats.ac?.prevDuration;
-    if (prev) res += ` _(was ${prev})_`;
-  } else if (cmd === 'bulb_on' || cmd === 'bulb_off') {
-    const prev = config.stats.light?.prevDuration;
-    if (prev) res += ` _(was ${prev})_`;
-  }
+  // State durations are handled by the dashboard builder to avoid redundancy
   return res;
 };
 
@@ -730,10 +725,7 @@ async function main() {
   bot.registerCommand({ command: 'live', description: '🏏 Live Match Center', handler: async (chatId) => {
     const ipl = await getLatestIplData();
     const text = renderMatchCenter(ipl);
-    const keyboard = { inline_keyboard: [
-      [{ text: '🏟️ LIVE', callback_data: 'control:ipl_tab_live:level:cricket' }, { text: '🚀 BDY', callback_data: 'control:ipl_tab_highlights:level:cricket' }],
-      [{ text: '☝️ WKT', callback_data: 'control:ipl_tab_wickets:level:cricket' }, { text: '🎯 TML', callback_data: 'control:ipl_tab_timeline:level:cricket' }]
-    ]};
+    const keyboard = { inline_keyboard: getMatchCenterKeyboard() };
     await bot.sendMessage(chatId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
   }});
 
@@ -898,6 +890,38 @@ async function main() {
         } else if (subCommand === 'delivery_test') {
             await notifier.notify(`📦 *DELIVERY ALERT:* Your package is out for delivery! (Test Signal)`, 'high');
             return;
+        } else if (subCommand === 'ipl_next' || subCommand === 'ipl_prev') {
+            const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
+            const target = subCommand === 'ipl_next' ? ipl?.nextMatch : ipl?.prevMatch;
+            if (target) {
+               iplMatchCenter.browsingMatchId = String(target.MatchID || target.matchId);
+               const newData = await getLatestIplData(iplMatchCenter.browsingMatchId);
+               if (newData) {
+                  const text = renderMatchCenter(newData);
+                  await (bot as any).editMessageText(text, {
+                    chat_id: chatId,
+                    message_id: (msg as any).message_id || lastCommentaryMsgId,
+                    parse_mode: "Markdown",
+                    reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
+                  });
+               }
+            } else {
+               try { await bot.answerCallbackQuery((msg as any).id, { text: "No more matches in that direction.", show_alert: false }); } catch {}
+            }
+            return;
+        } else if (subCommand === 'ipl_live_mode') {
+            iplMatchCenter.browsingMatchId = undefined;
+            const ipl = await getLatestIplData();
+            if (ipl) {
+               const text = renderMatchCenter(ipl);
+               await (bot as any).editMessageText(text, {
+                 chat_id: chatId,
+                 message_id: (msg as any).message_id || lastCommentaryMsgId,
+                 parse_mode: "Markdown",
+                 reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
+               });
+            }
+            return;
         } else if (subCommand === 'github_silent_toggle') {
             config.githubPulse.silent = !config.githubPulse.silent;
             saveConfig(config);
@@ -956,7 +980,7 @@ async function main() {
     // 🛰️ The Sovereign Dashboard Engine
     const acStats = config.stats?.ac || { status: 'off', actmp: '24' };
     const lightStats = config.stats?.light || { status: 'off' };
-    const actionStr = globalLastAction !== 'None' ? `${globalLastAction} (${getDurationString(globalLastActionTime)})` : 'None';
+    const actionStr = globalLastAction !== 'None' ? `*${globalLastAction}* — _${getDurationString(globalLastActionTime)} ago_` : 'None';
     const signalStr = lastGlobalSignal ? `\n📡 *Last Signal:* ${lastGlobalSignal.text} (${getDurationString(lastGlobalSignal.time)})` : '';
     const blinkStr = lastBlinkSignal.text !== 'None' ? `\n⚡ *Recent Blink:* ${lastBlinkSignal.text} (${getDurationString(lastBlinkSignal.time)})` : '';
     const liveStr = lastIplScore ? `\n🏏 *Live Score:* ${lastIplScore}` : '';
@@ -1070,7 +1094,8 @@ async function main() {
       ];
     } else if (menuLevel === 'light') {
       const prev = lightStats.prevDuration ? ` _(was ${lightStats.prevDuration})_` : '';
-      dashboard = `💡 *Lighting Vault*\n━━━━━━━━━━━━━━\nStatus: *${lightStats.status.toUpperCase()}*${prev} — _${getDurationString(lightStats.lastChanged)}_\nAura: *${config.mediaAura !== false ? 'SYNC' : 'STATIC'}*\nRecent: *${lastLevelActions['light']?.text || 'None'}*\n━━━━━━━━━━━━━━\n_Adjust brightness or atmosphere._`;
+      const recentText = lastLevelActions['light'] ? `${lastLevelActions['light'].text} (${getDurationString(lastLevelActions['light'].time)})` : 'None';
+      dashboard = `💡 *Lighting Vault*\n━━━━━━━━━━━━━━\nStatus: *${lightStats.status.toUpperCase()}*${prev} — _${getDurationString(lightStats.lastChanged)}_\nAura: *${config.mediaAura !== false ? 'SYNC' : 'STATIC'}*\nRecent: *${recentText}*\n━━━━━━━━━━━━━━\n_Adjust brightness or atmosphere._`;
       keyboard.inline_keyboard = [
         [
           { text: '➕ Brighten', callback_data: 'control:bright_up:level:light' },
@@ -1107,7 +1132,8 @@ async function main() {
         ]
       ];
     } else if (menuLevel === 'scenes') {
-      dashboard = `🎭 *Gravity: Scene Selection*\n━━━━━━━━━━━━━━\nRecent: *${lastLevelActions['scenes']?.text || 'None'}*\n━━━━━━━━━━━━━━\nSelect a multi-device orchestration flow.`;
+      const recentText = lastLevelActions['scenes'] ? `${lastLevelActions['scenes'].text} (${getDurationString(lastLevelActions['scenes'].time)})` : 'None';
+      dashboard = `🎭 *Gravity: Scene Selection*\n━━━━━━━━━━━━━━\nRecent: *${recentText}*\n━━━━━━━━━━━━━━\nSelect a multi-device orchestration flow.`;
       keyboard.inline_keyboard = [
         [
           { text: '📽️ TV Mode', callback_data: 'scene:tv:level:scenes' },
@@ -1126,7 +1152,8 @@ async function main() {
       ];
     } else if (menuLevel === 'ac') {
       const prev = acStats.prevDuration ? ` _(was ${acStats.prevDuration})_` : '';
-      dashboard = `❄️ *Climate Control*\n━━━━━━━━━━━━━━\nStatus: *${acStats.status.toUpperCase()}* (${acStats.actmp || '24'}°C)${prev} — _${getDurationString(acStats.lastChanged)}_\nAuto-Guard: *${config.autoAc ? 'ACTIVE' : 'OFF'}*\nRecent: *${lastLevelActions['ac']?.text || 'None'}*\n━━━━━━━━━━━━━━\n_Precision cooling & modes._`;
+      const recentText = lastLevelActions['ac'] ? `${lastLevelActions['ac'].text} (${getDurationString(lastLevelActions['ac'].time)})` : 'None';
+      dashboard = `❄️ *Climate Control*\n━━━━━━━━━━━━━━\nStatus: *${acStats.status.toUpperCase()}* (${acStats.actmp || '24'}°C)${prev} — _${getDurationString(acStats.lastChanged)}_\nAuto-Guard: *${config.autoAc ? 'ACTIVE' : 'OFF'}*\nRecent: *${recentText}*\n━━━━━━━━━━━━━━\n_Precision cooling & modes._`;
       keyboard.inline_keyboard = [
         [
           { text: '🌡️ Temp -1°', callback_data: 'control:temp_down:level:ac' },
@@ -1240,7 +1267,7 @@ async function main() {
             isPhoneOnline = true;
             offlineCounter = 0;
             logActivity("📱 Presence: Phone detected (HOME)");
-            if (Date.now() - bootTime > 180000) await triggerScene('HOME');
+            if (Date.now() - bootTime > 300000) await triggerScene('HOME');
             
             const now = new Date();
             const hour = now.getHours();
@@ -4051,7 +4078,7 @@ async function getBattery() {
         // 9. Thermal & Battery Sync (Hardware Guardian)
         const temp = await getCpuTemp();
         const batt = await getBattery();
-        if (temp > 75 && (Date.now() - bootTime > 180000)) {
+        if (temp > 75 && (Date.now() - bootTime > 300000)) {
           logActivity(`🔥 Thermal Alert: CPU at ${temp}°C. Boosting cooling.`);
           await blinkLight(2, { r: 255, g: 100, b: 0 }); // Orange Pulse
           if (config.stats.ac?.status === "off") {
@@ -4092,7 +4119,7 @@ async function getBattery() {
         }
 
         // 9. Weather Pulse (Aura Sync)
-        if (config.weatherAura?.enabled && (Date.now() - bootTime > 180000) && (Date.now() - ((global as any).lastWeatherCheck || 0) > 1800000)) {
+        if (config.weatherAura?.enabled && (Date.now() - bootTime > 300000) && (Date.now() - ((global as any).lastWeatherCheck || 0) > 1800000)) {
            (global as any).lastWeatherCheck = Date.now();
            try {
              const res = await fetch('https://wttr.in/Mumbai?format=j1');
@@ -4189,13 +4216,14 @@ async function getBattery() {
         if (config.authorizedUsers?.[0]) {
           await bot.sendChatAction(config.authorizedUsers[0], 'typing').catch(() => {});
         }
-        const ipl = await getLatestIplData();
+        const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
         if (ipl && ipl.latestBall) {
           const ball = ipl.latestBall;
+          const isLiveMatch = !iplMatchCenter.browsingMatchId || iplMatchCenter.browsingMatchId === ipl.matchId;
 
           // Match change → reset commentary thread so new match gets a fresh msg
           if (ipl.matchId && ipl.matchId !== iplMatchCenter.matchId) {
-            iplMatchCenter = { matchId: ipl.matchId, highlights: [], wickets: [], timeline: [], currentTab: 'live' };
+            iplMatchCenter = { ...iplMatchCenter, matchId: ipl.matchId, highlights: [], wickets: [], timeline: [] };
             lastIplBallId = "";
             lastIplMatchId = ipl.matchId;
             lastIplOver = "";
@@ -4250,7 +4278,7 @@ async function getBattery() {
             const probBlock = ipl.winProb ? `\n📊 *Win Prob:* ${ipl.winProb}` : '';
             const partnerBlock = ipl.partnership ? `\n🤝 *Partner:* ${ipl.partnership}` : '';
             const rateBlock = ipl.target
-              ? `*Target:* ${ipl.target} | *Need:* ${parseInt(ipl.target) - (parseInt(ipl.latestBall?.totalRuns || '0'))} off ${Math.max(0, 120 - Math.round(parseFloat(ball.over) * 6))} balls\n*CRR:* ${ipl.crr} | *RRR:* ${ipl.rrr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`
+              ? `*Target:* ${ipl.target} | *Need:* ${parseInt(ipl.target) - (parseInt(ball.totalRuns || '0'))} off ${Math.max(0, 120 - Math.round(parseFloat(ball.over) * 6))} balls\n*CRR:* ${ipl.crr} | *RRR:* ${ipl.rrr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`
               : `*CRR:* ${ipl.crr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`;
             const pairBlock = `*🏏 Bat:* ${ipl.batters || 'N/A'}\n*⚾ Bowl:* ${ipl.bowler || 'N/A'}`;
             const summaryText = `\n━━━━━━━━━━━━━━\n${rateBlock}\n${pairBlock}${partnerBlock}${probBlock}${overDisplay}`;
@@ -4264,21 +4292,21 @@ async function getBattery() {
             if (currentOver && currentOver !== lastIplOver) {
               lastIplOver = currentOver;
               lastBlinkSignal = { text: 'Over Started', time: Date.now() };
-              if (config.cricketMode) await blinkLight(2, { r: 255, g: 255, b: 255 });
+              if (config.cricketMode && isLiveMatch) await blinkLight(2, { r: 255, g: 255, b: 255 });
             }
 
             // 2. Toss
             if (run.includes('TOSS') || (ball.commentary || '').toLowerCase().includes('toss won')) {
               lastGlobalSignal = { text: 'IPL Toss', time: Date.now() };
               lastBlinkSignal = { text: 'Toss Blink', time: Date.now() };
-              if (config.cricketMode) await blinkLight(3, { r: 0, g: 255, b: 255 });
+              if (config.cricketMode && isLiveMatch) await blinkLight(3, { r: 0, g: 255, b: 255 });
               await sendConsolidatedCommentary(`🪙 *TOSS:* _${ball.commentary}_`);
               return;
             }
 
             // 3. Post-wicket awareness pulse (first ball after wicket, before checking 4/6)
             if (prevWasWicket && !ball.isWicket && run !== '6' && run !== '4') {
-              if (config.cricketMode) await pulseLight(85, 500);
+              if (config.cricketMode && isLiveMatch) await pulseLight(85, 500);
             }
 
             const baseSummary = formatIplSummary(ipl);
@@ -4294,28 +4322,28 @@ async function getBattery() {
               if (iplMatchCenter.wickets.length > 10) iplMatchCenter.wickets.pop();
               lastGlobalSignal = { text: 'IPL Wicket', time: Date.now() };
               lastBlinkSignal = { text: 'Wicket Red Blink', time: Date.now() };
-              if (config.cricketMode) await blinkLight(3, { r: 255, g: 0, b: 0 });
-              await playAudioCue('wicket');
+              if (config.cricketMode && isLiveMatch) await blinkLight(3, { r: 255, g: 0, b: 0 });
+              if (isLiveMatch) await playAudioCue('wicket');
               if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `☝️ *WICKET!* (${ball.over})`));
             } else if (run === '6') {
               iplMatchCenter.highlights.unshift(`🚀 *SIX! (${ball.over}):* ${ball.commentary.split('.')[0]}`);
               if (iplMatchCenter.highlights.length > 10) iplMatchCenter.highlights.pop();
               lastGlobalSignal = { text: 'IPL Sixer', time: Date.now() };
               lastBlinkSignal = { text: 'Sixer Gold Blink', time: Date.now() };
-              if (config.cricketMode) await blinkLight(3, { r: 255, g: 215, b: 0 });
-              await playAudioCue('boundary');
+              if (config.cricketMode && isLiveMatch) await blinkLight(3, { r: 255, g: 215, b: 0 });
+              if (isLiveMatch) await playAudioCue('boundary');
               if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `🚀 *SIX!* (${ball.over})`));
             } else if (run === '4') {
               iplMatchCenter.highlights.unshift(`🔥 *FOUR! (${ball.over}):* ${ball.commentary.split('.')[0]}`);
               if (iplMatchCenter.highlights.length > 10) iplMatchCenter.highlights.pop();
               lastGlobalSignal = { text: 'IPL Four', time: Date.now() };
               lastBlinkSignal = { text: 'Four Blue Blink', time: Date.now() };
-              if (config.cricketMode) await blinkLight(2, { r: 0, g: 100, b: 255 });
-              await playAudioCue('boundary');
+              if (config.cricketMode && isLiveMatch) await blinkLight(2, { r: 0, g: 100, b: 255 });
+              if (isLiveMatch) await playAudioCue('boundary');
               if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `🔥 *FOUR!* (${ball.over})`));
             } else {
               // Normal ball
-              if (config.cricketMode) await pulseLight(70, 350);
+              if (config.cricketMode && isLiveMatch) await pulseLight(70, 350);
               if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl));
             }
 
@@ -4326,7 +4354,7 @@ async function getBattery() {
               if ((r === 50 || r === 100) && !lastIplMilestones.has(key)) {
                 lastIplMilestones.add(key);
                 lastGlobalSignal = { text: `⭐ Milestone: ${b.FullName} (${r})`, time: Date.now() };
-                if (config.cricketMode) await blinkLight(4, { r: 120, g: 0, b: 255 }); // Purple for Stars
+                if (config.cricketMode && isLiveMatch) await blinkLight(4, { r: 120, g: 0, b: 255 }); // Purple for Stars
                 await (bot as any).sendMessage(config.telegram.chatId, `⭐ *MILESTONE:* ${b.FullName} reaches *${r}* runs! 👏\nMatch: ${ipl.matchName}`);
               }
             });
@@ -4410,17 +4438,24 @@ function getMatchCenterKeyboard() {
   const t = iplMatchCenter.currentTab;
   return [
     [
-      { text: t === 'live' ? '🏟️ LIVE' : 'Live', callback_data: 'control:ipl_tab_live:level:cricket' },
-      { text: t === 'highlights' ? '🚀 BOUNDARIES' : 'Boundaries', callback_data: 'control:ipl_tab_highlights:level:cricket' }
+      { text: t === 'live' ? '🏟️ LIVE' : '🏟️ Live', callback_data: 'control:ipl_tab_live:level:cricket' },
+      { text: t === 'highlights' ? '🚀 BDY' : '🚀 Bdy', callback_data: 'control:ipl_tab_highlights:level:cricket' }
     ],
     [
-      { text: t === 'wickets' ? '☝️ WICKETS' : 'Wickets', callback_data: 'control:ipl_tab_wickets:level:cricket' },
-      { text: t === 'timeline' ? '🎯 TIMELINE' : 'Timeline', callback_data: 'control:ipl_tab_timeline:level:cricket' }
+      { text: t === 'wickets' ? '☝️ WKT' : '☝️ Wkt', callback_data: 'control:ipl_tab_wickets:level:cricket' },
+      { text: t === 'timeline' ? '🎯 TML' : '🎯 Tml', callback_data: 'control:ipl_tab_timeline:level:cricket' }
     ],
     [
-      { text: '📅 NEXT MATCH', callback_data: 'control:ipl_next:level:cricket' }
+      { text: '⏮ PREV', callback_data: 'control:ipl_prev:level:cricket' },
+      { text: '⏭ NEXT', callback_data: 'control:ipl_next:level:cricket' }
     ]
   ];
+
+  if (iplMatchCenter.browsingMatchId) {
+    kb.push([{ text: '📡 RETURN TO LIVE', callback_data: 'control:ipl_live_mode:level:cricket' }]);
+  }
+
+  return kb;
 }
 
 function renderMatchCenter(ipl: any, prefix: string = '') {
@@ -4544,7 +4579,7 @@ async function fetchOfficialIpl(url: string) {
   } catch (e) { return null; }
 }
 
-async function getLatestIplData() {
+async function getLatestIplData(targetMatchId?: string) {
   try {
     const comp = await fetchOfficialIpl('https://scores.iplt20.com/ipl/mc/competition.js');
     const competition = comp?.competition?.find((i: any) => String(i.SeasonName) === '2026' || String(i.SeasonID) === '19');
@@ -4552,33 +4587,52 @@ async function getLatestIplData() {
     const scheduleUrl = `${competition.feedsource}/${competition.CompetitionID}-matchschedule.js`;
     const scheduleData = await fetchOfficialIpl(scheduleUrl);
     const matches = scheduleData?.Matchsummary || [];
-    // Multi-match support: collect all live matches, pick the most recent live one.
-    // On double-header days (Sat/Sun), this ensures we track the currently live game.
-    const liveMatches = matches.filter((m: any) => {
-      const s = (m.MatchStatus || '').toLowerCase();
-      return s === 'live' || s === 'in progress';
-    });
-    // Pick the live match with the highest RowNo (most recently started)
-    const liveMatch = liveMatches.sort((a: any, b: any) => b.RowNo - a.RowNo)[0];
-    // Fallback: next upcoming, then most-recently-completed
-    const targetMatch = liveMatch ||
-      matches.filter((m: any) => (m.MatchStatus || '').toLowerCase() === 'upcoming').sort((a: any, b: any) => a.RowNo - b.RowNo)[0] ||
-      matches.sort((a: any, b: any) => b.RowNo - a.RowNo)[0];
+    
+    let targetMatch;
+    if (targetMatchId) {
+      targetMatch = matches.find((m: any) => String(m.MatchID) === targetMatchId);
+    }
+
+    if (!targetMatch) {
+      // Multi-match support: collect all live matches, pick the most recent live one.
+      const liveMatches = matches.filter((m: any) => {
+        const s = (m.MatchStatus || '').toLowerCase();
+        return s === 'live' || s === 'in progress';
+      });
+      const liveMatch = liveMatches.sort((a: any, b: any) => b.RowNo - a.RowNo)[0];
+      // Fallback: next upcoming, then most-recently-completed
+      targetMatch = liveMatch ||
+        matches.filter((m: any) => (m.MatchStatus || '').toLowerCase() === 'upcoming').sort((a: any, b: any) => a.RowNo - b.RowNo)[0] ||
+        matches.sort((a: any, b: any) => b.RowNo - a.RowNo)[0];
+    }
+
     if (!targetMatch) return null;
+    
+    // Find neighbors for navigation
+    const currentIndex = matches.findIndex((m: any) => String(m.MatchID) === String(targetMatch.MatchID));
+    const prevMatch = currentIndex > 0 ? matches[currentIndex - 1] : null;
+    const nextMatch = currentIndex < matches.length - 1 ? matches[currentIndex + 1] : null;
+
     const [inn1, inn2] = await Promise.all([
       fetchOfficialIpl(`${competition.feedsource}/${targetMatch.MatchID}-Innings1.js`),
       fetchOfficialIpl(`${competition.feedsource}/${targetMatch.MatchID}-Innings2.js`)
     ]);
     const i1 = inn1?.Innings1 || { OverHistory: [], Batsmen: [], Bowlers: [] };
     const i2 = inn2?.Innings2 || { OverHistory: [], Batsmen: [], Bowlers: [] };
-    const activeInnings = i2.OverHistory.length > 0 ? i2 : i1;
-    const balls: any[] = activeInnings.OverHistory || [];
+    // Batter/Bowler pair (Support for both official and local engine schemas)
+    const activeInnings = i2.OverHistory?.length > 0 || i2.balls?.length > 0 ? i2 : i1;
+    const balls: any[] = activeInnings.OverHistory || activeInnings.balls || [];
     const latestBall = balls[balls.length - 1];
 
-    // Batter/Bowler pair
-    const batterPair = (activeInnings.Batsmen || []).filter((b: any) => b.IsBatting === '1' || b.IsBatting === 1).map((b: any) => `${b.FullName || b.Name} (${b.Runs}/${b.Balls})`).join(' & ') || 'N/A';
-    const activeBowler = (activeInnings.Bowlers || []).find((b: any) => b.IsBowling === '1' || b.IsBowling === 1);
-    const bowlerStr = activeBowler ? `${activeBowler.FullName || activeBowler.Name} (${activeBowler.Wickets}/${activeBowler.RunsConceded})` : 'N/A';
+    const batters = (activeInnings.Batsmen || []).filter((b: any) => b.IsBatting === '1' || b.IsBatting === 1 || b.Batting === 'active');
+    const batterPair = batters.length > 0 
+      ? batters.map((b: any) => `${b.FullName || b.Name} (${b.Runs || '0'}/${b.Balls || '0'})`).join(' & ')
+      : (latestBall?.batsmanName ? `${latestBall.batsmanName}*` : 'N/A');
+
+    const activeBowler = (activeInnings.Bowlers || []).find((b: any) => b.IsBowling === '1' || b.IsBowling === 1 || b.Bowling === 'active');
+    const bowlerStr = activeBowler 
+      ? `${activeBowler.FullName || activeBowler.Name} (${activeBowler.Wickets || '0'}/${activeBowler.RunsConceded || '0'})` 
+      : (latestBall?.bowlerName ? `${latestBall.bowlerName}*` : 'N/A');
 
     const crr = targetMatch.CRR || '0.00';
     const rrr = targetMatch.RRR || '0.00';
@@ -4597,8 +4651,12 @@ async function getLatestIplData() {
     let projected = 0;
     if (latestBall && !target) {
       try {
-        const ovNum = parseInt(latestBall.OverNo) + (parseInt(latestBall.BallNo || '0') / 6);
-        if (ovNum > 0) projected = Math.round((parseInt(latestBall.TotalRuns || '0') / ovNum) * 20);
+        const overNo = latestBall.OverNo !== undefined ? latestBall.OverNo : latestBall.overNumber;
+        const ballNo = latestBall.BallNo !== undefined ? latestBall.BallNo : latestBall.ballNumber;
+        const totalRuns = latestBall.TotalRuns !== undefined ? latestBall.TotalRuns : latestBall.totalRuns;
+        
+        const ovNum = Math.max(0.1, parseInt(overNo) + (parseInt(ballNo || '0') / 6));
+        if (ovNum > 0) projected = Math.round((parseInt(totalRuns || '0') / ovNum) * 20);
       } catch(e) {}
     }
 
@@ -4632,7 +4690,8 @@ async function getLatestIplData() {
         topScorers: (activeInnings.Batsmen || []).sort((a: any, b: any) => parseInt(b.Runs) - parseInt(a.Runs)).slice(0, 2).map((b: any) => `${b.FullName || b.Name} (${b.Runs}/${b.Balls})`).join(', '),
         topBowlers: (activeInnings.Bowlers || []).sort((a: any, b: any) => parseInt(b.Wickets) - parseInt(a.Wickets)).slice(0, 1).map((b: any) => `${b.FullName || b.Name} (${b.Wickets}/${b.RunsConceded})`).join(', ')
       },
-      nextMatch: matches.filter((m: any) => (m.MatchStatus || '').toLowerCase() === 'upcoming').sort((a: any, b: any) => a.RowNo - b.RowNo)[0]
+      nextMatch,
+      prevMatch
     };
   } catch (e) {
     const IPL_ROOT = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/public/data/balls";
@@ -4640,14 +4699,27 @@ async function getLatestIplData() {
     const files = fs.readdirSync(IPL_ROOT).filter(f => f.startsWith('match_') && f.endsWith('.json'));
     if (files.length === 0) return null;
     files.sort((a, b) => parseInt(b.split('_')[1]) - parseInt(a.split('_')[1]));
-    const data = JSON.parse(fs.readFileSync(path.join(IPL_ROOT, files[0]), 'utf-8'));
-    const inn = data.innings[data.innings.length - 1];
-    const ball = inn.balls[inn.balls.length - 1];
+    
+    let fileToRead = files[0];
+    if (targetMatchId) {
+      const targetFile = `match_${targetMatchId.split('-').pop()}.json`;
+      if (files.includes(targetFile)) fileToRead = targetFile;
+    }
+
+    const data = JSON.parse(fs.readFileSync(path.join(IPL_ROOT, fileToRead), 'utf-8'));
+    const currentInnings = data.innings[data.innings.length - 1];
+    const ball = currentInnings?.balls?.[currentInnings.balls.length - 1];
+    
+    // Extract batters and bowler from local engine data
+    const batters = currentInnings?.battingStats ? Object.entries(currentInnings.battingStats).filter(([_, s]: any) => s.isOut === false).slice(0, 2).map(([name, s]: any) => `${name} (${s.runs}/${s.balls})`).join(' & ') : (ball?.batsmanName || 'N/A');
+    const bowler = currentInnings?.bowlingStats ? Object.entries(currentInnings.bowlingStats).slice(-1).map(([name, s]: any) => `${name} (${s.wickets}/${s.runsConceded})`).join('') : (ball?.bowlerName || 'N/A');
+
     return {
       matchId: data.matchId,
+      matchName: data.matchName || `Match ${data.matchId}`,
       status: data.status,
       latestBall: ball ? {
-        ballId: `${ball.overNumber}.${ball.ballNumber}`,
+        ballId: ball.ballId || `${ball.overNumber}.${ball.ballNumber}`,
         over: `${ball.overNumber}.${ball.ballNumber}`,
         run: String(ball.runs),
         isWicket: ball.isWicket,
@@ -4655,7 +4727,17 @@ async function getLatestIplData() {
         totalRuns: ball.totalRuns,
         totalWickets: ball.totalWickets
       } : null,
-      score: `${inn.battingTeam}: ${inn.totalRuns}/${inn.totalWickets} (${inn.overs} ov)`
+      batters,
+      bowler,
+      score: `${currentInnings.battingTeam}: ${currentInnings.totalRuns}/${currentInnings.totalWickets} (${currentInnings.overs} ov)`,
+      summary: {
+        inn1: data.innings[0] ? `${data.innings[0].battingTeam} ${data.innings[0].totalRuns}/${data.innings[0].totalWickets}` : '',
+        inn2: data.innings[1] ? `${data.innings[1].battingTeam} ${data.innings[1].totalRuns}/${data.innings[1].totalWickets}` : '',
+        topScorers: 'N/A',
+        topBowlers: 'N/A'
+      },
+      prevMatch: null,
+      nextMatch: null
     };
   }
 }

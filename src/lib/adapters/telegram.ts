@@ -104,6 +104,23 @@ export class TelegramAdapter extends Adapter {
     });
   }
 
+  async editMessageText(text: string, options: { chat_id: number, message_id: number, parse_mode?: 'Markdown' | 'HTML', reply_markup?: any }): Promise<void> {
+    await this.sendRequest('editMessageText', {
+      chat_id: options.chat_id,
+      message_id: options.message_id,
+      text,
+      parse_mode: options.parse_mode || 'Markdown',
+      reply_markup: options.reply_markup
+    });
+  }
+
+  async deleteMessage(chatId: number, messageId: number): Promise<void> {
+    await this.sendRequest('deleteMessage', {
+      chat_id: chatId,
+      message_id: messageId
+    });
+  }
+
   private async processUpdate(update: any): Promise<void> {
     // 1. Handle Messages
     if (update.message) {
