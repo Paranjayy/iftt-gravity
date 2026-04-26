@@ -1,4 +1,5 @@
 import { Adapter, Device, Action } from '../types';
+import fs from 'fs';
 
 const BASE = (token: string) => `https://api.telegram.org/bot${token}`;
 
@@ -81,9 +82,10 @@ export class TelegramAdapter extends Adapter {
     const form = new FormData();
     form.append('chat_id', chatId.toString());
     
-    // Bun-specific file handling
-    const file = Bun.file(photoPath);
-    form.append('photo', file);
+    // Node-friendly file handling
+    const buffer = fs.readFileSync(photoPath);
+    const blob = new Blob([buffer]);
+    form.append('photo', blob, photoPath.split('/').pop());
     if (caption) form.append('caption', caption);
 
     const res = await fetch(`${BASE(this.botToken)}/sendPhoto`, {

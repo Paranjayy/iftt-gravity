@@ -100,7 +100,7 @@ export default function GravityOS() {
   }, []);
 
   const toggleWindow = (id: string) => {
-    setWindows(prev => ({ ...prev, [id]: !prev[id] }));
+    setWindows(prev => ({ ...prev, [id]: !prev[id as keyof typeof prev] }));
   };
 
   return (

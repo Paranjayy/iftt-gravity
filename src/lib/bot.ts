@@ -23,11 +23,25 @@ import { promisify } from 'util';
 import puppeteer from 'puppeteer';
 import os from 'os';
 
+const weather = new WeatherEngine();
+
 const execAsync = promisify(exec);
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');
 const LOG_PATH = path.join(process.cwd(), 'house_log.md');
 const WISHLIST_PATH = path.join(process.cwd(), 'house_wishlist.md');
-const IPL_ROOT = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/public/data/balls";let lastIplEventTs = 0;
+const IPL_ROOT = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/public/data/balls";
+const IPL_FEED = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/public/data/feed.json";
+let lastIplEventTs = 0;
+
+async function playAudioCue(type: 'edit' | 'new' | 'wicket' | 'boundary') {
+  const sounds: Record<string, string> = {
+    edit: '/System/Library/Sounds/Tink.aiff',
+    new: '/System/Library/Sounds/Glass.aiff',
+    wicket: '/System/Library/Sounds/Basso.aiff',
+    boundary: '/System/Library/Sounds/Ping.aiff'
+  };
+  try { await execAsync(`afplay ${sounds[type]}`); } catch {}
+}
 let lastIplBallId = "";
 let lastIplPhase = "";
 let lastIplOver = "";
@@ -42,7 +56,8 @@ let iplMatchCenter = {
   highlights: [] as string[],
   wickets: [] as string[],
   timeline: [] as string[],
-  currentTab: 'live' as 'live' | 'highlights' | 'wickets' | 'timeline'
+  records: [] as string[],
+  currentTab: 'live' as 'live' | 'highlights' | 'wickets' | 'timeline' | 'records'
 };
 let lastCommentaryMsgId: number | null = null;
 let lastAlertMsgIds: Record<string, number> = {};
@@ -87,7 +102,7 @@ const formatAction = (cmd: string, config: any) => {
     'ac_mode_eco': 'Economy Mode 🍃', 
     'auto_ac': `Auto Pilot 🤖: ${config.autoAc ? '✅ ON' : '❌ OFF'}`,
     'ac_swing': 'Swing 🔄', 
-    'ac_tv': 'TV Mode (Quiet) 🌘',
+    'actmpv': 'TV Mode (Quiet) 🌘',
     'moon_toggle': `Moon Phase 🌑: ${config.moonPhaseMood?.enabled ? '✅ ON' : '❌ OFF'}`,
     'solar_toggle': `Solar Rhythm 🌅: ${config.solarRhythm?.enabled ? '✅ ON' : '❌ OFF'}`,
     'karaoke_toggle': `Karaoke 🎤: ${config.karaokeMode?.enabled ? '✅ ON' : '❌ OFF'}`,
@@ -280,6 +295,8 @@ let lastLevelActions: Record<string, { text: string, time: number }> = {};
 
 async function main() {
   config = loadConfig();
+async function getCpuTemp() { try { const { stdout } = await execAsync("sysctl -n machdep.xcpm.cpu_thermal_level"); return parseInt(stdout.trim()) > 50 ? 80 : 45; } catch { return 40; } }
+async function getBattery() { try { const { stdout } = await execAsync(`pmset -g batt | grep -o "[0-9]\\{1,3\\}%" | tr -d "%"`); return parseInt(stdout.trim()); } catch { return 100; } }
   if (config.commentaryMode === undefined) config.commentaryMode = false;
   if (!config.rejectedHabits) config.rejectedHabits = [];
   if (!config.deliveryWatch) config.deliveryWatch = { enabled: false };
@@ -339,13 +356,13 @@ async function main() {
     // 💤 Adaptive Sleep Curve (ACS)
     // Automated temp stepping: 11PM (24) -> 2AM (25) -> 5AM (26)
     sleep_curve: async () => {
-      if (!miraie || miraie.devices.length === 0) return;
+      if (!miraie || miraie?.devices.length === 0) return;
       const hour = new Date().getHours();
       let temp = '24';
       if (hour >= 2 && hour < 5) temp = '25';
       if (hour >= 5) temp = '26';
       
-      await miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: temp, acmd: 'cool' });
+      await miraie?.controlDevice(miraie?.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: temp, acmd: 'cool' });
       logActivity(`💤 ACS: Sleep curve pivot. Room set to ${temp}°C.`);
     }
   });
@@ -417,11 +434,11 @@ async function main() {
       this.active = false;
     }
     private async setTemp(temp: string) {
-      if (miraie && miraie.devices.length > 0) {
+      if (miraie && miraie?.devices.length > 0) {
         // Comfort Index: If outdoor humidity > 70%, use DRY mode instead of COOL
         const weather = await new WeatherEngine().getWeather();
         const mode = (weather?.humidity || 0) > 70 ? 'dry' : 'cool';
-        await miraie.controlDevice(miraie.devices[0].deviceId, { actmp: temp, acmd: mode });
+        await miraie?.controlDevice(miraie?.devices[0].deviceId, { actmp: temp, acmd: mode });
         logActivity(`🌙 ACS: Set to ${temp}°C [Mode: ${mode.toUpperCase()} (Humidity: ${weather?.humidity || '?'}%)]`);
       }
     }
@@ -431,8 +448,8 @@ async function main() {
   let miraie: MiraieAdapter | null = null;
   if (!CLIPBOARD_ONLY && config.miraie?.mobile && config.miraie?.password) {
     try {
-      miraie = new MiraieAdapter(config.miraie.mobile, config.miraie.password);
-      miraie.initialize()
+      miraie = new MiraieAdapter(config.miraie?.mobile, config.miraie?.password);
+      miraie?.initialize()
         .then(() => console.log(`❄️ AC: Connected (${miraie?.devices.length} devices)`))
         .catch(() => console.warn('❄️ AC: Offline (Skipped)'));
       
@@ -452,7 +469,7 @@ async function main() {
   let wiz: WizAdapter | null = null;
   if (!CLIPBOARD_ONLY && config.wiz?.ip) {
     try {
-      wiz = new WizAdapter(config.wiz.ip);
+      wiz = new WizAdapter(config.wiz?.ip);
       console.log('💡 Lights: Adapter ready');
     } catch (e) {
       console.warn('⚠️ Wiz Setup failed');
@@ -617,7 +634,7 @@ async function main() {
   bot.registerCommand({
     command: 'start',
     description: 'Start Gravity Mission Control',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       // Forward to the interactive control panel immediately
       const matched = (bot as any).getHandlers().find((h: any) => h.command === 'control');
       if (matched) await matched.handler(chatId, [], msg, send);
@@ -627,7 +644,7 @@ async function main() {
   bot.registerCommand({
     command: 'media',
     description: 'Activate Media Exposure (High-fidelity cinematic aura)',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       
       config.mediaAura = config.mediaAura === false ? true : false;
@@ -642,7 +659,7 @@ async function main() {
   bot.registerCommand({
     command: 'auto_ac',
     description: 'Toggle Autonomous AC (Weather-aware)',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       config.autoAc = !config.autoAc;
       saveConfig(config);
@@ -653,7 +670,7 @@ async function main() {
   bot.registerCommand({
     command: 'auto_light',
     description: 'Toggle Autonomous Lighting (Sunset-aware)',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       config.autoLight = !config.autoLight;
       saveConfig(config);
@@ -664,7 +681,7 @@ async function main() {
   bot.registerCommand({
     command: 'pgvcl',
     description: 'Show latest PGVCL bill details',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       
       const pg = config.stats.pgvcl;
@@ -687,7 +704,7 @@ async function main() {
   bot.registerCommand({
     command: 'flows',
     description: 'Manage Automations',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       
       const flows = config.zapit_flows || [];
@@ -706,7 +723,7 @@ async function main() {
   bot.registerCommand({
     command: 'habit',
     description: 'View Habit Intelligence & Patterns',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const matched = (bot as any).getHandlers().find((h: any) => h.command === 'control');
       if (matched) await matched.handler(chatId, ['none', 'level', 'habits'], msg, send);
@@ -716,20 +733,20 @@ async function main() {
   bot.registerCommand({
     command: 'habits',
     description: 'Alias for /habit',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       const matched = (bot as any).getHandlers().find((h: any) => h.command === 'habit');
       if (matched) await matched.handler(chatId, args, msg, send);
     }
   });
 
-  bot.registerCommand({ command: 'live', description: '🏏 Live Match Center', handler: async (chatId) => {
+  bot.registerCommand({ command: 'live', description: '🏏 Live Match Center', handler: async (chatId: number) => {
     const ipl = await getLatestIplData();
     const text = renderMatchCenter(ipl);
     const keyboard = { inline_keyboard: getMatchCenterKeyboard() };
     await bot.sendMessage(chatId, text, { parse_mode: 'Markdown', reply_markup: keyboard });
   }});
 
-  bot.registerCommand({ command: 'health', description: '🧬 Hub Health', handler: async (chatId) => {
+  bot.registerCommand({ command: 'health', description: '🧬 Hub Health', handler: async (chatId: number) => {
     const temp = await getCpuTemp();
     const batt = await getBattery();
     const uptimeSec = Math.floor(process.uptime());
@@ -737,11 +754,11 @@ async function main() {
     await bot.sendMessage(chatId, `🧬 *GRAVITY HEALTH MATRIX*\n━━━━━━━━━━━━━━\n🔥 CPU Temp: *~${temp}°C*\n🪫 Battery: *${batt}%*\n⏱️ Hub Uptime: *${uptimeStr}*\n🚀 Status: *OPTIMAL*`);
   }});
 
-  bot.registerCommand({ command: 'shadow', description: '🌑 Stealth Mode', handler: async (chatId) => {
+  bot.registerCommand({ command: 'shadow', description: '🌑 Stealth Mode', handler: async (chatId: number) => {
     const active = config.githubPulse.enabled || config.marketPulse.enabled || config.cricketMode;
     if (active) {
        config.githubPulse.enabled = false; config.marketPulse.enabled = false; config.cricketMode = false;
-       await wiz.executeAction({ type: 'control', payload: { state: false } });
+       await wiz?.executeAction({ type: 'control', payload: { state: false } });
        await bot.sendMessage(chatId, "🌑 *SHADOW MODE:* All pulses suspended. Stealth mode active.");
     } else {
        config.githubPulse.enabled = true; config.marketPulse.enabled = true; config.cricketMode = true;
@@ -750,14 +767,14 @@ async function main() {
     saveConfig(config);
   }});
 
-  bot.registerCommand({ command: 'ping', description: 'Check Gravity health', handler: async (chatId, args, msg, send) => {
+  bot.registerCommand({ command: 'ping', description: 'Check Gravity health', handler: async (chatId: number, args: string[], msg: any, send: any) => {
     await send(`🚀 *Gravity Hub: ONLINE*\n🏗️ Platform: *Local Mac*\nStarted: *${new Date().toLocaleTimeString('en-IN')}*\n❄️ AC: ✅ (${getDurationString(config.stats.ac?.lastChanged)}) | 💡 Light: ✅ (${getDurationString(config.stats.light?.lastChanged)})`);
   }});
 
   bot.registerCommand({
     command: 'control',
     description: 'Open the Interactive Control Panel',
-    handler: async (chatId, args, msg, _send) => {
+    handler: async (chatId: number, args: string[], msg: any, _send: any) => {
       if (!isAuthorized(msg)) return await _send('⛔ *Access Denied.*');
       config.stats = config.stats || {};
       const send = async (text: string, opts: any = {}) => {
@@ -826,9 +843,9 @@ async function main() {
         } else if (subCommand.startsWith('color_')) {
            const color = subCommand.replace('color_', '');
            const colors: any = { red: { r: 255, g: 0, b: 0 }, blue: { r: 0, g: 0, b: 255 }, green: { r: 0, g: 255, b: 0 }, gold: { r: 255, g: 215, b: 0 } };
-           if (wiz && colors[color]) await wiz.executeAction({ type: 'control', payload: { state: true, ...colors[color] } });
+           if (wiz && colors[color]) await wiz?.executeAction({ type: 'control', payload: { state: true, ...colors[color] } });
         } else if (subCommand === 'bulb_tv') {
-           if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
+           if (wiz) await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
            recordHabit(subCommand);
         } else if (subCommand === 'cricket_toggle') {
            config.cricketMode = !config.cricketMode;
@@ -874,7 +891,7 @@ async function main() {
             const keyboard = { inline_keyboard: getMatchCenterKeyboard() };
             await send(text, { reply_markup: keyboard });
             return;
-        } else if (subCommand === 'ac_tv') {
+        } else if (subCommand === 'actmpv') {
            await triggerScene('TV');
            recordHabit(subCommand);
         } else if (subCommand === 'commentary_toggle') {
@@ -892,7 +909,7 @@ async function main() {
             return;
         } else if (subCommand === 'ipl_next' || subCommand === 'ipl_prev') {
             const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
-            const target = subCommand === 'ipl_next' ? ipl?.nextMatch : ipl?.prevMatch;
+            const target = subCommand === 'ipl_next' ? ipl?.prevMatch : ipl?.nextMatch;
             if (target) {
                iplMatchCenter.browsingMatchId = String(target.MatchID || target.matchId);
                const newData = await getLatestIplData(iplMatchCenter.browsingMatchId);
@@ -925,16 +942,28 @@ async function main() {
         } else if (subCommand === 'github_silent_toggle') {
             config.githubPulse.silent = !config.githubPulse.silent;
             saveConfig(config);
-         } else if (subCommand === 'ipl_next') {
-             const ipl = await getLatestIplData();
-             const next = ipl?.nextMatch;
-             const text = next ? `📅 *NEXT MATCH*\n🏏 *${next.MatchName}*\n⏰ ${next.MatchDate} ${next.MatchTime}\n\n_Countdown active._` : "No upcoming match data found.";
-             await send(text, { reply_markup: { inline_keyboard: getMatchCenterKeyboard() } });
+        } else if (subCommand === 'ipl_record') {
+             const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
+             if (ipl?.latestBall) {
+               const ball = ipl.latestBall;
+               const record = `✨ *[${ball.over}]* ${ball.run} runs - ${ball.commentary.split('.')[0]} (${ipl.score})`;
+               iplMatchCenter.records.unshift(record);
+               if (iplMatchCenter.records.length > 10) iplMatchCenter.records.pop();
+               iplMatchCenter.currentTab = 'records';
+               const text = renderMatchCenter(ipl, "✅ *MOMENT RECORDED*");
+               await (bot as any).editMessageText(text, {
+                 chat_id: chatId,
+                 message_id: (msg as any).message_id || lastCommentaryMsgId,
+                 parse_mode: "Markdown",
+                 reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
+               }).catch(() => {});
+             }
+             if (isCallback) await (bot as any).answerCallbackQuery((msg as any).callback_query_id, { text: "Moment captured!" }).catch(() => {});
              return;
          } else if (subCommand.startsWith("ipl_tab_")) {
              const tab = subCommand.replace("ipl_tab_", "") as any;
              iplMatchCenter.currentTab = tab;
-             const ipl = await getLatestIplData();
+             const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
              if (ipl) {
                const text = renderMatchCenter(ipl);
                await (bot as any).editMessageText(text, {
@@ -1168,7 +1197,7 @@ async function main() {
           { text: '🔄 Swing', callback_data: 'control:ac_swing:level:ac' }
         ],
         [
-          { text: '🌘 TV Mode (Quiet)', callback_data: 'control:ac_tv:level:ac' }
+          { text: '🌘 TV Mode (Quiet)', callback_data: 'control:actmpv:level:ac' }
         ],
         [
           { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
@@ -1252,7 +1281,6 @@ async function main() {
     }
   });
 
-  // ── Presence Detection & Automations ───────────────
   if (!CLIPBOARD_ONLY) {
     const weather = new WeatherEngine();
     setInterval(async () => {
@@ -1315,8 +1343,8 @@ async function main() {
       const hour = now.getHours();
 
       // 0. Rapid Hardware Sync (Analog Remote Awareness)
-      if (miraie && miraie.devices.length > 0) {
-        const s = await miraie.getDeviceStatus(miraie.devices[0].deviceId);
+      if (miraie && miraie?.devices.length > 0) {
+        const s = await miraie?.getDeviceStatus(miraie?.devices[0].deviceId);
         const actualAcStatus = (s?.ps === 'on' || s?.ps === '1' || s?.ps === 'true') ? 'on' : 'off';
         updateDeviceState('ac', actualAcStatus);
       }
@@ -1428,10 +1456,10 @@ async function main() {
       case 'TV_TIME':
         logActivity("🎬 Scene: TV TIME (God Build)");
           // 📺 Authentic 'TV time' WiZ Scene (10% dimming)
-          promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } }));
-        if (miraie && miraie.devices.length > 0) {
+          promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } }));
+        if (miraie && miraie?.devices.length > 0) {
           // ❄️ Silent Movie cooling
-          promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '24', acmd: 'cool', acfs: 'low' }));
+          promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: 'on', actmp: '24', acmd: 'cool', acfs: 'low' }));
         }
         speak("Cinematic mode active. Enjoy your movie.");
         break;
@@ -1444,32 +1472,32 @@ async function main() {
       case "WORK":
       case "FOCUS":
         speak("Focus mode engaged. Time for deep work.");
-        if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } }));
-        if (miraie && miraie.devices.length > 0) {
-          const d = miraie.devices[0].deviceId;
-          promises.push(miraie.controlDevice(d, { ps: 'on', actmp: '25', acmd: 'cool' }));
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } }));
+        if (miraie && miraie?.devices.length > 0) {
+          const d = miraie?.devices[0].deviceId;
+          promises.push(miraie?.controlDevice(d, { ps: 'on', actmp: '25', acmd: 'cool' }));
         }
         break;
       case "DINNER":
         speak("Dinner mode. Bon appetit.");
-        if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, scene: 'Fireplace' } }));
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'Fireplace' } }));
         break;
       case "AWAY":
         speak("Goodbye. Everything is secured.");
-        if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
-        if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'off' }));
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: false } }));
+        if (miraie && miraie?.devices.length > 0) promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: 'off' }));
         break;
       case "HOME":
         speak("Welcome back. Powering up your sanctuary.");
-        if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
-        if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
+        if (miraie && miraie?.devices.length > 0) promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
         break;
       case "CHILL":
       case "chill":
         logActivity("🎬 Scene: CHILL (Media Aura)");
         if (wiz) {
            // Deep Purple/Lounge Vibe
-           promises.push(wiz.executeAction({ type: 'control', payload: { 
+           promises.push(wiz?.executeAction({ type: 'control', payload: { 
              state: true, 
              r: 155, g: 48, b: 255, 
              dimming: 40 
@@ -1495,7 +1523,7 @@ async function main() {
   bot.registerCommand({
     command: 'whoami',
     description: 'Get your Telegram ID',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       await send(`👤 Your ID: \`${msg.from.id}\`\nUsername: @${msg.from.username || 'N/A'}`);
     }
   });
@@ -1503,7 +1531,7 @@ async function main() {
   bot.registerCommand({
     command: 'search',
     description: 'Search Telegram history via Codex SDK',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const query = args.join(' ');
       if (!query) return await send('Usage: /search [query]');
@@ -1525,7 +1553,7 @@ async function main() {
   bot.registerCommand({
     command: 'codex',
     description: 'Show Codex SDK stats and pins',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       if (!codex) return await send('❌ Codex SDK not initialized.');
       
@@ -1552,7 +1580,7 @@ async function main() {
   bot.registerCommand({
     command: 'broadcast',
     description: 'Speak a message on the house speakers',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const text = args.join(' ');
       if (!text) return await send('Usage: /broadcast [message]');
@@ -1564,7 +1592,7 @@ async function main() {
   bot.registerCommand({
     command: 'remember',
     description: 'Save a note to config',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       if (!config.notes) config.notes = [];
       config.notes.push({ text: args.join(' '), date: new Date().toISOString() });
@@ -1576,7 +1604,7 @@ async function main() {
   bot.registerCommand({
     command: 'guest',
     description: 'Generate a 1-hour guest access PIN',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const pin = Math.floor(1000 + Math.random() * 9000).toString();
       config.guestPin = { pin, expires: Date.now() + 3600000 }; // 1 hour
@@ -1588,7 +1616,7 @@ async function main() {
   bot.registerCommand({
     command: 'join',
     description: 'Join house as guest using a PIN',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       const pinArg = args[0];
       if (!pinArg) return await send('Usage: /join [PIN]');
       if (config.guestPin && config.guestPin.pin === pinArg && config.guestPin.expires > Date.now()) {
@@ -1606,7 +1634,7 @@ async function main() {
   bot.registerCommand({
     command: 'tv',
     description: 'Cinematic mode (Dimmest & Cool)',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       await triggerScene('TV_TIME');
       await send('📽️ *TV Mode:* Engaged. Lights dimmed to 10%, AC silent & cool.');
@@ -1616,10 +1644,10 @@ async function main() {
   bot.registerCommand({
     command: 'party',
     description: 'High energy party mode',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       speak("Party mode activated! Let's get loud!");
-      if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'Party' } });
+      if (wiz) await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'Party' } });
       await send('🌈 *PARTY MODE ACTIVATED!* 🕺💃');
     }
   });
@@ -1627,7 +1655,7 @@ async function main() {
   bot.registerCommand({
     command: 'focus',
     description: 'Deep work mode',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       await triggerScene('FOCUS');
       await send('🧠 *Focus Mode:* Engaged. Lights set to cool white bright, AC to 25°C.');
@@ -1637,7 +1665,7 @@ async function main() {
   bot.registerCommand({
     command: 'dinner',
     description: 'Warm cozy dining',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       await triggerScene('DINNER');
       await send('🍷 *Dinner Mode:* Engaged. Fireplace lights active.');
@@ -1647,16 +1675,16 @@ async function main() {
   bot.registerCommand({
     command: 'boost',
     description: 'Max cooling for 30 min then restore',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const mins = parseInt(args[0]) || 30;
-      if (!miraie || miraie.devices.length === 0) return await send('❌ AC not configured.');
-      const d = miraie.devices[0].deviceId;
-      await miraie.controlDevice(d, { ps: 'on', actmp: '18', acmd: 'cool', acfs: '5' });
+      if (!miraie || miraie?.devices.length === 0) return await send('❌ AC not configured.');
+      const d = miraie?.devices[0].deviceId;
+      await miraie?.controlDevice(d, { ps: 'on', actmp: '18', acmd: 'cool', acfs: '5' });
       await send(`🥶 *Boost Mode*: AC → 18°C max fan for ${mins} min`);
       speak(`Boost mode active. Max cooling for ${mins} minutes.`);
       setTimeout(async () => {
-        await miraie.controlDevice(d, { ps: 'on', actmp: '25', acmd: 'cool', acfs: '3' });
+        await miraie?.controlDevice(d, { ps: 'on', actmp: '25', acmd: 'cool', acfs: '3' });
         await bot.sendMessage(msg.from.id, '🌡️ *Boost Done:* AC restored to 25°C.', { parse_mode: 'Markdown' });
         speak('Boost complete. AC returned to comfort level.');
       }, mins * 60000);
@@ -1666,7 +1694,7 @@ async function main() {
   bot.registerCommand({
     command: 'vibe',
     description: '/vibe [name] — trigger saved vibe · /vibe save [name] [ac°] [light]',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       if (!config.vibes) config.vibes = {};
 
@@ -1699,10 +1727,10 @@ async function main() {
           off: { state: false },
         };
         const p = lightPresets[vibe.light] || { state: true, temp: 4000, dimming: 80 };
-        promises.push(wiz.executeAction({ type: 'control', payload: p }));
+        promises.push(wiz?.executeAction({ type: 'control', payload: p }));
       }
-      if (miraie && miraie.devices.length > 0) {
-        promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: vibe.acTemp, acmd: 'cool' }));
+      if (miraie && miraie?.devices.length > 0) {
+        promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: 'on', actmp: vibe.acTemp, acmd: 'cool' }));
         recordHabit(`vibe_${name}`);
       }
       await Promise.all(promises);
@@ -1715,7 +1743,7 @@ async function main() {
   bot.registerCommand({
     command: 'help',
     description: 'Show all commands',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       const help = [
         '*🌌 Gravity — Command Reference*',
         '',
@@ -1794,7 +1822,7 @@ async function main() {
   bot.registerCommand({
     command: 'allow',
     description: 'Authorize a new user',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       if (config.authorizedUsers?.[0] !== msg.from?.id && msg.from?.username !== "paranjayy") {
         return await send('⚠️ Only the *Master Account* can authorize new users.');
@@ -1817,7 +1845,7 @@ async function main() {
   bot.registerCommand({
     command: 'login',
     description: 'Get a secure link to your dashboard',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const dashboardUrl = `https://gravity.yourdomain.com?token=${config.hubToken}`;
       await send(`🔐 *Secure Entry Configured*\n\nYour Hub Token: \`${config.hubToken}\`\n\n_Use this token in your Dashboard settings or Bearer headers to manage Gravity from mobile._`);
@@ -1830,7 +1858,7 @@ async function main() {
   bot.registerCommand({
     command: 'tv',
     description: 'Cinema mode: /tv [off|warm|bias|blue|purple|20|...]',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const lightArg = args[0]?.toLowerCase();
       
@@ -1849,7 +1877,7 @@ async function main() {
   bot.registerCommand({
     command: 'tvset',
     description: 'Save TV light preference: /tvset blue',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const lightArg = args[0]?.toLowerCase();
       if (!lightArg) return await send(`🎨 Current TV light: *${config.tvLights || 'bias (default)'}*\nUse: \`/tvset [warm|bias|blue|purple|red|cool|night|off|0-100]\``);
@@ -1862,7 +1890,7 @@ async function main() {
   bot.registerCommand({
     command: 'done',
     description: 'End TV: Restores lights & turns off AC',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       await triggerScene("END_TV");
       await send("💡 *Theater Session Ended:* Restoring lights to Daylight, AC Off. Rest well!");
@@ -1875,13 +1903,13 @@ async function main() {
   bot.registerCommand({
     command: 'sleep',
     description: 'Sleep mode: 10% warm lights + AC 27°C fan auto',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const promises = [];
-      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 10 } }));
-      if (miraie && miraie.devices.length > 0) {
-        const d = miraie.devices[0];
-        promises.push(miraie.controlDevice(d.deviceId, { ps: 'on', actmp: '27', acmd: 'auto', acfs: '1' }));
+      if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 10 } }));
+      if (miraie && miraie?.devices.length > 0) {
+        const d = miraie?.devices[0];
+        promises.push(miraie?.controlDevice(d.deviceId, { ps: 'on', actmp: '27', acmd: 'auto', acfs: '1' }));
       }
       await Promise.all(promises);
       await send('🌙 *Sleep Mode:* Lights → 10% warm · AC → 27°C fan auto\n\nGoodnight! 😴');
@@ -1895,27 +1923,27 @@ async function main() {
   bot.registerCommand({
     command: 'ac',
     description: 'AC Control: /ac on, /ac off, /ac 24, /ac cool/dry/fan/auto',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       sleepManager.cancel();
-      if (!miraie || miraie.devices.length === 0) return await send('❌ MirAie not linked.');
-      const device = miraie.devices[0];
+      if (!miraie || miraie?.devices.length === 0) return await send('❌ MirAie not linked.');
+      const device = miraie?.devices[0];
       const arg = args[0]?.toLowerCase();
       if (!arg) return await send(`*AC Control*: /ac [on|off|24|cool]`);
 
       if (arg === 'on' || arg === 'off') {
-        await miraie.controlDevice(device.deviceId, { ps: arg });
+        await miraie?.controlDevice(device.deviceId, { ps: arg });
         updateDeviceState('ac', arg);
         recordHabit(`ac_${arg}`);
         await send(`✅ AC *${arg.toUpperCase()}*`);
       } else if (!isNaN(Number(arg))) {
         const temp = Math.min(30, Math.max(16, Number(arg)));
-        await miraie.controlDevice(device.deviceId, { ps: 'on', actmp: String(temp) });
+        await miraie?.controlDevice(device.deviceId, { ps: 'on', actmp: String(temp) });
         updateDeviceState('ac', 'on');
-        recordHabit(`ac_temp_${temp}`);
+        recordHabit(`actmpemp_${temp}`);
         await send(`✅ AC: *${temp}°C*`);
       } else {
-        await miraie.controlDevice(device.deviceId, { ps: 'on', acmd: arg });
+        await miraie?.controlDevice(device.deviceId, { ps: 'on', acmd: arg });
         updateDeviceState('ac', 'on');
         recordHabit(`ac_mode_${arg}`);
         await send(`✅ AC: *${arg.toUpperCase()}* mode`);
@@ -1929,7 +1957,7 @@ async function main() {
   bot.registerCommand({
     command: 'lights',
     description: 'Lights: /lights on, /lights off, /lights 50, /lights red',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       sleepManager.cancel();
       if (!wiz) return await send('❌ WiZ not configured.');
@@ -1937,24 +1965,24 @@ async function main() {
       if (!arg) return await send(`*Lights*: /lights [on|off|dim|color]`);
 
       if (arg === 'on' || arg === 'off') {
-        await wiz.executeAction({ type: 'control', payload: { state: arg === 'on' } });
+        await wiz?.executeAction({ type: 'control', payload: { state: arg === 'on' } });
         updateDeviceState('light', arg);
         await send(`💡 Light *${arg.toUpperCase()}*`);
       } else if (!isNaN(Number(arg))) {
         const dim = Math.min(100, Math.max(10, Number(arg)));
-        await wiz.executeAction({ type: 'control', payload: { state: true, dimming: dim } });
+        await wiz?.executeAction({ type: 'control', payload: { state: true, dimming: dim } });
         await send(`💡 Brightness: *${dim}%*`);
       } else if (arg === 'tv') {
-        await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
+        await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
         await send(`📺 *TV Mode:* Authentic WiZ 'TV time' scene at 10%`);
       } else if (arg === 'warm') {
-        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 80 } });
+        await wiz?.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 80 } });
         await send(`🕯️ *Warm White* — cozy 2700K`);
       } else if (arg === 'cool' || arg === 'white') {
-        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } });
+        await wiz?.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } });
         await send(`🔆 *Cool White* — bright 6500K`);
       } else if (arg === 'night') {
-        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2200, dimming: 10 } });
+        await wiz?.executeAction({ type: 'control', payload: { state: true, temp: 2200, dimming: 10 } });
         await send(`🌙 *Night Light* — ultra-dim 2200K`);
       } else {
         const colors: Record<string, {r:number,g:number,b:number}> = {
@@ -1968,7 +1996,7 @@ async function main() {
           cyan:   { r: 0,   g: 220, b: 255 },
         };
         if (colors[arg]) {
-          await wiz.executeAction({ type: 'control', payload: { state: true, ...colors[arg] } });
+          await wiz?.executeAction({ type: 'control', payload: { state: true, ...colors[arg] } });
           await send(`💡 Color: *${arg.toUpperCase()}*`);
         } else {
           await send(`❌ Unknown: \`${arg}\`\nTry: on · off · tv · warm · cool · night · 0–100 · red · blue · green · purple · pink · yellow · orange · cyan`);
@@ -1984,7 +2012,7 @@ async function main() {
   bot.registerCommand({
     command: 'ping',
     description: 'Check if bot is alive',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       const uptime = Math.floor(process.uptime());
       const mins = Math.floor(uptime / 60);
       const secs = uptime % 60;
@@ -2001,7 +2029,7 @@ async function main() {
   bot.registerCommand({
     command: 'test_feedback',
     description: 'Trial run of Sensory Feedback (Blink + Speak)',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       await send('🧪 *Gravity Trial*: Triggering sensory feedback...');
       speak("Testing gravity sensory feedback system. Initiating visual pulse.");
@@ -2016,10 +2044,10 @@ async function main() {
   bot.registerCommand({
     command: 'warm',
     description: 'Set lights to warm white (2700K cozy)',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       if (!wiz) return await send('❌ WiZ not configured.');
-      await wiz.executeAction({ type: 'control', payload: { state: true, temp: 2700 } });
+      await wiz?.executeAction({ type: 'control', payload: { state: true, temp: 2700 } });
       await send(`🕯️ *Warm White* — cozy mode activated`);
     }
   });
@@ -2030,7 +2058,7 @@ async function main() {
   bot.registerCommand({
     command: 'scene',
     description: 'WiZ scene: /scene tv, /scene cozy, /scene party, /scene relax, /scene focus, /scene warm, /scene cool, /scene bedtime, /scene fireplace, /scene ocean, /scene sunrise',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       if (!wiz) return await send('❌ WiZ not configured.');
       const arg = args[0]?.toLowerCase();
@@ -2052,7 +2080,7 @@ async function main() {
         return await send(`🎬 *TV TIME Active* — Mood: Classic TV Bias · AC: 24°C Silent`);
       }
 
-      await wiz.executeAction({ type: 'control', payload: { state: true, scene: sceneName } });
+      await wiz?.executeAction({ type: 'control', payload: { state: true, scene: sceneName } });
       await send(`🎨 Scene: *${sceneName}*`);
     }
   });
@@ -2067,7 +2095,7 @@ async function main() {
   bot.registerCommand({
     command: 'energy',
     description: 'Show device uptime & analytics',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const stats = config.stats || { acMinutes: 0, lightMinutes: 0, lastReset: new Date() };
       const hoursAC = (stats.acMinutes / 60).toFixed(1);
@@ -2094,13 +2122,13 @@ async function main() {
   bot.registerCommand({
     command: 'away',
     description: 'Away mode: turn off everything',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const promises = [];
-      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: false } }));
-      if (miraie && miraie.devices.length > 0) {
-        const d = miraie.devices[0];
-        promises.push(miraie.controlDevice(d.deviceId, { ps: 'off' }));
+      if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: false } }));
+      if (miraie && miraie?.devices.length > 0) {
+        const d = miraie?.devices[0];
+        promises.push(miraie?.controlDevice(d.deviceId, { ps: 'off' }));
       }
       await Promise.all(promises);
       await send('🚶 *Away Mode:* All devices off. See you later!');
@@ -2110,13 +2138,13 @@ async function main() {
   bot.registerCommand({
     command: 'home',
     description: 'Welcome home: lights on + AC on',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const promises = [];
-      if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
-      if (miraie && miraie.devices.length > 0) {
-        const d = miraie.devices[0];
-        promises.push(miraie.controlDevice(d.deviceId, { ps: 'on', actmp: '24', acmd: 'cool' }));
+      if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
+      if (miraie && miraie?.devices.length > 0) {
+        const d = miraie?.devices[0];
+        promises.push(miraie?.controlDevice(d.deviceId, { ps: 'on', actmp: '24', acmd: 'cool' }));
       }
       await Promise.all(promises);
       await send('🏠 *Welcome Home!* Lights → 80% daylight · AC → 24°C cool');
@@ -2131,7 +2159,7 @@ async function main() {
   bot.registerCommand({
     command: 'brief',
     description: 'Get a professional summary of house status',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       
       const uptime = Math.floor(process.uptime());
@@ -2152,8 +2180,8 @@ async function main() {
       message += `🕰️ *Uptime:* ${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m active\n`;
       message += `🖥️ *SysLoad:* ${load[0].toFixed(2)} (1m avg)\n`;
       
-      if (miraie && miraie.devices.length > 0) {
-        const s = await miraie.getDeviceStatus(miraie.devices[0].deviceId);
+      if (miraie && miraie?.devices.length > 0) {
+        const s = await miraie?.getDeviceStatus(miraie?.devices[0].deviceId);
         message += `🌡️ *Climate:* AC is currently **${s?.ps?.toUpperCase() || 'OFF'}** (${s?.actmp || '?' }°C)\n`;
       }
       
@@ -2166,7 +2194,7 @@ async function main() {
   bot.registerCommand({
     command: 'status',
     description: 'System Status',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const uptime = Math.floor(process.uptime());
       const lines = ['*🏡 Gravity Status*\n'];
@@ -2218,7 +2246,7 @@ async function main() {
   bot.registerCommand({
     command: 'weather',
     description: 'Junagadh weather, AQI & Sensory Sync',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       await send('🌦 *Gravity Weather*: Synchronizing with local sensors...');
       try {
         const w = await new WeatherEngine().getWeather();
@@ -2239,7 +2267,7 @@ async function main() {
           let scene = 'Warm White';
           if (w.isRain) scene = 'Ocean';
           else if (w.condition.includes('Clear')) scene = 'True colors';
-          await wiz.executeAction({ type: 'control', payload: { state: true, scene } });
+          await wiz?.executeAction({ type: 'control', payload: { state: true, scene } });
           res += `\n💡 *Lighting*: Synced to *${scene}*`;
         }
 
@@ -2257,7 +2285,7 @@ async function main() {
         res += `\n\n_Last Sensor Sync: ${new Date(w.updatedAt).toLocaleTimeString('en-IN')}_`;
         await send(res);
       } catch (e: any) {
-        await send(`❌ Weather sync failed: ${e.message}`);
+        await send(`❌ Weather sync failed: ${(e as any).message}`);
       }
     }
   });
@@ -2266,7 +2294,7 @@ async function main() {
   bot.registerCommand({
     command: 'screen',
     description: 'Capture Mac screen',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const tempPath = '/tmp/gravity_screen.png';
       await send('📸 *Gravity Eyes*: Capturing screen...');
@@ -2274,7 +2302,7 @@ async function main() {
         await execAsync(`screencapture -x ${tempPath}`);
         await bot.sendPhoto(chatId as number, tempPath, `🖥 *Gravity Sentry View*\n⏰ Captured: ${new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
       } catch (e: any) {
-        await send(`❌ Capture failed: ${e.message}`);
+        await send(`❌ Capture failed: ${(e as any).message}`);
       }
     }
   });
@@ -2283,7 +2311,7 @@ async function main() {
   bot.registerCommand({
     command: 'vol',
     description: 'Control Mac volume: /vol 50|up|down',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const val = args[0] || 'status';
       try {
@@ -2303,7 +2331,7 @@ async function main() {
   bot.registerCommand({
     command: 'logs',
     description: 'Show last N activity log entries (default 10)',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const count = parseInt(args[0] || '10');
       try {
@@ -2321,7 +2349,7 @@ async function main() {
   bot.registerCommand({
     command: 'log',
     description: 'Alias for /logs or add entry: /log hello',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
        if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
        if (args.length > 0 && isNaN(Number(args[0]))) {
          const text = args.join(' ');
@@ -2338,7 +2366,7 @@ async function main() {
   bot.registerCommand({
     command: 'wish',
     description: 'Add a feature request to Gravity Wishlist',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const text = args.join(' ');
       if (!text) return await send('✏️ Usage: `/wish I want a coffee machine`');
@@ -2351,7 +2379,7 @@ async function main() {
   bot.registerCommand({
     command: 'wishlist',
     description: 'View the current Gravity Wishlist',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       try {
         const data = fs.readFileSync(WISHLIST_PATH, 'utf-8');
@@ -2368,7 +2396,7 @@ async function main() {
   bot.registerCommand({
     command: 'today',
     description: 'Show today\'s energy usage and costs',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const stats = config.stats;
       const acH = (stats.acMinutes / 60).toFixed(1);
@@ -2395,7 +2423,7 @@ async function main() {
   bot.registerCommand({
     command: 'cricket',
     description: 'Toggle IPL Mode / Score Updates',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const sub = args[0]?.toLowerCase();
       
@@ -2459,7 +2487,7 @@ async function main() {
   bot.registerCommand({
     command: 'track',
     description: 'Track stock/crypto. Tip: Use .NS for India (e.g. TCS.NS)',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const type = args[0]?.toLowerCase();
       const symbol = args[1]?.toLowerCase();
@@ -2483,15 +2511,15 @@ async function main() {
   bot.registerCommand({
     command: 'untrack',
     description: 'Remove a stock or crypto from Market Pulse',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const type = args[0]?.toLowerCase();
       const symbol = args[1]?.toLowerCase();
       if (type === 'stock') {
-        config.marketPulse.stocks = config.marketPulse.stocks.filter(s => s !== symbol.toUpperCase());
+        config.marketPulse.stocks = config.marketPulse.stocks.filter((s: any) => s !== symbol.toUpperCase());
         saveConfig(config); await send(`✅ Removed Stock: *${symbol.toUpperCase()}*`);
       } else if (type === 'crypto') {
-        config.marketPulse.crypto = config.marketPulse.crypto.filter(c => c !== symbol);
+        config.marketPulse.crypto = config.marketPulse.crypto.filter((c: any) => c !== symbol);
         saveConfig(config); await send(`✅ Removed Crypto: *${symbol}*`);
       } else { await send('❌ Usage: /untrack <stock|crypto> <symbol>'); }
     }
@@ -2501,7 +2529,7 @@ async function main() {
   bot.registerCommand({
     command: 'trending',
     description: 'Fetch top trending repositories on GitHub',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const lang = args[0] || '';
       await send(`🔍 *Scraping GitHub Trending* ${lang ? 'for ' + lang : ''}...`);
@@ -2512,8 +2540,8 @@ async function main() {
         const repos = await page.evaluate(() => {
           const items = Array.from(document.querySelectorAll('article.Box-row'));
           return items.slice(0, 5).map(item => ({
-            name: item.querySelector('h2 a')?.innerText.trim().replace(/\s+/g, ''),
-            desc: item.querySelector('p')?.innerText.trim() || 'No description',
+            name: item.querySelector('h2 a')?.textContent.trim().replace(/\s+/g, ''),
+            desc: item.querySelector('p')?.textContent.trim() || 'No description',
             link: 'https://github.com' + item.querySelector('h2 a')?.getAttribute('href')
           }));
         });
@@ -2525,7 +2553,7 @@ async function main() {
         });
         await send(res, { parse_mode: 'Markdown', disable_web_page_preview: true });
       } catch (e) {
-        await send('❌ Scraper failed: ' + e.message);
+        await send('❌ Scraper failed: ' + (e as any).message);
       }
     }
   });
@@ -2575,38 +2603,38 @@ async function main() {
             }
           }
         } catch (e) {
-          logActivity(`⚠️ Kalshi Error: ${e.message}`);
+          logActivity(`⚠️ Kalshi Error: ${(e as any).message}`);
           res += `_Kalshi Oracle is currently silent._\n`;
         }
       }
 
       await bot.sendMessage(chatId, res, { parse_mode: 'Markdown', disable_web_page_preview: true });
-    } catch (e) { await send('❌ Oracle failure: ' + e.message); }
+    } catch (e) { await send('❌ Oracle failure: ' + (e as any).message); }
   };
 
   bot.registerCommand({
     command: 'odds',
     description: 'Check top prediction market odds (Global)',
-    handler: (chatId, args, msg, send) => oddsHandler(chatId, args, msg, send)
+    handler: (chatId: number, args: string[], msg: any, send: any) => oddsHandler(chatId, args, msg, send)
   });
 
   bot.registerCommand({
     command: 'polymarket',
     description: 'Check Polymarket odds specifically',
-    handler: (chatId, args, msg, send) => oddsHandler(chatId, args, msg, send, 'poly')
+    handler: (chatId: number, args: string[], msg: any, send: any) => oddsHandler(chatId, args, msg, send, 'poly')
   });
 
   bot.registerCommand({
     command: 'kalshi',
     description: 'Check Kalshi odds specifically',
-    handler: (chatId, args, msg, send) => oddsHandler(chatId, args, msg, send, 'kalshi')
+    handler: (chatId: number, args: string[], msg: any, send: any) => oddsHandler(chatId, args, msg, send, 'kalshi')
   });
 
   // 🔮 /follow — Follow keyword
   bot.registerCommand({
     command: 'follow',
     description: 'Follow a prediction market keyword for Oracle Pulse alerts',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const keyword = args.join(' ').toLowerCase();
       if (!keyword) return await send('❌ Usage: /follow <keyword>');
@@ -2621,10 +2649,10 @@ async function main() {
   bot.registerCommand({
     command: 'unfollow',
     description: 'Stop following a prediction market keyword',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const keyword = args.join(' ').toLowerCase();
-      config.predictionPulse.markets = config.predictionPulse.markets.filter(m => m !== keyword);
+      config.predictionPulse.markets = config.predictionPulse.markets.filter((m: any) => m !== keyword);
       saveConfig(config); await send(`✅ Unfollowed: *${keyword}*`);
     }
   });
@@ -2633,7 +2661,7 @@ async function main() {
   bot.registerCommand({
     command: 'deliver',
     description: 'Simulate a delivery arrival for visual alert testing',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       await send('🚚 *Simulating Delivery Arrival...*');
       await blinkLight(3, { r: 255, g: 165, b: 0 }); // Orange Pulse
@@ -2644,7 +2672,7 @@ async function main() {
   bot.registerCommand({
     command: 'ipl',
     description: 'Manual score check from Gravity Engine',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const CENTERS_PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/match_centers.json";
       try {
@@ -2694,7 +2722,7 @@ async function main() {
   bot.registerCommand({
     command: 'results',
     description: 'Show recent IPL match results',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const RESULTS_PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/parsed_matches.json";
       const CENTERS_PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/match_centers.json";
@@ -2734,7 +2762,7 @@ async function main() {
   bot.registerCommand({
     command: 'upcoming',
     description: 'Show scheduled IPL matches',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const PATH = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/scraped/parsed_matches.json";
       try {
@@ -2757,7 +2785,7 @@ async function main() {
   bot.registerCommand({
     command: 'match',
     description: 'Get details for a specific match number',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const num = parseInt(args[0]);
       if (isNaN(num)) return await send('❌ Usage: `/match <number>`');
@@ -2793,7 +2821,7 @@ async function main() {
   bot.registerCommand({
     command: 'team',
     description: 'Show upcoming/recent matches for a team',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const team = args.join(' ').toLowerCase();
       if (!team) return await send('❌ Usage: `/team <name>` (e.g. RCB)');
@@ -2826,7 +2854,7 @@ async function main() {
   bot.registerCommand({
     command: 'jot',
     description: 'Quickly save a thought to Gravity Archive',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const text = args.join(' ');
       if (!text) return await send('✏️ Usage: `/jot My thought here`');
@@ -2848,7 +2876,7 @@ async function main() {
   bot.registerCommand({
     command: 'schedule',
     description: 'View active routines and schedules',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const jobs = config.scheduler || [];
       if (jobs.length === 0) return await send('🕰 *Schedules*: No routines active.');
@@ -2875,7 +2903,7 @@ async function main() {
   bot.registerCommand({
     command: 'aura',
     description: 'Toggle Media Aura sync',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
        if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
        config.mediaAura = !config.mediaAura;
        saveConfig(config);
@@ -2887,10 +2915,10 @@ async function main() {
   bot.registerCommand({
     command: 'temp',
     description: 'Show current AC set temperature',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      if (!miraie || miraie.devices.length === 0) return await send('❌ AC not configured.');
-      const device = miraie.devices[0];
+      if (!miraie || miraie?.devices.length === 0) return await send('❌ AC not configured.');
+      const device = miraie?.devices[0];
       const status = (device as any).status;
       if (status) {
         const isOn = status.ps === 'on';
@@ -2907,7 +2935,7 @@ async function main() {
   bot.registerCommand({
     command: 'history',
     description: 'Show multi-day energy totals',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const log = config.stats.dailyLog || [];
       const todayAC = (config.stats.acMinutes / 60);
@@ -2934,7 +2962,7 @@ async function main() {
   bot.registerCommand({
     command: 'remind',
     description: 'Set a reminder: /remind 30m take a break',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const timeArg = args[0];
       const message = args.slice(1).join(' ');
@@ -2961,7 +2989,7 @@ async function main() {
   bot.registerCommand({
     command: 'timer',
     description: 'Auto off-timer: /timer 30 lights',
-    handler: async (chat_id, args, msg, send) => {
+    handler: async (chat_id: number, args: string[], msg: any, send: any) => {
       const mins = parseInt(args[0]);
       const device = args[1]?.toLowerCase() || 'all';
       const action = args[2]?.toLowerCase() || 'off';
@@ -2992,10 +3020,10 @@ async function main() {
         clearInterval(interval);
         const promises = [];
         if ((device === 'all' || device === 'lights') && wiz) {
-          promises.push(wiz.executeAction({ type: 'control', payload: { state: action === 'on' } }));
+          promises.push(wiz?.executeAction({ type: 'control', payload: { state: action === 'on' } }));
         }
-        if ((device === 'all' || device === 'ac') && miraie && miraie.devices.length > 0) {
-          promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: action }));
+        if ((device === 'all' || device === 'ac') && miraie && miraie?.devices.length > 0) {
+          promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: action }));
         }
         await Promise.all(promises);
         await bot.sendMessage(msg.from.id, `😴 *Timer Done:* ${device.toUpperCase()} powered ${action}.`, { parse_mode: 'Markdown' });
@@ -3023,7 +3051,7 @@ async function main() {
   bot.registerCommand({
     command: 'aura',
     description: 'Toggle Media Aura sync',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
        if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
        config.mediaAura = !config.mediaAura;
        saveConfig(config);
@@ -3035,7 +3063,7 @@ async function main() {
     command: 'schedule_add',
        // ... existing command registrations
     description: 'Add a new schedule: /schedule_add 23:00 ac_off',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const time = args[0];
       const action = args[1];
@@ -3070,7 +3098,7 @@ async function main() {
   bot.registerCommand({
     command: 'schedule_clear',
     description: 'Wipe all active schedules',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       config.scheduler = [];
       saveConfig(config);
@@ -3083,7 +3111,7 @@ async function main() {
   bot.registerCommand({
     command: 'schedule_rm',
     description: 'Remove a specific schedule by index: /schedule_rm 1',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const idx = parseInt(args[0]) - 1;
       if (!config.scheduler || isNaN(idx) || idx < 0 || idx >= config.scheduler.length) {
@@ -3103,10 +3131,10 @@ async function main() {
   bot.registerCommand({
     command: 'temp',
     description: 'Show current AC set temperature',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      if (!miraie || miraie.devices.length === 0) return await send('❌ AC not configured.');
-      const device = miraie.devices[0];
+      if (!miraie || miraie?.devices.length === 0) return await send('❌ AC not configured.');
+      const device = miraie?.devices[0];
       const status = (device as any).status;
       if (status) {
         const isOn = status.ps === 'on';
@@ -3125,7 +3153,7 @@ async function main() {
   bot.registerCommand({
     command: 'history',
     description: 'Show last 7 days of energy usage',
-    handler: async (chatId, args, msg, send) => {
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
       const log = config.stats.dailyLog || [];
       
@@ -3159,7 +3187,7 @@ async function main() {
   // ── Web Control API (Port 3030) ─────────────────────
   // Perfect for Raycast / Siri Shortcuts (curl http://localhost:3030/scene/tv)
   try {
-    (Bun as any).serve({
+    if (typeof (globalThis as any).Bun !== "undefined") (globalThis as any).Bun.serve({
       port: 3030,
       async fetch(req: any) {
         const url = new URL(req.url);
@@ -3204,7 +3232,7 @@ async function main() {
           const state = url.pathname.split('/').pop()?.toLowerCase();
           config.mediaAura = (state === 'on');
           saveConfig(config);
-          logActivity(`🎵 Media Aura: Remote toggle -> ${state.toUpperCase()}`);
+          logActivity(`🎵 Media Aura: Remote toggle -> ${state?.toUpperCase() || ""}`);
           return new Response(`Media Aura: ${state}`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
@@ -3416,10 +3444,10 @@ async function main() {
           return new Response('Bulb Off', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/bulb_tv') {
-          if (wiz) await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
+          if (wiz) await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
           return new Response('Bulb TV Mode Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
-        if (url.pathname === '/control/ac_tv' || url.pathname === '/scene/tv' || url.pathname === '/scene/TV') {
+        if (url.pathname === '/control/actmpv' || url.pathname === '/scene/tv' || url.pathname === '/scene/TV') {
           await triggerScene('TV');
           return new Response('Global TV Mode Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
@@ -3691,9 +3719,9 @@ async function main() {
         if (!isPhoneOnline) {
           // Only count if an AC is actually on
           let anyAcOn = false;
-          if (miraie && miraie.devices.length > 0) {
-            for (const d of miraie.devices) {
-              const s = await miraie.getDeviceStatus(d.deviceId);
+          if (miraie && miraie?.devices.length > 0) {
+            for (const d of miraie?.devices) {
+              const s = await miraie?.getDeviceStatus(d.deviceId);
               if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
             }
           }
@@ -3703,8 +3731,8 @@ async function main() {
             if (awayAcMinutes >= 150) {
               awayAcMinutes = 0; // reset
               const promises = [];
-              if (miraie && miraie.devices.length > 0) {
-                promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
+              if (miraie && miraie?.devices.length > 0) {
+                promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' }));
               }
               await Promise.all(promises);
               const alert = `🛡️ *Gravity Auto-Saver:* AC was on for >2.5h while you were AWAY. High-fidelity safety shut-off triggered.`;
@@ -3720,8 +3748,8 @@ async function main() {
       }
 
       // 4. Deep Device Sync (Pulse Check)
-      if (miraie && miraie.devices.length > 0) {
-        const s = await miraie.getDeviceStatus(miraie.devices[0].deviceId);
+      if (miraie && miraie?.devices.length > 0) {
+        const s = await miraie?.getDeviceStatus(miraie?.devices[0].deviceId);
         const actualAcStatus = (s?.ps === 'on' || s?.ps === '1') ? 'on' : 'off';
         updateDeviceState('ac', actualAcStatus);
       }
@@ -3922,40 +3950,13 @@ async function main() {
              await sendConsolidatedAlert('iss', "🛰️ *Sovereignty:* The International Space Station is currently over your Hub.");
            }
         }
+    } catch (e) { }
+  }, 300000);
 
-function getDurationString(lastChanged?: number) {
-  if (!lastChanged) return "Just now";
-  const now = Date.now();
-  const diffMs = now - lastChanged;
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return "Just now";
-  return `${diffMins}m`;
-}
 
-async function playAudioCue(type: 'edit' | 'new' | 'wicket' | 'boundary') {
-  const sounds: Record<string, string> = {
-    edit: '/System/Library/Sounds/Tink.aiff',
-    new: '/System/Library/Sounds/Glass.aiff',
-    wicket: '/System/Library/Sounds/Basso.aiff',
-    boundary: '/System/Library/Sounds/Ping.aiff'
-  };
-  try { await execAsync(`afplay ${sounds[type]}`); } catch {}
-}
 
-async function getCpuTemp() {
-  try {
-    const { stdout } = await execAsync('sysctl -n machdep.xcpm.cpu_thermal_level');
-    return parseInt(stdout.trim()) > 50 ? 80 : 45; // Level-based approximation for fallback
-  } catch { return 40; }
-}
-
-async function getBattery() {
-  try {
-    const { stdout } = await execAsync('pmset -g batt | grep -o "[0-9]\\{1,3\\}%" | tr -d "%"');
-    return parseInt(stdout.trim());
-  } catch { return 100; }
-}
-
+  setInterval(async () => {
+    try {
         // 2. Prediction Oracle Pulse
         if (config.predictionPulse?.enabled && (Date.now() - ((global as any).lastPredictionCheck || 0) > 600000)) {
            (global as any).lastPredictionCheck = Date.now();
@@ -4038,7 +4039,7 @@ async function getBattery() {
            const dimming = Math.round(5 + (35 * (1 - Math.abs(2 * phase - 1))));
            if (config.stats.light?.status === 'on' && (global as any).lastMoonDim !== dimming) {
               (global as any).lastMoonDim = dimming;
-              await wiz.setDimming(dimming);
+              await wiz?.setBrightness(dimming);
               logActivity(`🌑 Moon Mood: Phase ${phase.toFixed(2)}, Dimming to ${dimming}%`);
            }
         }
@@ -4048,7 +4049,7 @@ async function getBattery() {
            (global as any).lastShieldCheck = Date.now();
            try {
              const { stdout: psOut } = await execAsync('ps -axco command');
-             const detected = config.focusShield.apps.filter(app => psOut.toLowerCase().includes(app.toLowerCase()));
+             const detected = config.focusShield.apps.filter((app: any) => psOut.toLowerCase().includes(app.toLowerCase()));
              if (detected.length > 0) {
                 logActivity(`🛡️ Focus Shield: Procrastination detected (${detected.join(', ')})`);
                 await blinkLight(2, { r: 255, g: 0, b: 0 }); // Red Alert
@@ -4063,14 +4064,14 @@ async function getBattery() {
            if (nowTime === config.solarRhythm.sleepTime && !(global as any).sleepTriggered) {
               (global as any).sleepTriggered = true;
               logActivity("🌅 Solar Rhythm: Commencing sleep transition...");
-              await wiz.setDimming(5); 
+              await wiz?.setBrightness(5); 
            }
            if (nowTime === config.solarRhythm.wakeTime && !(global as any).wakeTriggered) {
               (global as any).wakeTriggered = true;
               logActivity("🌅 Solar Rhythm: Commencing sunrise simulation...");
-              await wiz.turnOn();
-              await wiz.setDimming(10);
-              setTimeout(() => wiz.setDimming(50), 300000); 
+              await wiz?.turnOn();
+              await wiz?.setBrightness(10);
+              setTimeout(() => wiz?.setBrightness(50), 300000); 
            }
            if (nowTime !== config.solarRhythm.sleepTime) (global as any).sleepTriggered = false;
            if (nowTime !== config.solarRhythm.wakeTime) (global as any).wakeTriggered = false;
@@ -4084,14 +4085,14 @@ async function getBattery() {
           if (config.stats.ac?.status === "off") {
             const deviceId = miraie?.devices[0]?.deviceId;
             if (deviceId) {
-               await miraie.controlDevice(deviceId, { ps: "on", ac_f: "high", ac_t: "18", acmd: "cool" });
+               await miraie?.controlDevice(deviceId, { ps: "on", acfs: "high", actmp: "18", acmd: "cool" });
                thermalAcActive = true;
             }
           }
         } else if (temp < 60 && thermalAcActive) {
           logActivity(`❄️ Thermal Safe: CPU at ${temp}°C. Restoring AC.`);
           const deviceId = miraie?.devices[0]?.deviceId;
-          if (deviceId) await miraie.controlDevice(deviceId, { ps: "off" });
+          if (deviceId) await miraie?.controlDevice(deviceId, { ps: "off" });
           thermalAcActive = false;
         }
         if (batt < 15 && !batteryAlertSent) {
@@ -4111,7 +4112,7 @@ async function getBattery() {
         if (nowTime === "23:59" && !(global as any).briefSent) {
           (global as any).briefSent = true;
           const ipl = await getLatestIplData();
-          const brief = `🌌 *GRAVITY DAILY DEBRIEF*\n━━━━━━━━━━━━━━\n🏏 Matches: ${ipl?.matches?.length || 0} tracked today.\n❄️ AC Usage: ${config.stats.acMinutes || 0} mins\n💡 Light Usage: ${config.stats.lightMinutes || 0} mins\n📈 Hub Integrity: *OPTIMAL*\n\n_System analysis complete. Rest well._`;
+          const brief = `🌌 *GRAVITY DAILY DEBRIEF*\n━━━━━━━━━━━━━━\n🏏 Matches: ${ipl ? 1 : 0} tracked today.\n❄️ AC Usage: ${config.stats.acMinutes || 0} mins\n💡 Light Usage: ${config.stats.lightMinutes || 0} mins\n📈 Hub Integrity: *OPTIMAL*\n\n_System analysis complete. Rest well._`;
           const adminId = config.telegram?.adminId || process.env.ADMIN_ID;
           if (adminId) await bot.sendMessage(adminId, brief, { parse_mode: "Markdown" });
         }
@@ -4127,11 +4128,11 @@ async function getBattery() {
              const desc = (weather as any).current_condition[0].weatherDesc[0].value.toLowerCase();
              logActivity(`🌦️ Weather Aura: ${desc}`);
              if (desc.includes('rain') || desc.includes('drizzle')) {
-                await wiz.setPilot(config.wiz.ip, { r: 0, g: 100, b: 255 }); 
+                await wiz?.setPilot({ r: 0, g: 100, b: 255 }); 
              } else if (desc.includes('clear') || desc.includes('sunny')) {
-                await wiz.setPilot(config.wiz.ip, { temp: 3000 }); 
+                await wiz?.setPilot({ temp: 3000 }); 
              } else if (desc.includes('cloud') || desc.includes('overcast')) {
-                await wiz.setPilot(config.wiz.ip, { temp: 5000 }); 
+                await wiz?.setPilot({ temp: 5000 }); 
              }
            } catch {}
         }
@@ -4221,12 +4222,11 @@ async function getBattery() {
           const ball = ipl.latestBall;
           const isLiveMatch = !iplMatchCenter.browsingMatchId || iplMatchCenter.browsingMatchId === ipl.matchId;
 
-          // Match change → reset commentary thread so new match gets a fresh msg
+          // Match change → reset
           if (ipl.matchId && ipl.matchId !== iplMatchCenter.matchId) {
-            iplMatchCenter = { ...iplMatchCenter, matchId: ipl.matchId, highlights: [], wickets: [], timeline: [] };
+            iplMatchCenter = { ...iplMatchCenter, matchId: ipl.matchId, highlights: [], wickets: [], timeline: [], records: [] };
             lastIplBallId = "";
             lastIplMatchId = ipl.matchId;
-            lastIplOver = "";
             lastCommentaryMsgId = null;
             lastIplWicketBall = false;
             lastIplProjected = 0;
@@ -4234,22 +4234,18 @@ async function getBattery() {
             lastIplMilestones.clear();
           }
 
-          // First boot seed — don't fire stale events
-          if (lastIplBallId === "") {
-            lastIplBallId = ball.ballId;
-            const derivedScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets} (${ball.over} ov)` : (ipl.score || "");
-            lastIplScore = derivedScore;
-            lastIplOver = ball.over.split('.')[0];
-            return;
-          }
-
-          if (ball.ballId !== lastIplBallId) {
+          if (ball.ballId !== lastIplBallId || iplMatchCenter.browsingMatchId) {
+            const isNewBall = ball.ballId !== lastIplBallId;
             const prevWasWicket = lastIplWicketBall;
-            lastIplBallId = ball.ballId;
-            const liveHeaderScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets}` : ipl.score;
-            lastIplScore = liveHeaderScore;
-            const run = String(ball.run).toUpperCase();
-            lastIplWicketBall = ball.isWicket;
+            if (isNewBall) {
+               lastIplBallId = ball.ballId;
+               lastIplWicketBall = ball.isWicket;
+               const currentOver = ball.over.split('.')[0];
+               if (currentOver && currentOver !== lastIplOver) {
+                 lastIplOver = currentOver;
+                 if (config.cricketMode && isLiveMatch) await blinkLight(2, { r: 255, g: 255, b: 255 });
+               }
+            }
 
             // Trend and Projection
             let trend = "";
@@ -4260,104 +4256,34 @@ async function getBattery() {
             }
             if (currentProj > 0) lastIplProjected = currentProj;
 
-            // Build rich over-ball breakdown
-            const overBallsStr = (ipl.currentOverBalls || []).map((b: any) => {
-              const r = String(b.run).toUpperCase();
-              if (b.isWicket) return 'W';
-              if (r === '6') return '6';
-              if (r === '4') return '4';
-              if (r === '0') return '·';
-              if (r.includes('WD')) return 'Wd';
-              if (r.includes('NB')) return 'Nb';
-              if (r.includes('LB')) return 'Lb';
-              return r;
-            }).join(' | ');
-            const overDisplay = overBallsStr ? `\n🎯 *Over ${ball.over.split('.')[0]}:* ${overBallsStr}` : '';
+            // Update timeline/wickets if new ball
+            if (isNewBall) {
+              const logEntry = `[${ball.over}] ${ball.run.includes('WD') ? 'Wd' : ball.run.includes('NB') ? 'Nb' : ball.run} - ${ball.commentary.split('.')[0]}`;
+              iplMatchCenter.timeline.unshift(logEntry);
+              if (iplMatchCenter.timeline.length > 20) iplMatchCenter.timeline.pop();
 
-            // Rich summary block
-            const probBlock = ipl.winProb ? `\n📊 *Win Prob:* ${ipl.winProb}` : '';
-            const partnerBlock = ipl.partnership ? `\n🤝 *Partner:* ${ipl.partnership}` : '';
-            const rateBlock = ipl.target
-              ? `*Target:* ${ipl.target} | *Need:* ${parseInt(ipl.target) - (parseInt(ball.totalRuns || '0'))} off ${Math.max(0, 120 - Math.round(parseFloat(ball.over) * 6))} balls\n*CRR:* ${ipl.crr} | *RRR:* ${ipl.rrr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`
-              : `*CRR:* ${ipl.crr}${ipl.projected ? ` | *Proj:* ~${ipl.projected}${trend}` : ''}`;
-            const pairBlock = `*🏏 Bat:* ${ipl.batters || 'N/A'}\n*⚾ Bowl:* ${ipl.bowler || 'N/A'}`;
-            const summaryText = `\n━━━━━━━━━━━━━━\n${rateBlock}\n${pairBlock}${partnerBlock}${probBlock}${overDisplay}`;
-
-            // Deriving a more accurate "Live" header score (Fixing summary lag)
-            const finalScore = ball.totalRuns !== undefined ? `${ball.totalRuns}/${ball.totalWickets} (${ball.over} ov)` : ipl.score;
-            lastIplScore = finalScore;
-
-            // 1. Over Change Alert (new over starts)
-            const currentOver = ball.over.split('.')[0];
-            if (currentOver && currentOver !== lastIplOver) {
-              lastIplOver = currentOver;
-              lastBlinkSignal = { text: 'Over Started', time: Date.now() };
-              if (config.cricketMode && isLiveMatch) await blinkLight(2, { r: 255, g: 255, b: 255 });
-            }
-
-            // 2. Toss
-            if (run.includes('TOSS') || (ball.commentary || '').toLowerCase().includes('toss won')) {
-              lastGlobalSignal = { text: 'IPL Toss', time: Date.now() };
-              lastBlinkSignal = { text: 'Toss Blink', time: Date.now() };
-              if (config.cricketMode && isLiveMatch) await blinkLight(3, { r: 0, g: 255, b: 255 });
-              await sendConsolidatedCommentary(`🪙 *TOSS:* _${ball.commentary}_`);
-              return;
-            }
-
-            // 3. Post-wicket awareness pulse (first ball after wicket, before checking 4/6)
-            if (prevWasWicket && !ball.isWicket && run !== '6' && run !== '4') {
-              if (config.cricketMode && isLiveMatch) await pulseLight(85, 500);
-            }
-
-            const baseSummary = formatIplSummary(ipl);
-
-            // 4. Main event dispatch
-            const eventTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-            const logEntry = `[${ball.over}] ${ball.run.includes('WD') ? 'Wd' : ball.run.includes('NB') ? 'Nb' : ball.run} - ${ball.commentary.split('.')[0]}`;
-            iplMatchCenter.timeline.unshift(logEntry);
-            if (iplMatchCenter.timeline.length > 20) iplMatchCenter.timeline.pop();
-
-            if (ball.isWicket) {
-              iplMatchCenter.wickets.unshift(`☝️ *Wicket (${ball.over}):* ${ball.commentary.split('.')[0]}`);
-              if (iplMatchCenter.wickets.length > 10) iplMatchCenter.wickets.pop();
-              lastGlobalSignal = { text: 'IPL Wicket', time: Date.now() };
-              lastBlinkSignal = { text: 'Wicket Red Blink', time: Date.now() };
-              if (config.cricketMode && isLiveMatch) await blinkLight(3, { r: 255, g: 0, b: 0 });
-              if (isLiveMatch) await playAudioCue('wicket');
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `☝️ *WICKET!* (${ball.over})`));
-            } else if (run === '6') {
-              iplMatchCenter.highlights.unshift(`🚀 *SIX! (${ball.over}):* ${ball.commentary.split('.')[0]}`);
-              if (iplMatchCenter.highlights.length > 10) iplMatchCenter.highlights.pop();
-              lastGlobalSignal = { text: 'IPL Sixer', time: Date.now() };
-              lastBlinkSignal = { text: 'Sixer Gold Blink', time: Date.now() };
-              if (config.cricketMode && isLiveMatch) await blinkLight(3, { r: 255, g: 215, b: 0 });
-              if (isLiveMatch) await playAudioCue('boundary');
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `🚀 *SIX!* (${ball.over})`));
-            } else if (run === '4') {
-              iplMatchCenter.highlights.unshift(`🔥 *FOUR! (${ball.over}):* ${ball.commentary.split('.')[0]}`);
-              if (iplMatchCenter.highlights.length > 10) iplMatchCenter.highlights.pop();
-              lastGlobalSignal = { text: 'IPL Four', time: Date.now() };
-              lastBlinkSignal = { text: 'Four Blue Blink', time: Date.now() };
-              if (config.cricketMode && isLiveMatch) await blinkLight(2, { r: 0, g: 100, b: 255 });
-              if (isLiveMatch) await playAudioCue('boundary');
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl, `🔥 *FOUR!* (${ball.over})`));
-            } else {
-              // Normal ball
-              if (config.cricketMode && isLiveMatch) await pulseLight(70, 350);
-              if (config.automaticScoreUpdates) await sendConsolidatedCommentary(renderMatchCenter(ipl));
-            }
-
-            // 5. Milestone Detection (50s/100s)
-            (ipl.inningsData?.Batsmen || []).forEach(async (b: any) => {
-              const r = parseInt(b.Runs || '0');
-              const key = `${ipl.matchId}-${b.FullName}-${r}`;
-              if ((r === 50 || r === 100) && !lastIplMilestones.has(key)) {
-                lastIplMilestones.add(key);
-                lastGlobalSignal = { text: `⭐ Milestone: ${b.FullName} (${r})`, time: Date.now() };
-                if (config.cricketMode && isLiveMatch) await blinkLight(4, { r: 120, g: 0, b: 255 }); // Purple for Stars
-                await (bot as any).sendMessage(config.telegram.chatId, `⭐ *MILESTONE:* ${b.FullName} reaches *${r}* runs! 👏\nMatch: ${ipl.matchName}`);
+              if (ball.isWicket) {
+                iplMatchCenter.wickets.unshift(`☝️ *Wicket (${ball.over}):* ${ball.commentary.split('.')[0]}`);
+                if (iplMatchCenter.wickets.length > 10) iplMatchCenter.wickets.pop();
+                if (config.cricketMode && isLiveMatch) await blinkLight(3, { r: 255, g: 0, b: 0 });
+                if (isLiveMatch) await playAudioCue('wicket');
+              } else if (String(ball.run) === '6') {
+                iplMatchCenter.highlights.unshift(`🚀 *SIX! (${ball.over}):* ${ball.commentary.split('.')[0]}`);
+                if (iplMatchCenter.highlights.length > 10) iplMatchCenter.highlights.pop();
+                if (config.cricketMode && isLiveMatch) await blinkLight(3, { r: 255, g: 215, b: 0 });
+                if (isLiveMatch) await playAudioCue('boundary');
+              } else if (String(ball.run) === '4') {
+                iplMatchCenter.highlights.unshift(`🔥 *FOUR! (${ball.over}):* ${ball.commentary.split('.')[0]}`);
+                if (iplMatchCenter.highlights.length > 10) iplMatchCenter.highlights.pop();
+                if (config.cricketMode && isLiveMatch) await blinkLight(2, { r: 0, g: 100, b: 255 });
+                if (isLiveMatch) await playAudioCue('boundary');
               }
-            });
+            }
+
+            // Always update UI if in Match Center or if new ball
+            if (config.automaticScoreUpdates || iplMatchCenter.browsingMatchId) {
+               await sendConsolidatedCommentary(renderMatchCenter(ipl));
+            }
           }
         }
       } catch (e) { }
@@ -4387,7 +4313,7 @@ async function getBattery() {
   process.on('SIGTERM', () => shutdown('system stop'));
   const sos = async (err: Error, type: string) => {
     console.error(`🆘 ${type}:`, err);
-    const alert = `🚨 *Gravity CRASH Detected*\nType: \`${type}\`\nError: \`${err.message.substring(0, 100)}\`\n\n_Hub is attempting to stay alive..._`;
+    const alert = `🚨 *Gravity CRASH Detected*\nType: \`${type}\`\nError: \`${(err as any).message.substring(0, 100)}\`\n\n_Hub is attempting to stay alive..._`;
     for (const userId of (config.authorizedUsers || [])) {
       try { await bot.sendMessage(userId, alert, { parse_mode: 'Markdown' }); } catch {}
     }
@@ -4436,17 +4362,18 @@ async function sendConsolidatedCommentary(text: string) {
 
 function getMatchCenterKeyboard() {
   const t = iplMatchCenter.currentTab;
-  return [
+  const kb = [
     [
       { text: t === 'live' ? '🏟️ LIVE' : '🏟️ Live', callback_data: 'control:ipl_tab_live:level:cricket' },
       { text: t === 'highlights' ? '🚀 BDY' : '🚀 Bdy', callback_data: 'control:ipl_tab_highlights:level:cricket' }
     ],
     [
       { text: t === 'wickets' ? '☝️ WKT' : '☝️ Wkt', callback_data: 'control:ipl_tab_wickets:level:cricket' },
-      { text: t === 'timeline' ? '🎯 TML' : '🎯 Tml', callback_data: 'control:ipl_tab_timeline:level:cricket' }
+      { text: t === 'timeline' ? '📜 TIMELINE' : '📜 Timeline', callback_data: 'control:ipl_tab_timeline:level:cricket' }
     ],
     [
       { text: '⏮ PREV', callback_data: 'control:ipl_prev:level:cricket' },
+      { text: '📸 RECORD', callback_data: 'control:ipl_record:level:cricket' },
       { text: '⏭ NEXT', callback_data: 'control:ipl_next:level:cricket' }
     ]
   ];
@@ -4480,7 +4407,11 @@ function renderMatchCenter(ipl: any, prefix: string = '') {
   }
   if (tab === 'timeline') {
     const logs = iplMatchCenter.timeline.length > 0 ? iplMatchCenter.timeline.join('\n') : '_No balls recorded._';
-    return `${header}\n🎯 *Last 20 Deliveries*\n━━━━━━━━━━━━━━\n${logs}`;
+    return `${header}\n📜 *Last 20 Deliveries*\n━━━━━━━━━━━━━━\n${logs}`;
+  }
+  if (tab === 'records') {
+    const logs = iplMatchCenter.records.length > 0 ? iplMatchCenter.records.join('\n') : '_No recorded moments._';
+    return `${header}\n📸 *Key Moments*\n━━━━━━━━━━━━━━\n${logs}`;
   }
 
   if (ipl.status === 'result') {
@@ -4707,36 +4638,80 @@ async function getLatestIplData(targetMatchId?: string) {
     }
 
     const data = JSON.parse(fs.readFileSync(path.join(IPL_ROOT, fileToRead), 'utf-8'));
-    const currentInnings = data.innings[data.innings.length - 1];
-    const ball = currentInnings?.balls?.[currentInnings.balls.length - 1];
+    const innings = data.innings || [];
+    const currentInnings = innings[innings.length - 1] || { balls: [], totalRuns: 0, totalWickets: 0, overs: 0 };
+    const balls = currentInnings.balls || [];
+    const ball = balls[balls.length - 1];
     
-    // Extract batters and bowler from local engine data
-    const batters = currentInnings?.battingStats ? Object.entries(currentInnings.battingStats).filter(([_, s]: any) => s.isOut === false).slice(0, 2).map(([name, s]: any) => `${name} (${s.runs}/${s.balls})`).join(' & ') : (ball?.batsmanName || 'N/A');
-    const bowler = currentInnings?.bowlingStats ? Object.entries(currentInnings.bowlingStats).slice(-1).map(([name, s]: any) => `${name} (${s.wickets}/${s.runsConceded})`).join('') : (ball?.bowlerName || 'N/A');
+    // Calculate stats from balls on the fly for local engine
+    const battingStats: Record<string, { runs: number, balls: number, isOut: boolean }> = {};
+    const bowlingStats: Record<string, { wickets: number, runsConceded: number }> = {};
+    const historicalHighlights: string[] = [];
+    const historicalWickets: string[] = [];
+    const historicalTimeline: string[] = [];
+
+    balls.forEach((b: any) => {
+      // Batting
+      if (!battingStats[b.batsmanName]) battingStats[b.batsmanName] = { runs: 0, balls: 0, isOut: false };
+      battingStats[b.batsmanName].runs += (b.runs || 0);
+      if (!b.isExtra || b.extraType === 'penalty') battingStats[b.batsmanName].balls += 1;
+      if (b.isWicket) battingStats[b.batsmanName].isOut = true;
+
+      // Bowling
+      if (!bowlingStats[b.bowlerName]) bowlingStats[b.bowlerName] = { wickets: 0, runsConceded: 0 };
+      if (b.isWicket) bowlingStats[b.bowlerName].wickets += 1;
+      bowlingStats[b.bowlerName].runsConceded += (b.runs || 0) + (b.extraRuns || 0);
+
+      // Events
+      const rStr = String(b.runs);
+      const ovStr = `${b.overNumber}.${b.ballNumber}`;
+      if (b.isWicket) historicalWickets.unshift(`☝️ *Wicket (${ovStr}):* ${b.commentary || 'Out!'}`);
+      else if (rStr === '6') historicalHighlights.unshift(`🚀 *SIX! (${ovStr}):* ${b.commentary || 'Smashed!'}`);
+      else if (rStr === '4') historicalHighlights.unshift(`🔥 *FOUR! (${ovStr}):* ${b.commentary || 'Boundary!'}`);
+      
+      historicalTimeline.unshift(`[${ovStr}] ${b.isWicket ? 'W' : rStr} - ${b.commentary?.split('.')[0] || 'No commentary'}`);
+    });
+
+    const activeBatters = Object.entries(battingStats).filter(([_, s]) => !s.isOut).slice(-2);
+    const battersStr = activeBatters.length > 0 ? activeBatters.map(([name, s]) => `${name} (${s.runs}/${s.balls})`).join(' & ') : 'N/A';
+    const bowlerStr = ball ? `${ball.bowlerName} (${bowlingStats[ball.bowlerName]?.wickets || 0}/${bowlingStats[ball.bowlerName]?.runsConceded || 0})` : 'N/A';
+
+    const totalBalls = (currentInnings.overs || 0) * 6; // Rough estimate or calculate from balls
+    const crr = totalBalls > 0 ? ((currentInnings.totalRuns || 0) / (balls.length / 6)).toFixed(2) : '0.00';
+    const projected = parseFloat(crr) * 20;
+
+    // Seed state if empty
+    if (iplMatchCenter.matchId === String(data.matchId) && iplMatchCenter.highlights.length === 0) {
+      iplMatchCenter.highlights = historicalHighlights.slice(0, 10);
+      iplMatchCenter.wickets = historicalWickets.slice(0, 10);
+      iplMatchCenter.timeline = historicalTimeline.slice(0, 20);
+    }
 
     return {
-      matchId: data.matchId,
+      matchId: String(data.matchId),
       matchName: data.matchName || `Match ${data.matchId}`,
       status: data.status,
+      crr,
+      projected: projected > 0 ? Math.round(projected).toString() : '',
       latestBall: ball ? {
         ballId: ball.ballId || `${ball.overNumber}.${ball.ballNumber}`,
         over: `${ball.overNumber}.${ball.ballNumber}`,
         run: String(ball.runs),
         isWicket: ball.isWicket,
-        commentary: ball.commentary,
+        commentary: ball.commentary || '',
         totalRuns: ball.totalRuns,
         totalWickets: ball.totalWickets
       } : null,
-      batters,
-      bowler,
+      batters: battersStr,
+      bowler: bowlerStr,
       score: `${currentInnings.battingTeam}: ${currentInnings.totalRuns}/${currentInnings.totalWickets} (${currentInnings.overs} ov)`,
       summary: {
-        inn1: data.innings[0] ? `${data.innings[0].battingTeam} ${data.innings[0].totalRuns}/${data.innings[0].totalWickets}` : '',
-        inn2: data.innings[1] ? `${data.innings[1].battingTeam} ${data.innings[1].totalRuns}/${data.innings[1].totalWickets}` : '',
-        topScorers: 'N/A',
-        topBowlers: 'N/A'
+        inn1: innings[0] ? `${innings[0].battingTeam} ${innings[0].totalRuns}/${innings[0].totalWickets}` : '',
+        inn2: innings[1] ? `${innings[1].battingTeam} ${innings[1].totalRuns}/${innings[1].totalWickets}` : '',
+        topScorers: Object.entries(battingStats).sort((a, b) => b[1].runs - a[1].runs).slice(0, 2).map(([n, s]) => `${n} (${s.runs})`).join(', '),
+        topBowlers: Object.entries(bowlingStats).sort((a, b) => b[1].wickets - a[1].wickets).slice(0, 1).map(([n, s]) => `${n} (${s.wickets}/${s.runsConceded})`).join(', ')
       },
-      prevMatch: null,
+      prevMatch: null, // Local engine doesn't easily know neighbors without manifest
       nextMatch: null
     };
   }

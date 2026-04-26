@@ -9,7 +9,6 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import fetch from 'node-fetch';
 
 const execAsync = promisify(exec);
 const ROOT_DIR = "/Users/paranjay/Developer/iftt";
@@ -120,10 +119,13 @@ async function archiveClipboard(text: string) {
     if (isLink) {
       const targetUrl = mdLinkMatch ? mdLinkMatch[1] : (text.match(/https?:\/\/\S+/)?.[0] || text);
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         const response = await fetch(targetUrl, { 
           headers: { 'User-Agent': 'Mozilla/5.0 (Gravity Archiver/1.0)' },
-          timeout: 5000 
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         const html = await response.text();
         newItem.meta.ogTitle = html.match(/<title>(.*?)<\/title>/)?.[1] || 
                             html.match(/<meta property="og:title" content="(.*?)"/)?.[1] || '';
@@ -152,7 +154,8 @@ async function main() {
   let lastClip = "";
 
   try {
-    (Bun as any).serve({
+    if (typeof (globalThis as any).Bun !== 'undefined') {
+      (globalThis as any).Bun.serve({
       port: 3031,
       async fetch(req: any) {
         const url = new URL(req.url);
@@ -220,8 +223,11 @@ async function main() {
               const item = clipsData[i];
               if (item.meta?.type === 'link' && !item.meta.ogImage) {
                 try {
-                   const response = await fetch(item.text, { timeout: 3000 });
+                   const controller = new AbortController();
+                   const timeoutId = setTimeout(() => controller.abort(), 3000);
+                   const response = await fetch(item.text, { signal: controller.signal });
                    const html = await response.text();
+                   clearTimeout(timeoutId);
                    item.meta.ogTitle = html.match(/<title>(.*?)<\/title>/)?.[1] || "";
                    item.meta.ogImage = html.match(/<meta property="og:image" content="(.*?)"/)?.[1] || "";
                    item.meta.ogDescription = html.match(/<meta property="og:description" content="(.*?)"/)?.[1] || "";
@@ -288,7 +294,8 @@ async function main() {
 
         return new Response('Archive API Online', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
       }
-    });
+      });
+    }
     console.log('🌌 Gravity Archive (3031) Operational.');
   } catch(e) { console.warn('API 3031 error'); }
 
