@@ -25,16 +25,20 @@ SetTimer, CheckGameState, 2000
 return
 
 ; ==============================================================================
-; 🛑 WINDOWS KEY BLOCKER (Only active during games)
+; 🛑 GAMING HOTKEY FIXES (Only active during games)
 ; ==============================================================================
 #IfWinActive ahk_exe VALORANT-Win64-Shipping.exe
-LWin::Return
-RWin::Return
+LWin::Return ; Block Left Windows Key
+RWin::Return ; Block Right Windows Key
+!Space::Return ; Block Alt+Space (Window Menu Freeze)
+^Esc::Return ; Block Ctrl+Esc (Start Menu)
 #IfWinActive
 
 #IfWinActive ahk_exe cs2.exe
 LWin::Return
 RWin::Return
+!Space::Return
+^Esc::Return
 #IfWinActive
 
 ; ==============================================================================
