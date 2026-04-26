@@ -645,6 +645,9 @@ async function main() {
     const mins = totalMins % 60;
     
     if (days > 0) return `${days}d ${hours}h`;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m`;
@@ -4741,6 +4744,9 @@ async function main() {
         }
     }});
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
