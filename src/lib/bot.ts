@@ -620,11 +620,32 @@ async function main() {
   }
 
   // Helper to calculate duration string
+<<<<<<< Updated upstream
   const getDurationString = (lastChangedIso: string) => {
     if (!lastChangedIso) return "Unknown";
     const diff = Date.now() - new Date(lastChangedIso).getTime();
     const hours = Math.floor(diff / 3600000);
     const mins = Math.floor((diff % 3600000) / 60000);
+=======
+  const getDurationString = (lastChangedIso: string | number) => {
+    if (!lastChangedIso || lastChangedIso === "null" || lastChangedIso === "undefined" || lastChangedIso === "0") return "Just now";
+    // Handle both ISO strings and numeric timestamps (as strings or numbers)
+    let dateObj: Date;
+    const num = Number(lastChangedIso);
+    if (!isNaN(num) && num > 0) {
+      dateObj = new Date(num);
+    } else {
+      dateObj = new Date(lastChangedIso);
+    }
+    const diff = Date.now() - dateObj.getTime();
+    if (isNaN(diff) || diff < 0) return "Just now";
+    const totalMins = Math.floor(diff / 60000);
+    const days = Math.floor(totalMins / 1440);
+    const hours = Math.floor((totalMins % 1440) / 60);
+    const mins = totalMins % 60;
+    
+    if (days > 0) return `${days}d ${hours}h`;
+>>>>>>> Stashed changes
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m`;
   };
@@ -1497,7 +1518,7 @@ async function main() {
       }
 
       // 1. Auto-AC Logic (Weather Sensitive)
-      if (config.autoAc) {
+      if (config.autoAc && (Date.now() - bootTime > 300000)) {
         const w: any = await (weather as any).getWeather();
         if (w) {
           if (w.temp > 31 && config.stats.acStatus === 'off' && isPhoneOnline) {
@@ -1513,7 +1534,7 @@ async function main() {
       }
 
       // 2. Auto-Light Logic (Sunset & Bedtime)
-      if (config.autoLight) {
+      if (config.autoLight && (Date.now() - bootTime > 300000)) {
         // Sunset Pulse (Approx 6:30 PM - 7:30 PM)
         if (hour === 18 && config.stats.lightStatus === 'off' && isPhoneOnline) {
           await (wiz as any).setPilot({ state: true, temp: 3000, dimming: 80 });
@@ -4719,6 +4740,9 @@ async function main() {
             await bot.sendMessage(chatId, `⚡ *Hyper-Sync:* Refresh rate set to ${ms/1000}s`);
         }
     }});
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
   }
 
