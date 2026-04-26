@@ -3265,6 +3265,74 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             return new Response(`Trigger ${hook} Executed`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
         }
+
+        // 🎮 CS2 Game State Integration (GSI)
+        if (url.pathname === '/gsi' && req.method === 'POST') {
+           try {
+              const data = await req.json();
+              if (data.player && data.player.state) {
+                 const kills = data.player.state.round_kills || 0;
+                 const hs = data.player.state.round_killhs || 0;
+                 const health = data.player.state.health || 100;
+                 
+                 // HS Detection
+                 if (hs > (global as any).lastHsCount) {
+                    await wiz?.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } });
+                    setTimeout(() => wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 150, b: 0, dimming: 10 } }), 500);
+                 }
+                 (global as any).lastHsCount = hs;
+                 
+                 // Damage Detection
+                 if (health < 40 && health > 0 && health < ((global as any).lastHealth || 100)) {
+                    await wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 0, b: 0, dimming: 100 } });
+                    setTimeout(() => wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 150, b: 0, dimming: 10 } }), 500);
+                 }
+                 (global as any).lastHealth = health;
+              }
+           } catch(e) {}
+           return new Response("GSI OK", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        // 🫀 Biometric Heart-Rate Sync (iOS Shortcut webhook)
+        if (url.pathname === '/biometric/heartrate' && req.method === 'POST') {
+           try {
+              const data = await req.json();
+              if (data.bpm > 110) {
+                 logActivity(`🫀 Biometric Alert: HR spiked to ${data.bpm} BPM. Cooling room.`);
+                 const d = miraie?.devices[0]?.deviceId;
+                 if (d) await miraie?.controlDevice(d, { ps: "on", acfs: "high", actmp: "18", acmd: "cool" });
+              }
+           } catch(e) {}
+           return new Response("Biometric OK", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        // 🛏️ REM-Cycle Thermal Guardian (iOS Sleep webhook)
+        if (url.pathname.startsWith('/sleep/')) {
+           const state = url.pathname.split('/').pop();
+           if (state === 'deep') {
+              logActivity("🛏️ Sleep Sync: Deep Sleep detected. Dropping AC to 20°C.");
+              const d = miraie?.devices[0]?.deviceId;
+              if (d) await miraie?.controlDevice(d, { ps: "on", actmp: "20", acmd: "cool" });
+           } else if (state === 'wake') {
+              logActivity("🌅 Sleep Sync: Pre-wake phase. Sunrise gradient initiated.");
+              const d = miraie?.devices[0]?.deviceId;
+              if (d) await miraie?.controlDevice(d, { ps: "off" });
+              await wiz?.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 10 } });
+              setTimeout(() => wiz?.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 100 } }), 600000); // 10 min sunrise
+           }
+           return new Response(`Sleep State: ${state}`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        // 👁️ Iris Desktop Context Awareness
+        if (url.pathname === '/iris/color' && req.method === 'POST') {
+           try {
+              const data = await req.json(); // Expected { r: 255, g: 100, b: 50 }
+              if (config.irisAura) {
+                 await wiz?.executeAction({ type: 'control', payload: { state: true, r: data.r, g: data.g, b: data.b, dimming: data.dimming || 50 } });
+              }
+           } catch(e) {}
+           return new Response("Iris OK", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
         if (url.pathname.startsWith('/media_aura/')) {
           const state = url.pathname.split('/').pop()?.toLowerCase();
           config.mediaAura = (state === 'on');
