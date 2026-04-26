@@ -913,6 +913,11 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             const target = subCommand === 'ipl_next' ? ipl?.nextMatch : ipl?.prevMatch;
             if (target) {
                iplMatchCenter.browsingMatchId = String(target.MatchID || target.matchId);
+               // Reset state for new match to force seeding
+               iplMatchCenter.highlights = [];
+               iplMatchCenter.wickets = [];
+               iplMatchCenter.timeline = [];
+               
                const newData = await getLatestIplData(iplMatchCenter.browsingMatchId);
                if (newData) {
                   const text = renderMatchCenter(newData);
@@ -930,6 +935,9 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         } else if (subCommand === 'ipl_live_mode') {
             lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
             iplMatchCenter.browsingMatchId = undefined;
+            iplMatchCenter.highlights = [];
+            iplMatchCenter.wickets = [];
+            iplMatchCenter.timeline = [];
             const ipl = await getLatestIplData();
             if (ipl) {
                const text = renderMatchCenter(ipl);
@@ -964,6 +972,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
              if (isCallback) await (bot as any).answerCallbackQuery((msg as any).callback_query_id, { text: "Moment captured!" }).catch(() => {});
              return;
          } else if (subCommand.startsWith("ipl_tab_")) {
+             lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
              const tab = subCommand.replace("ipl_tab_", "") as any;
              iplMatchCenter.currentTab = tab;
              const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
@@ -4217,9 +4226,6 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       if (!config.cricketMode && !config.automaticScoreUpdates && !iplMatchCenter.browsingMatchId) return;
       try {
         const config = loadConfig();
-        if (config.authorizedUsers?.[0]) {
-          await bot.sendChatAction(config.authorizedUsers[0], 'typing').catch(() => {});
-        }
         const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
         if (ipl && ipl.latestBall) {
           const ball = ipl.latestBall;
@@ -4293,7 +4299,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     };
 
     runIplPulse();
-    setInterval(runIplPulse, 3000); // 3s hyper-sync
+    setInterval(runIplPulse, 1000); // 1s Hyper-Sync
   }
 
   const shutdown = async (signal: string) => {
