@@ -1488,6 +1488,18 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         }
         speak("Cinematic mode active. Enjoy your movie.");
         break;
+      case 'GAME_VALO':
+        logActivity("🎮 Game Mode: VALORANT");
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 0, b: 50, dimming: 10 } }));
+        break;
+      case 'GAME_CS2':
+        logActivity("🎮 Game Mode: CS2");
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 150, b: 0, dimming: 10 } }));
+        break;
+      case 'GAME_IDLE':
+        logActivity("🎮 Game Mode: PAUSED / IDLE");
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 50 } }));
+        break;
       case 'CRICKET':
       case 'IPL':
         config.cricketMode = !config.cricketMode;
