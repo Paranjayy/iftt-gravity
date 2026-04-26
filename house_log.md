@@ -1401,4 +1401,7 @@ Fin...)
 [26/4/2026, 3:44:42 PM] 📱 Presence: Phone detected (HOME)
 [26/4/2026, 4:14:06 PM] AC State: OFF (Manual/Remote)
 [26/4/2026, 4:34:11 PM] AC State: ON (Manual/Remote)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
