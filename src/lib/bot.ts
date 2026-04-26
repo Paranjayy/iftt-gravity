@@ -3859,8 +3859,11 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         const dateStr = now.toLocaleDateString('en-IN');
         const dailyUnits = (stats.acMinutes / 60 * 1.65) + (stats.lightMinutes / 60 * 0.012);
         const dailyCost = calculatePgvclBill(dailyUnits);
+        const pg = config.stats.pgvcl;
+        const totalUnits = pg?.units || '--';
+        const totalBill = pg?.amount || '--';
         
-        const msg = `🌙 *Gravity Daily Review*\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*\n🔌 Energy: *${dailyUnits.toFixed(1)} units*\n💰 Est. Cost: *₹${dailyCost}*`;
+        const msg = `🌙 *Gravity Daily Review*\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*\n\n⚡ *Today (Est.)*\n🔌 Energy: *${dailyUnits.toFixed(1)} units*\n💰 Est. Cost: *₹${dailyCost}*\n\n📊 *Total (Actual)*\n🔌 Energy: *${totalUnits} units*\n💰 Bill: *₹${totalBill}*`;
         for (const uid of (config.authorizedUsers || [])) {
           await bot.sendMessage(uid, msg, { parse_mode: 'Markdown' });
         }
