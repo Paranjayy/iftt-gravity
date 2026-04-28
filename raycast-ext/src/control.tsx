@@ -132,7 +132,7 @@ export default function Command() {
         <List.Item
           icon={Icon.Bolt}
           title="PGVCL Energy Pulse"
-          subtitle={`₹${state?.pgvcl?.bill || state?.estimatedPgBill || '??'} ${state?.pgvcl?.bill ? 'Actual' : 'Est.'} Bill | ${state?.pgvcl?.units || state?.units || '0'} Units`}
+          subtitle={`Actual: ₹${state?.pgvcl?.bill || '--'} (${state?.pgvcl?.units || '--'}U) | Today: ₹${state?.estimatedPgBill || '0'} (${state?.units || '0'}U)`}
           accessories={[{ text: "⚡ BILLING ACTIVE" }]}
           actions={<ActionPanel><Action icon={Icon.Cloud} title="Sync Vault" onAction={() => runAction("Vault Sync", "/archive/sync")} /></ActionPanel>}
         />
