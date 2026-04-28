@@ -310,7 +310,39 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   if (!config.deliveryWatch) config.deliveryWatch = { enabled: false };
   if (config.githubPulse.silent === undefined) config.githubPulse.silent = false;
   if (config.bootGreet === undefined) config.bootGreet = true;
+  if (config.postureGuardian === undefined) config.postureGuardian = false;
+  if (config.buildSiren === undefined) config.buildSiren = true;
+  if (config.discordAura === undefined) config.discordAura = false;
+  if (config.spotifyBpm === undefined) config.spotifyBpm = false;
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
+
+  const startPostureGuardian = () => {
+    if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
+    (global as any).postureTimer = setInterval(async () => {
+      if (!config.postureGuardian) return;
+      await bot.sendMessage(config.telegram.chatId, '💀 *POSTURE CHECK!* Stand up and stretch.', { 
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[{ text: '✅ I Stretched', callback_data: 'control:stretched:level:labs' }]]
+        }
+      });
+      if (wiz) await pulseLight(5, 3000); 
+      speak("Stretch immediately. Guardian protocol engaged.");
+      
+      if ((global as any).postureNag) clearInterval((global as any).postureNag);
+      (global as any).postureNag = setInterval(async () => {
+         await bot.sendMessage(config.telegram.chatId, '⚠️ *POSTURE NAG:* You still haven\'t acknowledged. STAND UP!', { 
+           parse_mode: 'Markdown',
+           reply_markup: {
+             inline_keyboard: [[{ text: '✅ OK FINE', callback_data: 'control:stretched:level:labs' }]]
+           }
+         });
+         speak("Stand up now.");
+      }, 5 * 60 * 1000); // 5 min nag
+    }, 120 * 60 * 1000); // 2 hours
+  };
+
+  if (config.postureGuardian) startPostureGuardian();
   
   // 📝 PID Lock for reliable shutdown
   fs.writeFileSync('/tmp/gravity-hub.pid', process.pid.toString());
@@ -976,6 +1008,35 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         } else if (subCommand === 'github_silent_toggle') {
             config.githubPulse.silent = !config.githubPulse.silent;
             saveConfig(config);
+        } else if (subCommand === 'posture_toggle') {
+            config.postureGuardian = !config.postureGuardian;
+            saveConfig(config);
+            if (config.postureGuardian) startPostureGuardian();
+            else {
+              if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
+              if ((global as any).postureNag) clearInterval((global as any).postureNag);
+            }
+        } else if (subCommand === 'build_siren_toggle') {
+            config.buildSiren = !config.buildSiren;
+            saveConfig(config);
+        } else if (subCommand === 'discord_aura_toggle') {
+            config.discordAura = !config.discordAura;
+            saveConfig(config);
+        } else if (subCommand === 'spotify_bpm_toggle') {
+            config.spotifyBpm = !config.spotifyBpm;
+            saveConfig(config);
+            if (!config.spotifyBpm && (global as any).spotifyPulse) {
+              clearInterval((global as any).spotifyPulse);
+              (global as any).spotifyPulse = null;
+            }
+        } else if (subCommand === 'stretched') {
+            if ((global as any).postureNag) {
+               clearInterval((global as any).postureNag);
+               (global as any).postureNag = null;
+               await (bot as any).answerCallbackQuery((msg as any).id, { text: "Resume your work, God.", show_alert: false }).catch(() => {});
+            } else {
+               await (bot as any).answerCallbackQuery((msg as any).id, { text: "No active check.", show_alert: false }).catch(() => {});
+            }
         } else if (subCommand === 'ipl_record') {
              lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
              const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
@@ -1080,6 +1141,9 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         [
           { text: '✨ Today', callback_data: 'control:none:level:today_intel' },
           { text: '📊 Status', callback_data: 'control:none:level:status_intel' }
+        ],
+        [
+          { text: '🔬 Labs (Experimental)', callback_data: 'control:none:level:labs' }
         ]
       ];
     } else if (menuLevel === 'main') {
@@ -1118,8 +1182,23 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           { text: config.commentaryMode ? '💬 Commentary: ✅ ON' : '💬 Commentary: ❌ OFF', callback_data: 'control:commentary_toggle:level:intel' }
         ],
         [
-          { text: config.bootGreet !== false ? '👋 Boot Greet: ✅ ON' : '🔇 Boot Greet: ❌ OFF', callback_data: 'control:boot_greet_toggle:level:intel' },
+          { text: '🔬 Labs', callback_data: 'control:none:level:labs' },
           { text: '🔙 Back', callback_data: 'control:none:level:root' }
+        ]
+      ];
+    } else if (menuLevel === 'labs') {
+      dashboard = `🔬 *Gravity Labs: Experimental Intelligence*\n━━━━━━━━━━━━━━\nPosture Guardian: *${config.postureGuardian ? 'ACTIVE' : 'OFF'}*\nBuild Siren: *${config.buildSiren ? 'READY' : 'OFF'}*\nDiscord Aura: *${config.discordAura ? 'ON-AIR' : 'OFF'}*\nSpotify BPM: *${config.spotifyBpm ? 'SYNCING' : 'OFF'}*\n━━━━━━━━━━━━━━\n_Unstable but God-tier automations._`;
+      keyboard.inline_keyboard = [
+        [
+          { text: config.postureGuardian ? '🧍 Posture: ✅ ON' : '🧍 Posture: ❌ OFF', callback_data: 'control:posture_toggle:level:labs' },
+          { text: config.buildSiren ? '🚨 Build Siren: ✅ ON' : '🚨 Build Siren: ❌ OFF', callback_data: 'control:build_siren_toggle:level:labs' }
+        ],
+        [
+          { text: config.discordAura ? '🎙️ Discord: ✅ ON' : '🎙️ Discord: ❌ OFF', callback_data: 'control:discord_aura_toggle:level:labs' },
+          { text: config.spotifyBpm ? '🎵 Spotify: ✅ ON' : '🎵 Spotify: ❌ OFF', callback_data: 'control:spotify_bpm_toggle:level:labs' }
+        ],
+        [
+          { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
         ]
       ];
     } else if (menuLevel === 'cricket') {
@@ -1689,17 +1768,30 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     description: 'Toggle Posture/Stretch Guardian',
     handler: async (chatId: number, args: string[], msg: any, send: any) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
-      if ((global as any).postureTimer) {
-         clearInterval((global as any).postureTimer);
-         (global as any).postureTimer = null;
-         await send('🧍 *Posture Guardian Disabled.*');
-      } else {
-         (global as any).postureTimer = setInterval(async () => {
-             await send('💀 *Stretch!* You have been sitting too long.');
-             if (wiz) await pulseLight(10, 5000); // Annoying 5s pulse
-             speak("Stretch immediately. Guardian protocol engaged.");
-         }, 120 * 60 * 1000); // 2 hours
+      config.postureGuardian = !config.postureGuardian;
+      saveConfig(config);
+      
+      if (config.postureGuardian) {
+         startPostureGuardian();
          await send('🧍 *Posture Guardian Enabled.*\nYou will be forced to stretch every 2 hours.');
+      } else {
+         if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
+         if ((global as any).postureNag) clearInterval((global as any).postureNag);
+         await send('🧍 *Posture Guardian Disabled.*');
+      }
+    }
+  });
+
+  bot.registerCommand({
+    command: 'stretched',
+    description: 'Acknowledge posture check',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if ((global as any).postureNag) {
+         clearInterval((global as any).postureNag);
+         (global as any).postureNag = null;
+         await send('✅ *Acknowledge recorded.* Resume your work, God.');
+      } else {
+         await send('No active posture check to acknowledge. You are good!');
       }
     }
   });
@@ -3401,15 +3493,48 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
 
         // 🚨 Code / Build Siren Webhooks
         if (url.pathname === '/trigger/build_fail') {
+           if (!config.buildSiren) return new Response("Disabled", { status: 200 });
            logActivity("🚨 Build Failed! Engaging Crimson Siren.");
            if (wiz) await pulseLight(10, 2000); // Pulse effect
            await wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 0, b: 0, dimming: 100 } });
            return new Response("Siren Engaged", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/trigger/build_success') {
+           if (!config.buildSiren) return new Response("Disabled", { status: 200 });
            logActivity("✅ Build Succeeded. Green glow.");
            await wiz?.executeAction({ type: 'control', payload: { state: true, r: 0, g: 255, b: 100, dimming: 80 } });
            return new Response("Build Success", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        // 🎙️ Discord Voice Aura
+        if (url.pathname === '/trigger/discord_voice' && req.method === 'POST') {
+           if (!config.discordAura) return new Response("Disabled", { status: 200 });
+           try {
+              const { state } = await req.json();
+              if (state === 'speaking') {
+                 await wiz?.executeAction({ type: 'control', payload: { state: true, r: 0, g: 255, b: 0, dimming: 100 } });
+              } else {
+                 await wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 150, b: 0, dimming: 10 } });
+              }
+           } catch(e) {}
+           return new Response("Discord OK", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        // 🎵 Spotify BPM Sync (Virtual)
+        if (url.pathname === '/trigger/spotify_sync' && req.method === 'POST') {
+           if (!config.spotifyBpm) return new Response("Disabled", { status: 200 });
+           try {
+              const { bpm } = await req.json();
+              const interval = Math.floor(60000 / (bpm || 120));
+              logActivity(`🎵 Spotify Sync: BPM set to ${bpm}. Pulsing room.`);
+              if ((global as any).spotifyPulse) clearInterval((global as any).spotifyPulse);
+              (global as any).spotifyPulse = setInterval(async () => {
+                 if (!config.spotifyBpm) { clearInterval((global as any).spotifyPulse); return; }
+                 await wiz?.executeAction({ type: 'control', payload: { state: true, dimming: 100 } });
+                 setTimeout(() => wiz?.executeAction({ type: 'control', payload: { state: true, dimming: 20 } }), interval / 2);
+              }, interval);
+           } catch(e) {}
+           return new Response("Spotify OK", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
         // 🫀 Biometric Heart-Rate Sync (iOS Shortcut webhook)
