@@ -314,12 +314,21 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   if (config.buildSiren === undefined) config.buildSiren = true;
   if (config.discordAura === undefined) config.discordAura = false;
   if (config.spotifyBpm === undefined) config.spotifyBpm = false;
+  if (config.workMode === undefined) config.workMode = false;
+  if (config.hydrationGuardian === undefined) config.hydrationGuardian = false;
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
 
   const startPostureGuardian = () => {
     if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
     (global as any).postureTimer = setInterval(async () => {
       if (!config.postureGuardian) return;
+      
+      // 🧘 Work Mode / Silent Mode Check
+      if (config.workMode) {
+         await bot.sendMessage(config.telegram.chatId, '🧘 *Silent Posture Check:* (Work Mode Active). Please remember to stretch when you can.');
+         return;
+      }
+
       await bot.sendMessage(config.telegram.chatId, '💀 *POSTURE CHECK!* Stand up and stretch.', { 
         parse_mode: 'Markdown',
         reply_markup: {
@@ -327,10 +336,11 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         }
       });
       if (wiz) await pulseLight(5, 3000); 
-      speak("Stretch immediately. Guardian protocol engaged.");
+      speak("Posture time, God. Stand up and stretch immediately.");
       
       if ((global as any).postureNag) clearInterval((global as any).postureNag);
       (global as any).postureNag = setInterval(async () => {
+         if (config.workMode) { clearInterval((global as any).postureNag); return; }
          await bot.sendMessage(config.telegram.chatId, '⚠️ *POSTURE NAG:* You still haven\'t acknowledged. STAND UP!', { 
            parse_mode: 'Markdown',
            reply_markup: {
@@ -342,7 +352,18 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     }, 120 * 60 * 1000); // 2 hours
   };
 
+  const startHydrationGuardian = () => {
+    if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
+    (global as any).hydrationTimer = setInterval(async () => {
+      if (!config.hydrationGuardian || config.workMode) return;
+      await bot.sendMessage(config.telegram.chatId, '💧 *HYDRATION ALERT:* Drink water, God.');
+      if (wiz) await pulseLight(3, 2000); 
+      speak("Stay hydrated. Drink some water.");
+    }, 90 * 60 * 1000); // 1.5 hours
+  };
+
   if (config.postureGuardian) startPostureGuardian();
+  if (config.hydrationGuardian) startHydrationGuardian();
   
   // 📝 PID Lock for reliable shutdown
   fs.writeFileSync('/tmp/gravity-hub.pid', process.pid.toString());
@@ -1029,6 +1050,20 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               clearInterval((global as any).spotifyPulse);
               (global as any).spotifyPulse = null;
             }
+        } else if (subCommand === 'hydration_toggle') {
+            config.hydrationGuardian = !config.hydrationGuardian;
+            saveConfig(config);
+            if (config.hydrationGuardian) startHydrationGuardian();
+            else {
+              if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
+            }
+        } else if (subCommand === 'work_mode_toggle') {
+            config.workMode = !config.workMode;
+            saveConfig(config);
+            if (config.workMode && (global as any).postureNag) {
+               clearInterval((global as any).postureNag);
+               (global as any).postureNag = null;
+            }
         } else if (subCommand === 'stretched') {
             if ((global as any).postureNag) {
                clearInterval((global as any).postureNag);
@@ -1187,7 +1222,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         ]
       ];
     } else if (menuLevel === 'labs') {
-      dashboard = `🔬 *Gravity Labs: Experimental Intelligence*\n━━━━━━━━━━━━━━\nPosture Guardian: *${config.postureGuardian ? 'ACTIVE' : 'OFF'}*\nBuild Siren: *${config.buildSiren ? 'READY' : 'OFF'}*\nDiscord Aura: *${config.discordAura ? 'ON-AIR' : 'OFF'}*\nSpotify BPM: *${config.spotifyBpm ? 'SYNCING' : 'OFF'}*\n━━━━━━━━━━━━━━\n_Unstable but God-tier automations._`;
+      dashboard = `🔬 *Gravity Labs: Experimental Intelligence*\n━━━━━━━━━━━━━━\nPosture Guardian: *${config.postureGuardian ? 'ACTIVE' : 'OFF'}*\nBuild Siren: *${config.buildSiren ? 'READY' : 'OFF'}*\nDiscord Aura: *${config.discordAura ? 'ON-AIR' : 'OFF'}*\nSpotify BPM: *${config.spotifyBpm ? 'SYNCING' : 'OFF'}*\nWork Mode: *${config.workMode ? 'SILENT' : 'LOUD'}*\n━━━━━━━━━━━━━━\n_Unstable but God-tier automations._`;
       keyboard.inline_keyboard = [
         [
           { text: config.postureGuardian ? '🧍 Posture: ✅ ON' : '🧍 Posture: ❌ OFF', callback_data: 'control:posture_toggle:level:labs' },
@@ -1196,6 +1231,10 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         [
           { text: config.discordAura ? '🎙️ Discord: ✅ ON' : '🎙️ Discord: ❌ OFF', callback_data: 'control:discord_aura_toggle:level:labs' },
           { text: config.spotifyBpm ? '🎵 Spotify: ✅ ON' : '🎵 Spotify: ❌ OFF', callback_data: 'control:spotify_bpm_toggle:level:labs' }
+        ],
+        [
+          { text: config.workMode ? '🧘 Work Mode: ✅ ON' : '🧘 Work Mode: ❌ OFF', callback_data: 'control:work_mode_toggle:level:labs' },
+          { text: config.hydrationGuardian ? '💧 Hydration: ✅ ON' : '💧 Hydration: ❌ OFF', callback_data: 'control:hydration_toggle:level:labs' }
         ],
         [
           { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
@@ -1647,6 +1686,14 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            }, 25 * 60 * 1000);
         }
         break;
+      case "MATRIX":
+        logActivity("📟 Scene: Entering The Matrix.");
+        speak("System ready. You are now in the construct.");
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, r: 0, g: 255, b: 0, dimming: 50 } }));
+        if (miraie && miraie?.devices.length > 0) {
+           promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: 'on', actmp: '20', acmd: 'cool' }));
+        }
+        break;
       case "CHILL":
       case "chill":
         logActivity("🎬 Scene: CHILL (Media Aura)");
@@ -1760,6 +1807,31 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
          const d = miraie?.devices[0]?.deviceId;
          if (d) await miraie?.controlDevice(d, { ps: 'off' });
       }, 50 * 60 * 1000);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'matrix',
+    description: 'Enter the construct (Matrix Scene)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(chatId)) return;
+      await triggerScene('MATRIX');
+      await send("📟 *Entering The Matrix...*");
+    }
+  });
+
+  bot.registerCommand({
+    command: 'work',
+    description: 'Toggle Work Mode (Silent Posture Checks)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(chatId)) return;
+      config.workMode = !config.workMode;
+      saveConfig(config);
+      if (config.workMode && (global as any).postureNag) {
+         clearInterval((global as any).postureNag);
+         (global as any).postureNag = null;
+      }
+      await send(`🧘 *Work Mode:* ${config.workMode ? '✅ ON (Silent)' : '❌ OFF (Normal)'}`);
     }
   });
 
@@ -5025,7 +5097,13 @@ async function getLatestIplData(targetMatchId?: string) {
       summary: {
         inn1: targetMatch.FirstBattingSummary || '',
         inn2: targetMatch.SecondBattingSummary || '',
-        result: targetMatch.MatchStatus?.toLowerCase() === 'result' ? targetMatch.MatchStatus || '' : '',
+        case 'MATRIX':
+        logActivity("📟 Scene: Entering The Matrix.");
+        await wiz?.executeAction({ type: 'control', payload: { state: true, r: 0, g: 255, b: 0, dimming: 50 } });
+        await updateAc('on', 20);
+        speak("System ready. You are now in the construct.");
+        break;
+      default: targetMatch.MatchStatus?.toLowerCase() === 'result' ? targetMatch.MatchStatus || '' : '',
         topScorers: (activeInnings.Batsmen || []).sort((a: any, b: any) => parseInt(b.Runs) - parseInt(a.Runs)).slice(0, 2).map((b: any) => `${b.FullName || b.Name} (${b.Runs}/${b.Balls})`).join(', '),
         topBowlers: (activeInnings.Bowlers || []).sort((a: any, b: any) => parseInt(b.Wickets) - parseInt(a.Wickets)).slice(0, 1).map((b: any) => `${b.FullName || b.Name} (${b.Wickets}/${b.RunsConceded})`).join(', ')
       },
