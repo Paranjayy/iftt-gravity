@@ -9,6 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import os from 'os';
 
 const execAsync = promisify(exec);
 const ROOT_DIR = "/Users/paranjay/Developer/iftt";
@@ -241,9 +242,41 @@ async function main() {
           return new Response('Sync Started', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
-        if (url.pathname === '/archive/nuclear/reset') {
-          fs.writeFileSync(CLIPS_PATH, JSON.stringify([], null, 2));
-          return new Response('Vault Purged', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        if (url.pathname === '/archive/nuclear/reset' || url.pathname === '/archive/clear') {
+          try {
+            const backupPath = path.join(os.homedir(), 'Downloads', `gravity_archive_backup_${Date.now()}.json`);
+            if (fs.existsSync(CLIPS_PATH)) {
+              fs.copyFileSync(CLIPS_PATH, backupPath);
+            }
+            fs.writeFileSync(CLIPS_PATH, JSON.stringify([], null, 2));
+            return new Response(`Vault Purged. Backup saved to Downloads: ${path.basename(backupPath)}`, { headers: { 'Access-Control-Allow-Origin': '*' } });
+          } catch (e: any) {
+            return new Response(`Clear Failed: ${e.message}`, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+
+        if (url.pathname === '/archive/export/json') {
+          const clipsData = fs.readFileSync(CLIPS_PATH, 'utf-8');
+          return new Response(clipsData, { 
+            headers: { 
+              'Content-Type': 'application/json', 
+              'Content-Disposition': 'attachment; filename="clips_export.json"',
+              'Access-Control-Allow-Origin': '*' 
+            } 
+          });
+        }
+
+        if (url.pathname === '/archive/import/json' && req.method === 'POST') {
+          try {
+            const body = await req.json();
+            if (Array.isArray(body)) {
+              fs.writeFileSync(CLIPS_PATH, JSON.stringify(body, null, 2));
+              return new Response('Import Successful', { headers: { 'Access-Control-Allow-Origin': '*' } });
+            }
+            return new Response('Invalid Format', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+          } catch (e: any) {
+            return new Response(`Import Failed: ${e.message}`, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
         }
 
         if (url.pathname === '/archive/export/md') {
@@ -301,9 +334,9 @@ async function main() {
 
   setInterval(async () => {
     try {
-      const { stdout } = await execAsync('pbpaste');
+      const { stdout } = await execAsync('pbpaste', { timeout: 2000 });
       const text = stdout.trim();
-      if (text && text !== lastClip) {
+      if (text && text !== lastClip && text.length < 100000) {
         // Detect Frontmost User Application & Context
         try {
           const script = `

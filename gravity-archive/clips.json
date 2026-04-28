@@ -1,0 +1,49 @@
+[
+  {
+    "id": "1777419065109",
+    "text": "/                                                            paranjay@Paranjays-MacBook-Air\r                                                            ------------------------------\r                       ..'                                  Software -> (system basics)\r                   ,xNMM.                                   OS -> macOS Tahoe 26.4.1 (25E253) arm64\r                 .OMMMMo                                    Host -> MacBook Air (M1, 2020)\r                 lMM\"                                       Kernel -> Darwin 25.4.0\r       .;loddo/.  .olloddol;.                               Shell -> zsh 5.9\r     cKMMMMMMMMMMNWMMMMMMMMMM0/                             Packages -> 70 (brew), 15 (brew-cask)\r   .KMMMMMMMMMMMMMMMMMMMMMMMWd.                             Appearance ->",
+    "timestamp": "2026-04-28T23:38:04.105Z",
+    "isBookmarked": false,
+    "source": "Electron",
+    "meta": {
+      "words": 44,
+      "lines": 1,
+      "chars": 794,
+      "tokens": 199,
+      "type": "file",
+      "dupes": 3
+    },
+    "url": ""
+  },
+  {
+    "id": "1777419465557",
+    "text": "/cd \":Users:paranjay:Developer:instagram-media-hub\" && npm install && npm run dev",
+    "timestamp": "2026-04-28T23:37:45.895Z",
+    "isBookmarked": false,
+    "source": "Electron",
+    "meta": {
+      "words": 9,
+      "lines": 1,
+      "chars": 81,
+      "tokens": 21,
+      "type": "file",
+      "dupes": 1
+    },
+    "url": ""
+  },
+  {
+    "id": "1777418988251",
+    "text": "/- wtf is current logo i liked the favicon or shit that was before btw \r- oh dont hardcode my number or shit btw privacy breach btw\r\r- ig everything is done for our iftt thing also our archive seems broken due to this weirdo insta shit please fix it also it had some issue it waasnt able to copy crazy long thing from arc:obsidian or something please resolve",
+    "timestamp": "2026-04-28T23:29:48.251Z",
+    "isBookmarked": false,
+    "source": "Electron",
+    "meta": {
+      "words": 69,
+      "lines": 1,
+      "chars": 358,
+      "tokens": 90,
+      "type": "file",
+      "project": "Gravity"
+    }
+  }
+]

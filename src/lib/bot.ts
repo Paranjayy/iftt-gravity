@@ -800,6 +800,47 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   });
 
   bot.registerCommand({
+    command: 'find',
+    description: 'Ring the Mac to find it',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await send('🔊 *Gravity Hub:* Triggering ping... Stand by.');
+      // Visual & Audio Ping
+      if (wiz) await pulseLight(100, 2000, { r: 255, g: 255, b: 255 });
+      for (let i = 0; i < 5; i++) {
+        await execAsync('afplay /System/Library/Sounds/Glass.aiff');
+        await new Promise(r => setTimeout(r, 500));
+      }
+      await send('✅ *Ping Completed.*');
+    }
+  });
+
+  bot.registerCommand({
+    command: 'ghoost',
+    description: 'View recent portfolio captures (Ghost Feed)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      try {
+        const res = await fetch('http://localhost:3031/archive/export/json');
+        const data = await res.json();
+        const clips = data.clips || [];
+        const latest = clips.slice(-5).reverse();
+        
+        if (latest.length === 0) return await send('📭 *Ghost Feed:* No captures found in the vault.');
+        
+        let report = '🛰️ *Gravity Ghost Feed: Recent Hoards*\n\n';
+        latest.forEach((c: any, i: number) => {
+          report += `${i+1}. \`${c.timestamp}\` — ${c.text.substring(0, 50)}...\n`;
+        });
+        
+        await send(report, { parse_mode: 'Markdown' });
+      } catch (e) {
+        await send('❌ *Ghost Feed:* Failed to reach archival sentry.');
+      }
+    }
+  });
+
+  bot.registerCommand({
     command: 'jot',
     description: 'Save a quick idea to the Gravity Codex',
     handler: async (chatId: number, args: string[], msg: any, send: any) => {
@@ -1076,7 +1117,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            config.commentaryMode = !config.commentaryMode;
            saveConfig(config);
         } else if (subCommand === 'log_stats') {
-           const stats = getFrequentedStats();
+           const stats = await getFrequentedStats();
            await bot.sendMessage(chatId, stats, { parse_mode: 'Markdown' });
            return;
         } else if (subCommand === 'delivery_watch_toggle') {
@@ -2469,7 +2510,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       const mobile = config.miraie?.mobile;
       if (!mobile) return await send('❌ *Error:* No mobile number configured in `config.json`.');
       
-      await send(`📞 *Protocol: SIGNAL BEACON.* Initiating FaceTime call to \`${mobile}\`...`);
+      await send(`📞 *Protocol: SIGNAL BEACON.* Initiating FaceTime call...`);
       try {
         // 1. Set volume to max (to ensure Mac audio for call is loud)
         await execAsync(`osascript -e 'set volume output volume 100'`);
@@ -4783,8 +4824,11 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            // 📸 Instagram Pulse (New Post Detection)
            for (const igUser of config.socialMonitor.instagram || []) {
              try {
+               const controller = new AbortController();
+               const timeoutId = setTimeout(() => controller.abort(), 10000);
                const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${igUser}`, {
-                 headers: { 'x-ig-app-id': '936619743392459', 'User-Agent': 'Mozilla/5.0' }
+                 headers: { 'x-ig-app-id': '936619743392459', 'User-Agent': 'Mozilla/5.0' },
+                 signal: controller.signal
                });
                if (res.ok) {
                  const data = await res.json() as any;
@@ -4806,8 +4850,11 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            // 📹 YouTube Sentry (New Video/Live Tracking)
            for (const ytId of config.socialMonitor.youtube || []) {
              try {
-               const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${ytId}`);
+               const controller = new AbortController();
+               const timeoutId = setTimeout(() => controller.abort(), 10000);
+               const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${ytId}`, { signal: controller.signal });
                const xml = await res.text();
+               clearTimeout(timeoutId);
                const latestVideoMatch = xml.match(/<video_id>([^<]+)</video_id>/);
                const latestVideoTitle = xml.match(/<title>([^<]+)</title>/);
                

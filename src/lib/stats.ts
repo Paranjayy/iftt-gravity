@@ -4,10 +4,10 @@ import path from 'path';
 
 const LOG_PATH = path.join(process.cwd(), 'house_log.md');
 
-export function getFrequentedStats() {
+export async function getFrequentedStats() {
     if (!fs.existsSync(LOG_PATH)) return "No logs found.";
     
-    const logs = fs.readFileSync(LOG_PATH, 'utf8').split('\n');
+    const logs = (await fs.promises.readFile(LOG_PATH, 'utf8')).split('\n');
     const freq: Record<string, number> = {};
     
     logs.forEach(line => {

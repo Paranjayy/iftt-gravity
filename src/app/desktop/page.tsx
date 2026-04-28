@@ -76,8 +76,19 @@ export default function GravityOS() {
   });
 
   const [time, setTime] = useState('');
+  const [archiveData, setArchiveData] = useState<any>(null);
 
   useEffect(() => {
+    const fetchArchive = async () => {
+      try {
+        const res = await fetch('/api/gravity/archive');
+        const json = await res.json();
+        setArchiveData(json);
+      } catch (e) {}
+    };
+    fetchArchive();
+    const archiveInterval = setInterval(fetchArchive, 15000);
+
     const updateTime = () => {
       setTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }));
     };
@@ -95,6 +106,7 @@ export default function GravityOS() {
 
     return () => {
       clearInterval(interval);
+      clearInterval(archiveInterval);
       window.removeEventListener('keydown', handleKeys);
     };
   }, []);
@@ -195,25 +207,59 @@ export default function GravityOS() {
               icon={<Shield className="w-3 h-3" />}
             >
               <div className="space-y-4">
-                <div className="relative rounded-xl overflow-hidden border border-white/10 group">
-                  <img src="/sentry_feed_mockup_1776719774092.png" alt="Sentry" className="w-full grayscale group-hover:grayscale-0 transition-all duration-700" />
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <div className="px-2 py-0.5 bg-red-600 text-[9px] font-black text-white rounded-sm animate-pulse">REC</div>
-                    <div className="px-2 py-0.5 bg-black/60 text-[9px] font-black text-white rounded-sm backdrop-blur">1080P | 24FPS</div>
-                  </div>
-                  <div className="absolute bottom-3 right-3 text-[9px] font-mono text-white/40 tracking-tighter">CAM_ID: MBP_01_SEC_HUB</div>
+                <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                  {archiveData?.clips?.length > 0 ? (
+                    [...archiveData.clips].reverse().slice(0, 10).map((clip: any, idx: number) => (
+                      <div key={idx} className="group relative rounded-xl overflow-hidden border border-white/10 bg-white/5 hover:border-white/20 transition-all">
+                        {clip.text.includes('http') && (clip.text.includes('instagram.com') || clip.text.includes('fb.watch')) ? (
+                          <div className="aspect-video bg-black/40 flex items-center justify-center relative">
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
+                            <div className="z-20 text-center p-4">
+                              <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center mx-auto mb-3">
+                                <Maximize2 className="w-6 h-6 text-white/40" />
+                              </div>
+                              <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Social Media Intercept</div>
+                              <div className="text-[9px] text-white/30 font-mono mt-1 truncate max-w-[200px] mx-auto">{clip.text}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-4">
+                             <div className="text-[11px] leading-relaxed text-slate-300 font-medium">{clip.text}</div>
+                          </div>
+                        )}
+                        <div className="px-4 py-2 bg-black/40 border-t border-white/5 flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{clip.source || 'SYSTEM'}</span>
+                           </div>
+                           <span className="text-[9px] font-mono text-slate-600">{clip.timestamp}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="h-[200px] flex flex-col items-center justify-center border border-dashed border-white/10 rounded-xl">
+                       <Bot className="w-8 h-8 text-white/10 mb-3" />
+                       <div className="text-[10px] font-black uppercase tracking-widest text-white/20">Awaiting Signal...</div>
+                    </div>
+                  )}
                 </div>
+
                 <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
                        <Bot className="w-4 h-4 text-emerald-400" />
                     </div>
                     <div>
-                      <div className="text-[11px] font-bold">IDENTITY VERIFIED</div>
-                      <div className="text-[9px] opacity-40 uppercase font-black">User: Master · 98% Match</div>
+                      <div className="text-[11px] font-bold">INTELLIGENCE SYNC</div>
+                      <div className="text-[9px] opacity-40 uppercase font-black">Archive Integrity: 100%</div>
                     </div>
                   </div>
-                  <button className="text-[10px] font-bold opacity-30 hover:opacity-100 transition-opacity">ARCHIVE →</button>
+                  <button 
+                    onClick={() => window.open('/api/gravity/archive', '_blank')}
+                    className="text-[10px] font-bold opacity-30 hover:opacity-100 transition-opacity"
+                  >
+                    EXPORT VAULT →
+                  </button>
                 </div>
               </div>
             </DesktopWindow>
