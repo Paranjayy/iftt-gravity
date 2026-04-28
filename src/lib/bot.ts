@@ -811,7 +811,13 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
 
       if (subCommand && subCommand !== 'none') {
         if (subCommand === 'ac_on') {
-          if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on', actmp: '24' });
+          let targetTemp = config.defaultAcTemp || '24';
+          if (config.smartClimate) {
+             const w: any = await (weather as any).getWeather();
+             if (w) targetTemp = w.temp > 38 ? '18' : (w.temp > 35 ? '22' : (w.temp < 25 ? '26' : '24'));
+             logActivity(`🌡️ Smart Climate: External ${w?.temp || 'unknown'}°C -> Setting AC to ${targetTemp}°C`);
+          }
+          if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on', actmp: targetTemp });
           updateDeviceState('ac', 'on', true);
           recordHabit('ac_on');
         } else if (subCommand === 'ac_off') {
@@ -1203,6 +1209,9 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           { text: '🏃 Away', callback_data: 'scene:away:level:scenes' }
         ],
         [
+          { text: '💤 Power Nap (25m)', callback_data: 'scene:power_nap:level:scenes' }
+        ],
+        [
           { text: config.cricketMode ? '🏏 Stop Cricket Mode' : '🏏 Start Cricket Mode', callback_data: 'control:cricket_toggle:level:scenes' }
         ],
         [
@@ -1212,7 +1221,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     } else if (menuLevel === 'ac') {
       const prev = acStats.prevDuration ? ` _(was ${acStats.prevDuration})_` : '';
       const recentText = lastLevelActions['ac'] ? `${lastLevelActions['ac'].text} (${getDurationString(lastLevelActions['ac'].time)})` : 'None';
-      dashboard = `❄️ *Climate Control*\n━━━━━━━━━━━━━━\nStatus: *${acStats.status.toUpperCase()}* (${acStats.actmp || '24'}°C)${prev} — _${getDurationString(acStats.lastChanged)}_\nAuto-Guard: *${config.autoAc ? 'ACTIVE' : 'OFF'}*\nRecent: *${recentText}*\n━━━━━━━━━━━━━━\n_Precision cooling & modes._`;
+      const smartStr = config.smartClimate ? '*ACTIVE* (Weather-based)' : `*FIXED* (${config.defaultAcTemp || '24'}°C)`;
+      dashboard = `❄️ *Climate Control*\n━━━━━━━━━━━━━━\nStatus: *${acStats.status.toUpperCase()}* (${acStats.actmp || '24'}°C)${prev} — _${getDurationString(acStats.lastChanged)}_\nAuto-Guard: *${config.autoAc ? 'ACTIVE' : 'OFF'}*\nSmart Climate: ${smartStr}\nRecent: *${recentText}*\n━━━━━━━━━━━━━━\n_Precision cooling & modes._`;
       keyboard.inline_keyboard = [
         [
           { text: '🌡️ Temp -1°', callback_data: 'control:temp_down:level:ac' },
@@ -1221,6 +1231,10 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         [
           { text: '⚡ Powerful', callback_data: 'control:ac_mode_powerful:level:ac' },
           { text: '🍃 Economy', callback_data: 'control:ac_mode_eco:level:ac' }
+        ],
+        [
+          { text: config.smartClimate ? '🌦️ Smart Climate: ✅ ON' : '🌦️ Smart Climate: ❌ OFF', callback_data: 'control:climate_smart:level:ac' },
+          { text: config.autoAc ? '🤖 Auto-AC: ✅ ON' : '🤖 Auto-AC: ❌ OFF', callback_data: 'control:auto_ac_toggle:level:ac' }
         ],
         [
           { text: config.autoAc ? '🤖 Auto Pilot: ✅ ON' : '🤖 Auto Pilot: ❌ OFF', callback_data: 'control:auto_ac:level:ac' },
@@ -1537,6 +1551,22 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         speak("Welcome back. Powering up your sanctuary.");
         if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
         if (miraie && miraie?.devices.length > 0) promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
+        break;
+      case "POWER_NAP":
+        logActivity("💤 Scene: POWER_NAP (25 mins)");
+        speak("Initiating Power Nap sequence. 25 minutes on the clock.");
+        if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, temp: 2700, dimming: 10 } }));
+        if (miraie && miraie?.devices.length > 0) {
+           const d = miraie?.devices[0].deviceId;
+           promises.push(miraie?.controlDevice(d, { ps: 'on', actmp: '22', acmd: 'cool' }));
+           // Wake up sequence after 25 mins
+           setTimeout(async () => {
+              speak("Power nap complete. Waking up.");
+              await wiz?.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 100 } });
+              await miraie?.controlDevice(d, { ps: 'off' });
+              await (bot as any).sendMessage(config.telegram.chatId, `⏰ *Power Nap Complete*\nAC powered off, lights to maximum. Get back to the grind!`, { parse_mode: 'Markdown' });
+           }, 25 * 60 * 1000);
+        }
         break;
       case "CHILL":
       case "chill":
@@ -3297,6 +3327,23 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                     setTimeout(() => wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 150, b: 0, dimming: 10 } }), 500);
                  }
                  (global as any).lastHealth = health;
+              }
+              
+              if (data.player && data.player.weapons) {
+                 const weapons = data.player.weapons;
+                 for (const key in weapons) {
+                     const w = weapons[key];
+                     if (w.state === 'active' && w.ammo_clip === 0 && w.ammo_reserve > 0) {
+                         if ((global as any).lastAmmoEmpty !== key) {
+                             // Flash Yellow for Reload
+                             await wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 255, b: 0, dimming: 100 } });
+                             setTimeout(() => wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 150, b: 0, dimming: 10 } }), 300);
+                             (global as any).lastAmmoEmpty = key;
+                         }
+                     } else if (w.state === 'active' && w.ammo_clip > 0) {
+                         (global as any).lastAmmoEmpty = null;
+                     }
+                 }
               }
            } catch(e) {}
            return new Response("GSI OK", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
