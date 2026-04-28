@@ -783,6 +783,46 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   });
 
   bot.registerCommand({
+    command: 'github',
+    description: 'Check GitHub pulse and streak status',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      
+      const pulse = config.githubPulse;
+      const today = new Date().toISOString().split('T')[0];
+      const hasCommits = pulse.lastDate === today;
+      
+      let status = hasCommits ? "✅ *Streak Maintained!*" : "⚠️ *No Activity Today.*";
+      if (!hasCommits && new Date().getHours() >= 20) {
+        status += "\n🟡 _Soft Nag Active: Pulsing Yellow._";
+      }
+
+      await send(`🐙 *GitHub Pulse Insight*\n\nStatus: ${status}\nLast Event: \`${pulse.lastDate || 'None'}\`\nStreak Nag: *${pulse.streakNag ? 'ON' : 'OFF'}*\n\n_Keep shipping, King._`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'jot',
+    description: 'Save a quick idea to the Gravity Codex',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (args.length === 0) return await send('✍️ *Usage:* `/jot <your brilliant idea>`');
+      
+      const idea = args.join(' ');
+      const codexPath = path.join(process.cwd(), 'codex.json');
+      let codex = [];
+      if (fs.existsSync(codexPath)) {
+        codex = JSON.parse(fs.readFileSync(codexPath, 'utf8'));
+      }
+      codex.push({ idea, date: new Date().toISOString() });
+      fs.writeFileSync(codexPath, JSON.stringify(codex, null, 2));
+      
+      await send(`✨ *Gravity Codex:* Idea secured.\n\n_"${idea}"_`);
+      await blinkLight(1, { r: 0, g: 255, b: 255 }); // Cyan Blink
+    }
+  });
+
+  bot.registerCommand({
     command: 'pgvcl',
     description: 'Show latest PGVCL bill details',
     handler: async (chatId: number, args: string[], msg: any, send: any) => {
@@ -4395,6 +4435,23 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     } else if (idleTime < 60000) {
       (global as any).ghostMode = false;
     }
+
+    // 9. Circadian AC Shift (Sleep/Wake Hygiene)
+    const currentHr = new Date().getHours();
+    if (currentHr === 1 && !(global as any).acSleepSet) {
+      (global as any).acSleepSet = true;
+      const d = miraie?.devices[0]?.deviceId;
+      if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: '24', acmd: 'cool' });
+      logActivity("🌙 Circadian Shift: AC set to 24°C for sleep hygiene.");
+    }
+    if (currentHr === 7 && !(global as any).acWakeSet) {
+      (global as any).acWakeSet = true;
+      const d = miraie?.devices[0]?.deviceId;
+      if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: '26', acmd: 'cool' });
+      logActivity("☀️ Circadian Shift: AC set to 26°C for morning wake.");
+    }
+    if (currentHr !== 1) (global as any).acSleepSet = false;
+    if (currentHr !== 7) (global as any).acWakeSet = false;
   }, 60000);
 
   // ──────────────────────────────────────────────────────
