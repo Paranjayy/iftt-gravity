@@ -13,6 +13,7 @@
 import { TelegramAdapter } from './adapters/telegram';
 import { MiraieAdapter } from './adapters/miraie';
 import { WizAdapter } from './adapters/wiz';
+import { PCAdapter } from './adapters/pc';
 import { getFrequentedStats } from './stats';
 import { WeatherEngine } from './weather';
 import { CodexSDK } from './codex';
@@ -22,7 +23,6 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import puppeteer from 'puppeteer';
 import os from 'os';
-import { InstagramScraper } from './instagram';
 
 const weather = new WeatherEngine();
 
@@ -299,6 +299,7 @@ function updateBotPulse(config: any) {
 }
 let config: any;
 let bot: any;
+let pc: PCAdapter | null = null;
 let lastGlobalSignal: { text: string, time: number } | null = null;
 let lastLevelActions: Record<string, { text: string, time: number }> = {};
 
@@ -758,6 +759,26 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       config.autoLight = !config.autoLight;
       saveConfig(config);
       await send(`💡 *Auto-Light:* Sovereignty is now *${config.autoLight ? 'ENABLED' : 'DISABLED'}*`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'bill',
+    description: 'Manually input utility reading',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (args.length < 2) return await send('📖 *Usage:* `/bill <units> <amount>`');
+      
+      const units = args[0];
+      const amount = args[1];
+      
+      config.stats.pgvcl = {
+        units,
+        amount,
+        scannedAt: new Date().toISOString()
+      };
+      saveConfig(config);
+      await send(`✅ *Utility Vault Updated:* Recorded *${units} units* (₹${amount}) manually.`);
     }
   });
 
@@ -3536,32 +3557,6 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           }
         }
 
-        // 📸 Instagram Browser API
-        if (url.pathname === '/instagram/profile') {
-          const username = url.searchParams.get('username');
-          if (!username) return new Response("Username required", { status: 400 });
-          
-          try {
-            logActivity(`📸 Instagram: Fetching profile for @${username}`);
-            const [profile, stories] = await Promise.all([
-              InstagramScraper.fetchProfile(username),
-              InstagramScraper.fetchStories(username)
-            ]);
-            
-            // Merge stories into a virtual section or separate field
-            return new Response(JSON.stringify({ ...profile, stories }), { 
-              status: 200, 
-              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
-            });
-          } catch (error: any) {
-            console.error(`📸 Instagram Error for ${username}:`, error.message);
-            return new Response(JSON.stringify({ error: error.message }), { 
-              status: 500, 
-              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
-            });
-          }
-        }
-
         // 🎮 CS2 Game State Integration (GSI)
         if (url.pathname === '/gsi' && req.method === 'POST') {
            try {
@@ -4056,19 +4051,40 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     try {
       browser = await puppeteer.launch({ headless: true });
       const page = await browser.newPage();
-      await page.goto('https://www.pgvcl.com/consumer/index.php');
+      await page.goto('https://www.pgvcl.com/consumer/billview/index.php');
       
-      // Basic login flow (Generic pattern, needs user portal verification)
-      await page.type('#consumer_id', config.pgvcl.consumerId);
-      await page.type('#password', config.pgvcl.password);
-      await page.click('#login_btn');
+      // 🛡️ reCAPTCHA Detection
+      const isCaptcha = await page.evaluate(() => !!document.querySelector('.g-recaptcha'));
+      if (isCaptcha) {
+        logActivity("⚖️ PGVCL Scrape: Blocked by reCAPTCHA.");
+        // Only notify if it's the first time today
+        const today = new Date().toISOString().split('T')[0];
+        if ((global as any).lastCaptchaAlert !== today) {
+          (global as any).lastCaptchaAlert = today;
+          await (bot as any).sendMessage(config.telegram.chatId, "⚠️ *Utility Alert:* PGVCL scan blocked by reCAPTCHA. Use `/bill <units> <amount>` to update manually.");
+        }
+        return;
+      }
+
+      await page.type('input[name="txtcno"]', config.pgvcl.consumerId);
+      await page.click('#btnsearch');
       await page.waitForNavigation();
 
       // Extract current usage / bill amount
       const billData = await page.evaluate(() => {
+        // Find the table row containing "Bill Amount" or "Units"
+        const rows = Array.from(document.querySelectorAll('tr'));
+        let amount = '0';
+        let units = '0';
+        
+        rows.forEach(row => {
+           if (row.innerText.includes('Bill Amount')) amount = row.innerText.split(':').pop()?.trim() || '0';
+           if (row.innerText.includes('Units Consumed')) units = row.innerText.split(':').pop()?.trim() || '0';
+        });
+
         return {
-          amount: (document.querySelector('.current-bill-amt')?.textContent || '0').replace(/[^\d.]/g, ''),
-          units: (document.querySelector('.current-units')?.textContent || '0').replace(/[^\d.]/g, ''),
+          amount: amount.replace(/[^\d.]/g, ''),
+          units: units.replace(/[^\d.]/g, ''),
           title: document.title
         };
       });
@@ -4344,8 +4360,40 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         };
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
       }
-    } catch (err) {
+          } catch (err) {
       console.error('Stats loop error:', err);
+    }
+  }, 60000);
+
+  // ───────────────────────────────────────────────
+  // 7. PC Sovereign (Thermal Sync)
+  setInterval(async () => {
+    if (config.pc?.ip && (Date.now() - ((global as any).lastPcCheck || 0) > 60000)) {
+      (global as any).lastPcCheck = Date.now();
+      try {
+        const res = await fetch(`http://${config.pc.ip}:5000/status`);
+        const status: any = await res.json();
+        if (status.temp > 85 && !thermalAcActive) {
+          logActivity(`🔥 PC THERMAL ALERT: ${status.temp}°C detected!`);
+          thermalAcActive = true;
+          const d = miraie?.devices[0]?.deviceId;
+          if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: '18', acmd: 'cool' });
+          await pulseLight(100, 2000, { r: 255, g: 60, b: 0 }); 
+          await (bot as any).sendMessage(config.telegram.chatId, `🔥 *PC THERMAL ALERT:* System hit *${status.temp}°C*! Overclocking protection engaged. AC set to 18°C.`);
+        } else if (status.temp < 70 && thermalAcActive) {
+          thermalAcActive = false;
+        }
+      } catch (e) {}
+    }
+    
+    // 8. Ghost Aura (Idle Detection)
+    const idleTime = Date.now() - (globalLastActionTime || Date.now());
+    if (idleTime > 1800000 && config.stats.lightStatus === 'on' && !(global as any).ghostMode) {
+      (global as any).ghostMode = true;
+      await pulseLight(10, 3000);
+      await (bot as any).sendMessage(config.telegram.chatId, "👻 *Ghost Aura:* Idle for 30m. Dimming for efficiency.");
+    } else if (idleTime < 60000) {
+      (global as any).ghostMode = false;
     }
   }, 60000);
 
