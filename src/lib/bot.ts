@@ -550,6 +550,11 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       config.stats[type].lastChanged = Date.now();
       logActivity(`${type.toUpperCase()} State: ${status.toUpperCase()} (${isBotCommand ? 'Bot' : 'Manual/Remote'})`);
       
+      if (!isBotCommand) {
+          globalLastAction = `${type.toUpperCase()} 🔄: ${status.toUpperCase()} (Analog Remote)`;
+          globalLastActionTime = Date.now();
+      }
+      
       // Reset AC monitor on state change
       if (type === 'ac') {
         acEfficiencyData.startTime = status === 'on' ? Date.now() : null;
@@ -806,7 +811,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
 
       if (subCommand && subCommand !== 'none') {
         if (subCommand === 'ac_on') {
-          if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on', actmp: '18' });
+          if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on', actmp: '24' });
           updateDeviceState('ac', 'on', true);
           recordHabit('ac_on');
         } else if (subCommand === 'ac_off') {
