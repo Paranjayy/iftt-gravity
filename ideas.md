@@ -84,3 +84,7 @@ _Vault restored and expanded. Add more ideas as they come!_
 28. **Delivery Drone Watch**: Real-time logistics tracking. Gravity flashes a cautionary yellow pulse when a parcel enters the "last-mile" radius.
 29. **Lunar Sleep Sentry**: On full moon nights, bot automatically increases "Shield" intensity to block extra ambient light and suggests a 15-minute earlier bedtime.
 30. **Digital Detox Deadlock**: At 2 AM, bot suggests locking down all non-essential smart-switches and switching to "Static Candlelight" mode for forced relaxation.
+31. **Find My Phone Protocol**: Implementation of `/find_phone` command that initiates a high-volume FaceTime call to your primary mobile to locate it instantly.
+32. **Aura Security Snap**: Capture a 5-second video/snapshot from the Mac webcam on command and send it to Telegram (Digital Sentry mode).
+33. **Adaptive Fan Thermal Sync**: Sync Mac fan speeds with your room's smart AC temperature to maintain a constant "Ambient Cooling" state.
+34. **Digital Nomad Guard**: If the Mac is connected to a public Wi-Fi (detected via SSID change), automatically enable VPN and lockdown non-essential ports.

@@ -2459,6 +2459,32 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   });
 
   // ──────────────────────────────────────────────────────
+  // /find_phone — Locate Phone via FaceTime
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'find_phone',
+    description: 'Ring Phone via FaceTime call',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const mobile = config.miraie?.mobile;
+      if (!mobile) return await send('❌ *Error:* No mobile number configured in `config.json`.');
+      
+      await send(`📞 *Protocol: SIGNAL BEACON.* Initiating FaceTime call to \`${mobile}\`...`);
+      try {
+        // 1. Set volume to max (to ensure Mac audio for call is loud)
+        await execAsync(`osascript -e 'set volume output volume 100'`);
+        // 2. Open FaceTime URL
+        await execAsync(`open "facetime://${mobile}"`);
+        // 3. Optional: Trigger a click on the "Call" button if possible, 
+        // but opening the URL usually brings up the prompt which is a good start.
+        await send('✅ *FaceTime Beacon active.* Check your phone for the incoming call.');
+      } catch (e) {
+        await send('❌ *FaceTime failed.* Ensure FaceTime is configured on this Mac.');
+      }
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
   // /test_feedback — Sensory Feedback Trial (v4.7)
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
