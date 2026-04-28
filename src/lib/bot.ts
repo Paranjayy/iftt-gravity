@@ -1383,13 +1383,17 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         updateDeviceState('light', p?.state ? 'on' : 'off');
       }
 
-      // 1. Auto-AC Logic (Weather Sensitive)
+      // 1. Auto-AC Logic (Weather Sensitive / Mac Throttling)
       if (config.autoAc && (Date.now() - bootTime > 300000)) {
         const w: any = await (weather as any).getWeather();
         if (w) {
           if (w.temp > 31 && config.stats.ac?.status === 'off' && isPhoneOnline) {
-            await triggerScene('chill');
-            await notifier.notify(`🌡️ *Sovereignty:* External temp hit *${w.temp}°C*. I've engaged your AC to keep the God Build cool.`, 'low');
+            // Dynamic AC setting based on severity of weather
+            const dynamicTemp = w.temp > 38 ? '18' : (w.temp > 35 ? '22' : '24');
+            const d = miraie?.devices[0]?.deviceId;
+            if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: dynamicTemp, acmd: 'cool' });
+            
+            await notifier.notify(`🌡️ *Sovereignty:* External temp hit *${w.temp}°C*. Engaged AC at ${dynamicTemp}°C to prevent Mac throttling.`, 'low');
           } else if (w.temp < 27 && config.stats.ac?.status === 'on') {
             const d = miraie?.devices[0]?.deviceId;
             if (d) await miraie?.controlDevice(d, { ps: 'off' });
