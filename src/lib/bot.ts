@@ -22,6 +22,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import puppeteer from 'puppeteer';
 import os from 'os';
+import { InstagramScraper } from './instagram';
 
 const weather = new WeatherEngine();
 
@@ -316,6 +317,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   if (config.spotifyBpm === undefined) config.spotifyBpm = false;
   if (config.workMode === undefined) config.workMode = false;
   if (config.hydrationGuardian === undefined) config.hydrationGuardian = false;
+  let lastPostureMsgId: number | null = null;
+  let lastHydrationMsgId: number | null = null;
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
 
   const startPostureGuardian = () => {
@@ -325,28 +328,31 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       
       // 🧘 Work Mode / Silent Mode Check
       if (config.workMode) {
-         await bot.sendMessage(config.telegram.chatId, '🧘 *Silent Posture Check:* (Work Mode Active). Please remember to stretch when you can.');
+         const sent = await bot.sendMessage(config.telegram.chatId, '🧘 *Silent Posture Check:* (Work Mode Active). Please remember to stretch when you can.');
+         lastPostureMsgId = sent.message_id;
          return;
       }
 
-      await bot.sendMessage(config.telegram.chatId, '💀 *POSTURE CHECK!* Stand up and stretch.', { 
+      const sent = await bot.sendMessage(config.telegram.chatId, '💀 *POSTURE CHECK!* Stand up and stretch.', { 
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [[{ text: '✅ I Stretched', callback_data: 'control:stretched:level:labs' }]]
         }
       });
+      lastPostureMsgId = sent.message_id;
       if (wiz) await pulseLight(5, 3000); 
       speak("Posture time, God. Stand up and stretch immediately.");
       
       if ((global as any).postureNag) clearInterval((global as any).postureNag);
       (global as any).postureNag = setInterval(async () => {
          if (config.workMode) { clearInterval((global as any).postureNag); return; }
-         await bot.sendMessage(config.telegram.chatId, '⚠️ *POSTURE NAG:* You still haven\'t acknowledged. STAND UP!', { 
+         const nagSent = await bot.sendMessage(config.telegram.chatId, '⚠️ *POSTURE NAG:* You still haven\'t acknowledged. STAND UP!', { 
            parse_mode: 'Markdown',
            reply_markup: {
              inline_keyboard: [[{ text: '✅ OK FINE', callback_data: 'control:stretched:level:labs' }]]
            }
          });
+         lastPostureMsgId = nagSent.message_id;
          speak("Stand up now.");
       }, 5 * 60 * 1000); // 5 min nag
     }, 120 * 60 * 1000); // 2 hours
@@ -356,7 +362,13 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
     (global as any).hydrationTimer = setInterval(async () => {
       if (!config.hydrationGuardian || config.workMode) return;
-      await bot.sendMessage(config.telegram.chatId, '💧 *HYDRATION ALERT:* Drink water, God.');
+      const sent = await bot.sendMessage(config.telegram.chatId, '💧 *HYDRATION ALERT:* Drink water, God.', {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[{ text: '🥤 Done', callback_data: 'control:hydrated:level:labs' }]]
+        }
+      });
+      lastHydrationMsgId = sent.message_id;
       if (wiz) await pulseLight(3, 2000); 
       speak("Stay hydrated. Drink some water.");
     }, 90 * 60 * 1000); // 1.5 hours
@@ -662,11 +674,13 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       if (original) await (wiz as any).setPilot(original);
     } catch (e) { }
   }
-   async function pulseLight(dimTo = 70, duration = 400) {
+   async function pulseLight(dimTo = 70, duration = 400, colorOverride?: { r: number, g: number, b: number }) {
      if (!wiz) return;
      try {
        const originalPilot = await (wiz as any).getPilot();
-       await (wiz as any).setPilot({ state: true, dimming: dimTo });
+       const payload: any = { state: true, dimming: dimTo };
+       if (colorOverride) { payload.r = colorOverride.r; payload.g = colorOverride.g; payload.b = colorOverride.b; }
+       await (wiz as any).setPilot(payload);
        await new Promise(r => setTimeout(r, duration));
        if (originalPilot) {
          await (wiz as any).setPilot({
@@ -1057,6 +1071,9 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             else {
               if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
             }
+        } else if (subCommand === 'github_streak_toggle') {
+            config.githubPulse.streakNag = !config.githubPulse.streakNag;
+            saveConfig(config);
         } else if (subCommand === 'work_mode_toggle') {
             config.workMode = !config.workMode;
             saveConfig(config);
@@ -1068,10 +1085,20 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             if ((global as any).postureNag) {
                clearInterval((global as any).postureNag);
                (global as any).postureNag = null;
+               if (lastPostureMsgId) {
+                  await (bot as any).deleteMessage(chatId, lastPostureMsgId).catch(() => {});
+                  lastPostureMsgId = null;
+               }
                await (bot as any).answerCallbackQuery((msg as any).id, { text: "Resume your work, God.", show_alert: false }).catch(() => {});
             } else {
                await (bot as any).answerCallbackQuery((msg as any).id, { text: "No active check.", show_alert: false }).catch(() => {});
             }
+        } else if (subCommand === 'hydrated') {
+            if (lastHydrationMsgId) {
+               await (bot as any).deleteMessage(chatId, lastHydrationMsgId).catch(() => {});
+               lastHydrationMsgId = null;
+            }
+            await (bot as any).answerCallbackQuery((msg as any).id, { text: "Purity maintained.", show_alert: false }).catch(() => {});
         } else if (subCommand === 'ipl_record') {
              lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
              const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
@@ -1234,7 +1261,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         ],
         [
           { text: config.workMode ? '🧘 Work Mode: ✅ ON' : '🧘 Work Mode: ❌ OFF', callback_data: 'control:work_mode_toggle:level:labs' },
-          { text: config.hydrationGuardian ? '💧 Hydration: ✅ ON' : '💧 Hydration: ❌ OFF', callback_data: 'control:hydration_toggle:level:labs' }
+          { text: config.hydrationGuardian ? '💧 Hydration: ✅ ON' : '💧 Hydration: ❌ OFF', callback_data: 'control:hydration_toggle:level:labs' },
+          { text: config.githubPulse.streakNag ? '🐙 Streak Nag: ✅ ON' : '🐙 Streak Nag: ❌ OFF', callback_data: 'control:github_streak_toggle:level:labs' }
         ],
         [
           { text: '🔙 Back to Hub', callback_data: 'control:none:level:root' }
@@ -3508,6 +3536,32 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           }
         }
 
+        // 📸 Instagram Browser API
+        if (url.pathname === '/instagram/profile') {
+          const username = url.searchParams.get('username');
+          if (!username) return new Response("Username required", { status: 400 });
+          
+          try {
+            logActivity(`📸 Instagram: Fetching profile for @${username}`);
+            const [profile, stories] = await Promise.all([
+              InstagramScraper.fetchProfile(username),
+              InstagramScraper.fetchStories(username)
+            ]);
+            
+            // Merge stories into a virtual section or separate field
+            return new Response(JSON.stringify({ ...profile, stories }), { 
+              status: 200, 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+            });
+          } catch (error: any) {
+            console.error(`📸 Instagram Error for ${username}:`, error.message);
+            return new Response(JSON.stringify({ error: error.message }), { 
+              status: 500, 
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+            });
+          }
+        }
+
         // 🎮 CS2 Game State Integration (GSI)
         if (url.pathname === '/gsi' && req.method === 'POST') {
            try {
@@ -4013,10 +4067,15 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       // Extract current usage / bill amount
       const billData = await page.evaluate(() => {
         return {
-          amount: document.querySelector('.current-bill-amt')?.textContent || '0',
-          units: document.querySelector('.current-units')?.textContent || '0'
+          amount: (document.querySelector('.current-bill-amt')?.textContent || '0').replace(/[^\d.]/g, ''),
+          units: (document.querySelector('.current-units')?.textContent || '0').replace(/[^\d.]/g, ''),
+          title: document.title
         };
       });
+
+      if (billData.amount === '0' && billData.units === '0') {
+        logActivity(`⚠️ PGVCL Scrape: Elements not found on page "${billData.title}". Selector update needed.`);
+      }
 
       config.stats.pgvcl = {
         amount: billData.amount,
@@ -4256,8 +4315,9 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         const dailyUnits = (stats.acMinutes / 60 * 1.65) + (stats.lightMinutes / 60 * 0.012);
         const dailyCost = calculatePgvclBill(dailyUnits);
         const pg = config.stats.pgvcl;
-        const totalUnits = pg?.units || '--';
-        const totalBill = pg?.amount || '--';
+        const hasActual = pg && pg.units && pg.units !== '0' && pg.units !== '--';
+        const totalUnits = hasActual ? pg.units : `~${(dailyUnits * 30).toFixed(1)} (Est.)`;
+        const totalBill = hasActual ? pg.amount : `~₹${(dailyCost * 30).toFixed(0)} (Est.)`;
         
         const msg = `🌙 *Gravity Daily Review*\n\n❄️ AC: *${(stats.acMinutes/60).toFixed(1)} hrs*\n💡 Light: *${(stats.lightMinutes/60).toFixed(1)} hrs*\n\n⚡ *Today (Est.)*\n🔌 Energy: *${dailyUnits.toFixed(1)} units*\n💰 Est. Cost: *₹${dailyCost}*\n\n📊 *Total (Actual)*\n🔌 Energy: *${totalUnits} units*\n💰 Bill: *₹${totalBill}*`;
         for (const uid of (config.authorizedUsers || [])) {
@@ -4437,10 +4497,22 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                    await (bot as any).sendMessage(config.telegram.chatId, `🐙 *GITHUB PULSE:* New code pushed to \`${repoName}\`!\n_Sensory sync engaged._`);
                  }
                  config.githubPulse.lastEventId = currentEvent.id;
+                 config.githubPulse.lastDate = new Date().toISOString().split('T')[0];
                  saveConfig(config);
                }
              }
            } catch (e) { console.error("Git Pulse Error:", e); }
+        }
+
+        // GitHub Streak "Soft Nag" (Past 8 PM)
+        const hr = new Date().getHours();
+        if (hr >= 20 && config.githubPulse?.enabled && config.githubPulse.streakNag) {
+           const today = new Date().toISOString().split('T')[0];
+           if (config.githubPulse.lastDate !== today && (Date.now() - ((global as any).lastGitNag || 0) > 3600000)) {
+             (global as any).lastGitNag = Date.now();
+             await pulseLight(30, 2000, { r: 255, g: 220, b: 0 }); // Yellow Soft Nag
+             logActivity("🐙 GitHub Streak: Soft nag engaged (No commits today)");
+           }
         }
 
         // 5. Wikipedia Rabbit Hole
