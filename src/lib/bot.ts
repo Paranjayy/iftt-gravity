@@ -3587,6 +3587,16 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         
         const sceneName = url.pathname.split('/').pop()?.toUpperCase();
 
+        // 🎭 Scene / Mood Control (Raycast / AHK Sync)
+        if (url.pathname.startsWith('/scene/')) {
+          const scene = url.pathname.split('/').pop()?.toUpperCase();
+          if (scene) {
+            logActivity(`🎭 API Scene Switch: ${scene}`);
+            await triggerScene(scene);
+            return new Response(`Scene ${scene} Engaged`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+
         // 🔗 IFTTT / Webhook Trigger
         if (url.pathname.startsWith('/trigger/')) {
           const hook = url.pathname.split('/').pop();
@@ -4453,6 +4463,33 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     if (currentHr !== 1) (global as any).acSleepSet = false;
     if (currentHr !== 7) (global as any).acWakeSet = false;
   }, 60000);
+
+  // 🏏 IPL 2026 "Realtime Pulse" (Sensory Sync)
+  const pulsePath = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/liveFeed.json";
+  if (fs.existsSync(pulsePath)) {
+    fs.watchFile(pulsePath, { interval: 2000 }, async (curr, prev) => {
+      try {
+        if (curr.mtime > prev.mtime) {
+          const feed = JSON.parse(fs.readFileSync(pulsePath, 'utf8'));
+          const event = feed.latestEvent;
+          if (event.type === 'ball' && config.cricketMode) {
+             const run = event.run;
+             if (run === '4') {
+               logActivity("🏏 IPL Pulse: FOUR!");
+               await blinkLight(2, { r: 0, g: 255, b: 0 }); 
+             } else if (run === '6') {
+               logActivity("🏏 IPL Pulse: SIX!!");
+               await blinkLight(3, { r: 255, g: 215, b: 0 }); 
+             } else if (run.startsWith('W')) {
+               logActivity("🏏 IPL Pulse: WICKET!!!");
+               await pulseLight(100, 1500, { r: 255, g: 0, b: 0 });
+               await (bot as any).sendMessage(config.telegram.chatId, `🏏 *IPL PULSE:* Wicket fell! \`${event.commentary}\``);
+             }
+          }
+        }
+      } catch (e) {}
+    });
+  }
 
   // ──────────────────────────────────────────────────────
   // 🔋 Mac Battery Guardian (New Feature v2.2)
