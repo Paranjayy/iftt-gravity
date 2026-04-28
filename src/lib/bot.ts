@@ -327,12 +327,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     (global as any).postureTimer = setInterval(async () => {
       if (!config.postureGuardian) return;
       
-      // 🧘 Work Mode / Silent Mode Check
-      if (config.workMode) {
-         const sent = await bot.sendMessage(config.telegram.chatId, '🧘 *Silent Posture Check:* (Work Mode Active). Please remember to stretch when you can.');
-         lastPostureMsgId = sent.message_id;
-         return;
-      }
+      // 🧘 Spam Protection: Don't send if a message is already active
+      if (lastPostureMsgId) return;
 
       const sent = await bot.sendMessage(config.telegram.chatId, '💀 *POSTURE CHECK!* Stand up and stretch.', { 
         parse_mode: 'Markdown',
@@ -363,6 +359,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
     (global as any).hydrationTimer = setInterval(async () => {
       if (!config.hydrationGuardian || config.workMode) return;
+      if (lastHydrationMsgId) return; // Spam protection
+
       const sent = await bot.sendMessage(config.telegram.chatId, '💧 *HYDRATION ALERT:* Drink water, God.', {
         parse_mode: 'Markdown',
         reply_markup: {
@@ -823,6 +821,34 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   });
 
   bot.registerCommand({
+    command: 'follow',
+    description: 'Track a Twitch or Instagram user for live/new post alerts',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if (args.length < 2) return await send('📡 *Usage:* `/follow <twitch|insta|yt> <username|channelId>`');
+      
+      const platform = args[0].toLowerCase();
+      const user = args[1];
+      
+      if (!config.socialMonitor) config.socialMonitor = { twitch: [], instagram: [], youtube: [] };
+      if (!config.socialMonitor.youtube) config.socialMonitor.youtube = [];
+
+      if (platform === 'twitch') {
+        if (!config.socialMonitor.twitch.includes(user)) config.socialMonitor.twitch.push(user);
+      } else if (platform === 'insta') {
+        if (!config.socialMonitor.instagram.includes(user)) config.socialMonitor.instagram.push(user);
+      } else if (platform === 'yt' || platform === 'youtube') {
+        if (!config.socialMonitor.youtube.includes(user)) config.socialMonitor.youtube.push(user);
+      } else {
+        return await send('❌ *Unknown Platform.* Use `twitch`, `insta`, or `yt`.');
+      }
+      
+      saveConfig(config);
+      await send(`📡 *Social Sentry:* Now tracking \`${user}\` on \`${platform}\`.`);
+    }
+  });
+
+  bot.registerCommand({
     command: 'pgvcl',
     description: 'Show latest PGVCL bill details',
     handler: async (chatId: number, args: string[], msg: any, send: any) => {
@@ -1154,12 +1180,30 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             } else {
                await (bot as any).answerCallbackQuery((msg as any).id, { text: "No active check.", show_alert: false }).catch(() => {});
             }
-        } else if (subCommand === 'hydrated') {
+            config.stats.stretches = (config.stats.stretches || 0) + 1;
+            saveConfig(config);
+         } else if (subCommand.startsWith('health_done:')) {
+            const type = subCommand.split(':')[1];
+            if (type === 'stretches') config.stats.stretches = (config.stats.stretches || 0) + 1;
+            if (type === 'hydration') config.stats.hydration = (config.stats.hydration || 0) + 1;
+            saveConfig(config);
+            await (bot as any).deleteMessage(chatId, (msg as any).message.message_id).catch(() => {});
+            await bot.answerCallbackQuery((msg as any).id, { text: "Protocol synchronized.", show_alert: false });
+         } else if (subCommand === 'hydrated') {
             if (lastHydrationMsgId) {
                await (bot as any).deleteMessage(chatId, lastHydrationMsgId).catch(() => {});
                lastHydrationMsgId = null;
             }
+            config.stats.hydration = (config.stats.hydration || 0) + 1;
+            saveConfig(config);
             await (bot as any).answerCallbackQuery((msg as any).id, { text: "Purity maintained.", show_alert: false }).catch(() => {});
+         } else if (subCommand === "open_url") {
+            const targetUrl = parts[parts.indexOf("url") + 1];
+            if (targetUrl) {
+               logActivity(`🚀 API: Launching URL: ${targetUrl}`);
+               await execAsync(`open "${targetUrl}"`);
+               await (bot as any).answerCallbackQuery((msg as any).id, { text: "URL launched on Mac.", show_alert: false }).catch(() => {});
+            }
         } else if (subCommand === 'ipl_record') {
              lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
              const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
@@ -2392,6 +2436,29 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   });
 
   // ──────────────────────────────────────────────────────
+  // /find — Locate Device (Ring & Say)
+  // ──────────────────────────────────────────────────────
+  bot.registerCommand({
+    command: 'find',
+    description: 'Ring Mac to locate it',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await send('🔊 *Protocol: SEARCH & RESCUE.* Ringing Mac at maximum volume...');
+      try {
+        // 1. Set volume to max
+        await execAsync(`osascript -e 'set volume output volume 100'`);
+        // 2. Play loud sound (Basso is quite distinct)
+        await execAsync(`afplay /System/Library/Sounds/Glass.aiff & afplay /System/Library/Sounds/Glass.aiff`);
+        // 3. Say location
+        await execAsync(`say "I am over here, Master. Gravity Hub is active on this workstation."`);
+        await send('✅ *Ringing complete.* If device not found, try again.');
+      } catch (e) {
+        await send('❌ *Search failed.* System audio unreachable.');
+      }
+    }
+  });
+
+  // ──────────────────────────────────────────────────────
   // /test_feedback — Sensory Feedback Trial (v4.7)
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
@@ -2578,12 +2645,38 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} (${lightDuration}) [Req: ${config.lights?.brightness || '100'}%] (${lightHw})`);
       
       const botUptime = Math.floor(process.uptime());
-      const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
       const bootedAt = config.stats.bot?.bootedAt ? new Date(config.stats.bot.bootedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : "Unknown";
       
       lines.push(`⏱ *Session Uptime*: ${Math.floor(botUptime/3600)}h ${Math.floor((botUptime%3600)/60)}m`);
-      lines.push(`💤 *Bot Downtime*: Last down for ${botOffBefore}`);
       
+      // 🧘 Wellness & Habits
+      const hydration = config.stats.hydration || 0;
+      const stretches = config.stats.stretches || 0;
+      lines.push(`\n🧘 *Wellness Protocol*:`);
+      lines.push(`💧 Hydration: *${hydration}* units | 🧘 Stretches: *${stretches}*`);
+      
+      // ⚡ Utility Intelligence
+      if (config.stats.pgvcl) {
+        lines.push(`\n⚡ *PGVCL Utility*:`);
+        lines.push(`💰 Bill: ₹*${config.stats.pgvcl.amount}* | 📉 Usage: *${config.stats.pgvcl.units}* units`);
+        lines.push(`🕒 _Last Scan: ${new Date(config.stats.pgvcl.scannedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}_`);
+      }
+
+      // 👻 Presence Module
+      const presence = (global as any).ghostPresence ? "✅ *Active (Nearby)*" : "🌑 *Away*";
+      lines.push(`\n👻 *Presence*: ${presence}`);
+
+      // 📡 Social Sentry Stats
+      if (config.socialMonitor) {
+        const tw = (config.socialMonitor.twitch || []).length;
+        const ig = (config.socialMonitor.instagram || []).length;
+        const yt = (config.socialMonitor.youtube || []).length;
+        if (tw + ig + yt > 0) {
+          lines.push(`\n📡 *Social Sentry*:`);
+          lines.push(`📺 Twitch: *${tw}* | 📸 Insta: *${ig}* | 📹 YT: *${yt}*`);
+        }
+      }
+
       const spotify = await getSpotifyStatus();
       if (spotify) {
         lines.push(`\n🎵 *Spotify*: ${spotify}`);
@@ -3784,6 +3877,11 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             autoAc: config.autoAc,
             autoLight: config.autoLight,
             mediaAura: config.mediaAura !== false,
+            habitStats: {
+              stretches: config.stats.stretches || 0,
+              hydration: config.stats.hydration || 0,
+              lastNudge: (global as any).lastHealthNudge || 0
+            },
             platform: 'Local Mac',
             archive: { status: 'ONLINE', pulse: '5s' }
           }, null, 2);
@@ -4099,9 +4197,14 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     logActivity("⚡ Starting PGVCL Utility Scan...");
     let browser;
     try {
-      browser = await puppeteer.launch({ headless: true });
+      browser = await puppeteer.launch({ 
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
+      });
       const page = await browser.newPage();
-      await page.goto('https://www.pgvcl.com/consumer/billview/index.php');
+      await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
+      await page.setViewport({ width: 1280, height: 800 });
+      await page.goto('https://www.pgvcl.com/consumer/billview/index.php', { waitUntil: 'networkidle2' });
       
       // 🛡️ reCAPTCHA Detection
       const isCaptcha = await page.evaluate(() => !!document.querySelector('.g-recaptcha'));
@@ -4158,9 +4261,31 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     }
   }
 
-  // Run scraper on boot + every 6 hours
+  // 👻 Ghost Presence Module (Bluetooth Proximity)
+  async function checkGhostPresence() {
+    try {
+      const { stdout } = await execAsync("system_profiler SPBluetoothDataType");
+      // Check for user's devices (Common names or specific IDs)
+      const isNearby = stdout.includes("iPhone") || stdout.includes("Paranjay") || stdout.includes("Watch");
+      
+      if (isNearby && !(global as any).ghostPresence) {
+         logActivity("👻 Ghost Presence: User detected nearby.");
+         if (wiz) await pulseLight(1, 1000); // Subtle blue pulse
+      }
+      
+      (global as any).ghostPresence = isNearby;
+    } catch (e) {
+      console.error('Ghost Presence scan failed', e);
+    }
+  }
+
+  // Run initial scans
   runPgvclScraper();
+  checkGhostPresence();
+
   setInterval(runPgvclScraper, 21600000);
+  setInterval(checkGhostPresence, 5 * 60 * 1000);
+
   let awayAcMinutes = 0;
 
   // 📋 Hyper-Fast Clipboard Sentry (Instant Recall)
@@ -4491,6 +4616,31 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     });
   }
 
+  // 🧘 Health & Wellness Sentry (Spam Protected)
+  setInterval(async () => {
+    const currentHr = new Date().getHours();
+    if (currentHr >= 9 && currentHr <= 23) { // Active hours
+      const now = Date.now();
+      const lastNudge = (global as any).lastHealthNudge || 0;
+      const nudgeInterval = 3600000 * 2; // Every 2 hours
+      
+      if (now - lastNudge > nudgeInterval) {
+        (global as any).lastHealthNudge = now;
+        const types = [
+          { key: 'stretches', icon: '🧘', text: 'Time to stretch! Your posture defines your code quality.' },
+          { key: 'hydration', icon: '💧', text: 'Hydration check! Stay fluid, stay sharp.' }
+        ];
+        const nudge = types[Math.floor(Math.random() * types.length)];
+        
+        await (bot as any).sendMessage(config.telegram.chatId, `${nudge.icon} *Gravity Wellness:* ${nudge.text}`, {
+          reply_markup: {
+            inline_keyboard: [[{ text: '✅ Done', callback_data: `health_done:${nudge.key}` }]]
+          }
+        });
+      }
+    }
+  }, 600000); // Check every 10m
+
   // ──────────────────────────────────────────────────────
   // 🔋 Mac Battery Guardian (New Feature v2.2)
   // ──────────────────────────────────────────────────────
@@ -4574,6 +4724,81 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
              lastGlobalSignal = { text: "🛰️ ISS Overhead", time: Date.now() };
              await blinkLight(2, { r: 255, g: 255, b: 255 }); // White Flash
              await sendConsolidatedAlert('iss', "🛰️ *Sovereignty:* The International Space Station is currently over your Hub.");
+           }
+        }
+        
+        // 10. Social Sentry (Twitch/Insta Tracking)
+        if (config.socialMonitor && (Date.now() - ((global as any).lastSocialCheck || 0) > 300000)) {
+           (global as any).lastSocialCheck = Date.now();
+           
+           // 📺 Twitch Monitoring
+           for (const twitchUser of config.socialMonitor.twitch || []) {
+             try {
+               // Twitch public status check (JSON-less method or via a proxy)
+               const res = await fetch(`https://www.twitch.tv/${twitchUser}`, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+               const text = await res.text();
+               const isLive = text.includes('"isLiveBroadcast":true') || text.includes('isLiveBroadcast": true');
+               const lastStatus = (global as any)[`twitch_${twitchUser}`];
+               
+               if (isLive && !lastStatus) {
+                 (global as any)[`twitch_${twitchUser}`] = true;
+                 logActivity(`📺 Twitch: ${twitchUser} is LIVE!`);
+                 await (bot as any).sendMessage(config.telegram.chatId, `📺 *Twitch Alert:* \`${twitchUser}\` is now live!\n\n_System ready to stream._`, {
+                   reply_markup: {
+                     inline_keyboard: [[{ text: '🚀 Open Stream on Mac', callback_data: `control:open_url:url:https://twitch.tv/${twitchUser}` }]]
+                   }
+                 });
+               } else if (!isLive) {
+                 (global as any)[`twitch_${twitchUser}`] = false;
+               }
+             } catch (e) {}
+           }
+
+           // 📸 Instagram Pulse (New Post Detection)
+           for (const igUser of config.socialMonitor.instagram || []) {
+             try {
+               const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${igUser}`, {
+                 headers: { 'x-ig-app-id': '936619743392459', 'User-Agent': 'Mozilla/5.0' }
+               });
+               if (res.ok) {
+                 const data = await res.json() as any;
+                 const latestId = data.data.user.edge_owner_to_timeline_media.edges[0]?.node.id;
+                 if (!config.socialMonitor.lastSeen) config.socialMonitor.lastSeen = {};
+                 const lastSeen = config.socialMonitor.lastSeen[`ig_${igUser}`];
+                 
+                 if (latestId && latestId !== lastSeen) {
+                   config.socialMonitor.lastSeen[`ig_${igUser}`] = latestId;
+                   saveConfig(config);
+                   logActivity(`📸 Instagram Pulse: New post from @${igUser}`);
+                   const shortcode = data.data.user.edge_owner_to_timeline_media.edges[0].node.shortcode;
+                   await (bot as any).sendMessage(config.telegram.chatId, `📸 *Instagram Pulse:* New post from \`@${igUser}\`!\n\n🔗 [View Post](https://instagram.com/p/${shortcode})`, { parse_mode: 'Markdown' });
+                 }
+               }
+             } catch (e) {}
+           }
+
+           // 📹 YouTube Sentry (New Video/Live Tracking)
+           for (const ytId of config.socialMonitor.youtube || []) {
+             try {
+               const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${ytId}`);
+               const xml = await res.text();
+               const latestVideoMatch = xml.match(/<video_id>([^<]+)</video_id>/);
+               const latestVideoTitle = xml.match(/<title>([^<]+)</title>/);
+               
+               if (latestVideoMatch) {
+                 const videoId = latestVideoMatch[1];
+                 const lastSeen = (global as any)[`yt_last_${ytId}`];
+                 if (videoId !== lastSeen) {
+                   (global as any)[`yt_last_${ytId}`] = videoId;
+                   logActivity(`📹 YouTube Sentry: New content detected for ${ytId}`);
+                   await (bot as any).sendMessage(config.telegram.chatId, `📹 *YouTube Sentry:* New video/stream detected!\n\n*${latestVideoTitle ? latestVideoTitle[1] : "Untitled"}*\n🔗 [Watch Now](https://youtu.be/${videoId})`, {
+                      reply_markup: {
+                        inline_keyboard: [[{ text: "🚀 Launch on Mac", callback_data: `control:open_url:url:https://youtu.be/${videoId}` }]]
+                      }
+                   });
+                 }
+               }
+             } catch (e) {}
            }
         }
     } catch (e) { }
@@ -5311,13 +5536,7 @@ async function getLatestIplData(targetMatchId?: string) {
       summary: {
         inn1: targetMatch.FirstBattingSummary || '',
         inn2: targetMatch.SecondBattingSummary || '',
-        case 'MATRIX':
-        logActivity("📟 Scene: Entering The Matrix.");
-        await wiz?.executeAction({ type: 'control', payload: { state: true, r: 0, g: 255, b: 0, dimming: 50 } });
-        await updateAc('on', 20);
-        speak("System ready. You are now in the construct.");
-        break;
-      default: targetMatch.MatchStatus?.toLowerCase() === 'result' ? targetMatch.MatchStatus || '' : '',
+        result: targetMatch.MatchStatus?.toLowerCase() === 'result' ? targetMatch.MatchStatus || '' : '',
         topScorers: (activeInnings.Batsmen || []).sort((a: any, b: any) => parseInt(b.Runs) - parseInt(a.Runs)).slice(0, 2).map((b: any) => `${b.FullName || b.Name} (${b.Runs}/${b.Balls})`).join(', '),
         topBowlers: (activeInnings.Bowlers || []).sort((a: any, b: any) => parseInt(b.Wickets) - parseInt(a.Wickets)).slice(0, 1).map((b: any) => `${b.FullName || b.Name} (${b.Wickets}/${b.RunsConceded})`).join(', ')
       },
