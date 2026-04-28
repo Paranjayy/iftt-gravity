@@ -1666,6 +1666,45 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   });
 
   bot.registerCommand({
+    command: 'pomodoro',
+    description: 'Start ruthless 50-minute work lock',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await send('🍅 *Ruthless Pomodoro Initiated*\n50 minutes of pure focus. The room is locked down.');
+      await triggerScene('FOCUS');
+      
+      setTimeout(async () => {
+         await send('🍅 *Pomodoro Complete!* Locking Mac screen. Stand up!');
+         await triggerScene('CHILL');
+         // Lock screen locally
+         require('child_process').exec('pmset displaysleepnow');
+         const d = miraie?.devices[0]?.deviceId;
+         if (d) await miraie?.controlDevice(d, { ps: 'off' });
+      }, 50 * 60 * 1000);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'posture',
+    description: 'Toggle Posture/Stretch Guardian',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      if ((global as any).postureTimer) {
+         clearInterval((global as any).postureTimer);
+         (global as any).postureTimer = null;
+         await send('🧍 *Posture Guardian Disabled.*');
+      } else {
+         (global as any).postureTimer = setInterval(async () => {
+             await send('💀 *Stretch!* You have been sitting too long.');
+             if (wiz) await pulseLight(10, 5000); // Annoying 5s pulse
+             speak("Stretch immediately. Guardian protocol engaged.");
+         }, 120 * 60 * 1000); // 2 hours
+         await send('🧍 *Posture Guardian Enabled.*\nYou will be forced to stretch every 2 hours.');
+      }
+    }
+  });
+
+  bot.registerCommand({
     command: 'remember',
     description: 'Save a note to config',
     handler: async (chatId: number, args: string[], msg: any, send: any) => {
@@ -3321,12 +3360,23 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                  }
                  (global as any).lastHsCount = hs;
                  
-                 // Damage Detection
+                  // Damage Detection
                  if (health < 40 && health > 0 && health < ((global as any).lastHealth || 100)) {
                     await wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 0, b: 0, dimming: 100 } });
                     setTimeout(() => wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 150, b: 0, dimming: 10 } }), 500);
                  }
                  (global as any).lastHealth = health;
+                 
+                 // Anti-Flashbang Protocol
+                 const flashed = data.player.state.flashed || 0;
+                 if (flashed > 150 && ((global as any).lastFlashed || 0) <= 150) {
+                     // Drop room brightness to 10% instantly to save eyes
+                     await wiz?.executeAction({ type: 'control', payload: { state: true, temp: 6500, dimming: 10 } });
+                 } else if (flashed === 0 && ((global as any).lastFlashed || 0) > 0) {
+                     // Restore normal lighting once flash wears off
+                     await wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 150, b: 0, dimming: 100 } });
+                 }
+                 (global as any).lastFlashed = flashed;
               }
               
               if (data.player && data.player.weapons) {
@@ -3347,6 +3397,19 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               }
            } catch(e) {}
            return new Response("GSI OK", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        // 🚨 Code / Build Siren Webhooks
+        if (url.pathname === '/trigger/build_fail') {
+           logActivity("🚨 Build Failed! Engaging Crimson Siren.");
+           if (wiz) await pulseLight(10, 2000); // Pulse effect
+           await wiz?.executeAction({ type: 'control', payload: { state: true, r: 255, g: 0, b: 0, dimming: 100 } });
+           return new Response("Siren Engaged", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/trigger/build_success') {
+           logActivity("✅ Build Succeeded. Green glow.");
+           await wiz?.executeAction({ type: 'control', payload: { state: true, r: 0, g: 255, b: 100, dimming: 80 } });
+           return new Response("Build Success", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
         // 🫀 Biometric Heart-Rate Sync (iOS Shortcut webhook)
