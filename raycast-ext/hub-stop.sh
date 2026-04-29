@@ -22,9 +22,10 @@ sleep 2
 
 # 2. Verify and Iron Sweep (Force Kill stragglers)
 echo "☢️ Gravity: Executing final purge..."
-for port in 3030 3031; do
+for port in 3000 3030 3031; do
   PIDS=$(lsof -t -i:$port)
   if [ ! -z "$PIDS" ]; then
+    echo "  ↳ Stopping stragglers on Port $port: $PIDS"
     echo $PIDS | xargs kill -9 2>/dev/null
   fi
 done

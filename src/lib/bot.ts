@@ -4855,8 +4855,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${ytId}`, { signal: controller.signal });
                const xml = await res.text();
                clearTimeout(timeoutId);
-               const latestVideoMatch = xml.match(/<video_id>([^<]+)</video_id>/);
-               const latestVideoTitle = xml.match(/<title>([^<]+)</title>/);
+               const latestVideoMatch = xml.match(/<video_id>([^<]+)<\/video_id>/);
+               const latestVideoTitle = xml.match(/<title>([^<]+)<\/title>/);
                
                if (latestVideoMatch) {
                  const videoId = latestVideoMatch[1];

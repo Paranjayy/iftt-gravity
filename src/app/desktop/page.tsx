@@ -74,7 +74,8 @@ export default function GravityOS() {
     sentry: true,
     energy: true,
     history: false,
-    palette: false
+    palette: false,
+    instagram: true
   });
 
   const [time, setTime] = useState('');
@@ -397,6 +398,49 @@ export default function GravityOS() {
                 
                 <button className="w-full py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-[11px] font-bold transition-all uppercase tracking-widest">
                   View Analytics
+                </button>
+              </div>
+            </DesktopWindow>
+            {/* Instagram Recon */}
+            <DesktopWindow 
+              id="instagram" 
+              title="Instagram Recon: @iplt20" 
+              isOpen={windows.instagram} 
+              onClose={() => toggleWindow('instagram')}
+              width="w-[450px]"
+              icon={<Search className="w-3 h-3 text-pink-400" />}
+            >
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-pink-500/10 to-orange-500/10 border border-white/5">
+                   <img src="https://www.iplt20.com/assets/images/ipl-logo-new-old.png" className="w-12 h-12 rounded-full border-2 border-pink-500/50" />
+                   <div>
+                      <div className="text-[12px] font-black tracking-tight">IndianPremierLeague</div>
+                      <div className="text-[10px] opacity-40 font-black uppercase">@iplt20 · Verified</div>
+                   </div>
+                   <div className="ml-auto text-right">
+                      <div className="text-xs font-black">12.4M</div>
+                      <div className="text-[9px] opacity-40 font-black uppercase">Followers</div>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                   {[
+                     { url: 'https://www.instagram.com/p/C5v8m-ySx8F/media/?size=l', likes: '142k' },
+                     { url: 'https://www.instagram.com/p/C5wA_XvS_XN/media/?size=l', likes: '89k' },
+                     { url: 'https://www.instagram.com/p/C5v6oXvS_XN/media/?size=l', likes: '210k' },
+                     { url: 'https://www.instagram.com/p/C5v_XvS_XN/media/?size=l', likes: '65k' }
+                   ].map((post, i) => (
+                     <div key={i} className="group relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/5 hover:border-pink-500/30 transition-all cursor-pointer">
+                        <img src={post.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                           <div className="text-[10px] font-black flex items-center gap-1">❤️ {post.likes}</div>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+
+                <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-orange-600 hover:from-pink-500 hover:to-orange-500 text-white font-bold text-xs transition-all shadow-lg shadow-pink-900/20">
+                  REFRESH GHOST FEED
                 </button>
               </div>
             </DesktopWindow>
