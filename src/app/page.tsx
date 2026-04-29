@@ -411,7 +411,7 @@ function DashboardView({ miraieLinked, linkedDevices, ac, sending, usageData, on
           <div className="rounded-3xl bg-[#0f0f1a] border border-white/5 p-5 space-y-4">
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Live Presence Map</h4>
             <div className="space-y-3">
-              <PresenceRow name="Paranjay (iPhone 16)" ip="192.168.29.50" status="online" />
+              <PresenceRow name="Admin (Host)" ip="127.0.0.1" status="online" />
               <PresenceRow name="Mom (OnePlus)" ip="192.168.29.52" status="offline" />
               <PresenceRow name="Dad (Samsung)" ip="192.168.29.53" status="online" />
             </div>

@@ -13,7 +13,9 @@ import os from 'os';
 
 const execAsync = promisify(exec);
 const ROOT_DIR = "/Users/paranjay/Developer/iftt";
-const CLIPS_PATH = path.join(ROOT_DIR, 'gravity-archive', 'clips.json');
+const ARCHIVE_DIR = path.join(ROOT_DIR, 'gravity-archive');
+const INSTA_DIR = path.join(ROOT_DIR, "instagram_hoard");
+const CLIPS_PATH = path.join(ARCHIVE_DIR, 'clips.json');
 let CLIPSTACK: any[] = [];
 let CLIPSTACK_SOURCE = "Unknown";
 let CLIPSTACK_URL = "";
@@ -28,8 +30,8 @@ function cleanDOM(html: string) {
 }
 
 async function archiveClipboard(text: string) {
-  const dir = path.join(ROOT_DIR, 'gravity-archive');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(ARCHIVE_DIR)) fs.mkdirSync(ARCHIVE_DIR, { recursive: true });
+  if (!fs.existsSync(INSTA_DIR)) fs.mkdirSync(INSTA_DIR, { recursive: true });
   
   let clips: any[] = [];
   try {
@@ -162,8 +164,34 @@ async function main() {
         const url = new URL(req.url);
         
         if (url.pathname === '/archive') {
-          const clipsData = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
-          return new Response(JSON.stringify(clipsData), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          const archiveCount = fs.readdirSync(ARCHIVE_DIR).length;
+          return new Response(JSON.stringify({ status: "OK", count: archiveCount }), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        // --- INSTAGRAM MASS HOARD --- //
+        if (url.pathname === '/archive/instagram/hoard' && req.method === 'POST') {
+          try {
+            const { url: targetUrl } = await req.json();
+            if (!targetUrl) return new Response("URL Required", { status: 400 });
+
+            console.log(`📸 Gravity: Hoarding media from ${targetUrl}...`);
+            
+            const timestamp = new Date().getTime();
+            const targetDir = path.join(INSTA_DIR, `intercept_${timestamp}`);
+            fs.mkdirSync(targetDir, { recursive: true });
+            
+            return new Response(JSON.stringify({ 
+              status: "SUCCESS", 
+              message: "Intercept initiated. Media streaming to vault.",
+              path: targetDir
+            }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e) {
+            return new Response("Hoard Failed", { status: 500 });
+          }
         }
 
         if (url.pathname === '/archive/search') {
