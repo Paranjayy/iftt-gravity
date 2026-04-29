@@ -1950,4 +1950,7 @@ Back...)
 [30/4/2026, 4:35:19 AM] AC State: OFF (Manual/Remote)
 [30/4/2026, 4:36:18 AM] AC State: ON (Manual/Remote)
 [30/4/2026, 4:36:19 AM] AC State: OFF (Manual/Remote)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
