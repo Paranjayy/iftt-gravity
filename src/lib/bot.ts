@@ -4469,6 +4469,69 @@ async function main() {
            }
         }
 
+<<<<<<< Updated upstream
+=======
+           // 📸 Instagram Pulse (New Post Detection)
+           for (const igUser of config.socialMonitor.instagram || []) {
+             try {
+               const controller = new AbortController();
+               const timeoutId = setTimeout(() => controller.abort(), 10000);
+               const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${igUser}`, {
+                 headers: { 'x-ig-app-id': '936619743392459', 'User-Agent': 'Mozilla/5.0' },
+                 signal: controller.signal
+               });
+               if (res.ok) {
+                 const data = await res.json() as any;
+                 const latestId = data.data.user.edge_owner_to_timeline_media.edges[0]?.node.id;
+                 if (!config.socialMonitor.lastSeen) config.socialMonitor.lastSeen = {};
+                 const lastSeen = config.socialMonitor.lastSeen[`ig_${igUser}`];
+                 
+                 if (latestId && latestId !== lastSeen) {
+                   config.socialMonitor.lastSeen[`ig_${igUser}`] = latestId;
+                   saveConfig(config);
+                   logActivity(`📸 Instagram Pulse: New post from @${igUser}`);
+                   const shortcode = data.data.user.edge_owner_to_timeline_media.edges[0].node.shortcode;
+                   await (bot as any).sendMessage(config.telegram.chatId, `📸 *Instagram Pulse:* New post from \`@${igUser}\`!\n\n🔗 [View Post](https://instagram.com/p/${shortcode})`, { parse_mode: 'Markdown' });
+                 }
+               }
+             } catch (e) {}
+           }
+
+           // 📹 YouTube Sentry (New Video/Live Tracking)
+           for (const ytId of config.socialMonitor.youtube || []) {
+             try {
+               const controller = new AbortController();
+               const timeoutId = setTimeout(() => controller.abort(), 10000);
+               const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${ytId}`, { signal: controller.signal });
+               const xml = await res.text();
+               clearTimeout(timeoutId);
+               const latestVideoMatch = xml.match(/<video_id>([^<]+)<\/video_id>/);
+               const latestVideoTitle = xml.match(/<title>([^<]+)<\/title>/);
+               
+               if (latestVideoMatch) {
+                 const videoId = latestVideoMatch[1];
+                 const lastSeen = (global as any)[`yt_last_${ytId}`];
+                 if (videoId !== lastSeen) {
+                   (global as any)[`yt_last_${ytId}`] = videoId;
+                   logActivity(`📹 YouTube Sentry: New content detected for ${ytId}`);
+                   await (bot as any).sendMessage(config.telegram.chatId, `📹 *YouTube Sentry:* New video/stream detected!\n\n*${latestVideoTitle ? latestVideoTitle[1] : "Untitled"}*\n🔗 [Watch Now](https://youtu.be/${videoId})`, {
+                      reply_markup: {
+                        inline_keyboard: [[{ text: "🚀 Launch on Mac", callback_data: `control:open_url:url:https://youtu.be/${videoId}` }]]
+                      }
+                   });
+                 }
+               }
+             } catch (e) {}
+           }
+        }
+    } catch (e) { }
+  }, 300000);
+
+
+
+  setInterval(async () => {
+    try {
+>>>>>>> Stashed changes
         // 2. Prediction Oracle Pulse
         if (config.predictionPulse?.enabled && (Date.now() - ((global as any).lastPredictionCheck || 0) > 600000)) {
            (global as any).lastPredictionCheck = Date.now();

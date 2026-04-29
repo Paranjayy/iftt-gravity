@@ -1729,4 +1729,22 @@ Why are India...)
 [29/4/2026, 4:32:48 AM] 📋 Memory Archive: New clip captured (cd "/Users/paranjay/...)
 [29/4/2026, 4:36:55 AM] 📋 Memory Archive: New clip captured (paranjay@Paranjays-M...)
 [29/4/2026, 4:38:32 AM] AC State: OFF (Manual/Remote)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+[29/4/2026, 4:46:50 AM] 📋 Memory Archive: New clip captured (paranjay@Paranjays-M...)
+[29/4/2026, 4:48:13 AM] 📋 Memory Archive: New clip captured (paranjay@Paranjays-M...)
+[29/4/2026, 4:52:05 AM] LIGHT State: OFF (Bot)
+[29/4/2026, 4:52:31 AM] 📋 Memory Archive: New clip captured (- wtf is current log...)
+[29/4/2026, 5:01:04 AM] 📋 Memory Archive: New clip captured (paranjay@Paranjays-M...)
+[29/4/2026, 5:07:44 AM] 📋 Memory Archive: New clip captured (cd "/Users/paranjay/...)
+[29/4/2026, 5:08:03 AM] 📋 Memory Archive: New clip captured (paranjay@Paranjays-M...)
+[29/4/2026, 5:11:07 AM] 📋 Memory Archive: New clip captured (### WEBDEV TOOLBOX S...)
+[29/4/2026, 5:11:32 AM] AC State: ON (Manual/Remote)
+[29/4/2026, 7:49:40 AM] AC State: OFF (Manual/Remote)
+[29/4/2026, 8:16:57 AM] 📋 Memory Archive: New clip captured (- lmk if i need to u...)
+[29/4/2026, 10:07:56 AM] 📋 Memory Archive: New clip captured (Reason: ⚒️ Gravity: ...)
+[29/4/2026, 10:08:55 AM] 📱 Presence: Phone detected (HOME)
+[29/4/2026, 10:09:00 AM] 🎬 Scene Trigger: MORNING_BRIEF
+[29/4/2026, 10:09:46 AM] AC State: ON (Bot)
 >>>>>>> Stashed changes
