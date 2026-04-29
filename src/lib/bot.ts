@@ -348,6 +348,66 @@ let lastLevelActions: Record<string, { text: string, time: number }> = {};
 async function main() {
   config = loadConfig();
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
+<<<<<<< Updated upstream
+=======
+
+  const startPostureGuardian = () => {
+    if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
+    (global as any).postureTimer = setInterval(async () => {
+      if (!config.postureGuardian || !bot || !config.telegram?.chatId) return;
+      
+      // 🧘 Spam Protection: Don't send if a message is already active
+      if (lastPostureMsgId) return;
+
+      const sent = await bot.sendMessage(config.telegram.chatId, '💀 *POSTURE CHECK!* Stand up and stretch.', { 
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[{ text: '✅ I Stretched', callback_data: 'control:stretched:level:labs' }]]
+        }
+      });
+      if (sent) lastPostureMsgId = sent.message_id;
+      if (wiz) await pulseLight(5, 3000); 
+      speak("Posture time, God. Stand up and stretch immediately.");
+      
+      if ((global as any).postureNag) clearInterval((global as any).postureNag);
+      (global as any).postureNag = setInterval(async () => {
+         if (config.workMode || !config.postureGuardian || !bot || !config.telegram?.chatId) { 
+           clearInterval((global as any).postureNag); 
+           return; 
+         }
+         const nagSent = await bot.sendMessage(config.telegram.chatId, '⚠️ *POSTURE NAG:* You still haven\'t acknowledged. STAND UP!', { 
+           parse_mode: 'Markdown',
+           reply_markup: {
+             inline_keyboard: [[{ text: '✅ OK FINE', callback_data: 'control:stretched:level:labs' }]]
+           }
+         });
+         if (nagSent) lastPostureMsgId = nagSent.message_id;
+         speak("Stand up now.");
+      }, 5 * 60 * 1000); // 5 min nag
+    }, 120 * 60 * 1000); // 2 hours
+  };
+
+  const startHydrationGuardian = () => {
+    if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
+    (global as any).hydrationTimer = setInterval(async () => {
+      if (!config.hydrationGuardian || config.workMode || !bot || !config.telegram?.chatId) return;
+      if (lastHydrationMsgId) return; // Spam protection
+
+      const sent = await bot.sendMessage(config.telegram.chatId, '💧 *HYDRATION ALERT:* Drink water, God.', {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [[{ text: '🥤 Done', callback_data: 'control:hydrated:level:labs' }]]
+        }
+      });
+      if (sent) lastHydrationMsgId = sent.message_id;
+      if (wiz) await pulseLight(3, 2000); 
+      speak("Stay hydrated. Drink some water.");
+    }, 90 * 60 * 1000); // 1.5 hours
+  };
+
+  if (config.postureGuardian) startPostureGuardian();
+  if (config.hydrationGuardian) startHydrationGuardian();
+>>>>>>> Stashed changes
   
   // 📝 PID Lock for reliable shutdown
   fs.writeFileSync('/tmp/gravity-hub.pid', process.pid.toString());
@@ -1571,15 +1631,21 @@ async function main() {
   // PGVCL Tariff Estimator (GERC 2024-25 RGP)
   const calculatePgvclBill = (units: number) => {
     let energyCharge = 0;
+    // Updated slabs per GERC June 2024 Order
     if (units <= 50) energyCharge = units * 3.05;
     else if (units <= 100) energyCharge = (50 * 3.05) + (units - 50) * 3.50;
-    else if (units <= 250) energyCharge = (50 * 3.05) + (50 * 3.50) + (units - 100) * 4.15;
-    else energyCharge = (50 * 3.05) + (50 * 3.50) + (150 * 4.15) + (units - 250) * 5.20;
+    else if (units <= 250) energyCharge = (50 * 3.05) + (50 * 3.50) + (units - 100) * 4.10;
+    else energyCharge = (50 * 3.05) + (50 * 3.50) + (150 * 4.10) + (units - 250) * 4.60;
     
+<<<<<<< Updated upstream
     const fpppa = units * 2.90; // Approx FPPPA
     const fixed = 50; // Fixed charge
+=======
+    const fpppa = units * 2.85; // Latest FPPPA Approx
+    const fixed = includeFixed ? 35 : 0; // Avg monthly fixed charge for 2-4kW load
+>>>>>>> Stashed changes
     const subtotal = energyCharge + fpppa + fixed;
-    const duty = subtotal * 0.15; // 15% Duty
+    const duty = subtotal * 0.15; // 15% Electricity Duty
     return (subtotal + duty).toFixed(2);
   };
 
