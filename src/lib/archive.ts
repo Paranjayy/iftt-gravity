@@ -336,7 +336,7 @@ async function main() {
     try {
       const { stdout } = await execAsync('pbpaste', { timeout: 2000 });
       const text = stdout.trim();
-      if (text && text !== lastClip && text.length < 100000) {
+      if (text && text !== lastClip && text.length < 1000000) {
         // Detect Frontmost User Application & Context
         try {
           const script = `

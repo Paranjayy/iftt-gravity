@@ -1,5 +1,35 @@
 [
   {
+    "id": "1777430819424",
+    "text": "/- lmk if i need to use or must use any prof tools like docker or things whenever scaling or ingneral anytime once we analyse all my scattered projs and do as i desired the ideaverse things and have better all projs overall ig idk mun\r- also open:closed loops helper  and any similar fun things for orchestrtion and things ig idk",
+    "timestamp": "2026-04-29T02:50:16.352Z",
+    "isBookmarked": false,
+    "source": "Electron",
+    "meta": {
+      "words": 62,
+      "lines": 1,
+      "chars": 329,
+      "tokens": 83,
+      "type": "file",
+      "dupes": 6
+    },
+    "url": "https://x.com/leerob/status/2006382160375402591"
+  },
+  {
+    "id": "1777419668033",
+    "text": "/### WEBDEV TOOLBOX SNAPSHOT\r{\r  \"metadata\"/ {\r    \"timestamp\"/ \"2026-04-28T23/41/06.540Z\",\r    \"url\"/ \"https/::www.iplt20.com:stats:2026\",\r    \"title\"/ \"IPL 2026 Stats & Awards | All Time Records | IPLT20\"\r  },\r  \"stack\"/ [],\r  \"performance\"/ {\r    \"loadTime\"/ 4494,\r    \"domReady\"/ 3478\r  },\r  \"storage\"/ {\r    \"local\"/ {},\r    \"session\"/ {}\r  },\r  \"errors\"/ [],\r  \"dom\"/ \"<html lang=\\\"en\\\"><__hrp__ data-ext-id=\\\"eanggfilgoajaocelnaflolkadkeghjp\\\"><:__hrp__>\\n <body>\\n    <div class=\\\"ng-scope\\\">\\n    <header class=\\\"ap-header col-100 floatLft\\\" id=\\\"header-main\\\">\\n        <div class=\\\"ap-stripWht py-2\\\">\\n            <div class=\\\"container\\\">\\n                <div class=\\\"d-flex justify-content-between\\\">\\n                    <span class=\\\"ap-bcciLogo\\\">\\n                       <!--  <a href=\\\"\\\" target=\\\"_blank\\\" class=\\\"text-white\\\"><img style=\\\"width/34px\\\" src=\\\"https/::www.iplt20.com:assets:images:headeripllogo.svg\\\" alt=\\\"IPl Logo\\\">2023<:a> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp; -->\\n                        <a href=\\\"https/::www.bcci.tv:\\\">BCCI.TV<:a> &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp;\\n                        <a href=\\\"https/::www.wplt20.com:\\\"><:a>\\n                    <:span>\\n                    <span class=\\\"ap-socialDiv\\\">\\n                        <span>Follow Us<:span>\\n                       <!--  <a onclick=\\\"click_social(this)\\\" data-title=\\\"thread\\\" href=\\\"https/::www.threads.net:@iplt20\\\" target=\\\"_blank\\\" class=\\\"twit\\\">\\n                            <img src=\\\"https/::www.iplt20.com:assets:images:thread-icon.svg\\\" alt=\\\"threads\\\">\\n                        <:a> -->\\n                        <a data-title=\\\"twitter\\\" href=\\\"https/::twitter.com:IPL\\\" class=\\\"twit\\\" aria-label=\\\"twitter\\\">\\n                            <!-- <img width=\\\"24\\\" height=\\\"24\\\" src=\\\"https/::documents.iplt20.com::ipl:assets:images:new-twitter-icon.svg\\\" alt=\\\"twitter\\\"> -->\\n                        <:a>\\n                        <a data-title=\\\"instagram\\\" href=\\\"https/::www.instagram.com:iplt20:\\\" class=\\\"insta\\\" aria-label=\\\"instagram\\\">\\n                            <!-- <img width=\\\"24\\\" height=\\\"24\\\" src=\\\"https/::documents.iplt20.com::ipl:assets:images:new-instagram-icon.svg\\\" alt=\\\"instagram\\\"> -->\\n                        <:a>\\n                        <a data-title=\\\"facebook\\\" href=\\\"https/::www.facebook.com:IPL:\\\" class=\\\"fb\\\" aria-label=\\\"facebook\\\">\\n                            <!-- <img width=\\\"24\\\" height=\\\"24\\\" src=\\\"https/::documents.iplt20.com::ipl:assets:images:new-facebook-icon.svg\\\" alt=\\\"facebook\\\"> -->\\n                        <:a>\\n                    <:span>\\n                <:div>\\n            <:div>\\n        <:div>\\n        \\n        <div class=\\\"ap-main-header left right col-100 floatLft flexDisplay justifySpace alignCenter flxNav\\\" id=\\\"myHeader\\\">\\n            <div class=\\\"container-fluid container-xl d-flex justify-content-between flex-wrap position-relative p-0\\\">\\n                <div class=\\\"ap-ipl-logo\\\"><a href=\\\"https/::www.iplt20.com\\\"><:a><:div>\\n                \\n\\n                <div class=\\\"site-mobile-menu site-navbar-target\\\">\\n                    <div class=\\\"site-mobile-menu-header xxxxxxxxxxx\\\">\\n                        <a href=\\\"https/::www.iplt20.com\\\" class=\\\"mt-3\\\"><:a>\\n                        <div class=\\\"site-mobile-menu-close mt-3\\\">\\n                            <span class=\\\"icon-close2 js-menu-toggle\\\">",
+    "timestamp": "2026-04-28T23:41:08.049Z",
+    "isBookmarked": false,
+    "source": "Electron",
+    "meta": {
+      "words": 179,
+      "lines": 1,
+      "chars": 3437,
+      "tokens": 860,
+      "type": "file"
+    }
+  },
+  {
     "id": "1777419065109",
     "text": "/                                                            paranjay@Paranjays-MacBook-Air\r                                                            ------------------------------\r                       ..'                                  Software -> (system basics)\r                   ,xNMM.                                   OS -> macOS Tahoe 26.4.1 (25E253) arm64\r                 .OMMMMo                                    Host -> MacBook Air (M1, 2020)\r                 lMM\"                                       Kernel -> Darwin 25.4.0\r       .;loddo/.  .olloddol;.                               Shell -> zsh 5.9\r     cKMMMMMMMMMMNWMMMMMMMMMM0/                             Packages -> 70 (brew), 15 (brew-cask)\r   .KMMMMMMMMMMMMMMMMMMMMMMMWd.                             Appearance ->",
     "timestamp": "2026-04-28T23:38:04.105Z",

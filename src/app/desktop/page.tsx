@@ -19,6 +19,7 @@ import {
   Clock,
   Tv,
   Lightbulb,
+  Play,
   MousePointer2
 } from 'lucide-react';
 
@@ -72,6 +73,7 @@ export default function GravityOS() {
     cortex: true,
     sentry: true,
     energy: true,
+    history: false,
     palette: false
   });
 
@@ -211,16 +213,29 @@ export default function GravityOS() {
                   {archiveData?.clips?.length > 0 ? (
                     [...archiveData.clips].reverse().slice(0, 10).map((clip: any, idx: number) => (
                       <div key={idx} className="group relative rounded-xl overflow-hidden border border-white/10 bg-white/5 hover:border-white/20 transition-all">
-                        {clip.text.includes('http') && (clip.text.includes('instagram.com') || clip.text.includes('fb.watch')) ? (
-                          <div className="aspect-video bg-black/40 flex items-center justify-center relative">
+                        {clip.text.match(/\.(jpeg|jpg|gif|png|webp)/i) ? (
+                          <div className="relative aspect-video overflow-hidden">
+                             <img src={clip.text.match(/https?:\/\/[^\s]+/i)?.[0]} alt="Intercept" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                             <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                               <div className="px-2 py-0.5 rounded bg-blue-500 text-[8px] font-black uppercase">Image Intercept</div>
+                             </div>
+                          </div>
+                        ) : clip.text.includes('http') && (clip.text.includes('instagram.com') || clip.text.includes('fb.watch') || clip.text.match(/\.(mp4|webm)/i)) ? (
+                          <div className="aspect-video bg-black/40 flex items-center justify-center relative group-hover:bg-black/60 transition-all">
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
                             <div className="z-20 text-center p-4">
-                              <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center mx-auto mb-3">
-                                <Maximize2 className="w-6 h-6 text-white/40" />
+                              <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center mx-auto mb-3 border border-white/20 group-hover:scale-110 transition-transform">
+                                <Play className="w-5 h-5 text-white/60 fill-white/20" />
                               </div>
-                              <div className="text-[10px] font-black uppercase tracking-widest text-white/60">Social Media Intercept</div>
-                              <div className="text-[9px] text-white/30 font-mono mt-1 truncate max-w-[200px] mx-auto">{clip.text}</div>
+                              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Social Kinetic Intercept</div>
+                              <div className="text-[9px] text-white/30 font-mono mt-1 truncate max-w-[200px] mx-auto opacity-40">{clip.text}</div>
                             </div>
+                          </div>
+                        ) : clip.text.startsWith('PORTFOLIO:') ? (
+                          <div className="p-4 bg-indigo-500/5 border-l-2 border-indigo-500">
+                             <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1">Ghost Feed Contribution</div>
+                             <div className="text-[11px] leading-relaxed text-slate-300 font-medium">{clip.text.replace('PORTFOLIO:', '')}</div>
                           </div>
                         ) : (
                           <div className="p-4">
@@ -255,11 +270,94 @@ export default function GravityOS() {
                     </div>
                   </div>
                   <button 
-                    onClick={() => window.open('/api/gravity/archive', '_blank')}
+                    onClick={() => toggleWindow('history')}
                     className="text-[10px] font-bold opacity-30 hover:opacity-100 transition-opacity"
                   >
-                    EXPORT VAULT →
+                    HISTORY VAULT →
                   </button>
+                </div>
+              </div>
+            </DesktopWindow>
+
+            {/* History Vault */}
+            <DesktopWindow 
+              id="history" 
+              title="Archive Vault: Deep History" 
+              isOpen={windows.history} 
+              onClose={() => toggleWindow('history')} 
+              width="w-[600px]"
+              icon={<History className="w-3 h-3" />}
+            >
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Vault Management</div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={async () => {
+                        const res = await fetch('http://localhost:3031/archive/export/json');
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `gravity_archive_export_${Date.now()}.json`;
+                        a.click();
+                      }}
+                      className="px-3 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-black uppercase hover:bg-white/10 transition-all"
+                    >
+                      Export JSON
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.json';
+                        input.onchange = async (e: any) => {
+                          const file = e.target.files[0];
+                          const text = await file.text();
+                          await fetch('http://localhost:3031/archive/import/json', {
+                            method: 'POST',
+                            body: text
+                          });
+                          alert('Vault Restored.');
+                          window.location.reload();
+                        };
+                        input.click();
+                      }}
+                      className="px-3 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-black uppercase hover:bg-white/10 transition-all"
+                    >
+                      Import
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        if (confirm('Nuclear Reset? This will purge the vault and save a backup to Downloads.')) {
+                          const res = await fetch('http://localhost:3031/archive/clear');
+                          const msg = await res.text();
+                          alert(msg);
+                          window.location.reload();
+                        }
+                      }}
+                      className="px-3 py-1 rounded bg-red-500/10 border border-red-500/20 text-[9px] font-black uppercase text-red-400 hover:bg-red-500/20 transition-all"
+                    >
+                      Clear Vault
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                  {archiveData?.clips?.map((clip: any, idx: number) => (
+                    <div key={idx} className="p-3 rounded-lg bg-white/5 border border-white/5 flex items-center justify-between group hover:border-white/10 transition-all">
+                       <div className="flex flex-col gap-1 overflow-hidden">
+                         <div className="text-[11px] text-slate-300 truncate font-mono">{clip.text.substring(0, 100)}</div>
+                         <div className="flex items-center gap-2">
+                           <span className="text-[8px] font-black uppercase tracking-widest opacity-30">{clip.source || 'SYSTEM'}</span>
+                           <span className="text-[8px] font-mono opacity-20">{new Date(clip.timestamp).toLocaleString()}</span>
+                         </div>
+                       </div>
+                       <button className="opacity-0 group-hover:opacity-100 p-2 hover:bg-white/10 rounded-md transition-all">
+                         <Search className="w-3 h-3 opacity-40" />
+                       </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </DesktopWindow>
