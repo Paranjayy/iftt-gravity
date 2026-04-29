@@ -12,7 +12,9 @@ import {
   Activity, 
   Clock,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Cloud,
+  Music
 } from 'lucide-react';
 import {
   AreaChart,
@@ -24,27 +26,53 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
-interface GravityStatus {
+interface DashboardData {
   online: boolean;
   stats: {
     acMinutes: number;
     lightMinutes: number;
-    lastReset: string;
-    pgvcl?: {
-      amount: string;
-      units: string;
-      scannedAt: string;
-    };
+    pgvcl: { amount: string; units: string; date: string };
+    history: { time: string; ac: number; lights: number }[];
+    dailyLog: { date: string; ac: string; light: string }[];
   };
+  units: string;
+  estimatedPgBill: number;
+  ac_duration: string;
+  light_duration: string;
   uptime: number;
-  estimatedPgBill?: string;
+  weather: any;
+  solis: { today: string; current: string; battery: string; status: string };
+  spotify: any;
+  jitter: any;
+  battery: any;
+  autoAc: boolean;
+  autoLight: boolean;
+  mediaAura: boolean;
+  habitStats: { stretches: number; hydration: number; lastNudge: number };
   logs: string[];
+  ipl?: {
+    matchId: string;
+    matchName: string;
+    status: string;
+    score: string;
+    crr: string;
+    rrr: string;
+    target: string;
+    projected: string;
+    batters: string;
+    bowler: string;
+    winProb: string;
+    summary: { inn1: string; inn2: string; result: string; topScorers: string; topBowlers: string };
+    currentOverBalls: { run: string; isWicket: boolean }[];
+    latestBall: { commentary: string; over: string; run: string; isWicket: boolean };
+  } | null;
 }
 
 export default function GravityDashboard() {
   const [data, setData] = useState<GravityStatus | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
   const fetchData = async () => {
     try {
@@ -52,14 +80,20 @@ export default function GravityDashboard() {
       const json = await res.json();
       setData(json);
       
-      // Use real history from the Hub API if available
-      if (json.stats?.history && json.stats.history.length > 0) {
-        setHistory(json.stats.history);
+      // Process historical data for BarChart
+      if (json.stats?.dailyLog) {
+        setHistory(json.stats.dailyLog.map((log: any) => ({
+          ...log,
+          // Convert hours to units
+          acUnits: (parseFloat(log.ac) * 1.65).toFixed(1),
+          lightUnits: (parseFloat(log.light) * 0.012).toFixed(2),
+          totalUnits: (parseFloat(log.ac) * 1.65 + parseFloat(log.light) * 0.012).toFixed(1)
+        })));
       } else {
         // Fallback or seed history
         const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
         setHistory(prev => {
-          const next = [...prev, { time: now, ac: json.stats.acMinutes, lights: json.stats.lightMinutes }];
+          const next = [...prev, { date: now, acUnits: json.stats.acMinutes, lightUnits: json.stats.lightMinutes, totalUnits: json.stats.acMinutes + json.stats.lightMinutes }];
           return next.slice(-24);
         });
       }
@@ -78,9 +112,8 @@ export default function GravityDashboard() {
 
   const triggerScene = async (scene: string) => {
     try {
-      // Use internal Next.js bridge to avoid CORS
       await fetch(`/api/gravity/scene/${scene.toUpperCase()}`);
-      setTimeout(fetchData, 1000); // Refresh after a second to see effect
+      setTimeout(fetchData, 1000); 
     } catch (e) {
       console.error("Scene trigger failed", e);
     }
@@ -88,215 +121,297 @@ export default function GravityDashboard() {
 
   if (loading && !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#0a0a0c]">
+      <div className="flex items-center justify-center min-h-screen bg-[#060608]">
         <motion.div 
-          animate={{ scale: [1, 1.1, 1] }} 
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="text-purple-500 font-medium tracking-widest text-lg"
-        >
-          GRAVITY INITIALIZING...
-        </motion.div>
-      </div>
-    );
-  }
+          animate={{ opacity: [0.3, 1, 0.3] }} 
+          transition={{ repeat: Infinity, duration: 1.5 }}
+  if (!mounted) return null;
 
-  const uptimeHrs = data ? Math.floor(data.uptime / 3600) : 0;
-  const uptimeMins = data ? Math.floor((data.uptime % 3600) / 60) : 0;
+  const triggerScene = async (name: string) => {
+    try {
+      await fetch(`/api/gravity/scene/${name}`);
+      setTimeout(async () => {
+        const res = await fetch('/api/gravity/status');
+        setData(await res.json());
+      }, 1000);
+    } catch (e) { console.error("Scene trigger failed", e); }
+  };
+
+  const uptimeHrs = Math.floor((data?.uptime || 0) / 3600);
+  const uptimeMins = Math.floor(((data?.uptime || 0) % 3600) / 60);
+
+  const history = (data?.stats.dailyLog || []).map(d => ({
+    date: d.date,
+    ac: parseFloat(d.ac),
+    light: parseFloat(d.light),
+    totalUnits: parseFloat(d.ac) + parseFloat(d.light)
+  }));
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-slate-100 p-4 md:p-8 selection:bg-purple-500/30">
-      
-      {/* Background Ambience */}
-      <div className="fixed inset-0 pointer-events-none opacity-20 overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600 blur-[120px] rounded-full animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-600 blur-[100px] rounded-full opacity-50" />
+    <div className="min-h-screen bg-[#050508] text-slate-200 selection:bg-purple-500/30 overflow-x-hidden">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/10 rounded-full blur-[120px]" />
       </div>
 
-      <div className="max-w-7xl mx-auto relative z-10 space-y-8">
-        
-        {/* Header */}
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-bold gradient-text tracking-tighter">GRAVITY MISSION CONTROL</h1>
-            <p className="text-slate-400 text-sm flex items-center gap-2 mt-1 uppercase tracking-widest font-medium opacity-80">
-              <Activity className="w-3 h-3 text-green-400" /> System Live · v1.4.0
-            </p>
+      <div className="relative z-10 max-w-[1440px] mx-auto px-6 py-12 lg:px-12">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <span className="px-2 py-0.5 rounded text-[8px] font-black bg-purple-500 text-white tracking-widest uppercase">Elite Alpha</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">System.v4.9.8</span>
+            </div>
+            <h1 className="text-4xl font-black text-white tracking-tighter leading-none">GRAVITY <span className="text-purple-500">HUB</span></h1>
           </div>
-          <div className="flex items-center gap-3 glass p-2 px-4 rounded-2xl">
-            <Clock className="w-4 h-4 text-purple-400" />
-            <span className="text-sm font-mono tracking-wider">{uptimeHrs}h {uptimeMins}m Uptime</span>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Uptime</span>
+              <span className="text-sm font-mono text-purple-400">{uptimeHrs}h {uptimeMins}m</span>
+            </div>
           </div>
         </header>
 
-        {/* Hero Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          
-          {/* Status Panel */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="md:col-span-1 glass p-6 rounded-3xl flex flex-col justify-between border-l-4 border-l-purple-500 shadow-xl shadow-purple-900/10"
-          >
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Presence</span>
-                <span className={`flex items-center gap-2 text-xs font-bold px-2 py-1 rounded-full ${data?.online ? 'bg-green-500/10 text-green-400' : 'bg-orange-500/10 text-orange-400'}`}>
-                   {data?.online ? <ShieldCheck className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
-                   {data?.online ? 'HOME' : 'AWAY'}
-                </span>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <motion.div className="glass p-6 rounded-[2.5rem] border border-white/5 shadow-2xl">
+              <div className="space-y-6">
+                <StatItem icon={<Wind />} color="blue" label="AC Runtime" value={data?.ac_duration || '0h'} subtext="Usage Today" />
+                <StatItem icon={<Lightbulb />} color="amber" label="Lights" value={data?.light_duration || '0h'} subtext="Active Hours" />
+                <StatItem icon={<Zap />} color="purple" label="Power Draw" value={`${data?.units || 0} U`} subtext="Est. ₹${data?.estimatedPgBill || 0}" />
               </div>
-              
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 group">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
-                    <Wind className="w-5 h-5" />
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="glass p-6 rounded-[2.5rem] border border-white/5"
+            >
+              {data?.spotify?.isPlaying ? (
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center relative overflow-hidden group">
+                    <Music className="w-5 h-5 text-purple-400 relative z-10" />
+                    <div className="absolute inset-0 bg-purple-500/10 animate-ping opacity-20" />
                   </div>
-                  <div>
-                    <div className="text-xs text-slate-500 uppercase tracking-tighter">Air Conditioning</div>
-                    <div className="text-lg font-bold">{data?.stats.acMinutes}m <span className="text-xs text-slate-500 font-normal">today</span></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[8px] font-bold text-purple-400 uppercase tracking-widest mb-0.5">Now Playing</div>
+                    <div className="text-xs font-bold text-white truncate">{data.spotify.title}</div>
+                    <div className="text-[10px] text-slate-500 truncate">{data.spotify.artist}</div>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-4 group">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
-                    <Lightbulb className="w-5 h-5" />
-                  </div>
+              ) : (
+                <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-xs text-slate-500 uppercase tracking-tighter">House Lighting</div>
-                    <div className="text-lg font-bold">{data?.stats.lightMinutes}m <span className="text-xs text-slate-500 font-normal">today</span></div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Climate</div>
+                    <div className="text-2xl font-black text-white">{data?.weather?.temp || '--'}°C</div>
+                    <div className="text-[10px] text-slate-400 font-medium uppercase tracking-tighter">{data?.weather?.condition || 'Syncing...'}</div>
                   </div>
+                  <Cloud className="w-8 h-8 text-blue-400 opacity-20" />
+                </div>
+              )}
+            </motion.div>
+          </div>
+
+          <div className="lg:col-span-6 space-y-6">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="glass p-8 rounded-[3rem] border border-white/5 flex flex-col h-[500px]"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-[0.3em] mb-1">Energy Intelligence</h3>
+                  <div className="text-2xl font-black text-white tracking-tighter">Usage Analytics</div>
+                </div>
+                <div className="flex bg-white/5 p-1 rounded-xl">
+                  {['daily', 'weekly', 'monthly'].map((v) => (
+                    <button 
+                      key={v}
+                      onClick={() => setView(v as any)}
+                      className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${view === v ? 'bg-white text-black' : 'text-slate-400'}`}
+                    >
+                      {v}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-            
-            <div className="mt-8 space-y-4">
-              <div className="glass p-4 rounded-2xl border border-blue-500/10 hover:border-blue-500/30 transition-colors">
-                <div className="flex justify-between items-center mb-1">
-                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">PGVCL Utility</span>
-                   <Zap className="w-3 h-3 text-blue-400" />
+
+              <div className="flex-1 min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={history}>
+                    <defs>
+                      <linearGradient id="colorUnits" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
+                    <XAxis dataKey="date" hide />
+                    <YAxis hide />
+                    <Tooltip contentStyle={{ background: '#0a0a0c', border: '1px solid #ffffff10', borderRadius: '16px' }} />
+                    <Area type="monotone" dataKey="totalUnits" stroke="#8b5cf6" strokeWidth={3} fill="url(#colorUnits)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+
+            {data?.ipl && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                className="glass p-8 rounded-[3rem] border border-white/5 bg-gradient-to-br from-[#0a0a0c] via-[#0a0a0c] to-blue-900/10"
+              >
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Live IPL 2026</span>
+                    </div>
+                    <h3 className="text-lg font-black text-white tracking-tight">{data.ipl.matchName}</h3>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-blue-400">{data.ipl.score || '0/0 (0)'}</div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">CRR: {data.ipl.crr} • RRR: {data.ipl.rrr}</div>
+                  </div>
                 </div>
-                <div className="text-xl font-bold tracking-tighter">₹{data?.stats.pgvcl?.amount || '0'}</div>
-                <div className="text-[10px] text-slate-400 font-medium tracking-tight mb-2">Current Bill · {data?.stats.pgvcl?.units || '0'} Units</div>
-                
-                {data?.estimatedPgBill && (
-                  <div className="pt-2 border-t border-white/5">
-                    <div className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-1">Gravity Estimate</div>
-                    <div className="text-lg font-bold">₹{data.estimatedPgBill}</div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-2">Batting</div>
+                    <div className="text-xs font-bold text-white leading-relaxed">{data.ipl.batters}</div>
+                  </div>
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-2">Bowling</div>
+                    <div className="text-xs font-bold text-white leading-relaxed">{data.ipl.bowler}</div>
+                  </div>
+                </div>
+
+                {data.ipl.latestBall && (
+                  <div className="p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10 mb-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="px-2 py-0.5 rounded-lg bg-blue-500 text-[10px] font-black text-white">{data.ipl.latestBall.over}</div>
+                      <div className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Latest Ball</div>
+                    </div>
+                    <div className="text-xs text-slate-300 italic line-clamp-1">"{data.ipl.latestBall.commentary}"</div>
                   </div>
                 )}
-              </div>
 
-              <button className="w-full py-3 rounded-2xl bg-slate-100 text-[#0a0a0c] font-bold text-sm tracking-widest hover:bg-white transition-colors active:scale-[0.98]">
-                SYNC HUB
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Energy Graph */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="md:col-span-3 glass p-6 rounded-3xl min-h-[300px] border-b border-white/5"
-          >
-            <div className="flex justify-between items-center mb-8">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400"><Zap className="w-4 h-4" /></div>
-                <h3 className="font-bold tracking-tight text-lg">Daily Energy Pulse</h3>
-              </div>
-              <div className="flex gap-4 text-[10px] font-bold tracking-widest uppercase">
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-400" /> AC Efficiency</div>
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-400" /> Light Usage</div>
-              </div>
-            </div>
-            
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={history}>
-                  <defs>
-                    <linearGradient id="colorAc" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#60a5fa" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorLights" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#fbbf24" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
-                  <XAxis dataKey="time" stroke="#ffffff20" fontSize={10} axisLine={false} tickLine={false} />
-                  <YAxis hide />
-                  <Tooltip 
-                    contentStyle={{ background: '#121216', border: '1px solid #ffffff10', borderRadius: '12px' }}
-                    itemStyle={{ fontSize: '10px', fontWeight: 'bold' }}
-                    labelStyle={{ fontSize: '10px', color: '#64748b' }}
-                  />
-                  <Area type="monotone" dataKey="ac" stroke="#60a5fa" strokeWidth={3} fillOpacity={1} fill="url(#colorAc)" />
-                  <Area type="monotone" dataKey="lights" stroke="#fbbf24" strokeWidth={3} fillOpacity={1} fill="url(#colorLights)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Interactive Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          
-          <div className="md:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <SceneCard icon={<Tv />} label="TV TIME" scene="TV" color="blue" onClick={() => triggerScene('TV')} />
-            <SceneCard icon={<Target />} label="Deep Work" scene="FOCUS" color="purple" onClick={() => triggerScene('FOCUS')} />
-            <SceneCard icon={<Moon />} label="Night Wrap" scene="SLEEP" color="orange" onClick={() => triggerScene('SLEEP')} />
-            <SceneCard icon={<ShieldCheck />} label="Away Mode" scene="AWAY" color="slate" onClick={() => triggerScene('AWAY')} />
+                <div className="flex items-center justify-between text-[10px]">
+                  <div className="flex gap-1.5">
+                    {data.ipl.currentOverBalls?.map((b, i) => (
+                      <span key={i} className={`w-5 h-5 flex items-center justify-center rounded-full font-black ${b.isWicket ? 'bg-red-500 text-white' : b.run === '6' || b.run === '4' ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-400'}`}>
+                        {b.isWicket ? 'W' : b.run}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="font-bold text-slate-400 uppercase tracking-tighter">{data.ipl.winProb}</div>
+                </div>
+              </motion.div>
+            )}
           </div>
 
-          {/* Activity Logs */}
-          <div className="md:col-span-1 glass p-6 rounded-3xl overflow-hidden flex flex-col border border-white/5">
-             <div className="flex items-center gap-3 mb-6">
+          <div className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <SmallSceneCard icon={<Tv />} label="TV" onClick={() => triggerScene('TV')} />
+              <SmallSceneCard icon={<Moon />} label="SLEEP" onClick={() => triggerScene('SLEEP')} />
+              <SmallSceneCard icon={<Target />} label="FOCUS" onClick={() => triggerScene('FOCUS')} />
+              <SmallSceneCard icon={<Wind />} label="COOL" onClick={() => triggerScene('COOL')} />
+            </div>
+
+            <div className="glass p-6 rounded-[2.5rem] border border-white/5 flex flex-col flex-1 min-h-[250px]">
+              <div className="flex items-center gap-3 mb-6">
                 <Activity className="w-4 h-4 text-purple-400" />
-                <h3 className="font-bold tracking-tight text-sm uppercase tracking-widest">Chronicle</h3>
+                <h3 className="text-xs font-bold text-white uppercase tracking-[0.2em]">Live Pulse</h3>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-4 max-h-[300px] scrollbar-hide">
-                {data?.logs.map((log, i) => (
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                    key={i} className="text-[11px] leading-relaxed group"
-                  >
-                    <span className="text-slate-500 font-mono text-[9px] mr-2 block mb-1">
-                      {log.split('] ')[0].replace('[', '')}
+              <div className="space-y-4 overflow-y-auto max-h-[300px] pr-2 scrollbar-hide">
+                {data?.logs.slice(0, 15).map((log, i) => (
+                  <div key={i} className="text-[10px] leading-snug">
+                    <span className="text-slate-500 font-mono text-[8px] block mb-0.5 opacity-50">
+                      {log.split('] ')[0]?.replace('[', '') || 'Just now'}
                     </span>
-                    <span className="text-slate-200 group-hover:text-purple-300 transition-colors">
-                      {log.split('] ')[1]}
+                    <span className="text-slate-300 font-medium">
+                      {log.split('] ')[1] || log}
                     </span>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
+            </div>
+
+            {/* Solis Solar Intelligence */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="glass p-6 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-amber-500/5 to-transparent"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Solis Solar Hub</div>
+                <div className="px-2 py-0.5 rounded-[4px] bg-amber-500/20 text-[8px] font-black text-amber-400 uppercase">{data?.solis.status}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="text-2xl font-black text-white">{data?.solis.today || '0'}<span className="text-[10px] text-slate-500 ml-1">kWh</span></div>
+                  <div className="text-[8px] text-slate-500 font-bold uppercase tracking-tighter">Yield Today</div>
+                </div>
+                <div className="space-y-1 text-right">
+                  <div className="text-2xl font-black text-white">{data?.solis.battery || '0%'}</div>
+                  <div className="text-[8px] text-slate-500 font-bold uppercase tracking-tighter">ESS Battery</div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              className="glass p-6 rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-green-500/5 to-transparent"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Wellness Guardian</div>
+                <ShieldCheck className="w-3 h-3 text-green-500" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="text-xl font-black text-white">{data?.habitStats.hydration || 0}<span className="text-[10px] text-slate-500 ml-1">Glasses</span></div>
+                  <div className="text-[8px] text-green-500 font-bold uppercase tracking-tighter">Hydration</div>
+                </div>
+                <div className="space-y-1 text-right">
+                  <div className="text-xl font-black text-white">{data?.habitStats.stretches || 0}<span className="text-[10px] text-slate-500 ml-1">Sets</span></div>
+                  <div className="text-[8px] text-blue-500 font-bold uppercase tracking-tighter">Stretches</div>
+                </div>
+              </div>
+            </motion.div>
           </div>
-
         </div>
-
       </div>
     </div>
   );
 }
 
-function SceneCard({ icon, label, scene, color, onClick }: any) {
+function StatItem({ icon, color, label, value, subtext }: any) {
   const colors: any = {
-    blue: "hover:bg-blue-500/10 border-blue-500/20 text-blue-400",
-    purple: "hover:bg-purple-500/10 border-purple-500/20 text-purple-400",
-    orange: "hover:bg-orange-500/10 border-orange-500/20 text-orange-400",
-    slate: "hover:bg-slate-500/10 border-slate-500/20 text-slate-400",
+    blue: "text-blue-400 bg-blue-500/10",
+    purple: "text-purple-400 bg-purple-500/10",
+    amber: "text-amber-400 bg-amber-500/10",
+    green: "text-green-400 bg-green-500/10"
   };
 
   return (
-    <motion.button 
-      whileHover={{ y: -5 }} whileTap={{ scale: 0.95 }}
+    <div className="flex items-center gap-4 group">
+      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 ${colors[color] || colors.purple}`}>
+        {React.cloneElement(icon, { size: 18 })}
+      </div>
+      <div>
+        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none mb-1">{label}</div>
+        <div className="text-lg font-black text-white tracking-tight leading-none">{value}</div>
+        <div className="text-[9px] text-slate-600 font-medium">{subtext}</div>
+      </div>
+    </div>
+  );
+}
+
+function SmallSceneCard({ icon, label, onClick }: any) {
+  return (
+    <button 
       onClick={onClick}
-      className={`glass p-6 rounded-3xl border ${colors[color]} flex flex-col items-center justify-center gap-4 transition-all group`}
+      className="glass p-4 rounded-3xl border border-white/5 flex flex-col items-center justify-center gap-2 hover:bg-white/5 hover:scale-[1.02] active:scale-95 transition-all group"
     >
-      <div className="p-4 bg-white/5 rounded-2xl group-hover:scale-110 transition-transform">
-        {React.cloneElement(icon, { size: 24 })}
+      <div className="text-slate-400 group-hover:text-purple-400 transition-colors">
+        {React.cloneElement(icon, { size: 18 })}
       </div>
-      <div className="text-center">
-        <div className="font-bold tracking-tight text-sm">{label}</div>
-        <div className="text-[10px] opacity-40 font-mono tracking-widest mt-1 uppercase">trigger {scene}</div>
-      </div>
-    </motion.button>
+      <span className="text-[9px] font-black text-slate-500 group-hover:text-white uppercase tracking-widest">{label}</span>
+    </button>
   );
 }

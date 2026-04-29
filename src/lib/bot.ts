@@ -325,7 +325,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   const startPostureGuardian = () => {
     if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
     (global as any).postureTimer = setInterval(async () => {
-      if (!config.postureGuardian) return;
+      if (!config.postureGuardian || !bot || !config.telegram?.chatId) return;
       
       // 🧘 Spam Protection: Don't send if a message is already active
       if (lastPostureMsgId) return;
@@ -336,20 +336,23 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           inline_keyboard: [[{ text: '✅ I Stretched', callback_data: 'control:stretched:level:labs' }]]
         }
       });
-      lastPostureMsgId = sent.message_id;
+      if (sent) lastPostureMsgId = sent.message_id;
       if (wiz) await pulseLight(5, 3000); 
       speak("Posture time, God. Stand up and stretch immediately.");
       
       if ((global as any).postureNag) clearInterval((global as any).postureNag);
       (global as any).postureNag = setInterval(async () => {
-         if (config.workMode) { clearInterval((global as any).postureNag); return; }
+         if (config.workMode || !config.postureGuardian || !bot || !config.telegram?.chatId) { 
+           clearInterval((global as any).postureNag); 
+           return; 
+         }
          const nagSent = await bot.sendMessage(config.telegram.chatId, '⚠️ *POSTURE NAG:* You still haven\'t acknowledged. STAND UP!', { 
            parse_mode: 'Markdown',
            reply_markup: {
              inline_keyboard: [[{ text: '✅ OK FINE', callback_data: 'control:stretched:level:labs' }]]
            }
          });
-         lastPostureMsgId = nagSent.message_id;
+         if (nagSent) lastPostureMsgId = nagSent.message_id;
          speak("Stand up now.");
       }, 5 * 60 * 1000); // 5 min nag
     }, 120 * 60 * 1000); // 2 hours
@@ -358,7 +361,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   const startHydrationGuardian = () => {
     if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
     (global as any).hydrationTimer = setInterval(async () => {
-      if (!config.hydrationGuardian || config.workMode) return;
+      if (!config.hydrationGuardian || config.workMode || !bot || !config.telegram?.chatId) return;
       if (lastHydrationMsgId) return; // Spam protection
 
       const sent = await bot.sendMessage(config.telegram.chatId, '💧 *HYDRATION ALERT:* Drink water, God.', {
@@ -367,7 +370,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           inline_keyboard: [[{ text: '🥤 Done', callback_data: 'control:hydrated:level:labs' }]]
         }
       });
-      lastHydrationMsgId = sent.message_id;
+      if (sent) lastHydrationMsgId = sent.message_id;
       if (wiz) await pulseLight(3, 2000); 
       speak("Stay hydrated. Drink some water.");
     }, 90 * 60 * 1000); // 1.5 hours
@@ -1743,15 +1746,16 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   // PGVCL Tariff Estimator (GERC 2024-25 RGP)
   const calculatePgvclBill = (units: number, includeFixed = true) => {
     let energyCharge = 0;
+    // Updated slabs per GERC June 2024 Order
     if (units <= 50) energyCharge = units * 3.05;
     else if (units <= 100) energyCharge = (50 * 3.05) + (units - 50) * 3.50;
-    else if (units <= 250) energyCharge = (50 * 3.05) + (50 * 3.50) + (units - 100) * 4.15;
-    else energyCharge = (50 * 3.05) + (50 * 3.50) + (150 * 4.15) + (units - 250) * 5.20;
+    else if (units <= 250) energyCharge = (50 * 3.05) + (50 * 3.50) + (units - 100) * 4.10;
+    else energyCharge = (50 * 3.05) + (50 * 3.50) + (150 * 4.10) + (units - 250) * 4.60;
     
-    const fpppa = units * 2.90; // Approx FPPPA
-    const fixed = includeFixed ? 50 : 0; // Monthly fixed charge
+    const fpppa = units * 2.85; // Latest FPPPA Approx
+    const fixed = includeFixed ? 35 : 0; // Avg monthly fixed charge for 2-4kW load
     const subtotal = energyCharge + fpppa + fixed;
-    const duty = subtotal * 0.15; // 15% Duty
+    const duty = subtotal * 0.15; // 15% Electricity Duty
     return (subtotal + duty).toFixed(2);
   };
 
@@ -3950,7 +3954,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               lastNudge: (global as any).lastHealthNudge || 0
             },
             platform: 'Local Mac',
-            archive: { status: 'ONLINE', pulse: '5s' }
+            archive: { status: 'ONLINE', pulse: '5s' },
+            ipl: await getLatestIplData()
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }

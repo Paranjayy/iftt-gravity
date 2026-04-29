@@ -69,16 +69,17 @@ export class TelegramAdapter extends Adapter {
     return res.json();
   }
 
-  async sendMessage(chatId: number, text: string, options: { parse_mode?: 'Markdown' | 'HTML', reply_markup?: any } = { parse_mode: 'Markdown' }): Promise<void> {
-    await this.sendRequest('sendMessage', {
+  async sendMessage(chatId: number, text: string, options: { parse_mode?: 'Markdown' | 'HTML', reply_markup?: any } = { parse_mode: 'Markdown' }): Promise<any> {
+    const res = await this.sendRequest('sendMessage', {
       chat_id: chatId,
       text,
       parse_mode: options.parse_mode || 'Markdown',
       reply_markup: options.reply_markup
     });
+    return res.result;
   }
 
-  async sendPhoto(chatId: number, photoPath: string, caption?: string): Promise<void> {
+  async sendPhoto(chatId: number, photoPath: string, caption?: string): Promise<any> {
     const form = new FormData();
     form.append('chat_id', chatId.toString());
     
@@ -97,6 +98,8 @@ export class TelegramAdapter extends Adapter {
       const err = await res.json().catch(() => ({}));
       throw new Error(`Telegram Photo error: ${err.description || res.statusText}`);
     }
+    const data = await res.json();
+    return data.result;
   }
   
   async answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
@@ -106,14 +109,15 @@ export class TelegramAdapter extends Adapter {
     });
   }
 
-  async editMessageText(text: string, options: { chat_id: number, message_id: number, parse_mode?: 'Markdown' | 'HTML', reply_markup?: any }): Promise<void> {
-    await this.sendRequest('editMessageText', {
+  async editMessageText(text: string, options: { chat_id: number, message_id: number, parse_mode?: 'Markdown' | 'HTML', reply_markup?: any }): Promise<any> {
+    const res = await this.sendRequest('editMessageText', {
       chat_id: options.chat_id,
       message_id: options.message_id,
       text,
       parse_mode: options.parse_mode || 'Markdown',
       reply_markup: options.reply_markup
     });
+    return res.result;
   }
 
   async deleteMessage(chatId: number, messageId: number): Promise<void> {
