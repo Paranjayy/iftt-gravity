@@ -1747,4 +1747,7 @@ Why are India...)
 [29/4/2026, 10:08:55 AM] 📱 Presence: Phone detected (HOME)
 [29/4/2026, 10:09:00 AM] 🎬 Scene Trigger: MORNING_BRIEF
 [29/4/2026, 10:09:46 AM] AC State: ON (Bot)
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
