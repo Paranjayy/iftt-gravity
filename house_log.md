@@ -1953,10 +1953,13 @@ Back...)
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 =======
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 [30/4/2026, 5:27:11 AM] 📋 Memory Archive: New clip captured ([Sequoia Backs Zed's...)
@@ -2266,6 +2269,99 @@ Blog
 [1/5/2026, 11:42:49 PM] 📋 Memory Archive: New clip captured (@if2opensource_bot...)
 [1/5/2026, 11:47:08 PM] AC State: ON (Bot)
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 >>>>>>> Stashed changes
 =======
+>>>>>>> Stashed changes
+=======
+[2/5/2026, 12:46:42 AM] 📋 Memory Archive: New clip captured (history2024...)
+[2/5/2026, 12:46:43 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 12:47:11 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 12:47:42 AM] 📱 Presence: Phone detected (HOME)
+[2/5/2026, 12:47:52 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 12:53:59 AM] 📋 Memory Archive: New clip captured (i see most epis love...)
+[2/5/2026, 1:00:42 AM] 🧠 Habit Learner: Scanning manual patterns...
+[2/5/2026, 1:00:42 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[2/5/2026, 1:01:11 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 1:19:57 AM] AC State: OFF (Bot)
+[2/5/2026, 1:23:35 AM] 📋 Memory Archive: New clip captured (- [Paranjayy/trip-ad...)
+[2/5/2026, 1:33:03 AM] 📋 Memory Archive: New clip captured ([Natural • Shelly](h...)
+[2/5/2026, 1:33:09 AM] 📋 Memory Archive: New clip captured ([whimsical sad girl ...)
+[2/5/2026, 2:20:31 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 2:32:15 AM] 📋 Memory Archive: New clip captured (### AI SNAPSHOT CONT...)
+[2/5/2026, 2:33:52 AM] 📋 Memory Archive: New clip captured (### AI SNAPSHOT CONT...)
+[2/5/2026, 2:53:40 AM] 📋 Memory Archive: New clip captured (Shiv Shakti Block No...)
+[2/5/2026, 2:54:20 AM] 📋 Memory Archive: New clip captured (Shiv Shakti Block No...)
+[2/5/2026, 2:55:24 AM] 📋 Memory Archive: New clip captured (- organising and fea...)
+[2/5/2026, 3:06:31 AM] 📋 Memory Archive: New clip captured (- how many more feat...)
+[2/5/2026, 3:07:14 AM] 📋 Memory Archive: New clip captured (stremio and jiofiber...)
+[2/5/2026, 3:37:47 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:38:19 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:38:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:39:19 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:39:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:40:19 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:40:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:41:19 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:41:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:42:19 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:42:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:43:19 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:43:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:44:19 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:44:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:45:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:45:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:46:21 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:46:39 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:47:25 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:47:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:48:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:48:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:49:21 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:49:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:50:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:50:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:51:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:51:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:52:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:52:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:53:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:53:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:54:21 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:54:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:55:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:55:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:56:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:56:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:57:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:57:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:58:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:58:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 3:59:21 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 3:59:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:00:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:00:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:01:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:01:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:02:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:02:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:03:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:03:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:04:21 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:04:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:05:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:05:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:06:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:06:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:07:20 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:07:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:08:21 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:08:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:09:23 AM] AC State: ON (Manual/Remote)
+[2/5/2026, 4:09:40 AM] AC State: OFF (Manual/Remote)
+[2/5/2026, 4:23:09 AM] 📋 Memory Archive: New clip captured (panic(cpu 2 caller 0...)
+[2/5/2026, 4:24:08 AM] 📱 Presence: Phone detected (HOME)
+[2/5/2026, 4:28:10 AM] 📋 Memory Archive: New clip captured (- how many more feat...)
+[2/5/2026, 4:28:11 AM] 📋 Memory Archive: New clip captured (panic(cpu 2 caller 0...)
 >>>>>>> Stashed changes
