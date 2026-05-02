@@ -80,6 +80,7 @@ let lastFocusShieldCheck = Date.now();
 let lastBlinkSignal = { text: "None", time: Date.now() };
 let preMusicLightState: any = null;
 let isPhoneOnline = false;
+(global as any).isPhoneOnline = false;
 let batteryAlertSent = false;
 let thermalAcActive = false;
 let lastControlMsgId: number | null = null;
@@ -322,10 +323,21 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   let lastHydrationMsgId: number | null = null;
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
 
+  const stopPostureGuardian = () => {
+    if ((global as any).postureTimer) {
+      clearInterval((global as any).postureTimer);
+      (global as any).postureTimer = null;
+    }
+    if ((global as any).postureNag) {
+      clearInterval((global as any).postureNag);
+      (global as any).postureNag = null;
+    }
+  };
+
   const startPostureGuardian = () => {
-    if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
+    stopPostureGuardian(); // Clear existing before starting
     (global as any).postureTimer = setInterval(async () => {
-      if (!config.postureGuardian || !bot || !config.telegram?.chatId) return;
+      if (!config.postureGuardian || config.workMode || !bot || !config.telegram?.chatId) return;
       
       // 🧘 Spam Protection: Don't send if a message is already active
       if (lastPostureMsgId) return;
@@ -343,7 +355,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       if ((global as any).postureNag) clearInterval((global as any).postureNag);
       (global as any).postureNag = setInterval(async () => {
          if (config.workMode || !config.postureGuardian || !bot || !config.telegram?.chatId) { 
-           clearInterval((global as any).postureNag); 
+           if ((global as any).postureNag) clearInterval((global as any).postureNag); 
+           (global as any).postureNag = null;
            return; 
          }
          const nagSent = await bot.sendMessage(config.telegram.chatId, '⚠️ *POSTURE NAG:* You still haven\'t acknowledged. STAND UP!', { 
@@ -356,10 +369,18 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
          speak("Stand up now.");
       }, 5 * 60 * 1000); // 5 min nag
     }, 120 * 60 * 1000); // 2 hours
+    logActivity("🧍 Posture Guardian: Initialized");
+  };
+
+  const stopHydrationGuardian = () => {
+    if ((global as any).hydrationTimer) {
+      clearInterval((global as any).hydrationTimer);
+      (global as any).hydrationTimer = null;
+    }
   };
 
   const startHydrationGuardian = () => {
-    if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
+    stopHydrationGuardian();
     (global as any).hydrationTimer = setInterval(async () => {
       if (!config.hydrationGuardian || config.workMode || !bot || !config.telegram?.chatId) return;
       if (lastHydrationMsgId) return; // Spam protection
@@ -374,6 +395,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       if (wiz) await pulseLight(3, 2000); 
       speak("Stay hydrated. Drink some water.");
     }, 90 * 60 * 1000); // 1.5 hours
+    logActivity("💧 Hydration Guardian: Initialized");
   };
 
   if (config.postureGuardian) startPostureGuardian();
@@ -1178,10 +1200,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             config.postureGuardian = !config.postureGuardian;
             saveConfig(config);
             if (config.postureGuardian) startPostureGuardian();
-            else {
-              if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
-              if ((global as any).postureNag) clearInterval((global as any).postureNag);
-            }
+            else stopPostureGuardian();
         } else if (subCommand === 'build_siren_toggle') {
             config.buildSiren = !config.buildSiren;
             saveConfig(config);
@@ -1199,9 +1218,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             config.hydrationGuardian = !config.hydrationGuardian;
             saveConfig(config);
             if (config.hydrationGuardian) startHydrationGuardian();
-            else {
-              if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
-            }
+            else stopHydrationGuardian();
         } else if (subCommand === 'github_streak_toggle') {
             config.githubPulse.streakNag = !config.githubPulse.streakNag;
             saveConfig(config);
@@ -1632,6 +1649,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         if (isPresent) {
           if (!isPhoneOnline) {
             isPhoneOnline = true;
+            (global as any).isPhoneOnline = true;
             offlineCounter = 0;
             logActivity("📱 Presence: Phone detected (HOME)");
             if (Date.now() - bootTime > 300000) await triggerScene('HOME');
@@ -2025,8 +2043,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
          startPostureGuardian();
          await send('🧍 *Posture Guardian Enabled.*\nYou will be forced to stretch every 2 hours.');
       } else {
-         if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
-         if ((global as any).postureNag) clearInterval((global as any).postureNag);
+         stopPostureGuardian();
          await send('🧍 *Posture Guardian Disabled.*');
       }
     }
