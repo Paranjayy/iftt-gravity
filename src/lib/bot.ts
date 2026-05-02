@@ -363,6 +363,17 @@ async function main() {
     }
   };
 
+  const stopPostureGuardian = () => {
+    if ((global as any).postureTimer) {
+      clearInterval((global as any).postureTimer);
+      (global as any).postureTimer = null;
+    }
+    if ((global as any).postureNag) {
+      clearInterval((global as any).postureNag);
+      (global as any).postureNag = null;
+    }
+  };
+
   const startPostureGuardian = () => {
     stopPostureGuardian(); // Clear existing before starting
     (global as any).postureTimer = setInterval(async () => {
