@@ -82,6 +82,7 @@ let lastSpotifyTrack = "";
 >>>>>>> Stashed changes
 let preMusicLightState: any = null;
 let isPhoneOnline = false;
+(global as any).isPhoneOnline = false;
 let batteryAlertSent = false;
 let globalLastAction: string = 'None';
 const formatAction = (cmd: string, config: any) => {
@@ -351,10 +352,21 @@ async function main() {
 <<<<<<< Updated upstream
 =======
 
+  const stopPostureGuardian = () => {
+    if ((global as any).postureTimer) {
+      clearInterval((global as any).postureTimer);
+      (global as any).postureTimer = null;
+    }
+    if ((global as any).postureNag) {
+      clearInterval((global as any).postureNag);
+      (global as any).postureNag = null;
+    }
+  };
+
   const startPostureGuardian = () => {
-    if ((global as any).postureTimer) clearInterval((global as any).postureTimer);
+    stopPostureGuardian(); // Clear existing before starting
     (global as any).postureTimer = setInterval(async () => {
-      if (!config.postureGuardian || !bot || !config.telegram?.chatId) return;
+      if (!config.postureGuardian || config.workMode || !bot || !config.telegram?.chatId) return;
       
       // 🧘 Spam Protection: Don't send if a message is already active
       if (lastPostureMsgId) return;
@@ -372,7 +384,8 @@ async function main() {
       if ((global as any).postureNag) clearInterval((global as any).postureNag);
       (global as any).postureNag = setInterval(async () => {
          if (config.workMode || !config.postureGuardian || !bot || !config.telegram?.chatId) { 
-           clearInterval((global as any).postureNag); 
+           if ((global as any).postureNag) clearInterval((global as any).postureNag); 
+           (global as any).postureNag = null;
            return; 
          }
          const nagSent = await bot.sendMessage(config.telegram.chatId, '⚠️ *POSTURE NAG:* You still haven\'t acknowledged. STAND UP!', { 
@@ -385,10 +398,18 @@ async function main() {
          speak("Stand up now.");
       }, 5 * 60 * 1000); // 5 min nag
     }, 120 * 60 * 1000); // 2 hours
+    logActivity("🧍 Posture Guardian: Initialized");
+  };
+
+  const stopHydrationGuardian = () => {
+    if ((global as any).hydrationTimer) {
+      clearInterval((global as any).hydrationTimer);
+      (global as any).hydrationTimer = null;
+    }
   };
 
   const startHydrationGuardian = () => {
-    if ((global as any).hydrationTimer) clearInterval((global as any).hydrationTimer);
+    stopHydrationGuardian();
     (global as any).hydrationTimer = setInterval(async () => {
       if (!config.hydrationGuardian || config.workMode || !bot || !config.telegram?.chatId) return;
       if (lastHydrationMsgId) return; // Spam protection
@@ -403,6 +424,7 @@ async function main() {
       if (wiz) await pulseLight(3, 2000); 
       speak("Stay hydrated. Drink some water.");
     }, 90 * 60 * 1000); // 1.5 hours
+    logActivity("💧 Hydration Guardian: Initialized");
   };
 
   if (config.postureGuardian) startPostureGuardian();
@@ -1077,6 +1099,113 @@ async function main() {
         } else if (subCommand === 'github_silent_toggle') {
             config.githubPulse.silent = !config.githubPulse.silent;
             saveConfig(config);
+<<<<<<< Updated upstream
+=======
+        } else if (subCommand === 'posture_toggle') {
+            config.postureGuardian = !config.postureGuardian;
+            saveConfig(config);
+            if (config.postureGuardian) startPostureGuardian();
+            else stopPostureGuardian();
+        } else if (subCommand === 'build_siren_toggle') {
+            config.buildSiren = !config.buildSiren;
+            saveConfig(config);
+        } else if (subCommand === 'discord_aura_toggle') {
+            config.discordAura = !config.discordAura;
+            saveConfig(config);
+        } else if (subCommand === 'spotify_bpm_toggle') {
+            config.spotifyBpm = !config.spotifyBpm;
+            saveConfig(config);
+            if (!config.spotifyBpm && (global as any).spotifyPulse) {
+              clearInterval((global as any).spotifyPulse);
+              (global as any).spotifyPulse = null;
+            }
+        } else if (subCommand === 'hydration_toggle') {
+            config.hydrationGuardian = !config.hydrationGuardian;
+            saveConfig(config);
+            if (config.hydrationGuardian) startHydrationGuardian();
+            else stopHydrationGuardian();
+        } else if (subCommand === 'github_streak_toggle') {
+            config.githubPulse.streakNag = !config.githubPulse.streakNag;
+            saveConfig(config);
+        } else if (subCommand === 'work_mode_toggle') {
+            config.workMode = !config.workMode;
+            saveConfig(config);
+            if (config.workMode && (global as any).postureNag) {
+               clearInterval((global as any).postureNag);
+               (global as any).postureNag = null;
+            }
+        } else if (subCommand === 'stretched') {
+            if ((global as any).postureNag) {
+               clearInterval((global as any).postureNag);
+               (global as any).postureNag = null;
+               if (lastPostureMsgId) {
+                  await (bot as any).deleteMessage(chatId, lastPostureMsgId).catch(() => {});
+                  lastPostureMsgId = null;
+               }
+               await (bot as any).answerCallbackQuery((msg as any).id, { text: "Resume your work, God.", show_alert: false }).catch(() => {});
+            } else {
+               await (bot as any).answerCallbackQuery((msg as any).id, { text: "No active check.", show_alert: false }).catch(() => {});
+            }
+            config.stats.stretches = (config.stats.stretches || 0) + 1;
+            saveConfig(config);
+         } else if (subCommand.startsWith('health_done:')) {
+            const type = subCommand.split(':')[1];
+            if (type === 'stretches') config.stats.stretches = (config.stats.stretches || 0) + 1;
+            if (type === 'hydration') config.stats.hydration = (config.stats.hydration || 0) + 1;
+            saveConfig(config);
+            await (bot as any).deleteMessage(chatId, (msg as any).message.message_id).catch(() => {});
+            await bot.answerCallbackQuery((msg as any).id, { text: "Protocol synchronized.", show_alert: false });
+         } else if (subCommand === 'hydrated') {
+            if (lastHydrationMsgId) {
+               await (bot as any).deleteMessage(chatId, lastHydrationMsgId).catch(() => {});
+               lastHydrationMsgId = null;
+            }
+            config.stats.hydration = (config.stats.hydration || 0) + 1;
+            saveConfig(config);
+            await (bot as any).answerCallbackQuery((msg as any).id, { text: "Purity maintained.", show_alert: false }).catch(() => {});
+         } else if (subCommand === "open_url") {
+            const targetUrl = parts[parts.indexOf("url") + 1];
+            if (targetUrl) {
+               logActivity(`🚀 API: Launching URL: ${targetUrl}`);
+               await execAsync(`open "${targetUrl}"`);
+               await (bot as any).answerCallbackQuery((msg as any).id, { text: "URL launched on Mac.", show_alert: false }).catch(() => {});
+            }
+        } else if (subCommand === 'ipl_record') {
+             lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
+             const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
+             if (ipl?.latestBall) {
+               const ball = ipl.latestBall;
+               const record = `✨ *[${ball.over}]* ${ball.run} runs - ${ball.commentary.split('.')[0]} (${ipl.score})`;
+               iplMatchCenter.records.unshift(record);
+               if (iplMatchCenter.records.length > 10) iplMatchCenter.records.pop();
+               iplMatchCenter.currentTab = 'records';
+               const text = renderMatchCenter(ipl, "✅ *MOMENT RECORDED*");
+               await (bot as any).editMessageText(text, {
+                 chat_id: chatId,
+                 message_id: lastCommentaryMsgId,
+                 parse_mode: "Markdown",
+                 reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
+               }).catch(() => {});
+             }
+             if (isCallback) await (bot as any).answerCallbackQuery((msg as any).callback_query_id, { text: "Moment captured!" }).catch(() => {});
+             return;
+         } else if (subCommand.startsWith("ipl_tab_")) {
+             lastCommentaryMsgId = (msg as any).message_id || lastCommentaryMsgId;
+             const tab = subCommand.replace("ipl_tab_", "") as any;
+             iplMatchCenter.currentTab = tab;
+             const ipl = await getLatestIplData(iplMatchCenter.browsingMatchId || iplMatchCenter.matchId);
+             if (ipl) {
+               const text = renderMatchCenter(ipl);
+               await (bot as any).editMessageText(text, {
+                 chat_id: chatId,
+                 message_id: lastCommentaryMsgId,
+                 parse_mode: "Markdown",
+                 reply_markup: { inline_keyboard: getMatchCenterKeyboard() }
+               }).catch(() => {});
+             }
+             if (isCallback) await (bot as any).answerCallbackQuery((msg as any).callback_query_id).catch(() => {});
+             return;
+>>>>>>> Stashed changes
         } else if (subCommand === 'boot_greet_toggle') {
             config.bootGreet = !config.bootGreet;
             saveConfig(config);
@@ -1520,6 +1649,7 @@ async function main() {
         if (isPresent) {
           if (!isPhoneOnline) {
             isPhoneOnline = true;
+            (global as any).isPhoneOnline = true;
             offlineCounter = 0;
             logActivity("📱 Presence: Phone detected (HOME)");
             await triggerScene('HOME');
@@ -1823,6 +1953,85 @@ async function main() {
   });
 
   bot.registerCommand({
+<<<<<<< Updated upstream
+=======
+    command: 'pomodoro',
+    description: 'Start ruthless 50-minute work lock',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      await send('🍅 *Ruthless Pomodoro Initiated*\n50 minutes of pure focus. The room is locked down.');
+      await triggerScene('FOCUS');
+      
+      setTimeout(async () => {
+         await send('🍅 *Pomodoro Complete!* Locking Mac screen. Stand up!');
+         await triggerScene('CHILL');
+         // Lock screen locally
+         require('child_process').exec('pmset displaysleepnow');
+         const d = miraie?.devices[0]?.deviceId;
+         if (d) await miraie?.controlDevice(d, { ps: 'off' });
+      }, 50 * 60 * 1000);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'matrix',
+    description: 'Enter the construct (Matrix Scene)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(chatId)) return;
+      await triggerScene('MATRIX');
+      await send("📟 *Entering The Matrix...*");
+    }
+  });
+
+  bot.registerCommand({
+    command: 'work',
+    description: 'Toggle Work Mode (Silent Posture Checks)',
+    handler: async (chatId, args, msg, send) => {
+      if (!isAuthorized(chatId)) return;
+      config.workMode = !config.workMode;
+      saveConfig(config);
+      if (config.workMode && (global as any).postureNag) {
+         clearInterval((global as any).postureNag);
+         (global as any).postureNag = null;
+      }
+      await send(`🧘 *Work Mode:* ${config.workMode ? '✅ ON (Silent)' : '❌ OFF (Normal)'}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'posture',
+    description: 'Toggle Posture/Stretch Guardian',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      config.postureGuardian = !config.postureGuardian;
+      saveConfig(config);
+      
+      if (config.postureGuardian) {
+         startPostureGuardian();
+         await send('🧍 *Posture Guardian Enabled.*\nYou will be forced to stretch every 2 hours.');
+      } else {
+         stopPostureGuardian();
+         await send('🧍 *Posture Guardian Disabled.*');
+      }
+    }
+  });
+
+  bot.registerCommand({
+    command: 'stretched',
+    description: 'Acknowledge posture check',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if ((global as any).postureNag) {
+         clearInterval((global as any).postureNag);
+         (global as any).postureNag = null;
+         await send('✅ *Acknowledge recorded.* Resume your work, God.');
+      } else {
+         await send('No active posture check to acknowledge. You are good!');
+      }
+    }
+  });
+
+  bot.registerCommand({
+>>>>>>> Stashed changes
     command: 'remember',
     description: 'Save a note to config',
     handler: async (chatId, args, msg, send) => {
