@@ -27,6 +27,7 @@ interface ExternalFile {
   name: string;
   path: string;
   size: number;
+  isDir: boolean;
 }
 
 export default function Command() {
@@ -45,18 +46,41 @@ export default function Command() {
     }
   }
 
+  async function organizeDesktop() {
+    showToast({ title: "Organizing Desktop...", style: Toast.Style.Animated });
+    const res = await fetch("http://localhost:3031/archive/desktop/organize");
+    const data = await res.json() as { movedCount: number };
+    showToast({ title: "Desktop Purified", message: `${data.movedCount} files grouped into folders`, style: Toast.Style.Success });
+  }
+
   useEffect(() => {
     fetchNotes();
   }, []);
 
   const dailyNoteName = `Daily Note ${new Date().toISOString().split('T')[0]}.md`;
 
+  const now = new Date().getTime();
+  const recentThreshold = 24 * 60 * 60 * 1000; 
+
+  const recentNotes = notes.filter(n => (now - new Date(n.lastModified).getTime()) < recentThreshold);
+  const olderNotes = notes.filter(n => (now - new Date(n.lastModified).getTime()) >= recentThreshold);
+
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search notes or create new...">
-      <List.Section title="Sovereign Intelligence">
+      <List.Section title="Sovereign Orchestration">
+        <List.Item
+          title="Clean & Group Desktop"
+          subtitle="Screenshots -> Folders | Purify Workspace"
+          icon={Icon.Desktop}
+          actions={
+            <ActionPanel>
+              <Action title="Organize Now" icon={Icon.Checkmark} onAction={organizeDesktop} />
+            </ActionPanel>
+          }
+        />
         <List.Item
           title="Universal File Probe"
-          subtitle="Search & Edit any file on Mac"
+          subtitle="Spotlight Search & Hard Management"
           icon={Icon.MagnifyingGlass}
           actions={
             <ActionPanel>
@@ -87,24 +111,21 @@ export default function Command() {
         />
       </List.Section>
       
-      <List.Section title="Recent Vault Fragments">
-        {notes.map((note) => (
-          <List.Item
-            key={note.name}
-            title={note.name.replace('.md', '').replace('.txt', '')}
-            subtitle={new Date(note.lastModified).toLocaleDateString()}
-            icon={Icon.TextDocument}
-            accessories={[{ text: `${(note.size / 1024).toFixed(1)} KB`, icon: Icon.Document }]}
-            actions={
-              <ActionPanel>
-                <Action.Push title="Open Entries" target={<EntryList name={note.name} onUpdate={fetchNotes} />} />
-                <Action.Push title="Append Entry" shortcut={{ modifiers: ["cmd"], key: "n" }} target={<EntryAction name={note.name} type="append" onUpdate={fetchNotes} />} />
-                <Action.Push title="Create New Note" icon={Icon.Plus} target={<CreateNote onUpdate={fetchNotes} />} />
-              </ActionPanel>
-            }
-          />
-        ))}
-      </List.Section>
+      {recentNotes.length > 0 && (
+        <List.Section title="Recently Modified Fragments">
+          {recentNotes.map((note) => (
+            <NoteItem key={note.name} note={note} fetchNotes={fetchNotes} />
+          ))}
+        </List.Section>
+      )}
+
+      {olderNotes.length > 0 && (
+        <List.Section title="Vault Archives">
+          {olderNotes.map((note) => (
+            <NoteItem key={note.name} note={note} fetchNotes={fetchNotes} />
+          ))}
+        </List.Section>
+      )}
     </List>
   );
 }
@@ -114,40 +135,85 @@ function UniversalSearch() {
   const [results, setResults] = useState<ExternalFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  async function load() {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3031/archive/files/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json() as ExternalFile[];
+      setResults(data);
+    } catch(e) {}
+    setIsLoading(false);
+  }
+
   useEffect(() => {
     if (query.length < 3) {
       setResults([]);
       return;
     }
-    const timer = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const res = await fetch(`http://localhost:3031/archive/files/search?q=${encodeURIComponent(query)}`);
-        const data = await res.json() as ExternalFile[];
-        setResults(data);
-      } catch(e) {}
-      setIsLoading(false);
-    }, 500);
+    const timer = setTimeout(load, 500);
     return () => clearTimeout(timer);
   }, [query]);
 
   return (
-    <List isLoading={isLoading} onSearchTextChange={setQuery} searchBarPlaceholder="Search any file (Spotlight)...">
+    <List isLoading={isLoading} onSearchTextChange={setQuery} searchBarPlaceholder="Search any file/folder (Spotlight)...">
       {results.map(file => (
         <List.Item
           key={file.path}
           title={file.name}
           subtitle={file.path}
-          icon={Icon.Document}
+          icon={file.isDir ? Icon.Folder : Icon.Document}
           actions={
             <ActionPanel>
-              <Action.Push title="Read & Edit" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />
+              {!file.isDir && <Action.Push title="Read & Edit" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
+              <Action.Push title="Rename" icon={Icon.Text} shortcut={{ modifiers: ["cmd"], key: "r" }} target={<RenameFile file={file} onUpdate={load} />} />
+              <Action title="Delete Permanently" icon={Icon.Trash} style={Action.Style.Destructive} shortcut={{ modifiers: ["cmd"], key: "delete" }} onAction={async () => {
+                await fetch("http://localhost:3031/archive/files/delete", {
+                  method: "POST",
+                  body: JSON.stringify({ path: file.path }),
+                  headers: { "Content-Type": "application/json" }
+                });
+                showToast({ title: "Evicted from System" });
+                load();
+              }} />
               <Action.Open title="Open in Finder" target={file.path} />
             </ActionPanel>
           }
         />
       ))}
+      <List.EmptyView 
+        title={query.length < 3 ? "Type 3+ chars to probe Mac..." : "Fragment Not Found"} 
+        description={query.length >= 3 ? "Action: Add this search as a note fragment?" : ""}
+        actions={query.length >= 3 ? (
+          <ActionPanel>
+             <Action.Push title="Add to Daily Note" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={() => {}} initialText={query} />} />
+          </ActionPanel>
+        ) : undefined}
+      />
     </List>
+  );
+}
+
+function RenameFile({ file, onUpdate }: { file: ExternalFile, onUpdate: () => void }) {
+  const { pop } = useNavigation();
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Confirm Identity Shift" icon={Icon.Check} onSubmit={async (values: { name: string }) => {
+             await fetch("http://localhost:3031/archive/files/rename", {
+               method: "POST",
+               body: JSON.stringify({ oldPath: file.path, newName: values.name }),
+               headers: { "Content-Type": "application/json" }
+             });
+             showToast({ title: "Identity Re-indexed" });
+             onUpdate();
+             pop();
+          }} />
+        </ActionPanel>
+      }
+    >
+      <Form.TextField id="name" title="New Name" defaultValue={file.name} />
+    </Form>
   );
 }
 
@@ -241,7 +307,33 @@ function GlobalSearch({ onUpdate }: { onUpdate: () => void }) {
           }
         />
       ))}
+      <List.EmptyView 
+        title={query.length < 2 ? "Search Fragment Vault" : "Fragment Not Found"} 
+        actions={query.length >= 2 ? (
+          <ActionPanel>
+             <Action.Push title="Add to Daily Note" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={onUpdate} initialText={query} />} />
+          </ActionPanel>
+        ) : undefined}
+      />
     </List>
+  );
+}
+
+function NoteItem({ note, fetchNotes }: { note: NoteFile, fetchNotes: () => void }) {
+  return (
+    <List.Item
+      title={note.name.replace('.md', '').replace('.txt', '')}
+      subtitle={new Date(note.lastModified).toLocaleDateString()}
+      icon={Icon.TextDocument}
+      accessories={[{ text: `${(note.size / 1024).toFixed(1)} KB`, icon: Icon.Document }]}
+      actions={
+        <ActionPanel>
+          <Action.Push title="Open Entries" target={<EntryList name={note.name} onUpdate={fetchNotes} />} />
+          <Action.Push title="Append Entry" shortcut={{ modifiers: ["cmd"], key: "n" }} target={<EntryAction name={note.name} type="append" onUpdate={fetchNotes} />} />
+          <Action.Push title="Create New Note" icon={Icon.Plus} target={<CreateNote onUpdate={fetchNotes} />} />
+        </ActionPanel>
+      }
+    />
   );
 }
 
@@ -311,16 +403,16 @@ function EditEntry({ name, entry, onUpdate }: { name: string; entry: NoteEntry; 
   );
 }
 
-function EntryAction({ name, type, onUpdate }: { name: string; type: "append" | "prepend"; onUpdate: () => void }) {
+function EntryAction({ name, type, onUpdate, initialText = "" }: { name: string; type: "append" | "prepend"; onUpdate: () => void, initialText?: string }) {
   const { pop } = useNavigation();
   return (
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Seal Fragment" icon={Icon.Check} onSubmit={async (values: { text: string, section: string }) => {
+          <Action.SubmitForm title="Seal Fragment" icon={Icon.Check} onSubmit={async (values: { text: string, section: string, parseHeadings: boolean }) => {
             await fetch(`http://localhost:3031/archive/notes/${type}`, {
               method: "POST",
-              body: JSON.stringify({ name, text: values.text, section: values.section }),
+              body: JSON.stringify({ name, text: values.text, section: values.section, parseHeadings: values.parseHeadings }),
               headers: { "Content-Type": "application/json" }
             });
             showToast({ title: "Fragment Saved", style: Toast.Style.Success });
@@ -331,7 +423,8 @@ function EntryAction({ name, type, onUpdate }: { name: string; type: "append" | 
       }
     >
       <Form.TextField id="section" title="Section/Heading" placeholder="e.g. Journal, Reference (optional)" />
-      <Form.TextArea id="text" title="Fragment" placeholder="Type your thoughts..." autoFocus enableMarkdown />
+      <Form.Checkbox id="parseHeadings" label="Auto-Split Headings into Fragments" defaultValue={false} />
+      <Form.TextArea id="text" title="Fragment" defaultValue={initialText} placeholder="Type your thoughts..." autoFocus enableMarkdown />
     </Form>
   );
 }

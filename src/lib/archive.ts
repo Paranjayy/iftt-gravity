@@ -427,32 +427,48 @@ async function main() {
         }
 
         if (url.pathname === '/archive/notes/append' && req.method === 'POST') {
-          const { name, text, section, timestamp = true } = await req.json();
+          const { name, text, section, parseHeadings, timestamp = true } = await req.json();
           const fileName = name || `Daily Note ${new Date().toISOString().split('T')[0]}.md`;
           const filePath = path.join(NOTES_DIR, fileName);
           
-          const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          const entry = timestamp ? `\n\n### 🕒 ${time}\n${text}\n` : `\n\n${text}\n`;
+          let entriesToAdd: string[] = [];
           
-          if (fs.existsSync(filePath) && section) {
-             let content = fs.readFileSync(filePath, 'utf-8');
-             const sectionHeading = section.startsWith('#') ? section : `## ${section}`;
-             const sectionIdx = content.indexOf(sectionHeading);
-             
-             if (sectionIdx !== -1) {
-                // Find end of section or next heading
-                const nextHeadingIdx = content.indexOf('\n#', sectionIdx + sectionHeading.length);
-                if (nextHeadingIdx !== -1) {
-                   content = content.slice(0, nextHeadingIdx) + entry + content.slice(nextHeadingIdx);
-                } else {
-                   content = content + entry;
-                }
-                fs.writeFileSync(filePath, content);
-             } else {
-                fs.appendFileSync(filePath, `\n\n${sectionHeading}${entry}`);
-             }
+          if (parseHeadings) {
+             // Split by markdown headings
+             const headingMatches = text.split(/\n(?=# )|\n(?=## )|\n(?=### )/);
+             entriesToAdd = headingMatches.filter((m: string) => m.trim().length > 0);
           } else {
-             fs.appendFileSync(filePath, entry);
+             entriesToAdd = [text];
+          }
+
+          for (const entryText of entriesToAdd) {
+            const wordCount = entryText.trim().split(/\s+/).length;
+            const charCount = entryText.length;
+            const readTime = Math.ceil(wordCount / 200);
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const metadata = `| 📝 ${wordCount}w | 📄 ${charCount}c | ⏱️ ${readTime}m`;
+            const entry = timestamp ? `\n\n### 🕒 ${time} ${metadata}\n${entryText}\n` : `\n\n${entryText}\n`;
+            
+            if (fs.existsSync(filePath) && section) {
+               let content = fs.readFileSync(filePath, 'utf-8');
+               const sectionHeading = section.startsWith('#') ? section : `## ${section}`;
+               const sectionIdx = content.indexOf(sectionHeading);
+               
+               if (sectionIdx !== -1) {
+                  const nextHeadingIdx = content.indexOf('\n#', sectionIdx + sectionHeading.length);
+                  if (nextHeadingIdx !== -1) {
+                     content = content.slice(0, nextHeadingIdx) + entry + content.slice(nextHeadingIdx);
+                  } else {
+                     content = content + entry;
+                  }
+                  fs.writeFileSync(filePath, content);
+               } else {
+                  fs.appendFileSync(filePath, `\n\n${sectionHeading}${entry}`);
+               }
+            } else {
+               fs.appendFileSync(filePath, entry);
+            }
           }
           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
@@ -542,12 +558,57 @@ async function main() {
           const query = url.searchParams.get('q') || "";
           if (!query) return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
           try {
-            // Find files with mdfind (Spotlight) limited to common text types
-            const { stdout } = await execAsync(`mdfind "kMDItemDisplayName == '*${query}*' && (kMDItemContentType == 'public.plain-text' || kMDItemContentType == 'public.source-code' || kMDItemFSName == '*.md') " | head -n 20`);
+            const { stdout } = await execAsync(`mdfind -name "${query}" | head -n 30`);
             const paths = stdout.trim().split('\n').filter(p => p.length > 0);
-            const results = paths.map(p => ({ path: p, name: path.basename(p), size: fs.statSync(p).size }));
+            const results = paths.map(p => {
+               try {
+                 return { path: p, name: path.basename(p), size: fs.statSync(p).size, isDir: fs.statSync(p).isDirectory() };
+               } catch(e) { return null; }
+            }).filter(i => i !== null);
             return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
           } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
+        if (url.pathname === '/archive/files/rename' && req.method === 'POST') {
+           const { oldPath, newName } = await req.json();
+           const newPath = path.join(path.dirname(oldPath), newName);
+           fs.renameSync(oldPath, newPath);
+           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/files/delete' && req.method === 'POST') {
+           const { path: filePath } = await req.json();
+           if (fs.statSync(filePath).isDirectory()) fs.rmSync(filePath, { recursive: true });
+           else fs.unlinkSync(filePath);
+           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/desktop/organize') {
+           const desktop = path.join(process.env.HOME || "", "Desktop");
+           const files = fs.readdirSync(desktop);
+           let movedCount = 0;
+           
+           for (const f of files) {
+              if (f.startsWith('.')) continue;
+              const fullPath = path.join(desktop, f);
+              const stats = fs.statSync(fullPath);
+              if (stats.isDirectory() && f.includes('Organised')) continue;
+
+              let targetFolder = "";
+              if (f.toLowerCase().startsWith('screenshot')) targetFolder = "Screenshots";
+              else if (f.match(/\.(pdf|docx|xlsx|pptx)$/i)) targetFolder = "Documents";
+              else if (f.match(/\.(py|js|ts|tsx|json|sh|html|css)$/i)) targetFolder = "Scripts";
+              else if (f.match(/\.(zip|tar|gz|rar)$/i)) targetFolder = "Archives";
+              else if (f.match(/\.(png|jpg|jpeg|gif|svg)$/i)) targetFolder = "Media";
+              
+              if (targetFolder) {
+                 const destDir = path.join(desktop, `Organised ${targetFolder}`);
+                 if (!fs.existsSync(destDir)) fs.mkdirSync(destDir);
+                 fs.renameSync(fullPath, path.join(destDir, f));
+                 movedCount++;
+              }
+           }
+           return new Response(JSON.stringify({ movedCount }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/files/read') {
