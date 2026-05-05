@@ -2,6 +2,7 @@ import { List, ActionPanel, Action, Icon, Color, Detail, showToast, Toast, useNa
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import path from "path";
+import MissionControl from "./stats";
 
 interface NoteFile {
   name: string;
@@ -76,6 +77,16 @@ export default function Command() {
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search notes or create new...">
       <List.Section title="Sovereign Intelligence">
+        <List.Item
+          title="Mission Control"
+          subtitle="Vault Stats & System Pulse"
+          icon={{ source: Icon.BarChart, color: Color.Blue }}
+          actions={
+            <ActionPanel>
+              <Action.Push title="Open Dashboard" target={<MissionControl />} />
+            </ActionPanel>
+          }
+        />
         <List.Item
           title="Universal File Probe"
           subtitle="Spotlight Search & Hard Management"

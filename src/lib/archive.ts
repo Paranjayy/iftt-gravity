@@ -634,6 +634,41 @@ async function main() {
            return new Response(JSON.stringify({ count: log.length }), { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
+        if (url.pathname === '/archive/stats') {
+           const files = fs.readdirSync(NOTES_DIR).filter(f => f.endsWith('.md'));
+           let totalFragments = 0;
+           let totalWords = 0;
+           const dailyActivity: Record<string, number> = {};
+
+           files.forEach(f => {
+              const content = fs.readFileSync(path.join(NOTES_DIR, f), 'utf-8');
+              const fragments = content.split('### 🕒').length - 1;
+              const words = content.split(/\s+/).length;
+              totalFragments += fragments;
+              totalWords += words;
+
+              const dateMatch = f.match(/\d{4}-\d{2}-\d{2}/);
+              if (dateMatch) {
+                 dailyActivity[dateMatch[0]] = (dailyActivity[dateMatch[0]] || 0) + fragments;
+              }
+           });
+
+           return new Response(JSON.stringify({ 
+              totalFiles: files.length, 
+              totalFragments, 
+              totalWords,
+              dailyActivity 
+           }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/system/vitals') {
+           try {
+              const { stdout: cpu } = await execAsync("top -l 1 | grep 'CPU usage' | awk '{print $3}'");
+              const { stdout: mem } = await execAsync("top -l 1 | grep 'PhysMem' | awk '{print $2}'");
+              return new Response(JSON.stringify({ cpu: cpu.trim(), mem: mem.trim() }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response("Error", { status: 500 }); }
+        }
+
         if (url.pathname === '/archive/files/read') {
           const filePath = url.searchParams.get('path');
           if (!filePath || !fs.existsSync(filePath)) return new Response("File Not Found", { status: 404 });
