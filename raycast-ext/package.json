@@ -72,6 +72,13 @@
       "mode": "view"
     },
     {
+      "name": "process-reaper",
+      "title": "Process Reaper",
+      "description": "Purge System Bloat & Heavy Apps",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
       "name": "disk-analyzer",
       "title": "Disk Forge",
       "description": "DaisyDisk-style Storage Intelligence",

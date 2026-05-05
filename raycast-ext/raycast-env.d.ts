@@ -31,6 +31,8 @@ declare namespace Preferences {
   export type Jot = ExtensionPreferences & {}
   /** Preferences accessible in the `notes` command */
   export type Notes = ExtensionPreferences & {}
+  /** Preferences accessible in the `process-reaper` command */
+  export type ProcessReaper = ExtensionPreferences & {}
   /** Preferences accessible in the `disk-analyzer` command */
   export type DiskAnalyzer = ExtensionPreferences & {}
   /** Preferences accessible in the `convert-link` command */
@@ -56,6 +58,8 @@ declare namespace Arguments {
   export type Jot = {}
   /** Arguments passed to the `notes` command */
   export type Notes = {}
+  /** Arguments passed to the `process-reaper` command */
+  export type ProcessReaper = {}
   /** Arguments passed to the `disk-analyzer` command */
   export type DiskAnalyzer = {}
   /** Arguments passed to the `convert-link` command */

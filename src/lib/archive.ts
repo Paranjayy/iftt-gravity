@@ -687,6 +687,30 @@ async function main() {
            } catch(e) { return new Response("Error", { status: 500 }); }
         }
 
+        if (url.pathname === '/archive/system/processes') {
+           try {
+              // Get top 20 processes by memory
+              const { stdout } = await execAsync("ps -eo pid,ppid,%cpu,%mem,comm | sort -rk 4 | head -n 20");
+              const results = stdout.trim().split('\n').slice(1).map(line => {
+                 const parts = line.trim().split(/\s+/);
+                 const pid = parts[0];
+                 const cpu = parts[2];
+                 const mem = parts[3];
+                 const command = parts.slice(4).join(' ');
+                 return { pid, cpu, mem, name: path.basename(command), command };
+              });
+              return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
+        if (url.pathname === '/archive/system/kill' && req.method === 'POST') {
+           const { pid } = await req.json();
+           try {
+              await execAsync(`kill -9 ${pid}`);
+              return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response("Failed to kill", { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
         if (url.pathname === '/archive/files/read') {
           const filePath = url.searchParams.get('path');
           if (!filePath || !fs.existsSync(filePath)) return new Response("File Not Found", { status: 404 });
