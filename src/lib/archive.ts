@@ -578,8 +578,14 @@ async function main() {
 
         if (url.pathname === '/archive/files/delete' && req.method === 'POST') {
            const { path: filePath } = await req.json();
-           if (fs.statSync(filePath).isDirectory()) fs.rmSync(filePath, { recursive: true });
-           else fs.unlinkSync(filePath);
+           const trashPath = path.join(process.env.HOME || "", ".Trash", path.basename(filePath));
+           fs.renameSync(filePath, trashPath); // Native "Move to Trash"
+           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/files/copy' && req.method === 'POST') {
+           const { oldPath, newPath } = await req.json();
+           fs.copyFileSync(oldPath, newPath);
            return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
@@ -587,9 +593,10 @@ async function main() {
            const desktop = path.join(process.env.HOME || "", "Desktop");
            const files = fs.readdirSync(desktop);
            let movedCount = 0;
+           const moveLog: any[] = [];
            
            for (const f of files) {
-              if (f.startsWith('.')) continue;
+              if (f.startsWith('.') || f === "Organised Screenshots") continue;
               const fullPath = path.join(desktop, f);
               const stats = fs.statSync(fullPath);
               if (stats.isDirectory() && f.includes('Organised')) continue;
@@ -597,18 +604,34 @@ async function main() {
               let targetFolder = "";
               if (f.toLowerCase().startsWith('screenshot')) targetFolder = "Screenshots";
               else if (f.match(/\.(pdf|docx|xlsx|pptx)$/i)) targetFolder = "Documents";
-              else if (f.match(/\.(py|js|ts|tsx|json|sh|html|css)$/i)) targetFolder = "Scripts";
+              else if (f.match(/\.(py|js|ts|tsx|json|sh|html|css|txt)$/i)) targetFolder = "Scripts";
               else if (f.match(/\.(zip|tar|gz|rar)$/i)) targetFolder = "Archives";
-              else if (f.match(/\.(png|jpg|jpeg|gif|svg)$/i)) targetFolder = "Media";
+              else if (f.match(/\.(png|jpg|jpeg|gif|svg|mp4|mov)$/i)) targetFolder = "Media";
               
               if (targetFolder) {
                  const destDir = path.join(desktop, `Organised ${targetFolder}`);
                  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir);
-                 fs.renameSync(fullPath, path.join(destDir, f));
+                 const destPath = path.join(destDir, f);
+                 fs.renameSync(fullPath, destPath);
+                 moveLog.push({ from: destPath, to: fullPath });
                  movedCount++;
               }
            }
+           if (moveLog.length > 0) {
+              fs.writeFileSync('gravity-archive/desktop_undo.json', JSON.stringify(moveLog));
+           }
            return new Response(JSON.stringify({ movedCount }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/desktop/undo') {
+           const logPath = 'gravity-archive/desktop_undo.json';
+           if (!fs.existsSync(logPath)) return new Response(JSON.stringify({ count: 0 }), { headers: { 'Access-Control-Allow-Origin': '*' } });
+           const log = JSON.parse(fs.readFileSync(logPath, 'utf-8'));
+           log.forEach((m: any) => {
+              if (fs.existsSync(m.from)) fs.renameSync(m.from, m.to);
+           });
+           fs.unlinkSync(logPath);
+           return new Response(JSON.stringify({ count: log.length }), { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/files/read') {

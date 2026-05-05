@@ -1,6 +1,7 @@
-import { List, ActionPanel, Action, Icon, Color, Detail, showToast, Toast, useNavigation, Form, LocalStorage } from "@raycast/api";
+import { List, ActionPanel, Action, Icon, Color, Detail, showToast, Toast, useNavigation, Form, LocalStorage, ConfirmAlert, Alert, open } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import path from "path";
 
 interface NoteFile {
   name: string;
@@ -13,6 +14,7 @@ interface NoteEntry {
   raw: string;
   time: string;
   body: string;
+  section?: string;
 }
 
 interface SearchResult {
@@ -53,12 +55,18 @@ export default function Command() {
     showToast({ title: "Desktop Purified", message: `${data.movedCount} files grouped into folders`, style: Toast.Style.Success });
   }
 
+  async function undoDesktop() {
+    const res = await fetch("http://localhost:3031/archive/desktop/undo");
+    const data = await res.json() as { count: number };
+    if (data.count > 0) showToast({ title: "Organization Reversed", message: `${data.count} files restored`, style: Toast.Style.Success });
+    else showToast({ title: "Nothing to Undo", style: Toast.Style.Failure });
+  }
+
   useEffect(() => {
     fetchNotes();
   }, []);
 
   const dailyNoteName = `Daily Note ${new Date().toISOString().split('T')[0]}.md`;
-
   const now = new Date().getTime();
   const recentThreshold = 24 * 60 * 60 * 1000; 
 
@@ -67,17 +75,7 @@ export default function Command() {
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search notes or create new...">
-      <List.Section title="Sovereign Orchestration">
-        <List.Item
-          title="Clean & Group Desktop"
-          subtitle="Screenshots -> Folders | Purify Workspace"
-          icon={Icon.Desktop}
-          actions={
-            <ActionPanel>
-              <Action title="Organize Now" icon={Icon.Checkmark} onAction={organizeDesktop} />
-            </ActionPanel>
-          }
-        />
+      <List.Section title="Sovereign Intelligence">
         <List.Item
           title="Universal File Probe"
           subtitle="Spotlight Search & Hard Management"
@@ -106,26 +104,37 @@ export default function Command() {
             <ActionPanel>
               <Action.Push title="Open Entries" target={<EntryList name={dailyNoteName} onUpdate={fetchNotes} />} />
               <Action.Push title="Quick Append" shortcut={{ modifiers: ["cmd"], key: "n" }} target={<EntryAction name={dailyNoteName} type="append" onUpdate={fetchNotes} />} />
+              <Action.Push title="View as Markdown" icon={Icon.TextDocument} target={<MarkdownViewer name={dailyNoteName} />} />
             </ActionPanel>
           }
         />
       </List.Section>
-      
-      {recentNotes.length > 0 && (
-        <List.Section title="Recently Modified Fragments">
-          {recentNotes.map((note) => (
-            <NoteItem key={note.name} note={note} fetchNotes={fetchNotes} />
-          ))}
-        </List.Section>
-      )}
 
-      {olderNotes.length > 0 && (
-        <List.Section title="Vault Archives">
-          {olderNotes.map((note) => (
-            <NoteItem key={note.name} note={note} fetchNotes={fetchNotes} />
-          ))}
-        </List.Section>
-      )}
+      <List.Section title="Recent Vault Fragments">
+        {recentNotes.map((note) => (
+          <NoteItem key={note.name} note={note} fetchNotes={fetchNotes} />
+        ))}
+      </List.Section>
+
+      <List.Section title="Vault Archives">
+        {olderNotes.map((note) => (
+          <NoteItem key={note.name} note={note} fetchNotes={fetchNotes} />
+        ))}
+      </List.Section>
+
+      <List.Section title="System Orchestration">
+         <List.Item
+          title="Clean & Group Desktop"
+          subtitle="Screenshots -> Folders | Purify Workspace"
+          icon={Icon.Desktop}
+          actions={
+            <ActionPanel>
+              <Action title="Organize Now" icon={Icon.Checkmark} onAction={organizeDesktop} />
+              <Action title="Undo Last Organize" icon={Icon.RotateAntiClockwise} onAction={undoDesktop} />
+            </ActionPanel>
+          }
+        />
+      </List.Section>
     </List>
   );
 }
@@ -154,26 +163,49 @@ function UniversalSearch() {
     return () => clearTimeout(timer);
   }, [query]);
 
+  const getFileIcon = (file: ExternalFile) => {
+    if (file.isDir) return Icon.Folder;
+    const ext = path.extname(file.path).toLowerCase();
+    if (ext === '.md' || ext === '.txt') return Icon.Pencil;
+    if (['.png', '.jpg', '.jpeg', '.gif', '.svg'].includes(ext)) return Icon.Image;
+    if (['.mp4', '.mov', '.avi'].includes(ext)) return Icon.Video;
+    if (['.pdf', '.docx', '.xlsx'].includes(ext)) return Icon.Document;
+    return Icon.Document;
+  };
+
   return (
-    <List isLoading={isLoading} onSearchTextChange={setQuery} searchBarPlaceholder="Search any file/folder (Spotlight)...">
+    <List isLoading={isLoading} isShowingDetail={results.length > 0} onSearchTextChange={setQuery} searchBarPlaceholder="Search any file/folder (Spotlight)...">
       {results.map(file => (
         <List.Item
           key={file.path}
           title={file.name}
           subtitle={file.path}
-          icon={file.isDir ? Icon.Folder : Icon.Document}
+          icon={getFileIcon(file)}
+          detail={
+            <List.Item.Detail 
+              markdown={`### ${file.name}\n**Path:** \`${file.path}\`\n**Size:** ${(file.size / 1024).toFixed(1)} KB\n\n---\n*Select "Read & Edit" for content access.*`} 
+              metadata={
+                 <List.Item.Detail.Metadata>
+                    <List.Item.Detail.Metadata.Label title="Kind" text={file.isDir ? "Folder" : "File"} />
+                    <List.Item.Detail.Metadata.Label title="Extension" text={path.extname(file.path) || "None"} />
+                 </List.Item.Detail.Metadata>
+              }
+            />
+          }
           actions={
             <ActionPanel>
               {!file.isDir && <Action.Push title="Read & Edit" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
               <Action.Push title="Rename" icon={Icon.Text} shortcut={{ modifiers: ["cmd"], key: "r" }} target={<RenameFile file={file} onUpdate={load} />} />
-              <Action title="Delete Permanently" icon={Icon.Trash} style={Action.Style.Destructive} shortcut={{ modifiers: ["cmd"], key: "delete" }} onAction={async () => {
-                await fetch("http://localhost:3031/archive/files/delete", {
-                  method: "POST",
-                  body: JSON.stringify({ path: file.path }),
-                  headers: { "Content-Type": "application/json" }
-                });
-                showToast({ title: "Evicted from System" });
-                load();
+              <Action title="Move to Trash" icon={Icon.Trash} style={Action.Style.Destructive} shortcut={{ modifiers: ["cmd"], key: "delete" }} onAction={async () => {
+                if (await ConfirmAlert({ title: "Move to Trash?", message: "This will relocate the file to your system trash." })) {
+                  await fetch("http://localhost:3031/archive/files/delete", {
+                    method: "POST",
+                    body: JSON.stringify({ path: file.path }),
+                    headers: { "Content-Type": "application/json" }
+                  });
+                  showToast({ title: "Relocated to Trash" });
+                  load();
+                }
               }} />
               <Action.Open title="Open in Finder" target={file.path} />
             </ActionPanel>
@@ -181,11 +213,10 @@ function UniversalSearch() {
         />
       ))}
       <List.EmptyView 
-        title={query.length < 3 ? "Type 3+ chars to probe Mac..." : "Fragment Not Found"} 
-        description={query.length >= 3 ? "Action: Add this search as a note fragment?" : ""}
+        title={query.length < 3 ? "Probe Mac Filesystem" : "Nothing Found"} 
         actions={query.length >= 3 ? (
           <ActionPanel>
-             <Action.Push title="Add to Daily Note" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={() => {}} initialText={query} />} />
+             <Action.Push title="Add Search as Note Fragment" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={() => {}} initialText={query} />} />
           </ActionPanel>
         ) : undefined}
       />
@@ -193,28 +224,73 @@ function UniversalSearch() {
   );
 }
 
-function RenameFile({ file, onUpdate }: { file: ExternalFile, onUpdate: () => void }) {
-  const { pop } = useNavigation();
-  return (
-    <Form
-      actions={
-        <ActionPanel>
-          <Action.SubmitForm title="Confirm Identity Shift" icon={Icon.Check} onSubmit={async (values: { name: string }) => {
-             await fetch("http://localhost:3031/archive/files/rename", {
-               method: "POST",
-               body: JSON.stringify({ oldPath: file.path, newName: values.name }),
-               headers: { "Content-Type": "application/json" }
-             });
-             showToast({ title: "Identity Re-indexed" });
-             onUpdate();
-             pop();
-          }} />
-        </ActionPanel>
+function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
+  const [entries, setEntries] = useState<NoteEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  async function load() {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`http://localhost:3031/archive/notes/entries?name=${encodeURIComponent(name)}`);
+      if (res.ok) {
+        const data = await res.json() as NoteEntry[];
+        // Simple heuristic for grouping: Look for headings in body
+        setEntries(data.reverse());
       }
-    >
-      <Form.TextField id="name" title="New Name" defaultValue={file.name} />
-    </Form>
+    } catch (e) {
+      showToast({ title: "Failed to load entries", style: Toast.Style.Failure });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  // Organize entries by section (if any)
+  const grouped: Record<string, NoteEntry[]> = { "Main Feed": [] };
+  entries.forEach(e => {
+    // If the body starts with a heading or contains one, we could group, 
+    // but the backend handles sections now.
+    // For now, let's look for sections in the metadata if we added them.
+    grouped["Main Feed"].push(e);
+  });
+
+  return (
+    <List isLoading={isLoading} navigationTitle={name} searchBarPlaceholder="Search entries...">
+      {Object.entries(grouped).map(([section, items]) => (
+        <List.Section key={section} title={section}>
+          {items.map((entry) => (
+            <List.Item
+              key={entry.id}
+              title={entry.body.split('\n')[0].substring(0, 100)}
+              subtitle={entry.time}
+              icon={Icon.Clock}
+              detail={<List.Item.Detail markdown={entry.raw} />}
+              actions={
+                <ActionPanel>
+                  <Action.Push title="Edit Entry" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "e" }} target={<EditEntry name={name} entry={entry} onUpdate={() => { load(); onUpdate(); }} />} />
+                  <Action.Push title="Append New" icon={Icon.Plus} shortcut={{ modifiers: ["cmd"], key: "n" }} target={<EntryAction name={name} type="append" onUpdate={() => { load(); onUpdate(); }} />} />
+                </ActionPanel>
+              }
+            />
+          ))}
+        </List.Section>
+      ))}
+    </List>
   );
+}
+
+function MarkdownViewer({ name }: { name: string }) {
+  const [content, setContent] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`http://localhost:3031/archive/files/read?path=${encodeURIComponent('gravity-notes/' + name)}`)
+      .then(res => res.text())
+      .then(text => { setContent(text); setIsLoading(false); });
+  }, []);
+
+  return <Detail isLoading={isLoading} markdown={content} navigationTitle={name} />;
 }
 
 function ExternalFileDetail({ file }: { file: ExternalFile }) {
@@ -269,6 +345,30 @@ function ExternalFileEdit({ file, content, onUpdate }: { file: ExternalFile, con
   );
 }
 
+function RenameFile({ file, onUpdate }: { file: ExternalFile, onUpdate: () => void }) {
+  const { pop } = useNavigation();
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Confirm Identity Shift" icon={Icon.Check} onSubmit={async (values: { name: string }) => {
+             await fetch("http://localhost:3031/archive/files/rename", {
+               method: "POST",
+               body: JSON.stringify({ oldPath: file.path, newName: values.name }),
+               headers: { "Content-Type": "application/json" }
+             });
+             showToast({ title: "Identity Re-indexed" });
+             onUpdate();
+             pop();
+          }} />
+        </ActionPanel>
+      }
+    >
+      <Form.TextField id="name" title="New Name" defaultValue={file.name} />
+    </Form>
+  );
+}
+
 function GlobalSearch({ onUpdate }: { onUpdate: () => void }) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [query, setQuery] = useState("");
@@ -307,14 +407,6 @@ function GlobalSearch({ onUpdate }: { onUpdate: () => void }) {
           }
         />
       ))}
-      <List.EmptyView 
-        title={query.length < 2 ? "Search Fragment Vault" : "Fragment Not Found"} 
-        actions={query.length >= 2 ? (
-          <ActionPanel>
-             <Action.Push title="Add to Daily Note" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={onUpdate} initialText={query} />} />
-          </ActionPanel>
-        ) : undefined}
-      />
     </List>
   );
 }
@@ -330,52 +422,10 @@ function NoteItem({ note, fetchNotes }: { note: NoteFile, fetchNotes: () => void
         <ActionPanel>
           <Action.Push title="Open Entries" target={<EntryList name={note.name} onUpdate={fetchNotes} />} />
           <Action.Push title="Append Entry" shortcut={{ modifiers: ["cmd"], key: "n" }} target={<EntryAction name={note.name} type="append" onUpdate={fetchNotes} />} />
-          <Action.Push title="Create New Note" icon={Icon.Plus} target={<CreateNote onUpdate={fetchNotes} />} />
+          <Action.Push title="View as Markdown" icon={Icon.TextDocument} target={<MarkdownViewer name={note.name} />} />
         </ActionPanel>
       }
     />
-  );
-}
-
-function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
-  const [entries, setEntries] = useState<NoteEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  async function load() {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`http://localhost:3031/archive/notes/entries?name=${encodeURIComponent(name)}`);
-      if (res.ok) {
-        const data = await res.json() as NoteEntry[];
-        setEntries(data.reverse());
-      }
-    } catch (e) {
-      showToast({ title: "Failed to load entries", style: Toast.Style.Failure });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
-
-  return (
-    <List isLoading={isLoading} navigationTitle={name} searchBarPlaceholder="Search entries...">
-      {entries.map((entry) => (
-        <List.Item
-          key={entry.id}
-          title={entry.body.split('\n')[0].substring(0, 100)}
-          subtitle={entry.time}
-          icon={Icon.Clock}
-          detail={<List.Item.Detail markdown={entry.raw} />}
-          actions={
-            <ActionPanel>
-              <Action.Push title="Edit Entry" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "e" }} target={<EditEntry name={name} entry={entry} onUpdate={() => { load(); onUpdate(); }} />} />
-              <Action.Push title="Append New" icon={Icon.Plus} shortcut={{ modifiers: ["cmd"], key: "n" }} target={<EntryAction name={name} type="append" onUpdate={() => { load(); onUpdate(); }} />} />
-            </ActionPanel>
-          }
-        />
-      ))}
-    </List>
   );
 }
 
@@ -405,6 +455,9 @@ function EditEntry({ name, entry, onUpdate }: { name: string; entry: NoteEntry; 
 
 function EntryAction({ name, type, onUpdate, initialText = "" }: { name: string; type: "append" | "prepend"; onUpdate: () => void, initialText?: string }) {
   const { pop } = useNavigation();
+  const dailyNoteName = `Daily Note ${new Date().toISOString().split('T')[0]}.md`;
+  const targetName = name || dailyNoteName;
+
   return (
     <Form
       actions={
@@ -412,7 +465,7 @@ function EntryAction({ name, type, onUpdate, initialText = "" }: { name: string;
           <Action.SubmitForm title="Seal Fragment" icon={Icon.Check} onSubmit={async (values: { text: string, section: string, parseHeadings: boolean }) => {
             await fetch(`http://localhost:3031/archive/notes/${type}`, {
               method: "POST",
-              body: JSON.stringify({ name, text: values.text, section: values.section, parseHeadings: values.parseHeadings }),
+              body: JSON.stringify({ name: targetName, text: values.text, section: values.section, parseHeadings: values.parseHeadings }),
               headers: { "Content-Type": "application/json" }
             });
             showToast({ title: "Fragment Saved", style: Toast.Style.Success });
@@ -422,35 +475,10 @@ function EntryAction({ name, type, onUpdate, initialText = "" }: { name: string;
         </ActionPanel>
       }
     >
+      <Form.Description text={`Target: ${targetName}`} />
       <Form.TextField id="section" title="Section/Heading" placeholder="e.g. Journal, Reference (optional)" />
       <Form.Checkbox id="parseHeadings" label="Auto-Split Headings into Fragments" defaultValue={false} />
       <Form.TextArea id="text" title="Fragment" defaultValue={initialText} placeholder="Type your thoughts..." autoFocus enableMarkdown />
-    </Form>
-  );
-}
-
-function CreateNote({ onUpdate }: { onUpdate: () => void }) {
-  const { pop } = useNavigation();
-  return (
-    <Form
-      actions={
-        <ActionPanel>
-          <Action.SubmitForm title="Initialize Note" icon={Icon.Plus} onSubmit={async (values: { name: string, text: string }) => {
-            const fileName = values.name.endsWith('.md') ? values.name : `${values.name}.md`;
-            await fetch("http://localhost:3031/archive/notes/append", {
-              method: "POST",
-              body: JSON.stringify({ name: fileName, text: values.text, timestamp: false }),
-              headers: { "Content-Type": "application/json" }
-            });
-            showToast({ title: "Note Created", style: Toast.Style.Success });
-            onUpdate();
-            pop();
-          }} />
-        </ActionPanel>
-      }
-    >
-      <Form.TextField id="name" title="Note Name" placeholder="e.g. Project X, Meeting Notes" />
-      <Form.TextArea id="text" title="Initial Content" placeholder="Optional starter text..." />
     </Form>
   );
 }
