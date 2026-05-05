@@ -72,6 +72,13 @@
       "mode": "view"
     },
     {
+      "name": "disk-analyzer",
+      "title": "Disk Forge",
+      "description": "DaisyDisk-style Storage Intelligence",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
       "name": "convert-link",
       "title": "Convert URL to Markdown",
       "description": "Replace clipboard URL with a titled Markdown link",

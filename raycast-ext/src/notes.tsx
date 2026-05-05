@@ -209,7 +209,10 @@ function UniversalSearch() {
           actions={
             <ActionPanel title={file.name}>
               <ActionPanel.Section>
-                {!file.isDir && <Action.Push title="Read & Edit Content" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
+                {!file.isDir && isMediaFile(file) && (
+                   <Action.Push title="Quick Look" icon={Icon.Eye} shortcut={{ modifiers: ["cmd"], key: "y" }} target={<FullImageDetail file={file} />} />
+                )}
+                {!file.isDir && !file.isDir && <Action.Push title="Read & Edit Content" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
                 <Action.Open title="Open" target={file.path} />
                 <Action.ShowInFinder title="Show in Finder" path={file.path} />
                 <Action.OpenWith title="Open With..." path={file.path} />
@@ -252,6 +255,28 @@ function UniversalSearch() {
         ) : undefined}
       />
     </List>
+  );
+}
+
+function isMediaFile(file: ExternalFile) {
+  const ext = path.extname(file.path).toLowerCase();
+  return ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.mp4', '.mov', '.avi', '.webp'].includes(ext);
+}
+
+function FullImageDetail({ file }: { file: ExternalFile }) {
+  const isVideo = ['.mp4', '.mov', '.avi'].includes(path.extname(file.path).toLowerCase());
+  return (
+    <Detail
+      navigationTitle={file.name}
+      markdown={isVideo ? `### 🎥 Video Media Detected\n\n> [!NOTE]\n> Native video playback is best handled via **Cmd+O** (Open).\n\n**Path:** \`${file.path}\`` : `![Full Preview](file://${file.path})`}
+      actions={
+        <ActionPanel>
+          <Action.Open title="Open in System Player" target={file.path} />
+          <Action.ShowInFinder title="Show in Finder" path={file.path} />
+          <Action.CopyToClipboard title="Copy File" content={{ file: file.path }} />
+        </ActionPanel>
+      }
+    />
   );
 }
 

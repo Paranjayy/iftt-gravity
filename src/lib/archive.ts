@@ -661,6 +661,24 @@ async function main() {
            }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 
+        if (url.pathname === '/archive/disk/scan') {
+           const targetPath = url.searchParams.get('path') || process.env.HOME || "";
+           try {
+              const { stdout } = await execAsync(`du -sk "${targetPath}"/* 2>/dev/null | sort -rn | head -n 50`);
+              const results = stdout.trim().split('\n').filter(l => l.length > 0).map(line => {
+                 const [sizeKb, ...pathParts] = line.split('\t');
+                 const p = pathParts.join('\t');
+                 return {
+                    path: p,
+                    name: path.basename(p),
+                    size: parseInt(sizeKb) * 1024,
+                    isDir: fs.statSync(p).isDirectory()
+                 };
+              });
+              return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
         if (url.pathname === '/archive/system/vitals') {
            try {
               const { stdout: cpu } = await execAsync("top -l 1 | grep 'CPU usage' | awk '{print $3}'");
