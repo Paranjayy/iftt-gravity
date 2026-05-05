@@ -183,31 +183,51 @@ function UniversalSearch() {
           icon={getFileIcon(file)}
           detail={
             <List.Item.Detail 
-              markdown={`### ${file.name}\n**Path:** \`${file.path}\`\n**Size:** ${(file.size / 1024).toFixed(1)} KB\n\n---\n*Select "Read & Edit" for content access.*`} 
+              markdown={`### ${file.name}\n\n**Kind:** ${file.isDir ? "Folder" : "File"}\n**Size:** ${(file.size / 1024).toFixed(1)} KB\n\n---\n\n![Preview](https://placehold.co/600x400?text=${encodeURIComponent(file.name)})`} 
               metadata={
                  <List.Item.Detail.Metadata>
-                    <List.Item.Detail.Metadata.Label title="Kind" text={file.isDir ? "Folder" : "File"} />
-                    <List.Item.Detail.Metadata.Label title="Extension" text={path.extname(file.path) || "None"} />
+                    <List.Item.Detail.Metadata.Label title="Name" text={file.name} />
+                    <List.Item.Detail.Metadata.Label title="Where" text={file.path.replace(process.env.HOME || "", "~")} />
+                    <List.Item.Detail.Metadata.Separator />
+                    <List.Item.Detail.Metadata.Label title="Type" text={file.isDir ? "Folder" : (path.extname(file.path).toUpperCase().slice(1) + " Image" || "Document")} />
+                    <List.Item.Detail.Metadata.Label title="Size" text={`${(file.size / 1024).toFixed(1)} KB`} />
                  </List.Item.Detail.Metadata>
               }
             />
           }
           actions={
-            <ActionPanel>
-              {!file.isDir && <Action.Push title="Read & Edit" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
-              <Action.Push title="Rename" icon={Icon.Text} shortcut={{ modifiers: ["cmd"], key: "r" }} target={<RenameFile file={file} onUpdate={load} />} />
-              <Action title="Move to Trash" icon={Icon.Trash} style={Action.Style.Destructive} shortcut={{ modifiers: ["cmd"], key: "delete" }} onAction={async () => {
-                if (await ConfirmAlert({ title: "Move to Trash?", message: "This will relocate the file to your system trash." })) {
-                  await fetch("http://localhost:3031/archive/files/delete", {
-                    method: "POST",
-                    body: JSON.stringify({ path: file.path }),
-                    headers: { "Content-Type": "application/json" }
-                  });
-                  showToast({ title: "Relocated to Trash" });
-                  load();
-                }
-              }} />
-              <Action.Open title="Open in Finder" target={file.path} />
+            <ActionPanel title={file.name}>
+              <ActionPanel.Section>
+                {!file.isDir && <Action.Push title="Read & Edit Content" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
+                <Action.Open title="Open" target={file.path} />
+                <Action.ShowInFinder title="Show in Finder" path={file.path} />
+                <Action.OpenWith title="Open With..." path={file.path} />
+              </ActionPanel.Section>
+
+              <ActionPanel.Section title="Identity & Location">
+                 <Action.CopyToClipboard title="Copy Path" content={file.path} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} />
+                 <Action.CopyToClipboard title="Copy Name" content={file.name} shortcut={{ modifiers: ["cmd", "opt"], key: "c" }} />
+                 <Action.Push title="Rename" icon={Icon.Text} shortcut={{ modifiers: ["cmd"], key: "r" }} target={<RenameFile file={file} onUpdate={load} />} />
+                 <Action title="Enclosing Folder" icon={Icon.Folder} shortcut={{ modifiers: ["cmd"], key: "arrowUp" }} onAction={() => open(path.dirname(file.path))} />
+              </ActionPanel.Section>
+
+              <ActionPanel.Section title="Destruction">
+                <Action title="Move to Trash" icon={Icon.Trash} style={Action.Style.Destructive} shortcut={{ modifiers: ["cmd"], key: "delete" }} onAction={async () => {
+                  if (await ConfirmAlert({ title: "Move to Trash?", message: "This will relocate the file to your system trash." })) {
+                    await fetch("http://localhost:3031/archive/files/delete", {
+                      method: "POST",
+                      body: JSON.stringify({ path: file.path }),
+                      headers: { "Content-Type": "application/json" }
+                    });
+                    showToast({ title: "Relocated to Trash" });
+                    load();
+                  }
+                }} />
+              </ActionPanel.Section>
+
+              <ActionPanel.Section title="Note Integration">
+                 <Action.Push title="Add to Daily Note" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={() => {}} initialText={`File Link: ${file.path}`} />} />
+              </ActionPanel.Section>
             </ActionPanel>
           }
         />
