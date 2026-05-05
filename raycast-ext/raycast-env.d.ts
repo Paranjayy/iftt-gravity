@@ -29,6 +29,10 @@ declare namespace Preferences {
   export type Stack = ExtensionPreferences & {}
   /** Preferences accessible in the `jot` command */
   export type Jot = ExtensionPreferences & {}
+  /** Preferences accessible in the `notes` command */
+  export type Notes = ExtensionPreferences & {}
+  /** Preferences accessible in the `convert-link` command */
+  export type ConvertLink = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -48,5 +52,9 @@ declare namespace Arguments {
   export type Stack = {}
   /** Arguments passed to the `jot` command */
   export type Jot = {}
+  /** Arguments passed to the `notes` command */
+  export type Notes = {}
+  /** Arguments passed to the `convert-link` command */
+  export type ConvertLink = {}
 }
 

@@ -12,7 +12,8 @@
     "build:standalone": "bun build --compile --target=bun-darwin-arm64 src/lib/bot.ts --outfile gravity-hub",
     "desktop": "electron electron/main.cjs",
     "archive": "bun src/archive/cli.ts",
-    "archive:watch": "bun src/archive/watcher.ts"
+    "archive:watch": "bun src/archive/watcher.ts",
+    "test": "bash scripts/synthetic-monitor.sh"
   },
   "dependencies": {
     "electron": "^31.0.0",

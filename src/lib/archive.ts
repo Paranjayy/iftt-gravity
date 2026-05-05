@@ -10,11 +10,13 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import os from 'os';
+import { parse } from 'node-html-parser';
 
 const execAsync = promisify(exec);
 const ROOT_DIR = "/Users/paranjay/Developer/iftt";
 const ARCHIVE_DIR = path.join(ROOT_DIR, 'gravity-archive');
 const INSTA_DIR = path.join(ROOT_DIR, "instagram_hoard");
+const NOTES_DIR = path.join(ROOT_DIR, "gravity-notes");
 const CLIPS_PATH = path.join(ARCHIVE_DIR, 'clips.json');
 let CLIPSTACK: any[] = [];
 let CLIPSTACK_SOURCE = "Unknown";
@@ -129,19 +131,22 @@ async function archiveClipboard(text: string) {
           signal: controller.signal
         });
         clearTimeout(timeoutId);
-        const html = await response.text();
-        newItem.meta.ogTitle = html.match(/<title>(.*?)<\/title>/)?.[1] || 
-                            html.match(/<meta property="og:title" content="(.*?)"/)?.[1] || '';
+        const htmlText = await response.text();
+        const root = parse(htmlText);
+        
+        newItem.meta.ogTitle = root.querySelector('title')?.text || 
+                             root.querySelector('meta[property="og:title"]')?.getAttribute('content') || 
+                             root.querySelector('meta[name="twitter:title"]')?.getAttribute('content') || '';
         
         if (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be')) {
-          newItem.meta.ogImage = html.match(/<link itemprop="thumbnailUrl" href="(.*?)"/)?.[1] || 
-                              html.match(/<meta property="og:image" content="(.*?)"/)?.[1] || '';
+          newItem.meta.ogImage = root.querySelector('link[itemprop="thumbnailUrl"]')?.getAttribute('href') || 
+                               root.querySelector('meta[property="og:image"]')?.getAttribute('content') || '';
         } else {
-          newItem.meta.ogImage = html.match(/<meta property="og:image" content="(.*?)"/)?.[1] || 
-                              html.match(/<meta name="twitter:image" content="(.*?)"/)?.[1] || '';
+          newItem.meta.ogImage = root.querySelector('meta[property="og:image"]')?.getAttribute('content') || 
+                               root.querySelector('meta[name="twitter:image"]')?.getAttribute('content') || '';
         }
-        newItem.meta.ogDescription = html.match(/<meta property="og:description" content="(.*?)"/)?.[1] || 
-                                  html.match(/<meta name="description" content="(.*?)"/)?.[1] || '';
+        newItem.meta.ogDescription = root.querySelector('meta[property="og:description"]')?.getAttribute('content') || 
+                                   root.querySelector('meta[name="description"]')?.getAttribute('content') || '';
         const domain = new URL(targetUrl).hostname;
         newItem.meta.favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
       } catch(e) {}
@@ -164,10 +169,16 @@ async function main() {
         const url = new URL(req.url);
         
         if (url.pathname === '/archive') {
-          const archiveCount = fs.readdirSync(ARCHIVE_DIR).length;
-          return new Response(JSON.stringify({ status: "OK", count: archiveCount }), {
-            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-          });
+          try {
+            const clipsData = fs.readFileSync(CLIPS_PATH, 'utf-8');
+            return new Response(clipsData, {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e) {
+            return new Response(JSON.stringify([]), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
         }
 
         // --- INSTAGRAM MASS HOARD --- //
@@ -270,6 +281,60 @@ async function main() {
           return new Response('Sync Started', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
+        if (url.pathname === '/archive/restore/git') {
+          try {
+            const { stdout } = await execAsync(`git show HEAD~1:gravity-archive/clips.json`, { maxBuffer: 10 * 1024 * 1024 });
+            const oldClips = JSON.parse(stdout);
+            const currentClips = JSON.parse(fs.readFileSync(CLIPS_PATH, 'utf-8'));
+            
+            // Merge logic: Add old clips that aren't in current
+            const currentIds = new Set(currentClips.map((c: any) => c.id));
+            const restoredCount = oldClips.filter((c: any) => !currentIds.has(c.id)).length;
+            const merged = [...currentClips, ...oldClips.filter((c: any) => !currentIds.has(c.id))];
+            
+            fs.writeFileSync(CLIPS_PATH, JSON.stringify(merged, null, 2));
+            return new Response(JSON.stringify({ status: "RESTORED", count: restoredCount }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e: any) {
+            return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+          }
+        }
+
+        if (url.pathname === '/archive/convert/md') {
+          const target = url.searchParams.get('url');
+          if (!target) return new Response("URL Required", { status: 400 });
+          
+          const urls = target.match(/https?:\/\/\S+/g) || [target];
+          const results = await Promise.all(urls.map(async (u) => {
+            try {
+              const response = await fetch(u, { headers: { 'User-Agent': 'Gravity Archiver/1.0' } });
+              const html = await response.text();
+              const root = parse(html);
+              const title = (root.querySelector('title')?.text || u).trim();
+              return `- [${title}](${u})`;
+            } catch (e) {
+              return `- [${u}](${u})`;
+            }
+          }));
+          
+          return new Response(results.join('\n'), {
+            headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+
+        if (url.pathname === '/archive/export/save') {
+          try {
+            const backupPath = path.join(os.homedir(), 'Downloads', `gravity_vault_export_${Date.now()}.json`);
+            fs.copyFileSync(CLIPS_PATH, backupPath);
+            return new Response(JSON.stringify({ status: "SUCCESS", path: backupPath }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e: any) {
+            return new Response(`Export Failed: ${e.message}`, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+
         if (url.pathname === '/archive/nuclear/reset' || url.pathname === '/archive/clear') {
           try {
             const backupPath = path.join(os.homedir(), 'Downloads', `gravity_archive_backup_${Date.now()}.json`);
@@ -342,6 +407,161 @@ async function main() {
           });
 
           return new Response(table, { headers: { 'Content-Type': 'text/plain', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/notes/list') {
+          if (!fs.existsSync(NOTES_DIR)) fs.mkdirSync(NOTES_DIR, { recursive: true });
+          const files = fs.readdirSync(NOTES_DIR).filter(f => f.endsWith('.md') || f.endsWith('.txt'));
+          const notes = files.map(f => {
+            const stats = fs.statSync(path.join(NOTES_DIR, f));
+            return { name: f, lastModified: stats.mtime, size: stats.size };
+          });
+          return new Response(JSON.stringify(notes), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/notes/read') {
+          const name = url.searchParams.get('name');
+          if (!name) return new Response("Name Required", { status: 400 });
+          const content = fs.readFileSync(path.join(NOTES_DIR, name), 'utf-8');
+          return new Response(content, { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/notes/append' && req.method === 'POST') {
+          const { name, text, section, timestamp = true } = await req.json();
+          const fileName = name || `Daily Note ${new Date().toISOString().split('T')[0]}.md`;
+          const filePath = path.join(NOTES_DIR, fileName);
+          
+          const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const entry = timestamp ? `\n\n### 🕒 ${time}\n${text}\n` : `\n\n${text}\n`;
+          
+          if (fs.existsSync(filePath) && section) {
+             let content = fs.readFileSync(filePath, 'utf-8');
+             const sectionHeading = section.startsWith('#') ? section : `## ${section}`;
+             const sectionIdx = content.indexOf(sectionHeading);
+             
+             if (sectionIdx !== -1) {
+                // Find end of section or next heading
+                const nextHeadingIdx = content.indexOf('\n#', sectionIdx + sectionHeading.length);
+                if (nextHeadingIdx !== -1) {
+                   content = content.slice(0, nextHeadingIdx) + entry + content.slice(nextHeadingIdx);
+                } else {
+                   content = content + entry;
+                }
+                fs.writeFileSync(filePath, content);
+             } else {
+                fs.appendFileSync(filePath, `\n\n${sectionHeading}${entry}`);
+             }
+          } else {
+             fs.appendFileSync(filePath, entry);
+          }
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/notes/overwrite' && req.method === 'POST') {
+          const { name, text } = await req.json();
+          const filePath = path.join(NOTES_DIR, name);
+          fs.writeFileSync(filePath, text);
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/notes/entries') {
+          const name = url.searchParams.get('name');
+          if (!name) return new Response("Name Required", { status: 400 });
+          const filePath = path.join(NOTES_DIR, name);
+          if (!fs.existsSync(filePath)) return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const entryDelimiter = "\n\n### 🕒 ";
+          const parts = content.split(entryDelimiter);
+          
+          const entries = parts.filter(p => p.trim().length > 0).map((p, i) => {
+            // First part might not have the delimiter if it's at the start without one
+            const hasDelimiter = i > 0 || content.startsWith(entryDelimiter);
+            const raw = hasDelimiter ? `### 🕒 ${p}` : p;
+            const time = p.match(/^\d{2}:\d{2} [AP]M/)?.[0] || "Unknown";
+            const body = p.replace(/^\d{2}:\d{2} [AP]M\n/, "").trim();
+            return { id: i, raw, time, body };
+          });
+          
+          return new Response(JSON.stringify(entries), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/notes/entry/update' && req.method === 'POST') {
+          const { name, id, text } = await req.json();
+          const filePath = path.join(NOTES_DIR, name);
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const entryDelimiter = "\n\n### 🕒 ";
+          const parts = content.split(entryDelimiter);
+          
+          // Reconstruct parts
+          if (parts[id] !== undefined) {
+             const timeMatch = parts[id].match(/^\d{2}:\d{2} [AP]M/);
+             const time = timeMatch ? timeMatch[0] : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+             parts[id] = `${time}\n${text}\n`;
+          }
+          
+          fs.writeFileSync(filePath, parts.join(entryDelimiter));
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/notes/prepend' && req.method === 'POST') {
+          const { name, text } = await req.json();
+          const filePath = path.join(NOTES_DIR, name);
+          const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const entry = `### 🕒 ${time}\n${text}\n\n`;
+          
+          let oldContent = "";
+          if (fs.existsSync(filePath)) oldContent = fs.readFileSync(filePath, 'utf-8');
+          fs.writeFileSync(filePath, entry + oldContent);
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/notes/search') {
+          const query = url.searchParams.get('q')?.toLowerCase() || "";
+          const files = fs.readdirSync(NOTES_DIR).filter(f => f.endsWith('.md') || f.endsWith('.txt'));
+          const results: any[] = [];
+          
+          files.forEach(f => {
+            const content = fs.readFileSync(path.join(NOTES_DIR, f), 'utf-8');
+            const entryDelimiter = "\n\n### 🕒 ";
+            const parts = content.split(entryDelimiter);
+            
+            parts.forEach((p, i) => {
+              if (p.toLowerCase().includes(query)) {
+                const time = p.match(/^\d{2}:\d{2} [AP]M/)?.[0] || "Unknown";
+                const body = p.replace(/^\d{2}:\d{2} [AP]M\n/, "").trim();
+                results.push({ fileName: f, entryId: i, time, body, snippet: body.substring(0, 100) });
+              }
+            });
+          });
+          
+          return new Response(JSON.stringify(results.slice(0, 50)), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/files/search') {
+          const query = url.searchParams.get('q') || "";
+          if (!query) return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          try {
+            // Find files with mdfind (Spotlight) limited to common text types
+            const { stdout } = await execAsync(`mdfind "kMDItemDisplayName == '*${query}*' && (kMDItemContentType == 'public.plain-text' || kMDItemContentType == 'public.source-code' || kMDItemFSName == '*.md') " | head -n 20`);
+            const paths = stdout.trim().split('\n').filter(p => p.length > 0);
+            const results = paths.map(p => ({ path: p, name: path.basename(p), size: fs.statSync(p).size }));
+            return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
+        if (url.pathname === '/archive/files/read') {
+          const filePath = url.searchParams.get('path');
+          if (!filePath || !fs.existsSync(filePath)) return new Response("File Not Found", { status: 404 });
+          const content = fs.readFileSync(filePath, 'utf-8');
+          return new Response(content, { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/files/write' && req.method === 'POST') {
+          const { path: filePath, text } = await req.json();
+          if (!filePath) return new Response("Path Required", { status: 400 });
+          fs.writeFileSync(filePath, text);
+          return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/sync') {

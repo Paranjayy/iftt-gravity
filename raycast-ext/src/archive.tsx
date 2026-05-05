@@ -72,6 +72,7 @@ export default function Command() {
   }
 
   const filteredClips = clips.filter((item) => {
+    if (!item || typeof item.text !== 'string') return false;
     const searchLower = searchText.toLowerCase();
     
     // 🧬 Intelligence: Search Shortcuts (e.g. "type:code" or "@arc")
@@ -81,10 +82,10 @@ export default function Command() {
     }
     if (searchLower.startsWith("@")) {
       const target = searchLower.substring(1);
-      if (target && !item.source?.toLowerCase().includes(target)) return false;
+      if (target && !(item.source || "").toLowerCase().includes(target)) return false;
     }
 
-    const searchMatch = item.text.toLowerCase().includes(searchLower) || 
+    const searchMatch = (item.text || "").toLowerCase().includes(searchLower) || 
                       (item.label || "").toLowerCase().includes(searchLower) ||
                       (item.source || "").toLowerCase().includes(searchLower);
     
@@ -148,7 +149,7 @@ export default function Command() {
        if (item.meta?.ogImage) return `#### Media Intelligence\n![OG Image](${item.meta.ogImage})\n\n### ${item.meta.ogTitle || 'Linked Item'}\n${item.meta.ogDescription || item.text}`;
     }
     const lang = item.meta?.type === 'code' ? 'typescript' : 'text';
-    return `#### Content Preview\n\`\`\`${lang}\n${item.text}\n\`\`\`\n\n---\n**Origin:** ${item.source || 'Unknown'}\n**Time:** ${new Date(item.timestamp).toLocaleString()}`;
+    return `#### Content Preview\n\`\`\`${lang}\n${item.text || ""}\n\`\`\`\n\n---\n**Origin:** ${item.source || 'Unknown'}\n**Time:** ${new Date(item.timestamp).toLocaleString()}`;
   };
 
   // Advanced Grouping Logic
@@ -214,8 +215,8 @@ export default function Command() {
             <List.Item
               key={item.id}
               icon={getIcon(item)}
-              title={item.label || item.text.split('\n')[0].substring(0, 60)}
-              subtitle={item.label ? item.text.substring(0, 40) : ""}
+              title={item.label || (item.text || "").split('\n')[0].substring(0, 60)}
+              subtitle={item.label ? (item.text || "").substring(0, 40) : ""}
               accessories={[
                 { icon: item.isBookmarked ? { source: Icon.Pin, color: Color.Yellow } : undefined },
                 { text: grouping !== "app" ? item.source : "" },
@@ -285,6 +286,14 @@ export default function Command() {
                     shortcut={{ modifiers: ["cmd", "shift"], key: "m" }}
                     content={`### ${item.label || item.source || 'Archive Fragment'}\n> Captured: ${new Date(item.timestamp).toLocaleString()}\n\n\`\`\`${item.meta?.type || 'text'}\n${item.text}\n\`\`\``} 
                   />
+                  {item.meta?.type === 'link' && (
+                    <Action.CopyToClipboard 
+                      title="Copy as Markdown Link" 
+                      icon={Icon.Link}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "k" }}
+                      content={`[${item.meta.ogTitle || item.text}](${item.text})`}
+                    />
+                  )}
                   <Action title={item.isBookmarked ? "Unpin Fragment" : "Pin Fragment"} icon={Icon.Pin} shortcut={{ modifiers: ["cmd"], key: "p" }} onAction={() => performAction(`bookmark/${item.id}`, "Pulse: Pinned")} />
                   <Action.Push title="Label Fragment" icon={Icon.Tag} shortcut={{ modifiers: ["cmd"], key: "l" }} target={<LabelForm id={item.id} onComplete={fetchArchive} />} />
                   <Action.Push title="Edit Content" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "e" }} target={<EditForm item={item} onUpdate={fetchArchive} />} />
@@ -298,7 +307,8 @@ export default function Command() {
                   <ActionPanel.Section title="Sovereign Core">
                      <Action title="Copy as Markdown Table" icon={Icon.Table} onAction={copyAsMarkdownTable} />
                      <Action.CopyToClipboard title="Copy Metadata JSON" content={JSON.stringify(item.meta, null, 2)} icon={Icon.Code} shortcut={{ modifiers: ["cmd", "shift"], key: "j" }} />
-                     <Action icon={Icon.Cloud} title="Sync to Cloud" onAction={() => performAction("sync", "Vault Synced to Cloud")} />
+                     <Action icon={Icon.Download} title="Export Vault to JSON" onAction={() => performAction("export/save", "Vault Exported to Downloads")} />
+                     <Action icon={Icon.RotateClockwise} title="Restore History (Git)" onAction={() => performAction("restore/git", "Vault: History Restored from Git")} />
                      <Action icon={Icon.Trash} title="Purge Fragment" style={Action.Style.Destructive} onAction={() => performAction(`delete/${item.id}`, "Fragment Evicted")} />
                      <Action icon={Icon.ExclamationMark} title="Nuclear Reset Vault" style={Action.Style.Destructive} onAction={() => performAction("nuclear/reset", "Vault Purged")} />
                   </ActionPanel.Section>

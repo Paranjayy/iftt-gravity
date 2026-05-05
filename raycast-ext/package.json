@@ -63,6 +63,20 @@
       "description": "Distraction-free vault notepad",
       "icon": "assets/icon.png",
       "mode": "view"
+    },
+    {
+      "name": "notes",
+      "title": "Gravity Notes (Type)",
+      "description": "Infinite local notes with timestamps and Daily Note support",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "convert-link",
+      "title": "Convert URL to Markdown",
+      "description": "Replace clipboard URL with a titled Markdown link",
+      "icon": "assets/icon.png",
+      "mode": "view"
     }
   ],
   "dependencies": {

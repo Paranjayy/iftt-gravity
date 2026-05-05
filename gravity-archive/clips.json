@@ -1,5 +1,21 @@
 [
   {
+    "id": "1777419065109",
+    "text": "/                                                            paranjay@Paranjays-MacBook-Air\r                                                            ------------------------------\r                       ..'                                  Software -> (system basics)\r                   ,xNMM.                                   OS -> macOS Tahoe 26.4.1 (25E253) arm64\r                 .OMMMMo                                    Host -> MacBook Air (M1, 2020)\r                 lMM\"                                       Kernel -> Darwin 25.4.0\r       .;loddo/.  .olloddol;.                               Shell -> zsh 5.9\r     cKMMMMMMMMMMNWMMMMMMMMMM0/                             Packages -> 70 (brew), 15 (brew-cask)\r   .KMMMMMMMMMMMMMMMMMMMMMMMWd.                             Appearance ->",
+    "timestamp": "2026-05-02T17:00:33.183Z",
+    "isBookmarked": false,
+    "source": "Electron",
+    "meta": {
+      "words": 44,
+      "lines": 1,
+      "chars": 794,
+      "tokens": 199,
+      "type": "file",
+      "dupes": 7
+    },
+    "url": ""
+  },
+  {
     "id": "1777448602591",
     "text": "/t3 content agency soon",
     "timestamp": "2026-04-29T08:15:46.647Z",
@@ -201,22 +217,6 @@
       "tokens": 45,
       "type": "file",
       "dupes": 1
-    },
-    "url": ""
-  },
-  {
-    "id": "1777419065109",
-    "text": "/                                                            paranjay@Paranjays-MacBook-Air\r                                                            ------------------------------\r                       ..'                                  Software -> (system basics)\r                   ,xNMM.                                   OS -> macOS Tahoe 26.4.1 (25E253) arm64\r                 .OMMMMo                                    Host -> MacBook Air (M1, 2020)\r                 lMM\"                                       Kernel -> Darwin 25.4.0\r       .;loddo/.  .olloddol;.                               Shell -> zsh 5.9\r     cKMMMMMMMMMMNWMMMMMMMMMM0/                             Packages -> 70 (brew), 15 (brew-cask)\r   .KMMMMMMMMMMMMMMMMMMMMMMMWd.                             Appearance ->",
-    "timestamp": "2026-04-29T05:23:57.739Z",
-    "isBookmarked": false,
-    "source": "Electron",
-    "meta": {
-      "words": 44,
-      "lines": 1,
-      "chars": 794,
-      "tokens": 199,
-      "type": "file",
-      "dupes": 5
     },
     "url": ""
   },
