@@ -3246,3 +3246,13 @@ ht...)
 [6/5/2026, 10:43:42 AM] AC State: ON (Manual/Remote)
 [6/5/2026, 10:46:39 AM] 📱 Presence: Phone detected (HOME)
 [6/5/2026, 10:46:44 AM] 🎬 Scene Trigger: MORNING_BRIEF
+[6/5/2026, 11:05:08 AM] AC State: OFF (Manual/Remote)
+[6/5/2026, 11:17:24 AM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-0...)
+[6/5/2026, 11:18:20 AM] 📋 Memory Archive: New clip captured (please remove the gr...)
+[6/5/2026, 11:18:39 AM] 📋 Memory Archive: New clip captured (# Speedrun Math — De...)
+[6/5/2026, 11:22:24 AM] 📋 Memory Archive: New clip captured (<body aria-label="" ...)
+[6/5/2026, 11:22:40 AM] 📋 Memory Archive: New clip captured (<head>
+	<meta charse...)
+[6/5/2026, 11:23:07 AM] 📋 Memory Archive: New clip captured (<body aria-label="" ...)
+[6/5/2026, 11:24:08 AM] AC State: ON (Manual/Remote)
+[6/5/2026, 11:45:46 AM] 📋 Memory Archive: New clip captured (continue...)

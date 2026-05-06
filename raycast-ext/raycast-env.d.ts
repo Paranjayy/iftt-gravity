@@ -43,6 +43,8 @@ declare namespace Preferences {
   export type NodeReaper = ExtensionPreferences & {}
   /** Preferences accessible in the `extension-auditor` command */
   export type ExtensionAuditor = ExtensionPreferences & {}
+  /** Preferences accessible in the `warp` command */
+  export type Warp = ExtensionPreferences & {}
   /** Preferences accessible in the `convert-link` command */
   export type ConvertLink = ExtensionPreferences & {}
 }
@@ -78,6 +80,8 @@ declare namespace Arguments {
   export type NodeReaper = {}
   /** Arguments passed to the `extension-auditor` command */
   export type ExtensionAuditor = {}
+  /** Arguments passed to the `warp` command */
+  export type Warp = {}
   /** Arguments passed to the `convert-link` command */
   export type ConvertLink = {}
 }

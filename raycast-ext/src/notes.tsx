@@ -7,6 +7,7 @@ import GitProbe from "./git-probe";
 import NodeReaper from "./node-reaper";
 import Scaffolder from "./project-scaffolder";
 import ExtensionAuditor from "./extension-auditor";
+import WarpDrive from "./warp";
 
 interface NoteFile {
   name: string;
@@ -212,6 +213,16 @@ export default function Command() {
           actions={
             <ActionPanel>
               <Action.Push title="Open Auditor" target={<ExtensionAuditor />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          title="Gravity Warp"
+          subtitle="Instant Jumper for Developer Projects"
+          icon={Icon.Airplane}
+          actions={
+            <ActionPanel>
+              <Action.Push title="Open Warp Drive" target={<WarpDrive />} />
             </ActionPanel>
           }
         />

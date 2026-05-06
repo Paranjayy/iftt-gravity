@@ -95,6 +95,26 @@ ${heatmap}
                 await fetch("http://localhost:3031/archive/desktop/organize");
                 showToast({ title: "Desktop Purified" });
              }} />
+             <Action 
+                title="Sovereign Backup (Panic)" 
+                icon={Icon.Shield} 
+                style={Action.Style.Destructive}
+                shortcut={{ modifiers: ["cmd", "shift"], key: "b" }}
+                onAction={async () => {
+                   showToast({ title: "Securing Vault...", style: Toast.Style.Animated });
+                   const res = await fetch("http://localhost:3031/archive/system/backup", { method: "POST" });
+                   const data = await res.json() as { status: string, path: string, envs: number };
+                   if (data.status === "SUCCESS") {
+                      showToast({ 
+                         title: "Vault Hardened", 
+                         message: `Archived configs & ${data.envs} secrets to gravity-archive/`, 
+                         style: Toast.Style.Success 
+                      });
+                   } else {
+                      showToast({ title: "Backup Failed", style: Toast.Style.Failure });
+                   }
+                }} 
+             />
           </ActionPanel.Section>
         </ActionPanel>
       }

@@ -855,6 +855,54 @@ async function main() {
            } catch(e) { return new Response("Error", { status: 500 }); }
         }
 
+        if (url.pathname === '/archive/warp/list') {
+           const devDir = path.join(process.env.HOME || "", "Developer");
+           try {
+              // Rapid find for top-level projects
+              const { stdout } = await execAsync(`find ${devDir} -maxdepth 2 -not -path '*/.*'`);
+              const paths = stdout.trim().split('\n').filter(p => p.length > 0 && fs.lstatSync(p).isDirectory());
+              const projects = paths.map(p => ({
+                 name: path.basename(p),
+                 path: p,
+                 lastModified: fs.statSync(p).mtime
+              }));
+              return new Response(JSON.stringify(projects), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
+        if (url.pathname === '/archive/system/backup' && req.method === 'POST') {
+           const backupRoot = path.join(ARCHIVE_DIR, `panic_backup_${new Date().getTime()}`);
+           fs.mkdirSync(backupRoot, { recursive: true });
+           
+           try {
+              console.log("🛡️ Sovereign Backup: Hardening configs...");
+              // 1. Bundle Shell & Git Configs
+              const configs = ['.zshrc', '.bashrc', '.gitconfig', '.ssh'];
+              for (const c of configs) {
+                 const src = path.join(process.env.HOME || "", c);
+                 if (fs.existsSync(src)) {
+                    await execAsync(`cp -R "${src}" "${backupRoot}/"`);
+                 }
+              }
+              
+              // 2. Scan & Extract .env files (The secret sauce)
+              const devDir = path.join(process.env.HOME || "", "Developer");
+              const { stdout: envs } = await execAsync(`find ${devDir} -maxdepth 4 -name ".env*" -not -path "*/node_modules/*"`);
+              const envPaths = envs.trim().split('\n').filter(p => p.length > 0);
+              const envDir = path.join(backupRoot, "secrets_env");
+              fs.mkdirSync(envDir);
+              
+              for (const ep of envPaths) {
+                 const rel = path.relative(devDir, ep).replace(/\//g, '_');
+                 fs.copyFileSync(ep, path.join(envDir, rel));
+              }
+
+              return new Response(JSON.stringify({ status: "SUCCESS", path: backupRoot, envs: envPaths.length }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           } catch(e: any) { 
+              return new Response(JSON.stringify({ status: "FAILED", error: e.message }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }); 
+           }
+        }
+
         if (url.pathname === '/archive/extensions/list') {
            const extPath = path.join(process.env.HOME || "", "Library/Application Support/com.raycast.macos/extensions");
            if (!fs.existsSync(extPath)) return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
