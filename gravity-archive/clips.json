@@ -1,8 +1,24 @@
 [
   {
+    "id": "1778035270738",
+    "text": "/\ralso soon add in idea we would make safari great again with also i really want to work with safari things to patch and make it work just like arc but sadge it wont be because we dont got its source code also same for orion browser but safari is solid efficient browser overall",
+    "timestamp": "2026-05-06T02:41:10.964Z",
+    "isBookmarked": false,
+    "source": "Safari",
+    "url": "https://www.praduman.com/",
+    "meta": {
+      "words": 55,
+      "lines": 1,
+      "chars": 278,
+      "tokens": 70,
+      "type": "file",
+      "dupes": 1
+    }
+  },
+  {
     "id": "1778034762179",
     "text": "/entire setup still doesnt seems to be done read its docs ig idk\r\r===\rOverview",
-    "timestamp": "2026-05-06T02:32:42.179Z",
+    "timestamp": "2026-05-06T02:38:44.975Z",
     "isBookmarked": false,
     "source": "Electron",
     "meta": {
@@ -10,8 +26,10 @@
       "lines": 1,
       "chars": 78,
       "tokens": 20,
-      "type": "file"
-    }
+      "type": "file",
+      "dupes": 1
+    },
+    "url": "https://www.praduman.com/"
   },
   {
     "id": "1778034130739",

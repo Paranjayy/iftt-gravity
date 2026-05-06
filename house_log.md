@@ -3228,3 +3228,4 @@ ht...)
 [6/5/2026, 7:54:34 AM] 📱 Presence: Phone detected (HOME)
 [6/5/2026, 7:54:39 AM] 🎬 Scene Trigger: MORNING_BRIEF
 [6/5/2026, 8:02:41 AM] 📋 Memory Archive: New clip captured (entire setup still d...)
+[6/5/2026, 8:11:10 AM] 📋 Memory Archive: New clip captured (also soon add in ide...)

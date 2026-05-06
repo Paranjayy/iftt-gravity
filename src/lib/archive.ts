@@ -564,11 +564,17 @@ async function main() {
                 try {
                   const { stdout: remoteOut } = await execAsync(`git -C ${repoPath} remote -v`);
                   const remote = remoteOut.split('\n')[0]?.match(/https:\/\/github\.com\/.*?\s|git@github\.com:.*?\s/)?.[0]?.trim();
-                  let isPublic = false;
-                  if (remote) {
-                     isPublic = remote.startsWith('https'); 
-                  }
-                  return { name, path: repoPath, remote, isPublic };
+                  
+                  const [status, size, sync] = await Promise.all([
+                     execAsync(`git -C ${repoPath} status --porcelain`).then(r => r.stdout.trim().length > 0),
+                     execAsync(`du -sh ${repoPath} | cut -f1`).then(r => r.stdout.trim()),
+                     execAsync(`git -C ${repoPath} rev-list --left-right --count HEAD...@{u} 2>/dev/null`).then(r => r.stdout.trim()).catch(() => "0\t0")
+                  ]);
+
+                  const [ahead, behind] = sync.split('\t').map(Number);
+                  let isPublic = remote?.startsWith('https'); 
+
+                  return { name, path: repoPath, remote, isPublic, hasChanges: status, size, ahead, behind };
                 } catch(e) { return { name, path: repoPath }; }
              }));
              return new Response(JSON.stringify(repos), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
@@ -724,14 +730,48 @@ async function main() {
         }
 
         if (url.pathname === '/archive/desktop/undo') {
-           const logPath = path.join(ARCHIVE_DIR, 'desktop_undo.json');
+           const logPath = path.join(ARCHIVE_DIR, 'desktop_undo_history.json');
            if (!fs.existsSync(logPath)) return new Response(JSON.stringify({ count: 0 }), { headers: { 'Access-Control-Allow-Origin': '*' } });
-           const log = JSON.parse(fs.readFileSync(logPath, 'utf-8'));
-           log.forEach((m: any) => {
+           
+           const history = JSON.parse(fs.readFileSync(logPath, 'utf-8'));
+           if (history.length === 0) return new Response(JSON.stringify({ count: 0 }), { headers: { 'Access-Control-Allow-Origin': '*' } });
+           
+           const lastMove = history.pop();
+           lastMove.forEach((m: any) => {
               if (fs.existsSync(m.from)) fs.renameSync(m.from, m.to);
            });
-           fs.unlinkSync(logPath);
-           return new Response(JSON.stringify({ count: log.length }), { headers: { 'Access-Control-Allow-Origin': '*' } });
+           
+           fs.writeFileSync(logPath, JSON.stringify(history));
+           return new Response(JSON.stringify({ count: lastMove.length }), { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/system/node-modules/scan') {
+           const devDir = path.join(process.env.HOME || "", "Developer");
+           try {
+             const { stdout } = await execAsync(`find ${devDir} -name "node_modules" -type d -prune -maxdepth 4`);
+             const paths = stdout.trim().split('\n').filter(p => p.length > 0);
+             const modules = await Promise.all(paths.map(async (p) => {
+                const { stdout: sizeOut } = await execAsync(`du -sh "${p}" | cut -f1`);
+                const sizeStr = sizeOut.trim();
+                let sizeBytes = 0;
+                if (sizeStr.endsWith('M')) sizeBytes = parseFloat(sizeStr) * 1024 * 1024;
+                else if (sizeStr.endsWith('G')) sizeBytes = parseFloat(sizeStr) * 1024 * 1024 * 1024;
+                else if (sizeStr.endsWith('K')) sizeBytes = parseFloat(sizeStr) * 1024;
+
+                return { path: p, project: path.basename(path.dirname(p)), size: sizeStr, bytes: sizeBytes };
+             }));
+             return new Response(JSON.stringify(modules), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
+        if (url.pathname === '/archive/system/node-modules/purge' && req.method === 'POST') {
+           const { paths } = await req.json();
+           for (const p of paths) {
+              if (p.includes('node_modules')) {
+                 await execAsync(`rm -rf "${p}"`);
+              }
+           }
+           return new Response("Purged", { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/stats') {
