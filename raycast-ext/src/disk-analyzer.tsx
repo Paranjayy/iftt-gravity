@@ -10,10 +10,30 @@ interface DiskItem {
 }
 
 export default function Command() {
-  return <DiskList path="" />;
+  const [targetPath, setTargetPath] = useState(process.env.HOME || "");
+  return (
+    <DiskList 
+      path={targetPath} 
+      onPathChange={setTargetPath}
+      searchBarAccessory={
+        <List.Dropdown tooltip="Target Intelligence" onChange={setTargetPath} storeValue>
+          <List.Dropdown.Section title="Sovereign Scopes">
+            <List.Dropdown.Item title="Home (~)" value={process.env.HOME || ""} icon={Icon.Home} />
+            <List.Dropdown.Item title="This Mac (/)" value="/" icon={Icon.HardDrive} />
+          </List.Dropdown.Section>
+          <List.Dropdown.Section title="Forensic Templates">
+            <List.Dropdown.Item title="Downloads" value={`${process.env.HOME}/Downloads`} icon={Icon.Download} />
+            <List.Dropdown.Item title="Developer" value={`${process.env.HOME}/Developer`} icon={Icon.Code} />
+            <List.Dropdown.Item title="Documents" value={`${process.env.HOME}/Documents`} icon={Icon.TextDocument} />
+            <List.Dropdown.Item title="Library" value={`${process.env.HOME}/Library`} icon={Icon.Box} />
+          </List.Dropdown.Section>
+        </List.Dropdown>
+      }
+    />
+  );
 }
 
-function DiskList({ path: initialPath }: { path: string }) {
+function DiskList({ path: initialPath, onPathChange, searchBarAccessory }: { path: string; onPathChange?: (p: string) => void, searchBarAccessory?: any }) {
   const [items, setItems] = useState<DiskItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const currentPath = initialPath || (process.env.HOME || "");
@@ -44,12 +64,18 @@ function DiskList({ path: initialPath }: { path: string }) {
   const copySummary = () => {
     let summary = `### 💿 Storage Analysis: ${currentPath}\n\n`;
     summary += `| Item | Size | Type |\n| :--- | :--- | :--- |\n`;
-    items.slice(0, 15).forEach(item => {
+    items.slice(0, 20).forEach(item => {
       summary += `| ${item.name} | ${formatSize(item.size)} | ${item.isDir ? "Folder" : "File"} |\n`;
     });
     summary += `\n*Generated via Gravity Disk Forge*`;
     Clipboard.copy(summary);
-    showToast({ title: "Summary Hoarded", message: "Copied top 15 items to clipboard" });
+    showToast({ title: "Summary Hoarded", message: "Copied top 20 items to clipboard" });
+  };
+
+  const copyBatchList = () => {
+     const list = items.map(i => i.path).join("\n");
+     Clipboard.copy(list);
+     showToast({ title: "Paths Hoarded", message: `Copied ${items.length} paths.` });
   };
 
   return (
@@ -57,6 +83,7 @@ function DiskList({ path: initialPath }: { path: string }) {
       isLoading={isLoading} 
       searchBarPlaceholder={`Analyzing ${currentPath}...`}
       navigationTitle={currentPath.replace(process.env.HOME || "", "~")}
+      searchBarAccessory={searchBarAccessory}
     >
       {items.map((item) => (
         <List.Item
@@ -75,7 +102,9 @@ function DiskList({ path: initialPath }: { path: string }) {
                 <Action.ShowInFinder title="Show in Finder" path={item.path} />
               </ActionPanel.Section>
               
-              <ActionPanel.Section title="Purge & Archive">
+              <ActionPanel.Section title="Sovereign Control">
+                 <Action title="Copy AI Summary" icon={Icon.CopyClipboard} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} onAction={copySummary} />
+                 <Action title="Copy All Paths" icon={Icon.List} shortcut={{ modifiers: ["cmd", "opt"], key: "c" }} onAction={copyBatchList} />
                  <Action title="Move to Trash" icon={Icon.Trash} style={Action.Style.Destructive} shortcut={{ modifiers: ["cmd"], key: "delete" }} onAction={async () => {
                     if (await ConfirmAlert({ title: "Sovereign Purge?", message: `Are you sure you want to evict ${item.name} to the trash?` })) {
                        await fetch("http://localhost:3031/archive/files/delete", {
@@ -87,12 +116,6 @@ function DiskList({ path: initialPath }: { path: string }) {
                        load();
                     }
                  }} />
-                 <Action.Push title="Add to Daily Note" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={() => {}} initialText={`Large Asset: ${item.path} (${formatSize(item.size)})`} />} />
-              </ActionPanel.Section>
-
-              <ActionPanel.Section title="Forensics">
-                 <Action title="Copy AI Summary" icon={Icon.CopyClipboard} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} onAction={copySummary} />
-                 <Action.CopyToClipboard title="Copy Full Path" content={item.path} shortcut={{ modifiers: ["cmd", "opt"], key: "c" }} />
               </ActionPanel.Section>
             </ActionPanel>
           }
@@ -100,49 +123,5 @@ function DiskList({ path: initialPath }: { path: string }) {
       ))}
       <List.EmptyView title="This void is truly empty." description="No accessible files or folders found here." />
     </List>
-  );
-}
-
-// Re-using EntryAction from notes.tsx or similar
-function EntryAction({ name, type, onUpdate, initialText = "" }: { name: string; type: "append" | "prepend"; onUpdate: () => void, initialText?: string }) {
-  const { pop } = useNavigation();
-  const dailyNoteName = `Daily Note ${new Date().toISOString().split('T')[0]}.md`;
-  const targetName = name || dailyNoteName;
-
-  return (
-    <List // Dummy list just to have an action panel if needed, but Form is better.
-      actions={
-        <ActionPanel>
-          <Action.Push title="Open Form" target={
-            <DiskForm name={targetName} type={type} onUpdate={onUpdate} initialText={initialText} pop={pop} />
-          } />
-        </ActionPanel>
-      }
-    />
-  );
-}
-
-import { Form } from "@raycast/api";
-
-function DiskForm({ name, type, onUpdate, initialText, pop }: any) {
-  return (
-    <Form
-      actions={
-        <ActionPanel>
-          <Action.SubmitForm title="Seal Fragment" icon={Icon.Check} onSubmit={async (values: { text: string }) => {
-            await fetch(`http://localhost:3031/archive/notes/${type}`, {
-              method: "POST",
-              body: JSON.stringify({ name, text: values.text }),
-              headers: { "Content-Type": "application/json" }
-            });
-            showToast({ title: "Fragment Saved", style: Toast.Style.Success });
-            onUpdate();
-            pop();
-          }} />
-        </ActionPanel>
-      }
-    >
-      <Form.TextArea id="text" title="Fragment" defaultValue={initialText} autoFocus enableMarkdown />
-    </Form>
   );
 }

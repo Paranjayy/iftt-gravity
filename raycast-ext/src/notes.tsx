@@ -12,10 +12,13 @@ interface NoteFile {
 
 interface NoteEntry {
   id: number;
-  raw: string;
+  fileName: string;
+  entryId: number;
   time: string;
   body: string;
-  section?: string;
+  snippet: string;
+  heading?: string;
+  raw: string;
 }
 
 interface SearchResult {
@@ -31,6 +34,29 @@ interface ExternalFile {
   path: string;
   size: number;
   isDir: boolean;
+  kind: string;
+}
+
+function MarkdownViewer({ file }: { file: NoteFile | ExternalFile }) {
+  const [content, setContent] = useState("");
+  useEffect(() => {
+    fetch(`http://localhost:3031/archive/files/read?path=${encodeURIComponent(file.path)}`)
+      .then(r => r.text())
+      .then(setContent);
+  }, [file.path]);
+
+  return (
+    <Detail
+      navigationTitle={file.name}
+      markdown={content}
+      actions={
+        <ActionPanel>
+          <Action.CopyToClipboard title="Copy Markdown" content={content} />
+          <Action.ShowInFinder title="Show in Finder" path={file.path} />
+        </ActionPanel>
+      }
+    />
+  );
 }
 
 export default function Command() {
@@ -115,7 +141,7 @@ export default function Command() {
             <ActionPanel>
               <Action.Push title="Open Entries" target={<EntryList name={dailyNoteName} onUpdate={fetchNotes} />} />
               <Action.Push title="Quick Append" shortcut={{ modifiers: ["cmd"], key: "n" }} target={<EntryAction name={dailyNoteName} type="append" onUpdate={fetchNotes} />} />
-              <Action.Push title="View as Markdown" icon={Icon.TextDocument} target={<MarkdownViewer name={dailyNoteName} />} />
+              <Action.Push title="View as Markdown" icon={Icon.TextDocument} target={<MarkdownViewer file={{ name: dailyNoteName, path: path.join('gravity-notes', dailyNoteName) } as any} />} />
             </ActionPanel>
           }
         />
@@ -194,15 +220,16 @@ function UniversalSearch() {
           icon={getFileIcon(file)}
           detail={
             <List.Item.Detail 
-              markdown={`### ${file.name}\n\n**Kind:** ${file.isDir ? "Folder" : "File"}\n**Size:** ${(file.size / 1024).toFixed(1)} KB\n\n---\n\n![Preview](https://placehold.co/600x400?text=${encodeURIComponent(file.name)})`} 
+              markdown={`#### ${file.name}\n\n**Kind:** ${file.kind}\n**Size:** ${file.size}\n\n---\n\n![Preview](file://${file.path})`} 
               metadata={
-                 <List.Item.Detail.Metadata>
-                    <List.Item.Detail.Metadata.Label title="Name" text={file.name} />
-                    <List.Item.Detail.Metadata.Label title="Where" text={file.path.replace(process.env.HOME || "", "~")} />
-                    <List.Item.Detail.Metadata.Separator />
-                    <List.Item.Detail.Metadata.Label title="Type" text={file.isDir ? "Folder" : (path.extname(file.path).toUpperCase().slice(1) + " Image" || "Document")} />
-                    <List.Item.Detail.Metadata.Label title="Size" text={`${(file.size / 1024).toFixed(1)} KB`} />
-                 </List.Item.Detail.Metadata>
+                <List.Item.Detail.Metadata>
+                  <List.Item.Detail.Metadata.Label title="Name" text={file.name} />
+                  <List.Item.Detail.Metadata.Label title="Where" text={file.path.replace(process.env.HOME || "", "~")} />
+                  <List.Item.Detail.Metadata.Label title="Type" text={file.kind} icon={Icon.Document} />
+                  <List.Item.Detail.Metadata.Label title="Size" text={file.size.toString()} icon={Icon.Box} />
+                  <List.Item.Detail.Metadata.Separator />
+                  <List.Item.Detail.Metadata.Label title="Identity" text="Sovereign" icon={Icon.Shield} />
+                </List.Item.Detail.Metadata>
               }
             />
           }
@@ -212,31 +239,43 @@ function UniversalSearch() {
                 {!file.isDir && isMediaFile(file) && (
                    <Action.Push title="Quick Look" icon={Icon.Eye} shortcut={{ modifiers: ["cmd"], key: "y" }} target={<FullImageDetail file={file} />} />
                 )}
-                {!file.isDir && !file.isDir && <Action.Push title="Read & Edit Content" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
+                {!file.isDir && <Action.Push title="Read & Edit Content" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
+                <Action.Push title="Render Markdown" icon={Icon.BlankDocument} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} target={<MarkdownViewer file={file} />} />
                 <Action.Open title="Open" target={file.path} />
                 <Action.ShowInFinder title="Show in Finder" path={file.path} />
-                <Action.OpenWith title="Open With..." path={file.path} />
               </ActionPanel.Section>
 
-              <ActionPanel.Section title="Identity & Location">
-                 <Action.CopyToClipboard title="Copy Path" content={file.path} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} />
-                 <Action.CopyToClipboard title="Copy Name" content={file.name} shortcut={{ modifiers: ["cmd", "opt"], key: "c" }} />
-                 <Action.Push title="Rename" icon={Icon.Text} shortcut={{ modifiers: ["cmd"], key: "r" }} target={<RenameFile file={file} onUpdate={load} />} />
-                 <Action title="Enclosing Folder" icon={Icon.Folder} shortcut={{ modifiers: ["cmd"], key: "arrowUp" }} onAction={() => open(path.dirname(file.path))} />
-              </ActionPanel.Section>
-
-              <ActionPanel.Section title="Destruction">
-                <Action title="Move to Trash" icon={Icon.Trash} style={Action.Style.Destructive} shortcut={{ modifiers: ["cmd"], key: "delete" }} onAction={async () => {
-                  if (await ConfirmAlert({ title: "Move to Trash?", message: "This will relocate the file to your system trash." })) {
-                    await fetch("http://localhost:3031/archive/files/delete", {
-                      method: "POST",
-                      body: JSON.stringify({ path: file.path }),
-                      headers: { "Content-Type": "application/json" }
+              <ActionPanel.Section title="Sovereign Management">
+                 <Action title="Copy File" icon={Icon.CopyClipboard} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} onAction={async () => {
+                    await fetch("http://localhost:3031/archive/files/copy", {
+                       method: "POST",
+                       body: JSON.stringify({ from: file.path, to: path.join(path.dirname(file.path), `Copy of ${file.name}`) }),
+                       headers: { "Content-Type": "application/json" }
                     });
-                    showToast({ title: "Relocated to Trash" });
+                    showToast({ title: "File Cloned" });
+                 }} />
+                 <Action.Push title="Rename / Move" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "m" }} target={
+                    <Form actions={<ActionPanel><Action.SubmitForm title="Move" onSubmit={async (v: { p: string }) => {
+                       await fetch("http://localhost:3031/archive/files/move", {
+                          method: "POST",
+                          body: JSON.stringify({ from: file.path, to: v.p }),
+                          headers: { "Content-Type": "application/json" }
+                       });
+                       showToast({ title: "File Re-located" });
+                       load();
+                    }} /></ActionPanel>}>
+                       <Form.TextField id="p" title="New Path" defaultValue={file.path} />
+                    </Form>
+                 } />
+                 <Action icon={Icon.Trash} title="Move to Trash" style={Action.Style.Destructive} onAction={async () => {
+                    await fetch("http://localhost:3031/archive/files/delete", {
+                       method: "POST",
+                       body: JSON.stringify({ path: file.path }),
+                       headers: { "Content-Type": "application/json" }
+                    });
+                    showToast({ title: "Evicted to Trash" });
                     load();
-                  }
-                }} />
+                 }} />
               </ActionPanel.Section>
 
               <ActionPanel.Section title="Note Integration">
@@ -290,7 +329,6 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
       const res = await fetch(`http://localhost:3031/archive/notes/entries?name=${encodeURIComponent(name)}`);
       if (res.ok) {
         const data = await res.json() as NoteEntry[];
-        // Simple heuristic for grouping: Look for headings in body
         setEntries(data.reverse());
       }
     } catch (e) {
@@ -302,30 +340,34 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
 
   useEffect(() => { load(); }, []);
 
-  // Organize entries by section (if any)
-  const grouped: Record<string, NoteEntry[]> = { "Main Feed": [] };
-  entries.forEach(e => {
-    // If the body starts with a heading or contains one, we could group, 
-    // but the backend handles sections now.
-    // For now, let's look for sections in the metadata if we added them.
-    grouped["Main Feed"].push(e);
-  });
+  const cleanBody = (text: string) => {
+    return text.replace(/Words: \d+ \| Chars: \d+ \| Read Time: [\d.]+m/g, "").trim();
+  };
+
+  const groupedEntries = entries.reduce((acc, entry) => {
+     const body = entry.body;
+     const headingMatch = body.match(/^#+ (.*)/m);
+     const groupKey = headingMatch ? headingMatch[1] : "Fragments";
+     if (!acc[groupKey]) acc[groupKey] = [];
+     acc[groupKey].push(entry);
+     return acc;
+  }, {} as Record<string, NoteEntry[]>);
 
   return (
-    <List isLoading={isLoading} navigationTitle={name} searchBarPlaceholder="Search entries...">
-      {Object.entries(grouped).map(([section, items]) => (
-        <List.Section key={section} title={section}>
+    <List isLoading={isLoading} searchBarPlaceholder="Search entries..." navigationTitle={name}>
+      {Object.entries(groupedEntries).map(([heading, items]) => (
+        <List.Section key={heading} title={heading}>
           {items.map((entry) => (
             <List.Item
-              key={entry.id}
-              title={entry.body.split('\n')[0].substring(0, 100)}
-              subtitle={entry.time}
+              key={`${entry.fileName}-${entry.entryId}`}
               icon={Icon.Clock}
-              detail={<List.Item.Detail markdown={entry.raw} />}
+              title={cleanBody(entry.body).split('\n')[0].substring(0, 60)}
+              subtitle={entry.time}
               actions={
                 <ActionPanel>
-                  <Action.Push title="Edit Entry" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "e" }} target={<EditEntry name={name} entry={entry} onUpdate={() => { load(); onUpdate(); }} />} />
-                  <Action.Push title="Append New" icon={Icon.Plus} shortcut={{ modifiers: ["cmd"], key: "n" }} target={<EntryAction name={name} type="append" onUpdate={() => { load(); onUpdate(); }} />} />
+                  <Action.Push title="Edit Entry" icon={Icon.Pencil} target={<EditEntry name={name} entry={entry} onUpdate={() => { load(); onUpdate(); }} />} />
+                  <Action.CopyToClipboard title="Copy Content" content={cleanBody(entry.body)} />
+                  <Action.Push title="Render Markdown" icon={Icon.BlankDocument} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} target={<MarkdownViewer file={{ name, path: path.join('gravity-notes', name) } as any} />} />
                 </ActionPanel>
               }
             />
@@ -334,19 +376,6 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
       ))}
     </List>
   );
-}
-
-function MarkdownViewer({ name }: { name: string }) {
-  const [content, setContent] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`http://localhost:3031/archive/files/read?path=${encodeURIComponent('gravity-notes/' + name)}`)
-      .then(res => res.text())
-      .then(text => { setContent(text); setIsLoading(false); });
-  }, []);
-
-  return <Detail isLoading={isLoading} markdown={content} navigationTitle={name} />;
 }
 
 function ExternalFileDetail({ file }: { file: ExternalFile }) {
@@ -457,7 +486,7 @@ function GlobalSearch({ onUpdate }: { onUpdate: () => void }) {
           icon={Icon.Text}
           actions={
             <ActionPanel>
-              <Action.Push title="Edit This Entry" icon={Icon.Pencil} target={<EditEntry name={res.fileName} entry={{ id: res.entryId, body: res.body, time: res.time, raw: "" }} onUpdate={onUpdate} />} />
+              <Action.Push title="Edit This Entry" icon={Icon.Pencil} target={<EditEntry name={res.fileName} entry={{ id: res.entryId, body: res.body, time: res.time, raw: "" } as any} onUpdate={onUpdate} />} />
               <Action.Push title="Open Note" icon={Icon.Folder} target={<EntryList name={res.fileName} onUpdate={onUpdate} />} />
             </ActionPanel>
           }

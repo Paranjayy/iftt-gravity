@@ -546,19 +546,74 @@ async function main() {
               if (p.toLowerCase().includes(query)) {
                 const time = p.match(/^\d{2}:\d{2} [AP]M/)?.[0] || "Unknown";
                 const body = p.replace(/^\d{2}:\d{2} [AP]M\n/, "").trim();
-                results.push({ fileName: f, entryId: i, time, body, snippet: body.substring(0, 100) });
-              }
-            });
-          });
-          
           return new Response(JSON.stringify(results.slice(0, 50)), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/desktop/organize') {
+           const desktop = path.join(process.env.HOME || "", "Desktop");
+           const organized = path.join(process.env.HOME || "", "Organised");
+           if (!fs.existsSync(organized)) fs.mkdirSync(organized);
+
+           const files = fs.readdirSync(desktop).filter(f => !f.startsWith('.') && !f.startsWith('Organised'));
+           const undoLog: any[] = [];
+
+           files.forEach(f => {
+              const fullPath = path.join(desktop, f);
+              if (fs.lstatSync(fullPath).isDirectory()) return;
+
+              const ext = path.extname(f).toLowerCase();
+              const stats = fs.statSync(fullPath);
+              const weekNum = Math.ceil((stats.mtime.getDate() + new Date(stats.mtime.getFullYear(), stats.mtime.getMonth(), 1).getDay()) / 7);
+              const monthName = stats.mtime.toLocaleString('default', { month: 'long' });
+              const dateFolder = `${monthName}-Week-${weekNum}`;
+
+              let category = "Miscellaneous";
+              if (['.png', '.jpg', '.jpeg', '.gif', '.mov', '.mp4'].includes(ext)) category = "Media";
+              else if (['.pdf', '.doc', '.docx', '.txt', '.pages'].includes(ext)) category = "Documents";
+              else if (['.zip', '.tar', '.gz', '.dmg'].includes(ext)) category = "Archives";
+              else if (['.js', '.py', '.ts', '.sh', '.json', '.swift'].includes(ext)) category = "Developer";
+
+              const destDir = path.join(organized, category, dateFolder);
+              if (!fs.existsSync(path.join(organized, category))) fs.mkdirSync(path.join(organized, category));
+              if (!fs.existsSync(destDir)) fs.mkdirSync(destDir);
+
+              const destPath = path.join(destDir, f);
+              fs.renameSync(fullPath, destPath);
+              undoLog.push({ from: destPath, to: fullPath });
+           });
+
+           fs.writeFileSync(path.join(ARCHIVE_DIR, 'desktop_undo.json'), JSON.stringify(undoLog));
+           return new Response(JSON.stringify({ moved: undoLog.length }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/files/copy' && req.method === 'POST') {
+           const { from, to } = await req.json();
+           try {
+              fs.copyFileSync(from, to);
+              return new Response("Copied", { headers: { 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response("Failed", { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
+        if (url.pathname === '/archive/files/move' && req.method === 'POST') {
+           const { from, to } = await req.json();
+           try {
+              fs.renameSync(from, to);
+              return new Response("Moved", { headers: { 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response("Failed", { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
+        if (url.pathname === '/archive/files/delete' && req.method === 'POST') {
+           const { path: filePath } = await req.json();
+           const trashPath = path.join(process.env.HOME || "", ".Trash", path.basename(filePath));
+           fs.renameSync(filePath, trashPath); // Native "Move to Trash"
+           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/files/search') {
           const query = url.searchParams.get('q') || "";
           if (!query) return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
           try {
-            const { stdout } = await execAsync(`mdfind -name "${query}" | head -n 30`);
+            const { stdout } = await execAsync(`mdfind -name "${query.replace(/"/g, '\\"')}" | head -n 30`);
             const paths = stdout.trim().split('\n').filter(p => p.length > 0);
             const results = paths.map(p => {
                try {
@@ -569,62 +624,8 @@ async function main() {
           } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
         }
 
-        if (url.pathname === '/archive/files/rename' && req.method === 'POST') {
-           const { oldPath, newName } = await req.json();
-           const newPath = path.join(path.dirname(oldPath), newName);
-           fs.renameSync(oldPath, newPath);
-           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
-        }
-
-        if (url.pathname === '/archive/files/delete' && req.method === 'POST') {
-           const { path: filePath } = await req.json();
-           const trashPath = path.join(process.env.HOME || "", ".Trash", path.basename(filePath));
-           fs.renameSync(filePath, trashPath); // Native "Move to Trash"
-           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
-        }
-
-        if (url.pathname === '/archive/files/copy' && req.method === 'POST') {
-           const { oldPath, newPath } = await req.json();
-           fs.copyFileSync(oldPath, newPath);
-           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
-        }
-
-        if (url.pathname === '/archive/desktop/organize') {
-           const desktop = path.join(process.env.HOME || "", "Desktop");
-           const files = fs.readdirSync(desktop);
-           let movedCount = 0;
-           const moveLog: any[] = [];
-           
-           for (const f of files) {
-              if (f.startsWith('.') || f === "Organised Screenshots") continue;
-              const fullPath = path.join(desktop, f);
-              const stats = fs.statSync(fullPath);
-              if (stats.isDirectory() && f.includes('Organised')) continue;
-
-              let targetFolder = "";
-              if (f.toLowerCase().startsWith('screenshot')) targetFolder = "Screenshots";
-              else if (f.match(/\.(pdf|docx|xlsx|pptx)$/i)) targetFolder = "Documents";
-              else if (f.match(/\.(py|js|ts|tsx|json|sh|html|css|txt)$/i)) targetFolder = "Scripts";
-              else if (f.match(/\.(zip|tar|gz|rar)$/i)) targetFolder = "Archives";
-              else if (f.match(/\.(png|jpg|jpeg|gif|svg|mp4|mov)$/i)) targetFolder = "Media";
-              
-              if (targetFolder) {
-                 const destDir = path.join(desktop, `Organised ${targetFolder}`);
-                 if (!fs.existsSync(destDir)) fs.mkdirSync(destDir);
-                 const destPath = path.join(destDir, f);
-                 fs.renameSync(fullPath, destPath);
-                 moveLog.push({ from: destPath, to: fullPath });
-                 movedCount++;
-              }
-           }
-           if (moveLog.length > 0) {
-              fs.writeFileSync('gravity-archive/desktop_undo.json', JSON.stringify(moveLog));
-           }
-           return new Response(JSON.stringify({ movedCount }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
-        }
-
         if (url.pathname === '/archive/desktop/undo') {
-           const logPath = 'gravity-archive/desktop_undo.json';
+           const logPath = path.join(ARCHIVE_DIR, 'desktop_undo.json');
            if (!fs.existsSync(logPath)) return new Response(JSON.stringify({ count: 0 }), { headers: { 'Access-Control-Allow-Origin': '*' } });
            const log = JSON.parse(fs.readFileSync(logPath, 'utf-8'));
            log.forEach((m: any) => {
@@ -664,15 +665,17 @@ async function main() {
         if (url.pathname === '/archive/disk/scan') {
            const targetPath = url.searchParams.get('path') || process.env.HOME || "";
            try {
-              const { stdout } = await execAsync(`du -sk "${targetPath}"/* 2>/dev/null | sort -rn | head -n 50`);
+              const { stdout } = await execAsync(`du -sk "${targetPath.replace(/"/g, '\\"')}"/* 2>/dev/null | sort -rn | head -n 50`);
               const results = stdout.trim().split('\n').filter(l => l.length > 0).map(line => {
                  const [sizeKb, ...pathParts] = line.split('\t');
                  const p = pathParts.join('\t');
+                 let isDir = false;
+                 try { isDir = fs.statSync(p).isDirectory(); } catch(e) {}
                  return {
                     path: p,
                     name: path.basename(p),
                     size: parseInt(sizeKb) * 1024,
-                    isDir: fs.statSync(p).isDirectory()
+                    isDir
                  };
               });
               return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
@@ -689,15 +692,26 @@ async function main() {
 
         if (url.pathname === '/archive/system/processes') {
            try {
-              // Get top 20 processes by memory
-              const { stdout } = await execAsync("ps -eo pid,ppid,%cpu,%mem,comm | sort -rk 4 | head -n 20");
+              // Get memory info for absolute values
+              const { stdout: memInfo } = await execAsync("sysctl hw.memsize | awk '{print $2}'");
+              const totalMem = parseInt(memInfo.trim());
+              
+              const { stdout } = await execAsync("ps -eo pid,ppid,%cpu,%mem,comm | sort -rk 4 | head -n 25");
               const results = stdout.trim().split('\n').slice(1).map(line => {
                  const parts = line.trim().split(/\s+/);
                  const pid = parts[0];
                  const cpu = parts[2];
-                 const mem = parts[3];
+                 const memPct = parseFloat(parts[3]);
+                 const memAbs = (memPct / 100) * totalMem;
                  const command = parts.slice(4).join(' ');
-                 return { pid, cpu, mem, name: path.basename(command), command };
+                 return { 
+                    pid, 
+                    cpu, 
+                    mem: memPct.toFixed(1), 
+                    memAbs: memAbs > 1024*1024*1024 ? (memAbs / (1024*1024*1024)).toFixed(1) + " GB" : (memAbs / (1024*1024)).toFixed(0) + " MB",
+                    name: path.basename(command), 
+                    command 
+                 };
               });
               return new Response(JSON.stringify(results), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
            } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }

@@ -7,6 +7,7 @@ interface Process {
   name: string;
   cpu: string;
   mem: string;
+  memAbs: string;
   command: string;
 }
 
@@ -50,12 +51,20 @@ export default function Command() {
   }
 
   const copySummary = () => {
-     let summary = `### 💀 System Process Report\n\n| PID | Name | CPU % | MEM % |\n| :--- | :--- | :--- | :--- |\n`;
+     let summary = `### 💀 System Process Report\n\n| PID | Name | CPU % | MEM |\n| :--- | :--- | :--- | :--- |\n`;
      processes.slice(0, 10).forEach(p => {
-        summary += `| ${p.pid} | ${p.name} | ${p.cpu} | ${p.mem} |\n`;
+        summary += `| ${p.pid} | ${p.name} | ${p.cpu} | ${p.memAbs} |\n`;
      });
      Clipboard.copy(summary);
      showToast({ title: "Death List Copied", message: "Top 10 heavy processes hoarded." });
+  };
+
+  const getProcessIcon = (p: Process) => {
+     if (p.command.includes('.app/')) {
+        const appPath = p.command.match(/.*?\.app/)?.[0];
+        if (appPath) return { fileIcon: appPath };
+     }
+     return Icon.Activity;
   };
 
   return (
@@ -65,10 +74,10 @@ export default function Command() {
           key={p.pid}
           title={p.name}
           subtitle={`PID: ${p.pid}`}
-          icon={Icon.Activity}
+          icon={getProcessIcon(p)}
           accessories={[
             { text: `${p.cpu}% CPU`, color: parseFloat(p.cpu) > 50 ? Color.Red : Color.SecondaryText },
-            { text: `${p.mem}% MEM`, color: parseFloat(p.mem) > 10 ? Color.Orange : Color.SecondaryText }
+            { text: `${p.memAbs} (${p.mem}%)`, color: parseFloat(p.mem) > 10 ? Color.Orange : Color.SecondaryText }
           ]}
           actions={
             <ActionPanel title={p.name}>
