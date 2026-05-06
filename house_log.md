@@ -3244,3 +3244,5 @@ ht...)
 [6/5/2026, 10:13:56 AM] 📋 Memory Archive: New clip captured (uhavent commited pus...)
 [6/5/2026, 10:18:28 AM] 📋 Memory Archive: New clip captured (- dawg we need to go...)
 [6/5/2026, 10:43:42 AM] AC State: ON (Manual/Remote)
+[6/5/2026, 10:46:39 AM] 📱 Presence: Phone detected (HOME)
+[6/5/2026, 10:46:44 AM] 🎬 Scene Trigger: MORNING_BRIEF

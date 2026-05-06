@@ -13,6 +13,7 @@ interface Process {
 
 export default function Command() {
   const [processes, setProcesses] = useState<Process[]>([]);
+  const [vitals, setVitals] = useState({ cpu: "0%", mem: "0%", swap: "0B" });
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<"cpu" | "mem" | "pid" | "name">("mem");
   const [filter, setFilter] = useState<"all" | "high-cpu" | "high-mem">("all");
@@ -21,9 +22,14 @@ export default function Command() {
   async function load() {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:3031/archive/system/processes");
-      const data = await res.json() as Process[];
+      const [pRes, vRes] = await Promise.all([
+        fetch("http://localhost:3031/archive/system/processes"),
+        fetch("http://localhost:3031/archive/system/vitals")
+      ]);
+      const data = await pRes.json() as Process[];
+      const vData = await vRes.json() as any;
       setProcesses(data);
+      setVitals(vData);
     } catch (e) {
       showToast({ title: "Reaper Offline", style: Toast.Style.Failure });
     } finally {
@@ -69,7 +75,7 @@ export default function Command() {
     <List 
       isLoading={isLoading} 
       searchBarPlaceholder="Sovereign Process Audit..." 
-      navigationTitle="Process Reaper"
+      navigationTitle={`Reaper: CPU ${vitals.cpu} | RAM ${vitals.mem} | Swap ${vitals.swap}`}
       searchBarAccessory={
         <List.Dropdown tooltip="Sort & Filter" onChange={(v) => {
            if (v === "group-toggle") setGrouping(!grouping);

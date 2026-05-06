@@ -6,6 +6,7 @@ import MissionControl from "./stats";
 import GitProbe from "./git-probe";
 import NodeReaper from "./node-reaper";
 import Scaffolder from "./project-scaffolder";
+import ExtensionAuditor from "./extension-auditor";
 
 interface NoteFile {
   name: string;
@@ -201,6 +202,16 @@ export default function Command() {
           actions={
             <ActionPanel>
               <Action.Push title="Open Scaffolder" target={<Scaffolder />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          title="Extension Auditor"
+          subtitle="Curate Raycast Bloat & Extension Usage"
+          icon={Icon.Eye}
+          actions={
+            <ActionPanel>
+              <Action.Push title="Open Auditor" target={<ExtensionAuditor />} />
             </ActionPanel>
           }
         />

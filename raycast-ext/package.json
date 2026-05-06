@@ -107,6 +107,13 @@
       "mode": "view"
     },
     {
+      "name": "extension-auditor",
+      "title": "Extension Auditor",
+      "description": "Curate Raycast Bloat & Extension Usage",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
       "name": "convert-link",
       "title": "Convert URL to Markdown",
       "description": "Replace clipboard URL with a titled Markdown link",

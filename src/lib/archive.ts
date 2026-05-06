@@ -22,6 +22,13 @@ let CLIPSTACK: any[] = [];
 let CLIPSTACK_SOURCE = "Unknown";
 let CLIPSTACK_URL = "";
 
+// Persistent Cache for heavy scans
+let repoCache: any[] = [];
+let nodeCache: any[] = [];
+let lastRepoScan = 0;
+let lastNodeScan = 0;
+const SCAN_INTERVAL = 300000; // 5 minutes
+
 function cleanDOM(html: string) {
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -165,6 +172,7 @@ async function main() {
     if (typeof (globalThis as any).Bun !== 'undefined') {
       (globalThis as any).Bun.serve({
       port: 3031,
+      idleTimeout: 60, // Increase timeout for heavy scans
       async fetch(req: any) {
         const url = new URL(req.url);
         
@@ -554,9 +562,14 @@ async function main() {
         }
 
         if (url.pathname === '/archive/git/list') {
+           const now = Date.now();
+           if (repoCache.length > 0 && (now - lastRepoScan) < SCAN_INTERVAL) {
+              return new Response(JSON.stringify(repoCache), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           }
+
            const developerDir = path.join(process.env.HOME || "", "Developer");
            try {
-             const { stdout } = await execAsync(`find ${developerDir} -maxdepth 3 -name ".git"`);
+             const { stdout } = await execAsync(`find ${developerDir} -maxdepth 3 -name ".git" -type d -prune`);
              const gitPaths = stdout.trim().split('\n').filter(p => p.length > 0);
              const repos = await Promise.all(gitPaths.map(async (gp) => {
                 const repoPath = path.dirname(gp);
@@ -566,8 +579,8 @@ async function main() {
                   const remote = remoteOut.split('\n')[0]?.match(/https:\/\/github\.com\/.*?\s|git@github\.com:.*?\s/)?.[0]?.trim();
                   
                   const [status, size, sync] = await Promise.all([
-                     execAsync(`git -C ${repoPath} status --porcelain`).then(r => r.stdout.trim().length > 0),
-                     execAsync(`du -sh ${repoPath} | cut -f1`).then(r => r.stdout.trim()),
+                     execAsync(`git -C ${repoPath} status --porcelain`).then(r => r.stdout.trim().length > 0).catch(() => false),
+                     execAsync(`du -sh ${repoPath} | cut -f1`).then(r => r.stdout.trim()).catch(() => "0B"),
                      execAsync(`git -C ${repoPath} rev-list --left-right --count HEAD...@{u} 2>/dev/null`).then(r => r.stdout.trim()).catch(() => "0\t0")
                   ]);
 
@@ -577,6 +590,8 @@ async function main() {
                   return { name, path: repoPath, remote, isPublic, hasChanges: status, size, ahead, behind };
                 } catch(e) { return { name, path: repoPath }; }
              }));
+             repoCache = repos;
+             lastRepoScan = now;
              return new Response(JSON.stringify(repos), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
            } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
         }
@@ -746,6 +761,10 @@ async function main() {
         }
 
         if (url.pathname === '/archive/system/node-modules/scan') {
+           const now = Date.now();
+           if (nodeCache.length > 0 && (now - lastNodeScan) < SCAN_INTERVAL) {
+              return new Response(JSON.stringify(nodeCache), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           }
            const devDir = path.join(process.env.HOME || "", "Developer");
            try {
              const { stdout } = await execAsync(`find ${devDir} -name "node_modules" -type d -prune -maxdepth 4`);
@@ -760,6 +779,8 @@ async function main() {
 
                 return { path: p, project: path.basename(path.dirname(p)), size: sizeStr, bytes: sizeBytes };
              }));
+             nodeCache = modules;
+             lastNodeScan = now;
              return new Response(JSON.stringify(modules), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
            } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
         }
@@ -825,8 +846,33 @@ async function main() {
            try {
               const { stdout: cpu } = await execAsync("top -l 1 | grep 'CPU usage' | awk '{print $3}'");
               const { stdout: mem } = await execAsync("top -l 1 | grep 'PhysMem' | awk '{print $2}'");
-              return new Response(JSON.stringify({ cpu: cpu.trim(), mem: mem.trim() }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+              const { stdout: swap } = await execAsync("sysctl vm.swapusage | awk '{print $5}'");
+              return new Response(JSON.stringify({ 
+                cpu: cpu.trim(), 
+                mem: mem.trim(),
+                swap: swap.trim() 
+              }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
            } catch(e) { return new Response("Error", { status: 500 }); }
+        }
+
+        if (url.pathname === '/archive/extensions/list') {
+           const extPath = path.join(process.env.HOME || "", "Library/Application Support/com.raycast.macos/extensions");
+           if (!fs.existsSync(extPath)) return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           
+           const dirs = fs.readdirSync(extPath);
+           const exts = [];
+           for (const d of dirs) {
+              const fullPath = path.join(extPath, d);
+              const pkgPath = path.join(fullPath, 'package.json');
+              if (fs.existsSync(pkgPath)) {
+                 try {
+                    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+                    const { stdout: sizeOut } = await execAsync(`du -sh "${fullPath}" | cut -f1`);
+                    exts.push({ name: pkg.name, title: pkg.title, description: pkg.description, author: pkg.author, size: sizeOut.trim(), path: fullPath });
+                 } catch(e) {}
+              }
+           }
+           return new Response(JSON.stringify(exts), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/system/processes') {
