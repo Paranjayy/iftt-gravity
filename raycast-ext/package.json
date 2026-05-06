@@ -130,8 +130,8 @@
     "typescript": "^5.2.2"
   },
   "scripts": {
-    "build": "ray build",
-    "dev": "ray develop",
+    "build": "node node_modules/@raycast/api/bin/run.js build",
+    "dev": "node node_modules/@raycast/api/bin/run.js develop",
     "archive-only": "bun scripts/archive-brain.ts",
     "fix-lint": "eslint src --fix",
     "lint": "eslint src",

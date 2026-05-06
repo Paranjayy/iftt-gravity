@@ -35,6 +35,12 @@ declare namespace Preferences {
   export type ProcessReaper = ExtensionPreferences & {}
   /** Preferences accessible in the `disk-analyzer` command */
   export type DiskAnalyzer = ExtensionPreferences & {}
+  /** Preferences accessible in the `git-probe` command */
+  export type GitProbe = ExtensionPreferences & {}
+  /** Preferences accessible in the `project-scaffolder` command */
+  export type ProjectScaffolder = ExtensionPreferences & {}
+  /** Preferences accessible in the `node-reaper` command */
+  export type NodeReaper = ExtensionPreferences & {}
   /** Preferences accessible in the `convert-link` command */
   export type ConvertLink = ExtensionPreferences & {}
 }
@@ -62,6 +68,12 @@ declare namespace Arguments {
   export type ProcessReaper = {}
   /** Arguments passed to the `disk-analyzer` command */
   export type DiskAnalyzer = {}
+  /** Arguments passed to the `git-probe` command */
+  export type GitProbe = {}
+  /** Arguments passed to the `project-scaffolder` command */
+  export type ProjectScaffolder = {}
+  /** Arguments passed to the `node-reaper` command */
+  export type NodeReaper = {}
   /** Arguments passed to the `convert-link` command */
   export type ConvertLink = {}
 }
