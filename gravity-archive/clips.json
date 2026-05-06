@@ -1,8 +1,22 @@
 [
   {
+    "id": "1778034762179",
+    "text": "/entire setup still doesnt seems to be done read its docs ig idk\r\r===\rOverview",
+    "timestamp": "2026-05-06T02:32:42.179Z",
+    "isBookmarked": false,
+    "source": "Electron",
+    "meta": {
+      "words": 15,
+      "lines": 1,
+      "chars": 78,
+      "tokens": 20,
+      "type": "file"
+    }
+  },
+  {
     "id": "1778034130739",
     "text": "/- idk not accurate idk where u are moving but it aint accurate for desktop sorting in desktop the ss gets sortted based of their metadata to organised screenshots:week number also idk if u read ur shit",
-    "timestamp": "2026-05-06T02:24:56.350Z",
+    "timestamp": "2026-05-06T02:28:26.965Z",
     "isBookmarked": false,
     "source": "Electron",
     "meta": {
@@ -11,7 +25,7 @@
       "chars": 202,
       "tokens": 51,
       "type": "file",
-      "dupes": 4
+      "dupes": 5
     },
     "url": ""
   },

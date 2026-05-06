@@ -259,6 +259,17 @@ function UniversalSearch() {
               </ActionPanel.Section>
 
               <ActionPanel.Section title="Sovereign Management">
+                 {file.isDir && (
+                    <Action title="Organize This Folder" icon={Icon.Desktop} onAction={async () => {
+                       const res = await fetch("http://localhost:3031/archive/organize/path", {
+                          method: "POST",
+                          body: JSON.stringify({ targetPath: file.path }),
+                          headers: { "Content-Type": "application/json" }
+                       });
+                       const data = await res.json() as { moved: number };
+                       showToast({ title: "Folder Purified", message: `${data.moved} files grouped.` });
+                    }} />
+                 )}
                  <Action title="Copy File" icon={Icon.CopyClipboard} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} onAction={async () => {
                     await fetch("http://localhost:3031/archive/files/copy", {
                        method: "POST",

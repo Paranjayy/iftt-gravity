@@ -3227,3 +3227,4 @@ ht...)
 [6/5/2026, 7:54:33 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
 [6/5/2026, 7:54:34 AM] 📱 Presence: Phone detected (HOME)
 [6/5/2026, 7:54:39 AM] 🎬 Scene Trigger: MORNING_BRIEF
+[6/5/2026, 8:02:41 AM] 📋 Memory Archive: New clip captured (entire setup still d...)

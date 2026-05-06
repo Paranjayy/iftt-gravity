@@ -546,11 +546,85 @@ async function main() {
               if (p.toLowerCase().includes(query)) {
                 const time = p.match(/^\d{2}:\d{2} [AP]M/)?.[0] || "Unknown";
                 const body = p.replace(/^\d{2}:\d{2} [AP]M\n/, "").trim();
-                results.push({ file: f, time, body });
+                results.push({ fileName: f, entryId: i, time, body, snippet: body.substring(0, 100) });
               }
             });
           });
           return new Response(JSON.stringify(results.slice(0, 50)), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/git/list') {
+           const developerDir = path.join(process.env.HOME || "", "Developer");
+           try {
+             const { stdout } = await execAsync(`find ${developerDir} -maxdepth 3 -name ".git"`);
+             const gitPaths = stdout.trim().split('\n').filter(p => p.length > 0);
+             const repos = await Promise.all(gitPaths.map(async (gp) => {
+                const repoPath = path.dirname(gp);
+                const name = path.basename(repoPath);
+                try {
+                  const { stdout: remoteOut } = await execAsync(`git -C ${repoPath} remote -v`);
+                  const remote = remoteOut.split('\n')[0]?.match(/https:\/\/github\.com\/.*?\s|git@github\.com:.*?\s/)?.[0]?.trim();
+                  let isPublic = false;
+                  if (remote) {
+                     isPublic = remote.startsWith('https'); 
+                  }
+                  return { name, path: repoPath, remote, isPublic };
+                } catch(e) { return { name, path: repoPath }; }
+             }));
+             return new Response(JSON.stringify(repos), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+           } catch(e) { return new Response(JSON.stringify([]), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }); }
+        }
+
+        if (url.pathname === '/archive/project/scaffold' && req.method === 'POST') {
+           const { name, path: rootPath, template } = await req.json();
+           const projectPath = path.join(rootPath, name);
+           if (fs.existsSync(projectPath)) return new Response("Exists", { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+           
+           fs.mkdirSync(projectPath, { recursive: true });
+           await execAsync(`git -C ${projectPath} init`);
+           fs.writeFileSync(path.join(projectPath, 'README.md'), `# ${name}\n\nGenerated via Gravity Scaffolder.`);
+           
+           if (template === 'vault') {
+              fs.mkdirSync(path.join(projectPath, 'Daily'));
+              fs.mkdirSync(path.join(projectPath, 'Reference'));
+              fs.mkdirSync(path.join(projectPath, 'Drafts'));
+           } else if (template === 'python') {
+              fs.writeFileSync(path.join(projectPath, 'main.py'), 'def main():\n    print("Hello Gravity")\n\nif __name__ == "__main__":\n    main()');
+           }
+           
+           return new Response("Scaffolded", { headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        if (url.pathname === '/archive/organize/path' && req.method === 'POST') {
+           const { targetPath } = await req.json();
+           if (!fs.existsSync(targetPath)) return new Response("Not Found", { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+           
+           const organizedRoot = path.join(targetPath, "Organised Folders");
+           if (!fs.existsSync(organizedRoot)) fs.mkdirSync(organizedRoot);
+
+           const files = fs.readdirSync(targetPath).filter(f => !f.startsWith('.') && f !== 'Organised Folders');
+           const moves: any[] = [];
+           
+           files.forEach(f => {
+              const fullPath = path.join(targetPath, f);
+              if (fs.lstatSync(fullPath).isDirectory()) return;
+              
+              const ext = path.extname(f).toLowerCase();
+              let category = "Miscellaneous";
+              if (['.png', '.jpg', '.jpeg', '.gif', '.mov', '.mp4'].includes(ext)) category = "Media";
+              else if (['.pdf', '.doc', '.docx', '.txt', '.pages'].includes(ext)) category = "Documents";
+              else if (['.zip', '.tar', '.gz', '.dmg'].includes(ext)) category = "Installers";
+
+              const destDir = path.join(organizedRoot, category);
+              if (!fs.existsSync(destDir)) fs.mkdirSync(destDir);
+              
+              const destPath = path.join(destDir, f);
+              fs.renameSync(fullPath, destPath);
+              moves.push({ from: destPath, to: fullPath });
+           });
+
+           saveUndo(moves);
+           return new Response(JSON.stringify({ moved: moves.length }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/desktop/organize') {
@@ -607,7 +681,7 @@ async function main() {
               } catch(e) {}
            });
 
-           fs.writeFileSync(path.join(ARCHIVE_DIR, 'desktop_undo.json'), JSON.stringify(undoLog));
+           saveUndo(undoLog);
            return new Response(JSON.stringify({ moved: undoLog.length }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 

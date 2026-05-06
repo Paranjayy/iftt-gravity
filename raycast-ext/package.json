@@ -86,6 +86,20 @@
       "mode": "view"
     },
     {
+      "name": "git-probe",
+      "title": "Git Project Probe",
+      "description": "Probe & Group Git VCS Repositories",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
+      "name": "project-scaffolder",
+      "title": "Workspace Scaffolder",
+      "description": "Rapid Environment Hardening & Templates",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
       "name": "convert-link",
       "title": "Convert URL to Markdown",
       "description": "Replace clipboard URL with a titled Markdown link",
