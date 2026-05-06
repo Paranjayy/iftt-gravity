@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import path from "path";
 import MissionControl from "./stats";
+import GitProbe from "./git-probe";
+import NodeReaper from "./node-reaper";
+import Scaffolder from "./project-scaffolder";
 
 interface NoteFile {
   name: string;
@@ -168,6 +171,36 @@ export default function Command() {
             <ActionPanel>
               <Action title="Organize Now" icon={Icon.Checkmark} onAction={organizeDesktop} />
               <Action title="Undo Last Organize" icon={Icon.RotateAntiClockwise} onAction={undoDesktop} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          title="Git Project Probe"
+          subtitle="VCS Intelligence & Sync Status"
+          icon={Icon.Globe}
+          actions={
+            <ActionPanel>
+              <Action.Push title="Open Probe" target={<GitProbe />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          title="Node Modules Reaper"
+          subtitle="Mass Storage Recovery & Purge"
+          icon={Icon.Box}
+          actions={
+            <ActionPanel>
+              <Action.Push title="Open Reaper" target={<NodeReaper />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          title="Workspace Scaffolder"
+          subtitle="Rapid Environment Hardening"
+          icon={Icon.Hammer}
+          actions={
+            <ActionPanel>
+              <Action.Push title="Open Scaffolder" target={<Scaffolder />} />
             </ActionPanel>
           }
         />
