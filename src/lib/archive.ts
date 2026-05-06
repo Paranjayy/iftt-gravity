@@ -65,7 +65,7 @@ async function archiveClipboard(text: string) {
 
   const processedText = resolvedText;
 
-  const existingIdx = clips.findIndex((c: any) => c.text.trim() === processedText);
+  const existingIdx = clips.findIndex((c: any) => c.text && c.text.trim() === processedText);
   if (existingIdx !== -1) {
     const item = clips[existingIdx];
     item.meta = item.meta || { type: 'text' };
@@ -546,40 +546,65 @@ async function main() {
               if (p.toLowerCase().includes(query)) {
                 const time = p.match(/^\d{2}:\d{2} [AP]M/)?.[0] || "Unknown";
                 const body = p.replace(/^\d{2}:\d{2} [AP]M\n/, "").trim();
+                results.push({ file: f, time, body });
+              }
+            });
+          });
           return new Response(JSON.stringify(results.slice(0, 50)), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/archive/desktop/organize') {
            const desktop = path.join(process.env.HOME || "", "Desktop");
-           const organized = path.join(process.env.HOME || "", "Organised");
-           if (!fs.existsSync(organized)) fs.mkdirSync(organized);
+           const organizedSS = path.join(desktop, "Organised Screenshots");
+           const organizedFolders = path.join(desktop, "Organised Folders");
+           
+           if (!fs.existsSync(organizedSS)) fs.mkdirSync(organizedSS);
+           if (!fs.existsSync(organizedFolders)) fs.mkdirSync(organizedFolders);
 
            const files = fs.readdirSync(desktop).filter(f => !f.startsWith('.') && !f.startsWith('Organised'));
            const undoLog: any[] = [];
 
            files.forEach(f => {
               const fullPath = path.join(desktop, f);
-              if (fs.lstatSync(fullPath).isDirectory()) return;
+              try {
+                const lstats = fs.lstatSync(fullPath);
+                if (lstats.isDirectory()) return;
 
-              const ext = path.extname(f).toLowerCase();
-              const stats = fs.statSync(fullPath);
-              const weekNum = Math.ceil((stats.mtime.getDate() + new Date(stats.mtime.getFullYear(), stats.mtime.getMonth(), 1).getDay()) / 7);
-              const monthName = stats.mtime.toLocaleString('default', { month: 'long' });
-              const dateFolder = `${monthName}-Week-${weekNum}`;
+                const ext = path.extname(f).toLowerCase();
+                const stats = fs.statSync(fullPath);
+                
+                const d = new Date(stats.mtime);
+                d.setHours(0,0,0,0);
+                d.setDate(d.getDate() + 4 - (d.getDay()||7));
+                const yearStart = new Date(d.getFullYear(),0,1);
+                const weekNo = Math.ceil(( ( (d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
+                const weekStr = `Week-${weekNo.toString().padStart(2, '0')}-${d.getFullYear()}`;
 
-              let category = "Miscellaneous";
-              if (['.png', '.jpg', '.jpeg', '.gif', '.mov', '.mp4'].includes(ext)) category = "Media";
-              else if (['.pdf', '.doc', '.docx', '.txt', '.pages'].includes(ext)) category = "Documents";
-              else if (['.zip', '.tar', '.gz', '.dmg'].includes(ext)) category = "Archives";
-              else if (['.js', '.py', '.ts', '.sh', '.json', '.swift'].includes(ext)) category = "Developer";
+                let category = "Miscellaneous";
+                let isScreenshot = f.startsWith('Screenshot') || f.includes('Screen Shot') || f.startsWith('scr_');
+                
+                let destDir = "";
+                if (isScreenshot) {
+                   destDir = path.join(organizedSS, weekStr);
+                } else {
+                   if (['.png', '.jpg', '.jpeg', '.gif', '.mov', '.mp4', '.webp', '.heic'].includes(ext)) {
+                      category = "Media";
+                   } else if (['.pdf', '.doc', '.docx', '.txt', '.pages', '.md', '.csv', '.xlsx', '.pptx'].includes(ext)) {
+                      category = "Documents";
+                   } else if (['.zip', '.tar', '.gz', '.dmg', '.pkg', '.7z', '.rar'].includes(ext)) {
+                      category = "Archives";
+                   } else if (['.js', '.py', '.ts', '.sh', '.json', '.swift', '.html', '.css'].includes(ext)) {
+                      category = "Developer";
+                   }
+                   destDir = path.join(organizedFolders, category);
+                }
 
-              const destDir = path.join(organized, category, dateFolder);
-              if (!fs.existsSync(path.join(organized, category))) fs.mkdirSync(path.join(organized, category));
-              if (!fs.existsSync(destDir)) fs.mkdirSync(destDir);
+                if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
 
-              const destPath = path.join(destDir, f);
-              fs.renameSync(fullPath, destPath);
-              undoLog.push({ from: destPath, to: fullPath });
+                const destPath = path.join(destDir, f);
+                fs.renameSync(fullPath, destPath);
+                undoLog.push({ from: destPath, to: fullPath });
+              } catch(e) {}
            });
 
            fs.writeFileSync(path.join(ARCHIVE_DIR, 'desktop_undo.json'), JSON.stringify(undoLog));

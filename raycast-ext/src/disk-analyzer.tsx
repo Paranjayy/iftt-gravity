@@ -11,12 +11,22 @@ interface DiskItem {
 
 export default function Command() {
   const [targetPath, setTargetPath] = useState(process.env.HOME || "");
+  const [sortBy, setSortBy] = useState<"size" | "name">("size");
+
   return (
     <DiskList 
       path={targetPath} 
       onPathChange={setTargetPath}
+      sortBy={sortBy}
       searchBarAccessory={
-        <List.Dropdown tooltip="Target Intelligence" onChange={setTargetPath} storeValue>
+        <List.Dropdown tooltip="Target Intelligence" onChange={(v) => {
+           if (v.startsWith("sort:")) setSortBy(v.split(":")[1] as any);
+           else setTargetPath(v);
+        }} storeValue>
+          <List.Dropdown.Section title="Sort Telemetry">
+            <List.Dropdown.Item title="Sort by Size (Large First)" value="sort:size" icon={Icon.ChevronDown} />
+            <List.Dropdown.Item title="Sort by Name" value="sort:name" icon={Icon.Text} />
+          </List.Dropdown.Section>
           <List.Dropdown.Section title="Sovereign Scopes">
             <List.Dropdown.Item title="Home (~)" value={process.env.HOME || ""} icon={Icon.Home} />
             <List.Dropdown.Item title="This Mac (/)" value="/" icon={Icon.HardDrive} />
@@ -33,7 +43,7 @@ export default function Command() {
   );
 }
 
-function DiskList({ path: initialPath, onPathChange, searchBarAccessory }: { path: string; onPathChange?: (p: string) => void, searchBarAccessory?: any }) {
+function DiskList({ path: initialPath, sortBy, onPathChange, searchBarAccessory }: { path: string; sortBy: "size" | "name", onPathChange?: (p: string) => void, searchBarAccessory?: any }) {
   const [items, setItems] = useState<DiskItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const currentPath = initialPath || (process.env.HOME || "");
@@ -53,6 +63,11 @@ function DiskList({ path: initialPath, onPathChange, searchBarAccessory }: { pat
 
   useEffect(() => { load(); }, [currentPath]);
 
+  const sorted = [...items].sort((a, b) => {
+     if (sortBy === "size") return b.size - a.size;
+     return a.name.localeCompare(b.name);
+  });
+
   const formatSize = (bytes: number) => {
     if (bytes === 0) return "0 B";
     const k = 1024;
@@ -64,7 +79,7 @@ function DiskList({ path: initialPath, onPathChange, searchBarAccessory }: { pat
   const copySummary = () => {
     let summary = `### 💿 Storage Analysis: ${currentPath}\n\n`;
     summary += `| Item | Size | Type |\n| :--- | :--- | :--- |\n`;
-    items.slice(0, 20).forEach(item => {
+    sorted.slice(0, 20).forEach(item => {
       summary += `| ${item.name} | ${formatSize(item.size)} | ${item.isDir ? "Folder" : "File"} |\n`;
     });
     summary += `\n*Generated via Gravity Disk Forge*`;
@@ -73,7 +88,7 @@ function DiskList({ path: initialPath, onPathChange, searchBarAccessory }: { pat
   };
 
   const copyBatchList = () => {
-     const list = items.map(i => i.path).join("\n");
+     const list = sorted.map(i => i.path).join("\n");
      Clipboard.copy(list);
      showToast({ title: "Paths Hoarded", message: `Copied ${items.length} paths.` });
   };
@@ -85,7 +100,7 @@ function DiskList({ path: initialPath, onPathChange, searchBarAccessory }: { pat
       navigationTitle={currentPath.replace(process.env.HOME || "", "~")}
       searchBarAccessory={searchBarAccessory}
     >
-      {items.map((item) => (
+      {sorted.map((item) => (
         <List.Item
           key={item.path}
           title={item.name}
@@ -96,7 +111,7 @@ function DiskList({ path: initialPath, onPathChange, searchBarAccessory }: { pat
             <ActionPanel title={item.name}>
               <ActionPanel.Section>
                 {item.isDir && (
-                  <Action.Push title="Drill Down" icon={Icon.ChevronRight} target={<DiskList path={item.path} />} />
+                  <Action.Push title="Drill Down" icon={Icon.ChevronRight} target={<DiskList path={item.path} sortBy={sortBy} />} />
                 )}
                 <Action.Open title="Open" target={item.path} />
                 <Action.ShowInFinder title="Show in Finder" path={item.path} />

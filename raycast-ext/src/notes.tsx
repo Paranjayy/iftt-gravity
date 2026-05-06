@@ -78,8 +78,8 @@ export default function Command() {
   async function organizeDesktop() {
     showToast({ title: "Organizing Desktop...", style: Toast.Style.Animated });
     const res = await fetch("http://localhost:3031/archive/desktop/organize");
-    const data = await res.json() as { movedCount: number };
-    showToast({ title: "Desktop Purified", message: `${data.movedCount} files grouped into folders`, style: Toast.Style.Success });
+    const data = await res.json() as { moved: number };
+    showToast({ title: "Desktop Purified", message: `${data.moved} files grouped into folders`, style: Toast.Style.Success });
   }
 
   async function undoDesktop() {
@@ -180,6 +180,7 @@ function UniversalSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ExternalFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [category, setCategory] = useState<"all" | "media" | "docs" | "dev">("all");
 
   async function load() {
     setIsLoading(true);
@@ -200,19 +201,31 @@ function UniversalSearch() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const getFileIcon = (file: ExternalFile) => {
-    if (file.isDir) return Icon.Folder;
-    const ext = path.extname(file.path).toLowerCase();
-    if (ext === '.md' || ext === '.txt') return Icon.Pencil;
-    if (['.png', '.jpg', '.jpeg', '.gif', '.svg'].includes(ext)) return Icon.Image;
-    if (['.mp4', '.mov', '.avi'].includes(ext)) return Icon.Video;
-    if (['.pdf', '.docx', '.xlsx'].includes(ext)) return Icon.Document;
-    return Icon.Document;
-  };
+  const filteredResults = results.filter(file => {
+     if (category === "all") return true;
+     const ext = path.extname(file.path).toLowerCase();
+     if (category === "media") return ['.png', '.jpg', '.jpeg', '.gif', '.mov', '.mp4', '.webp'].includes(ext);
+     if (category === "docs") return ['.pdf', '.doc', '.docx', '.txt', '.pages', '.md'].includes(ext);
+     if (category === "dev") return ['.js', '.py', '.ts', '.sh', '.json', '.swift', '.html', '.css'].includes(ext);
+     return true;
+  });
 
   return (
-    <List isLoading={isLoading} isShowingDetail={results.length > 0} onSearchTextChange={setQuery} searchBarPlaceholder="Search any file/folder (Spotlight)...">
-      {results.map(file => (
+    <List 
+      isLoading={isLoading} 
+      isShowingDetail={filteredResults.length > 0} 
+      onSearchTextChange={setQuery} 
+      searchBarPlaceholder="Search any file/folder (Spotlight)..."
+      searchBarAccessory={
+        <List.Dropdown tooltip="Category Filter" onChange={(v) => setCategory(v as any)} storeValue>
+          <List.Dropdown.Item title="All Files" value="all" icon={Icon.List} />
+          <List.Dropdown.Item title="Media Assets" value="media" icon={Icon.Image} />
+          <List.Dropdown.Item title="Documents" value="docs" icon={Icon.TextDocument} />
+          <List.Dropdown.Item title="Developer / Code" value="dev" icon={Icon.Code} />
+        </List.Dropdown>
+      }
+    >
+      {filteredResults.map(file => (
         <List.Item
           key={file.path}
           title={file.name}

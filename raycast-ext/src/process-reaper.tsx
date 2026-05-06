@@ -14,6 +14,9 @@ interface Process {
 export default function Command() {
   const [processes, setProcesses] = useState<Process[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<"cpu" | "mem" | "pid" | "name">("mem");
+  const [filter, setFilter] = useState<"all" | "high-cpu" | "high-mem">("all");
+  const [grouping, setGrouping] = useState(true);
 
   async function load() {
     setIsLoading(true);
@@ -34,31 +37,6 @@ export default function Command() {
     return () => clearInterval(interval);
   }, []);
 
-  async function killProcess(pid: string, name: string) {
-    if (await ConfirmAlert({ title: "Sovereign Execution?", message: `Terminate ${name} (PID: ${pid})?` })) {
-      const res = await fetch("http://localhost:3031/archive/system/kill", {
-        method: "POST",
-        body: JSON.stringify({ pid }),
-        headers: { "Content-Type": "application/json" }
-      });
-      if (res.ok) {
-        showToast({ title: "Process Purged", style: Toast.Style.Success });
-        load();
-      } else {
-        showToast({ title: "Execution Failed", style: Toast.Style.Failure });
-      }
-    }
-  }
-
-  const copySummary = () => {
-     let summary = `### 💀 System Process Report\n\n| PID | Name | CPU % | MEM |\n| :--- | :--- | :--- | :--- |\n`;
-     processes.slice(0, 10).forEach(p => {
-        summary += `| ${p.pid} | ${p.name} | ${p.cpu} | ${p.memAbs} |\n`;
-     });
-     Clipboard.copy(summary);
-     showToast({ title: "Death List Copied", message: "Top 10 heavy processes hoarded." });
-  };
-
   const getProcessIcon = (p: Process) => {
      if (p.command.includes('.app/')) {
         const appPath = p.command.match(/.*?\.app/)?.[0];
@@ -67,9 +45,89 @@ export default function Command() {
      return Icon.Activity;
   };
 
+  const filtered = processes.filter(p => {
+     if (filter === "high-cpu") return parseFloat(p.cpu) > 10;
+     if (filter === "high-mem") return parseFloat(p.mem) > 5;
+     return true;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+     if (sortBy === "cpu") return parseFloat(b.cpu) - parseFloat(a.cpu);
+     if (sortBy === "mem") return parseFloat(b.mem) - parseFloat(a.mem);
+     if (sortBy === "pid") return parseInt(b.pid) - parseInt(a.pid);
+     return a.name.localeCompare(b.name);
+  });
+
+  const grouped = grouping ? sorted.reduce((acc, p) => {
+     const key = p.name;
+     if (!acc[key]) acc[key] = [];
+     acc[key].push(p);
+     return acc;
+  }, {} as Record<string, Process[]>) : null;
+
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Search heavy processes..." navigationTitle="Process Reaper">
-      {processes.map((p) => (
+    <List 
+      isLoading={isLoading} 
+      searchBarPlaceholder="Sovereign Process Audit..." 
+      navigationTitle="Process Reaper"
+      searchBarAccessory={
+        <List.Dropdown tooltip="Sort & Filter" onChange={(v) => {
+           if (v === "group-toggle") setGrouping(!grouping);
+           else if (v.startsWith("sort:")) setSortBy(v.split(":")[1] as any);
+           else setFilter(v as any);
+        }} storeValue>
+          <List.Dropdown.Section title="Sort Telemetry">
+            <List.Dropdown.Item title="Sort by Memory" value="sort:mem" icon={Icon.MemoryChip} />
+            <List.Dropdown.Item title="Sort by CPU" value="sort:cpu" icon={Icon.Activity} />
+            <List.Dropdown.Item title="Sort by Name" value="sort:name" icon={Icon.Text} />
+          </List.Dropdown.Section>
+          <List.Dropdown.Section title="Forensic Filters">
+            <List.Dropdown.Item title="All Processes" value="all" icon={Icon.List} />
+            <List.Dropdown.Item title="High CPU (>10%)" value="high-cpu" icon={Icon.ExclamationMark} />
+            <List.Dropdown.Item title="High Memory (>5%)" value="high-mem" icon={Icon.ExclamationMark} />
+          </List.Dropdown.Section>
+          <List.Dropdown.Section title="View Mode">
+            <List.Dropdown.Item title={grouping ? "Disable App Grouping" : "Enable App Grouping"} value="group-toggle" icon={grouping ? Icon.EyeDisabled : Icon.Eye} />
+          </List.Dropdown.Section>
+        </List.Dropdown>
+      }
+    >
+      {grouped ? Object.entries(grouped).map(([name, group]) => {
+         return (
+            <List.Section key={name} title={`${name} (${group.length} instances)`}>
+               {group.map(p => (
+                  <List.Item
+                     key={p.pid}
+                     title={p.name}
+                     subtitle={`PID: ${p.pid}`}
+                     icon={getProcessIcon(p)}
+                     accessories={[
+                        { text: `${p.cpu}% CPU`, color: parseFloat(p.cpu) > 50 ? Color.Red : Color.SecondaryText },
+                        { text: `${p.memAbs} (${p.mem}%)`, color: parseFloat(p.mem) > 10 ? Color.Orange : Color.SecondaryText }
+                     ]}
+                     actions={
+                        <ActionPanel title={p.name}>
+                           <Action title="Kill Process" icon={Icon.XMarkCircle} style={Action.Style.Destructive} onAction={() => killProcess(p.pid, p.name)} />
+                           <Action title="Force Kill All" icon={Icon.Trash} shortcut={{ modifiers: ["cmd", "shift"], key: "delete" }} style={Action.Style.Destructive} onAction={async () => {
+                              if (await ConfirmAlert({ title: "Purge Entire App?", message: `Terminate all ${group.length} instances of ${name}?` })) {
+                                 for (const proc of group) {
+                                    await fetch("http://localhost:3031/archive/system/kill", {
+                                       method: "POST",
+                                       body: JSON.stringify({ pid: proc.pid }),
+                                       headers: { "Content-Type": "application/json" }
+                                    });
+                                 }
+                                 showToast({ title: "App Purged" });
+                                 load();
+                              }
+                           }} />
+                        </ActionPanel>
+                     }
+                  />
+               ))}
+            </List.Section>
+         );
+      }) : sorted.map((p) => (
         <List.Item
           key={p.pid}
           title={p.name}
@@ -81,11 +139,8 @@ export default function Command() {
           ]}
           actions={
             <ActionPanel title={p.name}>
-              <Action title="Sovereign Kill" icon={Icon.XMarkCircle} style={Action.Style.Destructive} shortcut={{ modifiers: ["cmd"], key: "delete" }} onAction={() => killProcess(p.pid, p.name)} />
-              <Action title="Copy AI Summary" icon={Icon.CopyClipboard} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} onAction={copySummary} />
-              <Action.CopyToClipboard title="Copy PID" content={p.pid} />
-              <Action.CopyToClipboard title="Copy Full Command" content={p.command} />
-              <Action title="Force Refresh" icon={Icon.RotateClockwise} onAction={load} />
+              <Action title="Kill Process" icon={Icon.XMarkCircle} style={Action.Style.Destructive} onAction={() => killProcess(p.pid, p.name)} />
+              <Action title="Copy Details" icon={Icon.CopyClipboard} onAction={() => Clipboard.copy(`${p.name} (PID: ${p.pid}) CPU: ${p.cpu}% MEM: ${p.memAbs}`)} />
             </ActionPanel>
           }
         />

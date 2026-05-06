@@ -3213,3 +3213,17 @@ ht...)
 [6/5/2026, 7:39:27 AM] 📋 Memory Archive: New clip captured (add filtering sortin...)
 [6/5/2026, 7:39:28 AM] 📋 Memory Archive: New clip captured (/Users/paranjay/.con...)
 [6/5/2026, 7:41:12 AM] 📋 Memory Archive: New clip captured (/Users/paranjay/Down...)
+[6/5/2026, 7:44:49 AM] 📋 Memory Archive: New clip captured (cd Extensions/Raycas...)
+[6/5/2026, 7:45:27 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[6/5/2026, 7:45:28 AM] 📱 Presence: Phone detected (HOME)
+[6/5/2026, 7:45:33 AM] 🎬 Scene Trigger: MORNING_BRIEF
+[6/5/2026, 7:46:29 AM] 📋 Memory Archive: New clip captured (omniwm...)
+[6/5/2026, 7:46:48 AM] 📋 Memory Archive: New clip captured (omniwm...)
+[6/5/2026, 7:47:12 AM] 📋 Memory Archive: New clip captured (omniwm...)
+[6/5/2026, 7:48:11 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[6/5/2026, 7:48:12 AM] 📱 Presence: Phone detected (HOME)
+[6/5/2026, 7:48:17 AM] 🎬 Scene Trigger: MORNING_BRIEF
+[6/5/2026, 7:52:10 AM] 📋 Memory Archive: New clip captured (- idk not accurate i...)
+[6/5/2026, 7:54:33 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[6/5/2026, 7:54:34 AM] 📱 Presence: Phone detected (HOME)
+[6/5/2026, 7:54:39 AM] 🎬 Scene Trigger: MORNING_BRIEF
