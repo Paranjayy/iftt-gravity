@@ -37,9 +37,9 @@
       "mode": "view"
     },
     {
-      "name": "cortex",
-      "title": "Gravity Cortex",
-      "description": "Active intelligence and background tasks",
+      "name": "notes",
+      "title": "Gravity Notes",
+      "description": "Mission Control for Notes and Universal File Probe",
       "icon": "assets/icon.png",
       "mode": "view"
     },
@@ -49,83 +49,6 @@
       "description": "Toggle automatic music-light sync",
       "icon": "assets/icon.png",
       "mode": "no-view"
-    },
-    {
-      "name": "stack",
-      "title": "Paste Stack (Sequence)",
-      "description": "Manage and paste your queued clipboard items",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "jot",
-      "title": "Gravity Jot (Notes)",
-      "description": "Distraction-free vault notepad",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "notes",
-      "title": "Gravity Notes (Type)",
-      "description": "Infinite local notes with timestamps and Daily Note support",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "process-reaper",
-      "title": "Process Reaper",
-      "description": "Purge System Bloat & Heavy Apps",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "disk-analyzer",
-      "title": "Disk Forge",
-      "description": "DaisyDisk-style Storage Intelligence",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "git-probe",
-      "title": "Git Project Probe",
-      "description": "Probe & Group Git VCS Repositories",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "project-scaffolder",
-      "title": "Workspace Scaffolder",
-      "description": "Rapid Environment Hardening & Templates",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "node-reaper",
-      "title": "Node Modules Reaper",
-      "description": "Purge Redundant Dependencies & Save Space",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "extension-auditor",
-      "title": "Extension Auditor",
-      "description": "Curate Raycast Bloat & Extension Usage",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "warp",
-      "title": "Gravity Warp",
-      "description": "Instant Jumper for Developer Projects",
-      "icon": "assets/icon.png",
-      "mode": "view"
-    },
-    {
-      "name": "convert-link",
-      "title": "Convert URL to Markdown",
-      "description": "Replace clipboard URL with a titled Markdown link",
-      "icon": "assets/icon.png",
-      "mode": "view"
     }
   ],
   "dependencies": {
@@ -144,9 +67,8 @@
     "typescript": "^5.2.2"
   },
   "scripts": {
-    "build": "node node_modules/@raycast/api/bin/run.js build",
-    "dev": "node node_modules/@raycast/api/bin/run.js develop",
-    "archive-only": "bun scripts/archive-brain.ts",
+    "build": "ray build",
+    "dev": "ray develop",
     "fix-lint": "eslint src --fix",
     "lint": "eslint src",
     "publish": "npx @raycast/api@latest publish"

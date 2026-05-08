@@ -81,17 +81,36 @@ export default function Command() {
   }
 
   async function organizeDesktop() {
-    showToast({ title: "Organizing Desktop...", style: Toast.Style.Animated });
-    const res = await fetch("http://localhost:3031/archive/desktop/organize");
-    const data = await res.json() as { moved: number };
-    showToast({ title: "Desktop Purified", message: `${data.moved} files grouped into folders`, style: Toast.Style.Success });
+    const toast = await showToast({ title: "Organizing Desktop...", style: Toast.Style.Animated });
+    try {
+      const res = await fetch("http://localhost:3031/archive/desktop/organize");
+      const data = await res.json() as { moved: number };
+      toast.style = Toast.Style.Success;
+      toast.title = "Desktop Purified";
+      toast.message = `${data.moved} files grouped into folders`;
+    } catch(e) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Failed to organize desktop";
+    }
   }
 
   async function undoDesktop() {
-    const res = await fetch("http://localhost:3031/archive/desktop/undo");
-    const data = await res.json() as { count: number };
-    if (data.count > 0) showToast({ title: "Organization Reversed", message: `${data.count} files restored`, style: Toast.Style.Success });
-    else showToast({ title: "Nothing to Undo", style: Toast.Style.Failure });
+    const toast = await showToast({ title: "Undoing...", style: Toast.Style.Animated });
+    try {
+      const res = await fetch("http://localhost:3031/archive/desktop/undo");
+      const data = await res.json() as { count: number };
+      if (data.count > 0) {
+        toast.style = Toast.Style.Success;
+        toast.title = "Organization Reversed";
+        toast.message = `${data.count} files restored`;
+      } else {
+        toast.style = Toast.Style.Failure;
+        toast.title = "Nothing to Undo";
+      }
+    } catch(e) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Failed to undo";
+    }
   }
 
   useEffect(() => {
@@ -285,7 +304,7 @@ function UniversalSearch() {
           key={file.path}
           title={file.name}
           subtitle={file.path}
-          icon={getFileIcon(file)}
+          icon={{ fileIcon: file.path }}
           detail={
             <List.Item.Detail 
               markdown={`#### ${file.name}\n\n**Kind:** ${file.kind}\n**Size:** ${file.size}\n\n---\n\n![Preview](file://${file.path})`} 
@@ -315,35 +334,37 @@ function UniversalSearch() {
 
               <ActionPanel.Section title="Sovereign Management">
                  {file.isDir && (
-                    <Action title="Organize This Folder" icon={Icon.Desktop} onAction={async () => {
-                       const res = await fetch("http://localhost:3031/archive/organize/path", {
+                    <Action title="Deep Purge / Clean Folder" icon={Icon.Desktop} onAction={async () => {
+                       const res = await fetch("http://localhost:3031/archive/files/clean", {
                           method: "POST",
-                          body: JSON.stringify({ targetPath: file.path }),
+                          body: JSON.stringify({ path: file.path }),
                           headers: { "Content-Type": "application/json" }
                        });
                        const data = await res.json() as { moved: number };
                        showToast({ title: "Folder Purified", message: `${data.moved} files grouped.` });
                     }} />
                  )}
-                 <Action title="Copy File" icon={Icon.CopyClipboard} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} onAction={async () => {
+                 <Action title="Clone / Duplicate" icon={Icon.CopyClipboard} shortcut={{ modifiers: ["cmd", "shift"], key: "c" }} onAction={async () => {
+                    const newPath = path.join(path.dirname(file.path), `Copy of ${file.name}`);
                     await fetch("http://localhost:3031/archive/files/copy", {
                        method: "POST",
-                       body: JSON.stringify({ from: file.path, to: path.join(path.dirname(file.path), `Copy of ${file.name}`) }),
+                       body: JSON.stringify({ from: file.path, to: newPath }),
                        headers: { "Content-Type": "application/json" }
                     });
-                    showToast({ title: "File Cloned" });
+                    showToast({ title: "Resource Cloned", message: `New instance: ${path.basename(newPath)}` });
+                    load();
                  }} />
-                 <Action.Push title="Rename / Move" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "m" }} target={
-                    <Form actions={<ActionPanel><Action.SubmitForm title="Move" onSubmit={async (v: { p: string }) => {
-                       await fetch("http://localhost:3031/archive/files/move", {
+                 <Action.Push title="Sovereign Rename" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "m" }} target={
+                    <Form actions={<ActionPanel><Action.SubmitForm title="Execute Rename" onSubmit={async (v: { p: string }) => {
+                       await fetch("http://localhost:3031/archive/files/rename", {
                           method: "POST",
                           body: JSON.stringify({ from: file.path, to: v.p }),
                           headers: { "Content-Type": "application/json" }
                        });
-                       showToast({ title: "File Re-located" });
+                       showToast({ title: "Manifest Updated", message: `Renamed to ${path.basename(v.p)}` });
                        load();
                     }} /></ActionPanel>}>
-                       <Form.TextField id="p" title="New Path" defaultValue={file.path} />
+                       <Form.TextField id="p" title="Full Target Path" defaultValue={file.path} />
                     </Form>
                  } />
                  <Action icon={Icon.Trash} title="Move to Trash" style={Action.Style.Destructive} onAction={async () => {
@@ -368,6 +389,8 @@ function UniversalSearch() {
         title={query.length < 3 ? "Probe Mac Filesystem" : "Nothing Found"} 
         actions={query.length >= 3 ? (
           <ActionPanel>
+          <ActionPanel>
+             <Action.Push title="Create New Fragment/Resource" icon={Icon.Plus} target={<CreateResourceForm initialRoot={query.startsWith('/') ? query : (process.env.HOME || "/Users/paranjay")} onUpdate={() => setQuery("")} />} />
              <Action.Push title="Add Search as Note Fragment" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={() => {}} initialText={query} />} />
           </ActionPanel>
         ) : undefined}
@@ -433,7 +456,16 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
   }, {} as Record<string, NoteEntry[]>);
 
   return (
-    <List isLoading={isLoading} searchBarPlaceholder="Search entries..." navigationTitle={name}>
+    <List 
+      isLoading={isLoading} 
+      searchBarPlaceholder="Search entries..." 
+      navigationTitle={name}
+      actions={
+        <ActionPanel>
+          <Action.Push title="Add New Fragment" icon={Icon.Plus} shortcut={{ modifiers: ["cmd"], key: "n" }} target={<AddEntry name={name} onUpdate={() => { load(); onUpdate(); }} />} />
+        </ActionPanel>
+      }
+    >
       {Object.entries(groupedEntries).map(([heading, items]) => (
         <List.Section key={heading} title={heading}>
           {items.map((entry) => (
@@ -444,6 +476,7 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
               subtitle={entry.time}
               actions={
                 <ActionPanel>
+                  <Action.Push title="Add New Fragment" icon={Icon.Plus} shortcut={{ modifiers: ["cmd"], key: "n" }} target={<AddEntry name={name} onUpdate={() => { load(); onUpdate(); }} />} />
                   <Action.Push title="Edit Entry" icon={Icon.Pencil} target={<EditEntry name={name} entry={entry} onUpdate={() => { load(); onUpdate(); }} />} />
                   <Action.CopyToClipboard title="Copy Content" content={cleanBody(entry.body)} />
                   <Action.Push title="Render Markdown" icon={Icon.BlankDocument} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} target={<MarkdownViewer file={{ name, path: path.join('gravity-notes', name) } as any} />} />
@@ -454,6 +487,49 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
         </List.Section>
       ))}
     </List>
+  );
+}
+
+function CreateResourceForm({ initialRoot, onUpdate }: { initialRoot: string, onUpdate: () => void }) {
+  const [root, setRoot] = useState(initialRoot);
+  const home = process.env.HOME || "/Users/paranjay";
+  const favorites = [
+    { title: "🏠 Home", value: home },
+    { title: "📥 Downloads", value: path.join(home, "Downloads") },
+    { title: "🖥️ Desktop", value: path.join(home, "Desktop") },
+    { title: "💻 Developer", value: path.join(home, "Developer") },
+    { title: "📦 Gravity Notes", value: path.join(home, "Developer/iftt/gravity-notes") },
+  ];
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm
+            title="Build Resource"
+            onSubmit={async (v: { name: string, type: string, root: string }) => {
+              await fetch("http://localhost:3031/archive/files/create", {
+                method: "POST",
+                body: JSON.stringify({ path: v.root, name: v.name, type: v.type }),
+                headers: { "Content-Type": "application/json" }
+              });
+              showToast({ title: "Resource Manifested", message: `Built ${v.name}` });
+              onUpdate();
+            }}
+          />
+        </ActionPanel>
+      }
+    >
+      <Form.Dropdown id="root" title="Target Root" value={root} onChange={setRoot}>
+        {favorites.map(f => <Form.Dropdown.Item key={f.value} title={f.title} value={f.value} />)}
+        {!favorites.find(f => f.value === root) && <Form.Dropdown.Item title={`📍 Current: ${root}`} value={root} />}
+      </Form.Dropdown>
+      <Form.TextField id="name" title="Resource Name" placeholder="e.g. workspace.md or drafts" />
+      <Form.Dropdown id="type" title="Kind">
+        <Form.Dropdown.Item title="File" value="file" icon={Icon.Document} />
+        <Form.Dropdown.Item title="Folder" value="folder" icon={Icon.Folder} />
+      </Form.Dropdown>
+    </Form>
   );
 }
 
@@ -590,6 +666,39 @@ function NoteItem({ note, fetchNotes }: { note: NoteFile, fetchNotes: () => void
         </ActionPanel>
       }
     />
+  );
+}
+
+function AddEntry({ name, onUpdate }: { name: string; onUpdate: () => void }) {
+  const { pop } = useNavigation();
+  const [content, setContent] = useState("");
+
+  async function handleSubmit() {
+    if (!content.trim()) return;
+    try {
+      await fetch("http://localhost:3031/archive/notes/append", {
+        method: "POST",
+        body: JSON.stringify({ name, text: content }),
+        headers: { "Content-Type": "application/json" }
+      });
+      showToast({ title: "Fragment Added", style: Toast.Style.Success });
+      onUpdate();
+      pop();
+    } catch (e) {
+      showToast({ title: "Failed to Add", style: Toast.Style.Failure });
+    }
+  }
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Save Fragment" icon={Icon.Check} onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.TextArea id="content" title="Content" value={content} onChange={setContent} autoFocus enableMarkdown />
+    </Form>
   );
 }
 

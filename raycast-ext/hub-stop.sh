@@ -8,29 +8,13 @@
 
 # Optional parameters:
 # @raycast.icon 🛑
-# @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt/raycast-ext
 
-# Documentation:
-# @raycast.description Graceful shutdown for Bot and Archive.
-# @raycast.author antigravity
+echo "🛑 Nuking Gravity Hub..."
 
-# 1. Polite Stop (SIGINT for Telegram "Offline" Message)
-echo "📡 Signaling Bot & Archive for graceful exit..."
-pkill -INT -f "src/lib/bot.ts" 2>/dev/null
-pkill -INT -f "src/lib/archive.ts" 2>/dev/null
-sleep 2
+# Force kill any existing instances (Total Purge)
+pkill -9 -f "bot.ts" 2>/dev/null
+pkill -9 -f "archive.ts" 2>/dev/null
+pkill -9 -f "watcher.ts" 2>/dev/null
+pkill -9 -f "server.ts" 2>/dev/null
 
-# 2. Verify and Iron Sweep (Force Kill stragglers)
-echo "☢️ Gravity: Executing final purge..."
-for port in 3000 3001 3030 3031 5173; do
-  PIDS=$(lsof -t -i:$port)
-  if [ ! -z "$PIDS" ]; then
-    echo "  ↳ Stopping stragglers on Port $port: $PIDS"
-    echo $PIDS | xargs kill -9 2>/dev/null
-  fi
-done
-
-pkill -9 -f "src/lib/bot.ts" 2>/dev/null
-pkill -9 -f "src/lib/archive.ts" 2>/dev/null
-
-echo "🌑 Gravity Sovereign Shutdown Complete(Bot & Archive)."
+echo "💀 Gravity Hub is now OFFLINE."

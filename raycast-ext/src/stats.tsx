@@ -1,122 +1,61 @@
-import { Detail, Icon, Color, ActionPanel, Action, showToast, Toast, List } from "@raycast/api";
+import { Detail, Icon, Color } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 
-interface VaultStats {
-  totalFiles: number;
-  totalFragments: number;
-  totalWords: number;
-  dailyActivity: Record<string, number>;
-}
-
-interface SystemVitals {
-  cpu: string;
-  mem: string;
-}
-
 export default function Command() {
-  const [stats, setStats] = useState<VaultStats | null>(null);
-  const [vitals, setVitals] = useState<SystemVitals | null>(null);
+  const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  async function fetchData() {
-    try {
-      const [sRes, vRes] = await Promise.all([
-        fetch("http://localhost:3031/archive/stats"),
-        fetch("http://localhost:3031/archive/system/vitals")
-      ]);
-      setStats(await sRes.json() as VaultStats);
-      setVitals(await vRes.json() as SystemVitals);
-    } catch (e) {
-      showToast({ title: "Signal Lost", style: Toast.Style.Failure });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
+    async function fetchStats() {
+      try {
+        const response = await fetch("http://localhost:3030/status");
+        const json = await response.json();
+        setData(json);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchStats();
   }, []);
 
-  if (isLoading) return <Detail isLoading={true} />;
+  const markdown = data ? `
+# 🌌 Gravity Hub Dashboard
 
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    return d.toISOString().split('T')[0];
-  }).reverse();
+### ❄️ Climate
+- **AC Status**: ${data.stats.ac?.status?.toUpperCase() || 'OFF'}
+- **Current Load**: ${data.stats.acMinutes || 0} mins
+- **Billing Units**: ${data.units || 0} kWh
 
-  const heatmap = last7Days.map(date => {
-     const count = stats?.dailyActivity[date] || 0;
-     const dots = "█".repeat(Math.min(10, count));
-     const empty = "░".repeat(Math.max(0, 10 - count));
-     return `| ${date} | ${dots}${empty} | ${count} jots |`;
-  }).join("\n");
+### 💡 Illumination
+- **Lights**: ${data.stats.light?.status?.toUpperCase() || 'OFF'}
+- **Session Duration**: ${data.stats.lightMinutes || 0} mins
 
-  const markdown = `
-# 📡 GRAVITY MISSION CONTROL
----
-
-### 📊 Vault Intelligence
-- **Sovereign Files:** \`${stats?.totalFiles}\`
-- **Total Fragments:** \`${stats?.totalFragments}\`
-- **Word Hoard:** \`${(stats?.totalWords || 0).toLocaleString()}\`
-- **Archive Density:** \`${((stats?.totalFragments || 0) / (stats?.totalFiles || 1)).toFixed(1)}\` per file
-
-### ⚡ System Pulse
-- **CPU Load:** \`${vitals?.cpu || "N/A"}\`
-- **Physical Memory:** \`${vitals?.mem || "N/A"}\`
-- **Hub Status:** \`ONLINE\` 🟢
-
-### 🗓️ Archival Momentum (Last 7 Days)
-| Date | Density Heatmap | Pulse |
-| :--- | :--- | :--- |
-${heatmap}
-
----
-### 🛠️ Quick Commands
-- \`Cmd+D\`: Purge Desktop Clutter
-- \`Cmd+S\`: Spotlight Deep Probe
-- \`Cmd+G\`: Grep Vault Content
-`;
+### ⚙️ System Health
+- **Uptime**: ${Math.floor(data.uptime / 3600)}h ${Math.floor((data.uptime % 3600) / 60)}m
+- **Spotify**: ${data.spotify || 'Idle'}
+- **Network**: ${data.jitter ? (data.jitter > 150 ? '⚠️ Jittery' : '✅ Stable') : 'Unknown'}
+` : "# ❌ Hub Offline";
 
   return (
     <Detail
+      isLoading={isLoading}
       markdown={markdown}
-      navigationTitle="Gravity Mission Control"
-      actions={
-        <ActionPanel title="Mission Actions">
-          <Action title="Refresh Signal" icon={Icon.RotateClockwise} onAction={fetchData} />
-          <Action.OpenInBrowser title="Open Global Analytics" url="http://localhost:3031/archive/stats" />
-          <ActionPanel.Section title="System Operations">
-             <Action title="Purge Desktop" icon={Icon.Desktop} onAction={async () => {
-                await fetch("http://localhost:3031/archive/desktop/organize");
-                showToast({ title: "Desktop Purified" });
-             }} />
-             <Action 
-                title="Sovereign Backup (Panic)" 
-                icon={Icon.Shield} 
-                style={Action.Style.Destructive}
-                shortcut={{ modifiers: ["cmd", "shift"], key: "b" }}
-                onAction={async () => {
-                   showToast({ title: "Securing Vault...", style: Toast.Style.Animated });
-                   const res = await fetch("http://localhost:3031/archive/system/backup", { method: "POST" });
-                   const data = await res.json() as { status: string, path: string, envs: number };
-                   if (data.status === "SUCCESS") {
-                      showToast({ 
-                         title: "Vault Hardened", 
-                         message: `Archived configs & ${data.envs} secrets to gravity-archive/`, 
-                         style: Toast.Style.Success 
-                      });
-                   } else {
-                      showToast({ title: "Backup Failed", style: Toast.Style.Failure });
-                   }
-                }} 
-             />
-          </ActionPanel.Section>
-        </ActionPanel>
+      metadata={
+        data && (
+          <Detail.Metadata>
+            <Detail.Metadata.Label title="Platform" icon={Icon.Computer} text={data.platform} />
+            <Detail.Metadata.Label title="Network Jitter" icon={Icon.Globe} text={`${data.jitter?.toFixed(0) || 0}ms`} />
+            <Detail.Metadata.TagList title="Power Status">
+              <Detail.Metadata.TagList.Item 
+                 text={data.battery?.isPlugged ? "Multi-Source" : "Battery"} 
+                 color={data.battery?.isPlugged ? Color.Green : Color.Yellow} 
+              />
+            </Detail.Metadata.TagList>
+          </Detail.Metadata>
+        )
       }
     />
   );
