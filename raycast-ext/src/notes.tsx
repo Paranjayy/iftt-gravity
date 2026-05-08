@@ -389,7 +389,6 @@ function UniversalSearch() {
         title={query.length < 3 ? "Probe Mac Filesystem" : "Nothing Found"} 
         actions={query.length >= 3 ? (
           <ActionPanel>
-          <ActionPanel>
              <Action.Push title="Create New Fragment/Resource" icon={Icon.Plus} target={<CreateResourceForm initialRoot={query.startsWith('/') ? query : (process.env.HOME || "/Users/paranjay")} onUpdate={() => setQuery("")} />} />
              <Action.Push title="Add Search as Note Fragment" icon={Icon.Plus} target={<EntryAction name="" type="append" onUpdate={() => {}} initialText={query} />} />
           </ActionPanel>

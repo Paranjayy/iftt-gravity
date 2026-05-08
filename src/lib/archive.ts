@@ -702,7 +702,7 @@ async function main() {
               } catch(e) {}
            });
 
-           saveUndo(undoLog);
+           fs.writeFileSync(path.join(ARCHIVE_DIR, 'desktop_undo_history.json'), JSON.stringify(undoLog));
            return new Response(JSON.stringify({ moved: undoLog.length }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 

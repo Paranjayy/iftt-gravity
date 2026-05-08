@@ -1,16 +1,10 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon, Color } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard, Detail } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 
 interface HubState {
   online: boolean;
   uptime: number;
-<<<<<<< Updated upstream
-  stats?: { prompts: number };
-  estimatedPgBill?: string;
-   pgvcl?: { units: string; bill: string; lastUpdate: string };
-  weather?: { temp: number; condition: string; isRain: boolean };
-=======
   autoAc: boolean;
   autoLight: boolean;
   ac_duration: string;
@@ -18,281 +12,197 @@ interface HubState {
   units: string;
   estimatedPgBill: number;
   mediaAura: boolean;
-  pgvcl?: { units: string; bill: string; lastUpdate: string };
-  weather?: { temp: number; humidity: number; condition: string };
-  stats?: { ac?: { status: string }; light?: { status: string } };
->>>>>>> Stashed changes
+  solis?: { today: string; current: string; battery: string; status: string };
+  weather?: { temp: number; humidity: number; condition: string; aqi: number; sunrise: string; sunset: string };
+  stats?: { ac?: { status: string }; light?: { status: string }; archiveCount?: number };
+  pgvcl?: { units: string; bill: string };
 }
 
 export default function Command() {
   const [state, setState] = useState<HubState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
     try {
-      const res = await fetch("http://localhost:3030/status");
+      const res = await fetch("http://127.0.0.1:3030/status");
       const data = await res.json();
       setState(data as HubState);
-    } catch (e) {
-      showToast({ style: Toast.Style.Failure, title: "Hub Offline", message: "Start ./hub.sh first" });
-    } finally {
-      setIsLoading(false);
+      setError(null);
+    } catch (e) { 
+      setError("Hub Offline");
     }
+    finally { setIsLoading(false); }
   }
 
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, 30000); // 30s pulse
+    const timer = setInterval(refresh, 10000);
     return () => clearInterval(timer);
   }, []);
 
   async function runAction(name: string, endpoint: string) {
+    showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
-      const res = await fetch(`http://localhost:3030${endpoint}`);
+      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
       if (!res.ok) throw new Error("Failed");
-      showToast({ style: Toast.Style.Success, title: `Triggered: ${name}` });
+      showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
       setTimeout(refresh, 500);
     } catch (e) {
-      showToast({ style: Toast.Style.Failure, title: "Action Failed" });
+      showToast({ style: Toast.Style.Failure, title: "Action Failed", message: "Hub Offline" });
     }
   }
 
   const acStatus = (state?.stats?.ac?.status || 'off').toUpperCase();
   const ltStatus = (state?.stats?.light?.status || 'off').toUpperCase();
+  const acColor = acStatus === 'ON' ? Color.Green : Color.Red;
+  const ltColor = ltStatus === 'ON' ? Color.Green : Color.Red;
+
+  const getUptimeStr = (secs: number) => {
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    return `${h}h ${m}m`;
+  };
 
   return (
-<<<<<<< Updated upstream
-    <L isLoading={isLoading} searchBarPlaceholder="Search scenes or control devices...">
-      <LS title="Mission Scenes">
-        <LI
-          icon={Icon.Video}
-          title="TV TIME"
-          subtitle="Cinematic lighting & quiet AC"
-          actions={
-            <AP title="Scene Actions">
-              <A icon={Icon.Video} title="Activate Scene" onAction={() => runAction("TV TIME", "/scene/tv")} />
-            </AP>
-          }
-        />
-        <LI
-          icon={Icon.Circle}
-          title="HOME"
-          subtitle="Welcome back lights & AC"
-          actions={
-            <AP title="Scene Actions">
-              <A icon={Icon.Circle} title="Activate Scene" onAction={() => runAction("HOME", "/scene/home")} />
-            </AP>
-          }
-=======
-    <List isLoading={isLoading} searchBarPlaceholder="Search scenes or control devices...">
+    <List isLoading={isLoading} searchBarPlaceholder="Precision Control Center...">
       
-      <List.Section title="Utility Metrics">
-        <List.Item
-          icon={{ source: Icon.Bolt, color: Color.Yellow }}
-          title="PGVCL Budget"
-          subtitle={`₹${state?.estimatedPgBill || '??'} Estimated`}
-          accessories={[{ text: `${state?.units || '0'} Units Used` }]}
-        />
-        <List.Item
-          icon={{ source: Icon.Cloud, color: Color.Blue }}
-          title="Weather Pulse"
-          subtitle={`${state?.weather?.temp || '??'}°C | Humidity: ${state?.weather?.humidity || '??'}%`}
-          accessories={[{ text: state?.weather?.condition || 'Clear' }]}
-        />
-      </List.Section>
-
-      <List.Section title="Hardware Control">
-        <List.Item
-          icon={{ source: Icon.Wind, color: acStatus === 'ON' ? Color.Blue : Color.SecondaryText }}
-          title="Air Conditioning"
-          subtitle={acStatus === 'ON' ? `Running for ${state?.ac_duration || '0m'}` : "Standby"}
-          accessories={[{ text: acStatus, color: acStatus === 'ON' ? Color.Green : Color.Red }]}
-          actions={
-            <ActionPanel>
-              <Action icon={Icon.Power} title="Toggle AC" onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
-              <Action icon={Icon.ChevronUp} title="Temp Up" onAction={() => runAction("Temp Up", "/control/temp_up")} />
-              <Action icon={Action.ChevronDown} title="Temp Down" onAction={() => runAction("Temp Down", "/control/temp_down")} />
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={{ source: Icon.Sun, color: ltStatus === 'ON' ? Color.Yellow : Color.SecondaryText }}
-          title="Lighting"
-          subtitle={ltStatus === 'ON' ? `Running for ${state?.light_duration || '0m'}` : "Standby"}
-          accessories={[{ text: ltStatus, color: ltStatus === 'ON' ? Color.Green : Color.Red }]}
-          actions={
-            <ActionPanel>
-              <Action icon={Icon.Power} title="Toggle Lights" onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
-              <Action icon={Icon.Plus} title="Brightness Up" onAction={() => runAction("Bright Up", "/control/bright_up")} />
-              <Action icon={Icon.Minus} title="Brightness Down" onAction={() => runAction("Bright Down", "/control/bright_down")} />
-            </ActionPanel>
-          }
-        />
-      </List.Section>
-
-      <List.Section title="Auto-Pilot Sovereignty">
-        <List.Item
-          icon={Icon.Snowflake}
-          title="Auto-AC Logic"
-          subtitle={state?.autoAc ? "Dynamic Environment Control Active" : "Manual Mode"}
-          accessories={[{ text: state?.autoAc ? "ENABLED" : "DISABLED", color: state?.autoAc ? Color.Green : Color.Red }]}
-          actions={
-            <ActionPanel>
-              <Action icon={Icon.CheckCircle} title="Toggle Auto-AC" onAction={() => runAction("Auto-AC", "/control/auto/ac")} />
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={Icon.Livestream}
-          title="Aura Sync (Media Exposure)"
-          subtitle={state?.mediaAura ? "Cinematic RGB Sync Active" : "Static Lighting"}
-          accessories={[{ text: state?.mediaAura ? "ENABLED" : "DISABLED", color: state?.mediaAura ? Color.Green : Color.Red }]}
-          actions={
-            <ActionPanel>
-              <Action icon={Icon.Switch} title="Toggle Aura" onAction={() => runAction("Aura", "/control/aura/toggle")} />
-            </ActionPanel>
-          }
-        />
-      </List.Section>
-
-      <List.Section title="Gravity Scenes">
+      <List.Section title="Gravity Scenes (Intents)">
         <List.Item
           icon={Icon.Video}
           title="TV TIME"
-          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
->>>>>>> Stashed changes
+          subtitle="Dim Purple & AC Cool"
+          actions={<ActionPanel><Action title="Activate" icon={Icon.Video} onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
+        />
+        <List.Item
+          icon={Icon.ComputerSpeaker}
+          title="WORK MODE"
+          subtitle="Bright White & AC Fan"
+          actions={<ActionPanel><Action title="Activate" icon={Icon.ComputerSpeaker} onAction={() => runAction("Work", "/scene/work")} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.House}
           title="BACK HOME"
-          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
+          subtitle="Warm Welcome"
+          actions={<ActionPanel><Action title="Activate" icon={Icon.House} onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
+        />
+      </List.Section>
+
+      <List.Section title="Precision Hardware Control">
+        <List.Item
+          icon={Icon.Wind}
+          title="Panasonic AC Controller"
+          subtitle={acStatus === 'ON' ? `Running for ${state?.ac_duration || '0m'}` : "Standby"}
+          accessories={[{ text: acStatus, color: acColor }]}
+          actions={
+            <ActionPanel title="AC Precision Pulse">
+              <Action icon={Icon.ChevronDown} title="Temperature DOWN" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
+              <Action icon={Icon.ChevronUp} title="Temperature UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
+              <ActionPanel.Section title="Climate Precision">
+                <Action icon={Icon.Video} title="TV Mode (Cool & Quiet)" onAction={() => runAction("TV AC", "/control/ac_tv")} />
+                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "t" }} onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
+                <Action icon={Icon.Snowflake} title="Cool Mode" onAction={() => runAction("Cool", "/control/ac/mode?mode=cool")} />
+                <Action icon={Icon.Repeat} title="Vertical Swing" onAction={() => runAction("Swing", "/control/ac/swing")} />
+                <Action icon={Icon.Bolt} title="Powerful Mode" onAction={() => runAction("Powerful", "/control/ac/powerful?ps=on")} />
+              </ActionPanel.Section>
+            </ActionPanel>
+          }
         />
         <List.Item
-          icon={Icon.Moon}
-<<<<<<< Updated upstream
-          title="AWAY"
-          subtitle="Everything off (Energy Save)"
-          actions={
-            <AP title="Scene Actions">
-              <A icon={Icon.Moon} title="Activate Scene" onAction={() => runAction("AWAY", "/scene/away")} />
-            </AP>
-          }
-        />
-      </LS>
-
-      <LS title="Deep Device Control">
-        <LI
           icon={Icon.Sun}
-          title="Bulb Control"
-          subtitle="Precision lighting"
+          title="Wiz Lighting Hub"
+          subtitle={ltStatus === 'ON' ? `Running for ${state?.light_duration || '1h 32m'}` : "Standby"}
+          accessories={[{ text: ltStatus, color: ltColor }]}
           actions={
-            <AP title="Lighting">
-              <A icon={Icon.PlusCircle} title="Brightness Up" onAction={() => runAction("Brightness Up", "/control/brightness?dir=up")} />
-              <A icon={Icon.MinusCircle} title="Brightness Down" onAction={() => runAction("Brightness Down", "/control/brightness?dir=down")} />
-              <A icon={Icon.Temperature} title="Warm White" onAction={() => runAction("Warm White", "/control/bulb/color?temp=2700")} />
-              <A icon={Icon.Circle} title="Cool White" onAction={() => runAction("Cool White", "/control/bulb/color?temp=6500")} />
-              <A icon={Icon.Power} title="Turn Off Bulbs" onAction={() => runAction("Bulbs Off", "/control/bulb/off")} />
-            </AP>
+            <ActionPanel title="Light Tactical Pulse">
+              <Action icon={Icon.Minus} title="Brightness DOWN" onAction={() => runAction("Bright Down", "/control/brightness?dir=down")} />
+              <Action icon={Icon.Plus} title="Brightness UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Bright Up", "/control/brightness?dir=up")} />
+              <ActionPanel.Section title="Atmospheric Controls">
+                <Action icon={Icon.Video} title="TV Mode (Dim to 10%)" onAction={() => runAction("TV Lights", "/control/bulb_tv")} />
+                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
+                <Action icon={Icon.Star} title="Aura Sync (Media)" onAction={() => runAction("Aura", "/control/aura/toggle")} />
+                <Action icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
+              </ActionPanel.Section>
+            </ActionPanel>
           }
         />
-        <LI
-          icon={Icon.Wind}
-          title="Air Conditioning"
-          subtitle="Climate control"
-          actions={
-            <AP title="AC Control">
-              <A icon={Icon.ChevronUp} title="Temp Up (+1°C)" onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
-              <A icon={Icon.ChevronDown} title="Temp Down (-1°C)" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
-              <A icon={Icon.Circle} title="Cool Mode" onAction={() => runAction("AC Cool", "/control/ac/mode?mode=cool")} />
-              <A icon={Icon.Leaf} title="Dry Mode" onAction={() => runAction("AC Dry", "/control/ac/mode?mode=dry")} />
-              <A icon={Icon.Power} title="Turn Off AC" onAction={() => runAction("AC Off", "/control/ac/off")} />
-            </AP>
-          }
-        />
-        <LI
-          icon={Icon.SpeakerHigh}
-          title="Mac Volume"
-          actions={
-            <AP title="System Volume">
-              <A icon={Icon.PlusCircle} title="Volume Up" onAction={() => runAction("Volume Up", "/control/volume?dir=up")} />
-              <A icon={Icon.MinusCircle} title="Volume Down" onAction={() => runAction("Volume Down", "/control/volume?dir=down")} />
-            </AP>
-          }
-        />
-      </LS>
+      </List.Section>
 
-      <LS title="Hub Telemetry & Environment">
-        <LI
-          icon={Icon.Cloud}
-          title="Current Weather"
-          subtitle={state?.weather ? `${state.weather.condition} (${state.weather.temp}°C)` : "Fetching..."}
-          accessories={[{ text: state?.weather?.isRain ? "☔ Rain Forecast" : "🌤 Clear" }]}
-        />
-        <LI
+      <List.Section title="Sovereignty Dashboard">
+        <List.Item
           icon={Icon.Bolt}
-          title="Energy Usage"
-          subtitle={state?.pgvcl?.units ? `${state.pgvcl.units} Units` : "No data yet"}
-          accessories={[{ text: state?.estimatedPgBill ? ` Est: ₹${state.estimatedPgBill}` : undefined }]}
+          title="PGVCL Energy Pulse"
+          subtitle={`Actual: ₹${state?.pgvcl?.bill || '--'} (${state?.pgvcl?.units || '--'}U) | Today: ₹${state?.estimatedPgBill || '0'} (${state?.units || '0'}U)`}
+          accessories={[{ text: "⚡ BILLING ACTIVE" }]}
+          actions={<ActionPanel><Action icon={Icon.Cloud} title="Sync Vault" onAction={() => runAction("Vault Sync", "/archive/sync")} /></ActionPanel>}
         />
-        <LI
-          icon={state?.online ? Icon.CheckCircle : Icon.Circle}
-          title="Family Presence"
-          subtitle={state?.online ? "Owner Detected" : "AWAY Mode logic active"}
-          accessories={[{ text: `Uptime: ${(state?.uptime || 0).toFixed(1)}s` }]}
+        <List.Item
+          icon={Icon.Tray}
+          title="Archive Intelligence"
+          subtitle={`Vault Velocity: HIGH | ${state?.stats?.archiveCount || '41K+'} fragments`}
+          accessories={[{ text: error ? "HUB OFFLINE" : "🕵️ HOARDING ACTIVE", color: error ? Color.Red : undefined }]}
           actions={
-            <AP title="Hub Control">
-              <A icon={Icon.RotateAntiClockwise} title="Emergency Restart Hub" onAction={() => runAction("Hub Restart", "/system/restart")} />
-              <A.Push icon={Icon.Eye} title="View Gravity Logs" target={<LogsView />} />
-            </AP>
+            <ActionPanel>
+              <Action icon={Icon.Repeat} title="Restart All Backend Services" onAction={() => runAction("HUB RESET", "/control/restart")} />
+            </ActionPanel>
           }
         />
-      </LS>
+        <List.Item
+          icon={Icon.Sun}
+          title="SolisCloud Solar Intel"
+          subtitle={`${state?.solis?.today || '--'} kWh Today | ${state?.solis?.current || '--'} kW Now`}
+          accessories={[{ text: state?.solis?.status || "OPTIMAL" }]}
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.QuestionMark} title="How to Setup SolisCloud" target={<SolisSetupGuide />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Cloud}
+          title="Atmospheric Context"
+          subtitle={`${state?.weather?.temp || '??'}°C | AQI: ${state?.weather?.aqi || '??'}`}
+          accessories={[{ text: `🌇 ${state?.weather?.sunset || '--'} | 🌅 ${state?.weather?.sunrise || '--'}` }]}
+        />
+      </List.Section>
 
-      <LS title="Mac System Control">
-        <LI
-          icon={Icon.Lock}
-          title="Lock Screen"
-          actions={
-            <AP title="Lock Now">
-              <A icon={Icon.Lock} title="Lock Now" onAction={() => runAction("Lock", "/system/lock")} />
-            </AP>
-          }
+      <List.Section title="System Telemetry">
+        <List.Item
+          icon={Icon.Heartbeat}
+          title="Sovereign Pulse"
+          subtitle={`Hub: ${getUptimeStr(state?.uptime || 0)} | Archive: ONLINE`}
+          accessories={[{ text: error ? "OFFLINE" : "HEALTHY", color: error ? Color.Red : Color.Green }]}
+          actions={<ActionPanel><Action icon={Icon.Repeat} title="Re-Pulse All Services" onAction={() => runAction("REBUILD", "/control/restart")} /></ActionPanel>}
         />
-        <LI
-          icon={Icon.XMarkCircle}
-          title="Put Mac to Sleep"
-          actions={
-            <AP title="Sleep Actions">
-              <A icon={Icon.XMarkCircle} title="Sleep Now" onAction={() => runAction("Sleep", "/system/sleep")} />
-            </AP>
-          }
-        />
-      </LS>
-    </L>
+      </List.Section>
+    </List>
   );
 }
 
-function LogsView() {
-  const [logs, setLogs] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+function SolisSetupGuide() {
+  const guide = `
+# SolisCloud API Activation Guide ☀️📨
 
-  useEffect(() => {
-    fetch("http://localhost:3030/logs")
-      .then(r => r.text())
-      .then(t => setLogs(t.split("\n").filter(l => l.trim()).reverse()))
-      .catch(() => setLogs(["Error fetching logs"]))
-      .finally(() => setLoading(false));
-  }, []);
+Looking at your dashboard, it seems the **API Management** menu is currently hidden. This is common for personal accounts and requires a one-time activation from their side.
 
-  return (
-    <List isLoading={loading} searchBarPlaceholder="Filter chronicle...">
-      {logs.map((log, i) => <List.Item key={i} title={log} icon={Icon.Calendar} />)}
-=======
-          title="AWAY MODE"
-          actions={<ActionPanel><Action title="Activate" onAction={() => runAction("AWAY", "/scene/away")} /></ActionPanel>}
-        />
-      </List.Section>
->>>>>>> Stashed changes
-    </List>
-  );
+### 🛑 **Step 1: Apply for Access** (Mandatory)
+According to Solis documentation, you must first contact their technical support to "Verify and Activate" API access for your account:
+- **Email**: \`ussupport@solisinv.com\` (or your regional Solis support).
+- **Subject**: Request for API Access Activation - Praduman Khachar
+- **Content**: "Please activate the API Management portal for my account (\`pkhachar@gmail.com\`) to allow integration with my personal dashboard."
+
+### 🔧 **Step 2: Activation (Once Unlocked)**
+Once they reply, you will see a new **API Management** option under the **Service** tab:
+1.  Go to **Service** -> **API Management**.
+2.  Click **Activate Now**.
+3.  Complete the Email Verification (Puzzle + Code).
+4.  Copy your **KeyId** and **SecretKey**.
+
+### 🧬 **Plant Details**
+- **Plant ID**: \`1298491919450000328\`
+- **Current Flow**: Currently syncing via **Session Pulse** (18.7 kWh) until your persistent keys are live.
+
+Restart the Hub once you have the keys!
+  `;
+  return <Detail markdown={guide} />;
 }
