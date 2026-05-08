@@ -107,8 +107,6 @@ export class TelegramAdapter extends Adapter {
     });
   }
 
-<<<<<<< Updated upstream
-=======
   async editMessageText(text: string, options: { chat_id: number, message_id: number, parse_mode?: 'Markdown' | 'HTML', reply_markup?: any }): Promise<any> {
     const res = await this.sendRequest('editMessageText', {
       chat_id: options.chat_id,
@@ -127,7 +125,6 @@ export class TelegramAdapter extends Adapter {
     });
   }
 
->>>>>>> Stashed changes
   private async processUpdate(update: any): Promise<void> {
     // 1. Handle Messages
     if (update.message) {

@@ -14,10 +14,7 @@ import { TelegramAdapter } from './adapters/telegram';
 import { MiraieAdapter } from './adapters/miraie';
 import { WizAdapter } from './adapters/wiz';
 import { WeatherEngine } from './weather';
-<<<<<<< Updated upstream
-=======
-import { CodexSDK } from './codex';
->>>>>>> Stashed changes
+// import { CodexSDK } from './codex';
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
@@ -29,21 +26,12 @@ const execAsync = promisify(exec);
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');
 const LOG_PATH = path.join(process.cwd(), 'house_log.md');
 const WISHLIST_PATH = path.join(process.cwd(), 'house_wishlist.md');
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-const VAULT_PATH = path.join(process.cwd(), 'prompt_vault.md');
-declare const Bun: any;
-=======
 const IPL_FEED = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/src/data/liveFeed.json";
-=======
 const IPL_ROOT = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/public/data/balls";
->>>>>>> Stashed changes
 
 let lastIplEventTs = 0;
 let lastIplPhase = "";
 let lastIplOver = "";
-<<<<<<< Updated upstream
-=======
 let lastIplScore = "";
 let lastIplMatchId = "";
 let lastIplWicketBall = false; // true = next ball after wicket
@@ -66,7 +54,6 @@ let iplMatchCenter: {
   timeline: [],
   records: []
 };
->>>>>>> Stashed changes
 let lastCommentaryMsgId: number | null = null;
 let lastGitMsgIds: Record<string, number> = {};
 let lastSpotifyTrack = "";
@@ -75,11 +62,6 @@ let lastMarketCheck = 0;
 let lastIssCheck = 0;
 let lastGoldenHourCheck = 0;
 let lastFocusShieldCheck = 0;
-<<<<<<< Updated upstream
-let lastIplEventTs = 0;
-let lastSpotifyTrack = "";
-=======
->>>>>>> Stashed changes
 let preMusicLightState: any = null;
 let isPhoneOnline = false;
 (global as any).isPhoneOnline = false;
@@ -112,7 +94,6 @@ const formatAction = (cmd: string, config: any) => {
   };
   return map[cmd] || cmd.replace(/_/g, ' ');
 };
->>>>>>> Stashed changes
 
 async function speak(text: string) {
   try { await execAsync(`say "${text.replace(/"/g, '')}"`); }
@@ -136,8 +117,6 @@ async function getSystemIdleTime(): Promise<number> {
   } catch { return 0; }
 }
 
-<<<<<<< Updated upstream
-=======
 async function getSpotifyStatus(): Promise<string | null> {
   if (os.platform() !== 'darwin') return null;
   try {
@@ -179,53 +158,12 @@ async function getBatteryStatus(): Promise<{ level: number, isPlugged: boolean }
   } catch { return null; }
 }
 
->>>>>>> Stashed changes
 function logActivity(text: string) {
   const stamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   const entry = `[${stamp}] ${text}\n`;
   fs.appendFileSync(LOG_PATH, entry);
 }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-function archiveClipboard(text: string) {
-  const dir = path.join(process.cwd(), 'gravity-archive');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const clipsPath = path.join(dir, 'clips.json');
-  let clips: any[] = [];
-  try {
-    const data = fs.readFileSync(clipsPath, 'utf-8');
-    clips = JSON.parse(data);
-  } catch (e) { clips = []; }
-  
-  // 🧼 Duplicate Sentry: If text matches, just bump to top
-  const existingIdx = clips.findIndex((c: any) => c.text === text);
-  if (existingIdx !== -1) {
-    const [item] = clips.splice(existingIdx, 1);
-    item.timestamp = new Date().toISOString();
-    clips.unshift(item);
-  } else {
-    const type = text.startsWith('http') ? 'link' : (text.includes('{') || text.includes('function') || text.includes('=>')) ? 'code' : 'text';
-    clips.unshift({
-      id: Date.now().toString(),
-      text,
-      timestamp: new Date().toISOString(),
-      isBookmarked: false,
-      meta: {
-        words: text.split(/\s+/).filter(x => x.length > 0).length,
-        lines: text.split('\n').length,
-        type
-      }
-    });
-  }
-  
-  // Keep last 5000 clips in active recall
-  fs.writeFileSync(clipsPath, JSON.stringify(clips.slice(0, 5000), null, 2));
-}
-
->>>>>>> Stashed changes
-=======
 function cleanDOM(html: string) {
   // Surgical strip of scripts, styles, and data-attributes
   return html
@@ -246,7 +184,6 @@ async function archiveClipboard(text: string) {
   } catch(e) {}
 }
 
->>>>>>> Stashed changes
 let lastBriefDate = "";
 let lastEveningDate = "";
 
@@ -328,19 +265,7 @@ function updateBotPulse(config: any) {
   config.stats.bot.lastPulse = new Date().toISOString();
   fs.writeFileSync(path.join(process.cwd(), 'config.json'), JSON.stringify(config, null, 2));
 }
-<<<<<<< Updated upstream
 
-let config: any;
-let bot: TelegramAdapter;
-
-async function main() {
-  config = loadConfig();
-<<<<<<< Updated upstream
-  if (!config.hubToken) {
-    config.hubToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    saveConfig(config);
-=======
-=======
 let config: any;
 let bot: any;
 let lastGlobalSignal: { text: string, time: number } | null = null;
@@ -349,19 +274,6 @@ let lastLevelActions: Record<string, { text: string, time: number }> = {};
 async function main() {
   config = loadConfig();
   const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
-<<<<<<< Updated upstream
-=======
-
-  const stopPostureGuardian = () => {
-    if ((global as any).postureTimer) {
-      clearInterval((global as any).postureTimer);
-      (global as any).postureTimer = null;
-    }
-    if ((global as any).postureNag) {
-      clearInterval((global as any).postureNag);
-      (global as any).postureNag = null;
-    }
-  };
 
   const stopPostureGuardian = () => {
     if ((global as any).postureTimer) {
@@ -440,77 +352,28 @@ async function main() {
 
   if (config.postureGuardian) startPostureGuardian();
   if (config.hydrationGuardian) startHydrationGuardian();
->>>>>>> Stashed changes
   
   // 📝 PID Lock for reliable shutdown
   fs.writeFileSync('/tmp/gravity-hub.pid', process.pid.toString());
->>>>>>> Stashed changes
   
   // Session Stats
   let sessionAcMinutes = 0;
   let sessionLightMinutes = 0;
-<<<<<<< Updated upstream
 
   let offlineCounter = 0;
   let offlineSince: number | null = null; // Debounce tracking
   
   const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
 
-<<<<<<< Updated upstream
-  // 🪐 Intelligence Mode Pulse
-  const CLIPBOARD_ONLY = process.env.CLIPBOARD_ONLY === 'true';
-
-  // Init adapters (Only if not in archive-only mode)
-  if (!CLIPBOARD_ONLY) {
-    if (!TELEGRAM_TOKEN) {
-      console.error('❌ TELEGRAM_TOKEN not set');
-      process.exit(1);
-    }
-    bot = new TelegramAdapter(TELEGRAM_TOKEN);
-  } else {
-    console.log("🪐 Gravity: CLIPBOARD-ONLY MODE (Minimal Brain)");
-      bot = { 
-        sendMessage: async () => {}, 
-        setMyCommands: async () => {},
-        registerCommand: () => {},
-        startPolling: () => {} // Added Polling safety
-      } as any;
->>>>>>> Stashed changes
-=======
-=======
-
-  let offlineCounter = 0;
-  let offlineSince: number | null = null; // Debounce tracking
-  
-  const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
-
->>>>>>> Stashed changes
   if (!TELEGRAM_TOKEN) {
     console.error('❌ TELEGRAM_TOKEN not set');
     process.exit(1);
->>>>>>> Stashed changes
   }
   bot = new TelegramAdapter(TELEGRAM_TOKEN);
   const notifier = new NotificationManager(bot, config);
 
-<<<<<<< Updated upstream
-  let isPhoneOnline = true; // tracking state
-  let offlineCounter = 0;
-  let offlineSince: number | null = null; // Debounce tracking
-
-  const TELEGRAM_TOKEN = config.telegram?.token || process.env.TELEGRAM_TOKEN;
-  if (!TELEGRAM_TOKEN) {
-    console.error('❌ TELEGRAM_TOKEN not set in .env.local or config.json');
-    process.exit(1);
-  }
-
-  // Init adapters
-  bot = new TelegramAdapter(TELEGRAM_TOKEN);
-  const notifier = new NotificationManager(bot, config);
-=======
   // Initialize Codex SDK
-  const codex = config.codexExportPath ? new CodexSDK(config.codexExportPath) : null;
->>>>>>> Stashed changes
+  const codex = null; // config.codexExportPath ? new CodexSDK(config.codexExportPath) : null;
 
   // Initialize Scheduler Actions
   const scheduler = new GravityScheduler(config, {
@@ -542,40 +405,13 @@ async function main() {
   });
 
   // 🧱 RESILIENT STARTUP: Background all network tasks
-<<<<<<< Updated upstream
-  console.log('🧱 Intelligence Core: Waking up...');
-=======
   console.log('🧱 Gravity Hub: Waking up...');
->>>>>>> Stashed changes
   
   (async () => {
     try {
       await bot.initialize();
       console.log('✅ Telegram: Connected');
       
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      // 🪄 Sync Command Suggestions (Slash menu)
-=======
-      // 🪄 Sync Command Suggestions (Slash menu v4.9.2)
->>>>>>> Stashed changes
-      bot.setMyCommands([
-        { command: 'status', description: 'Show all device states' },
-        { command: 'ac', description: 'AC: on|off|cool|dry|<temp>' },
-        { command: 'lights', description: 'Lights: on|off|<dim>|<color>' },
-<<<<<<< Updated upstream
-        { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
-        { command: 'history', description: 'Show energy usage history' },
-        { command: 'ping', description: 'Check Hub health' },
-        { command: 'test_feedback', description: 'Trial Sensory Feedback' },
-        { command: 'login', description: 'Get secure token for dashboard' },
-=======
-        { command: 'aura', description: '🎨 Toggle Media Aura (Media-Sync)' },
-        { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
-        { command: 'history', description: 'Show energy usage history' },
-        { command: 'ping', description: 'Check Hub health' },
->>>>>>> Stashed changes
-=======
       // 🪄 Sync Command Suggestions (Slash menu v4.9.2)
       bot.setMyCommands([
         { command: 'status', description: 'Show current states' },
@@ -588,7 +424,6 @@ async function main() {
         { command: 'scene', description: 'Scenes: tv|home|away|party|list' },
         { command: 'history', description: 'Show usage history' },
         { command: 'ping', description: 'Check Gravity health' },
->>>>>>> Stashed changes
       ]).catch(() => {});
     } catch (e) {
       console.warn('⚠️ Telegram handshake delayed...');
@@ -645,11 +480,7 @@ async function main() {
   const sleepManager = new SleepCurveManager();
 
   let miraie: MiraieAdapter | null = null;
-<<<<<<< Updated upstream
-  if (config.miraie?.mobile && config.miraie?.password) {
-=======
   if (!CLIPBOARD_ONLY && config.miraie?.mobile && config.miraie?.password) {
->>>>>>> Stashed changes
     try {
       miraie = new MiraieAdapter(config.miraie.mobile, config.miraie.password);
       miraie.initialize()
@@ -670,11 +501,7 @@ async function main() {
   }
 
   let wiz: WizAdapter | null = null;
-<<<<<<< Updated upstream
-  if (config.wiz?.ip) {
-=======
   if (!CLIPBOARD_ONLY && config.wiz?.ip) {
->>>>>>> Stashed changes
     try {
       wiz = new WizAdapter(config.wiz.ip);
       console.log('💡 Lights: Adapter ready');
@@ -713,13 +540,6 @@ async function main() {
   }
 
   // Helper to calculate duration string
-<<<<<<< Updated upstream
-  const getDurationString = (lastChangedIso: string) => {
-    if (!lastChangedIso) return "Unknown";
-    const diff = Date.now() - new Date(lastChangedIso).getTime();
-    const hours = Math.floor(diff / 3600000);
-    const mins = Math.floor((diff % 3600000) / 60000);
-=======
   const getDurationString = (lastChangedIso: string | number) => {
     if (!lastChangedIso || lastChangedIso === "null" || lastChangedIso === "undefined" || lastChangedIso === "0") return "Just now";
     // Handle both ISO strings and numeric timestamps (as strings or numbers)
@@ -738,10 +558,6 @@ async function main() {
     const mins = totalMins % 60;
     
     if (days > 0) return `${days}d ${hours}h`;
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     if (hours > 0) return `${hours}h ${mins}m`;
     return `${mins}m`;
   };
@@ -820,8 +636,6 @@ async function main() {
   });
 
   bot.registerCommand({
-<<<<<<< Updated upstream
-=======
     command: 'media',
     description: 'Activate Media Exposure (High-fidelity cinematic aura)',
     handler: async (chatId, args, msg, send) => {
@@ -859,7 +673,6 @@ async function main() {
   });
 
   bot.registerCommand({
->>>>>>> Stashed changes
     command: 'pgvcl',
     description: 'Show latest PGVCL bill details',
     handler: async (chatId, args, msg, send) => {
@@ -869,11 +682,7 @@ async function main() {
       
       // Fallback: Estimation Engine (v4.0.0 High-Fidelity)
       if (!pg || !config.pgvcl?.consumerId || config.pgvcl.consumerId === 'ENTER_ID') {
-<<<<<<< Updated upstream
-        const units = (config.stats.acMinutes / 60 * 1.5) + (config.stats.lightMinutes / 60 * 0.015);
-=======
         const units = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
->>>>>>> Stashed changes
         const bill = calculatePgvclBill(units);
         const roundedBill = Math.round(Number(bill));
         
@@ -886,8 +695,6 @@ async function main() {
     }
   });
 
-<<<<<<< Updated upstream
-=======
   bot.registerCommand({
     command: 'flows',
     description: 'Manage Automations',
@@ -906,8 +713,6 @@ async function main() {
       await send(text);
     }
   });
-<<<<<<< Updated upstream
-=======
   
   bot.registerCommand({
     command: 'habit',
@@ -960,9 +765,7 @@ async function main() {
   bot.registerCommand({ command: 'ping', description: 'Check Gravity health', handler: async (chatId: number, args: string[], msg: any, send: any) => {
     await send(`🚀 *Gravity Hub: ONLINE*\n🏗️ Platform: *Local Mac*\nStarted: *${new Date().toLocaleTimeString('en-IN')}*\n❄️ AC: ✅ (${getDurationString(config.stats.ac?.lastChanged)}) | 💡 Light: ✅ (${getDurationString(config.stats.light?.lastChanged)})`);
   }});
->>>>>>> Stashed changes
 
->>>>>>> Stashed changes
   // ❄️ Mission Control Panel (Interactive v2.0)
   bot.registerCommand({
     command: 'control',
@@ -996,8 +799,6 @@ async function main() {
            const cur = parseInt(s?.actmp || '24');
            const finalTemp = Math.min(30, Math.max(16, subCommand === 'temp_up' ? cur + 1 : cur - 1));
            if (deviceId) await miraie?.controlDevice(deviceId as string, { actmp: String(finalTemp), ps: 'on' });
-<<<<<<< Updated upstream
-=======
            recordHabit(subCommand);
         } else if (subCommand === 'bright_up' || subCommand === 'bright_down') {
            const p = await wiz?.getPilot();
@@ -1070,20 +871,6 @@ async function main() {
            saveConfig(config);
            recordHabit(subCommand);
         } else if (subCommand === 'cricket_live') {
-<<<<<<< Updated upstream
-           // Manually trigger a score update if match is live
-           const ipl = await getLatestIplData();
-           if (!ipl || !ipl.innings || ipl.innings.length === 0) {
-             await bot.sendMessage(chatId, "🏏 *Cricket Pulse:* No live match detected or engine offline.");
-           } else {
-             const inn = ipl.innings[ipl.innings.length - 1];
-             const lastBall = inn.balls[inn.balls.length - 1];
-             const score = `🏏 *LIVE SCORE:* ${ipl.status.toUpperCase()}\n━━━━━━━━━━━━━━\n${inn.battingTeam}: *${inn.totalRuns}/${inn.totalWickets}* (${inn.overs} ov)\n\n_${lastBall?.commentary || 'Awaiting next delivery...'}_`;
-             await bot.sendMessage(chatId, score, { parse_mode: 'Markdown' });
-           }
-           return;
-        } else if (subCommand === 'ac_tv') {
-=======
             const ipl = await getLatestIplData();
             const text = renderMatchCenter(ipl);
             const keyboard = { inline_keyboard: getMatchCenterKeyboard() };
@@ -1091,7 +878,6 @@ async function main() {
             if (sent) lastCommentaryMsgId = (sent as any).message_id;
             return;
         } else if (subCommand === 'actmpv') {
->>>>>>> Stashed changes
            await triggerScene('TV');
            recordHabit(subCommand);
         } else if (subCommand === 'commentary_toggle') {
@@ -1110,8 +896,6 @@ async function main() {
         } else if (subCommand === 'github_silent_toggle') {
             config.githubPulse.silent = !config.githubPulse.silent;
             saveConfig(config);
-<<<<<<< Updated upstream
-=======
         } else if (subCommand === 'posture_toggle') {
             config.postureGuardian = !config.postureGuardian;
             saveConfig(config);
@@ -1216,7 +1000,6 @@ async function main() {
              }
              if (isCallback) await (bot as any).answerCallbackQuery((msg as any).callback_query_id).catch(() => {});
              return;
->>>>>>> Stashed changes
         } else if (subCommand === 'boot_greet_toggle') {
             config.bootGreet = !config.bootGreet;
             saveConfig(config);
@@ -1234,15 +1017,11 @@ async function main() {
            saveConfig(config);
            await bot.sendMessage(chatId, "🔄 *Rejected patterns cleared.* I will scan everything again.");
            // Fall through to refresh menu
->>>>>>> Stashed changes
         }
-<<<<<<< Updated upstream
-=======
         
         const formatted = formatAction(subCommand, config);
         lastLevelActions[menuLevel] = { text: formatted, time: Date.now() };
         globalLastAction = formatted;
->>>>>>> Stashed changes
 
         // If it was a button click, we want to REFRESH the control panel instead of sending a new one
         if (msg.callback_query_id || args.includes('refresh')) {
@@ -1252,56 +1031,22 @@ async function main() {
         }
       }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-      // Generate the Panel Content
-      const acStatus = config.stats.ac?.status || 'unknown';
-      const lightStatus = config.stats.light?.status || 'unknown';
-      const acTemp = (await miraie?.getDeviceStatus(deviceId as string))?.actmp || '??';
-      
-      const panelText = `🎮 *Gravity Mission Control*\n━━━━━━━━━━━━━━\n❄️ *AC*: ${acStatus.toUpperCase()} (${acTemp}°C)\n💡 *Light*: ${lightStatus.toUpperCase()}\n━━━━━━━━━━━━━━\n_Panel auto-refreshes on click._`;
-=======
-    // Auto-Refresh UI logic for Callbacks
-    const ac = config.stats?.ac || { status: 'OFF', actmp: '24' };
-    const light = config.stats?.light || { status: 'OFF' };
-    const acDur = getDurationString(ac.lastChanged);
-    const lightDur = getDurationString(light.lastChanged);
-
-    const dashboard = `🌌 *Gravity Mission Control*\n━━━━━━━━━━━━━━\n❄️ AC: *${ac.status || 'OFF'}* (${ac.actmp || '24'}°C) — _${acDur}_\n💡 Light: *${light.status || 'OFF'}* — _${lightDur}_\n━━━━━━━━━━━━━━\n_Panel auto-refreshes on click._`;
-    
-    try {
-      await (bot as any).sendRequest('editMessageText', {
-        chat_id: chatId,
-        message_id: (msg as any).message_id,
-        text: dashboard,
-        parse_mode: 'Markdown',
-        reply_markup: keyboard
-      });
-    } catch(e) {}
->>>>>>> Stashed changes
-=======
     // 🛰️ The Sovereign Dashboard Engine
     const acStats = config.stats?.ac || { status: 'off', actmp: '24' };
     const lightStats = config.stats?.light || { status: 'off' };
     const recentAction = lastLevelActions['root'];
     const actionStr = recentAction ? `${recentAction.text} (${getDurationString(recentAction.time)})` : 'None';
     const signalStr = lastGlobalSignal ? `\n📡 *Last Signal:* ${lastGlobalSignal.text} (${getDurationString(lastGlobalSignal.time)})` : '';
-<<<<<<< Updated upstream
-    
-    let dashboard = `🌌 *Gravity Mission Control*\n━━━━━━━━━━━━━━\n❄️ AC: *${acStats.status.toUpperCase()}* (${acStats.actmp || '24'}°C) — _${getDurationString(config.stats.ac?.lastChanged)}_\n💡 Light: *${lightStats.status.toUpperCase()}* — _${getDurationString(config.stats.light?.lastChanged)}_\nRecent: *${actionStr}*${signalStr}\n━━━━━━━━━━━━━━\n_Select a Vault for granular control._`;
-=======
     const liveStr = lastGlobalSignal && (Date.now() - lastGlobalSignal.time < 300000) ? `\n⚡ *Live:* ${lastGlobalSignal.text}` : '';
     
     let dashboard = `🌌 *Gravity Mission Control*\n━━━━━━━━━━━━━━\n❄️ AC: *${acStats.status.toUpperCase()}* (${acStats.actmp || '24'}°C) — _${getDurationString(config.stats.ac?.lastChanged)}_\n💡 Light: *${lightStats.status.toUpperCase()}* — _${getDurationString(config.stats.light?.lastChanged)}_\nRecent: *${actionStr}*${signalStr}${liveStr}\n━━━━━━━━━━━━━━\n_Select a Vault for granular control._`;
->>>>>>> Stashed changes
     let keyboard: any = { inline_keyboard: [] };
->>>>>>> Stashed changes
 
-      const keyboard = {
+      keyboard = {
         inline_keyboard: [
           [
-            { text: acStatus === 'on' ? '🚫 AC OFF' : '❄️ AC ON', callback_data: `control:ac_${acStatus === 'on' ? 'off' : 'on'}:refresh` },
-            { text: lightStatus === 'on' ? '🌑 Light OFF' : '💡 Light ON', callback_data: `control:bulb_${lightStatus === 'on' ? 'off' : 'on'}:refresh` }
+            { text: acStats.status === 'on' ? '🚫 AC OFF' : '❄️ AC ON', callback_data: `control:ac_${acStats.status === 'on' ? 'off' : 'on'}:refresh` },
+            { text: lightStats.status === 'on' ? '🌑 Light OFF' : '💡 Light ON', callback_data: `control:bulb_${lightStats.status === 'on' ? 'off' : 'on'}:refresh` }
           ],
           [
             { text: '🌡️ Temp -1°', callback_data: 'control:temp_down:refresh' },
@@ -1318,25 +1063,6 @@ async function main() {
         ]
       };
 
-<<<<<<< Updated upstream
-      if (isCallback) {
-        // Edit existing message for smooth transitions
-        try {
-          await (bot as any).sendRequest('editMessageText', {
-            chat_id: chatId,
-            message_id: (msg as any).message_id,
-            text: panelText,
-            parse_mode: 'Markdown',
-            reply_markup: keyboard
-          });
-        } catch (e) {
-          // Fallback if edit fails (e.g. content same)
-          await (bot as any).sendMessage(chatId, panelText, { reply_markup: keyboard });
-        }
-      } else {
-        await (bot as any).sendMessage(chatId, panelText, { reply_markup: keyboard });
-      }
-=======
     if (menuLevel === 'root') {
       keyboard.inline_keyboard = [
         [
@@ -1395,12 +1121,9 @@ async function main() {
           { text: config.commentaryMode ? '💬 Commentary: ✅ ON' : '💬 Commentary: ❌ OFF', callback_data: 'control:commentary_toggle:level:intel' }
         ],
         [
-<<<<<<< Updated upstream
           { text: '📊 Frequency Stats', callback_data: 'control:log_stats:level:intel' }
         ],
         [
-=======
->>>>>>> Stashed changes
           { text: config.deliveryWatch?.enabled ? '📦 Delivery: ✅ ON' : '📦 Delivery: ❌ OFF', callback_data: 'control:delivery_watch_toggle:level:intel' },
           { text: '🧪 Test Delivery', callback_data: 'control:delivery_test:level:intel' }
         ],
@@ -1589,65 +1312,10 @@ async function main() {
     } else {
       await (bot as any).sendMessage(chatId, dashboard, { parse_mode: 'Markdown', reply_markup: keyboard });
     }
->>>>>>> Stashed changes
     }
   });
 
   // ── Presence Detection & Automations ───────────────
-<<<<<<< Updated upstream
-  const weather = new WeatherEngine();
-  setInterval(async () => {
-    const phoneIp = config.phoneIp || '192.168.29.50';
-    try {
-      await execAsync(`ping -c 1 -t 1 ${phoneIp}`).catch(() => {});
-      const { stdout } = await execAsync(`arp -a`);
-      const isPresent = stdout.includes(`(${phoneIp})`);
-
-      if (isPresent) {
-        if (!isPhoneOnline) {
-          isPhoneOnline = true;
-          offlineCounter = 0;
-          logActivity("📱 Presence: Phone detected (HOME)");
-          await triggerScene('HOME');
-          
-          const now = new Date();
-          const hour = now.getHours();
-          const dateStr = now.toDateString();
-          if (hour >= 5 && hour < 11 && lastBriefDate !== dateStr) {
-            lastBriefDate = dateStr;
-            setTimeout(() => triggerScene('MORNING_BRIEF'), 5000);
-          }
-        } else {
-          offlineCounter = 0;
-        }
-      } else {
-        offlineCounter++;
-        if (offlineCounter >= 4) {
-          if (isPhoneOnline) {
-            isPhoneOnline = false;
-            logActivity("🚶 Presence: Phone disconnected (AWAY)");
-          }
-          
-          // 🕰️ Run Scheduler Check
-          await scheduler.check();
-
-          // 🛡️ Ghost Sentry Check
-          if (config.sentryActive !== false && !isPhoneOnline) {
-             const idle = await getSystemIdleTime();
-             if (idle < 10) { // Active movement detected
-                const stamp = new Date().toLocaleTimeString();
-                logActivity("🚨 SENTRY: Unauthorized activity detected!");
-                speak("Warning! Unauthorized access. Alerting the owner.");
-                await notifier.notify(`🚨 *GHOST SENTRY*: Activity detected while you are AWAY!\nTimestamp: \`${stamp}\`\nIdle Time: \`${idle.toFixed(1)}s\``, 'critical');
-             }
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('Presence check failed', e);
-    }
-  }, 60000);
-=======
   if (!CLIPBOARD_ONLY) {
     const weather = new WeatherEngine();
     setInterval(async () => {
@@ -1754,7 +1422,6 @@ async function main() {
       }
     } catch {}
   }, 30000); // 🚀 Rapid Hardware Sync: 30 seconds
->>>>>>> Stashed changes
 
   // ──────────────────────────────────────────────────────
   // PGVCL Scraper (Hourly)
@@ -1778,13 +1445,8 @@ async function main() {
     else if (units <= 250) energyCharge = (50 * 3.05) + (50 * 3.50) + (units - 100) * 4.10;
     else energyCharge = (50 * 3.05) + (50 * 3.50) + (150 * 4.10) + (units - 250) * 4.60;
     
-<<<<<<< Updated upstream
-    const fpppa = units * 2.90; // Approx FPPPA
-    const fixed = 50; // Fixed charge
-=======
     const fpppa = units * 2.85; // Latest FPPPA Approx
     const fixed = includeFixed ? 35 : 0; // Avg monthly fixed charge for 2-4kW load
->>>>>>> Stashed changes
     const subtotal = energyCharge + fpppa + fixed;
     const duty = subtotal * 0.15; // 15% Electricity Duty
     return (subtotal + duty).toFixed(2);
@@ -1862,8 +1524,6 @@ async function main() {
         if (wiz) promises.push(wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
         if (miraie && miraie.devices.length > 0) promises.push(miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
         break;
-<<<<<<< Updated upstream
-=======
       case "CHILL":
       case "chill":
         logActivity("🎬 Scene: CHILL (Media Aura)");
@@ -1876,7 +1536,6 @@ async function main() {
            }}));
         }
         break;
->>>>>>> Stashed changes
       case "MORNING_BRIEF":
         const hours = (config.stats.acMinutes / 60).toFixed(1);
         const bill = calculatePgvclBill(Number(config.stats.pgvcl?.units || 0));
@@ -1900,8 +1559,6 @@ async function main() {
   });
 
   bot.registerCommand({
-<<<<<<< Updated upstream
-=======
     command: 'search',
     description: 'Search Telegram history via Codex SDK',
     handler: async (chatId, args, msg, send) => {
@@ -1951,7 +1608,6 @@ async function main() {
   });
 
   bot.registerCommand({
->>>>>>> Stashed changes
     command: 'broadcast',
     description: 'Speak a message on the house speakers',
     handler: async (chatId, args, msg, send) => {
@@ -1964,8 +1620,6 @@ async function main() {
   });
 
   bot.registerCommand({
-<<<<<<< Updated upstream
-=======
     command: 'pomodoro',
     description: 'Start ruthless 50-minute work lock',
     handler: async (chatId: number, args: string[], msg: any, send: any) => {
@@ -2042,7 +1696,6 @@ async function main() {
   });
 
   bot.registerCommand({
->>>>>>> Stashed changes
     command: 'remember',
     description: 'Save a note to config',
     handler: async (chatId, args, msg, send) => {
@@ -2645,13 +2298,6 @@ async function main() {
       
       const acStatus = config.stats.ac?.status || 'unknown';
       const acDuration = getDurationString(config.stats.ac?.lastChanged);
-<<<<<<< Updated upstream
-      lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} (${acDuration}) ${miraie ? '✅' : '❌'}`);
-      
-      const lightStatus = config.stats.light?.status || 'unknown';
-      const lightDuration = getDurationString(config.stats.light?.lastChanged);
-      lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} (${lightDuration}) ${wiz ? '✅' : '❌'}`);
-=======
       const acHw = miraie ? '✅ Live' : '🌑 Disconnected (Power Cut?)';
       lines.push(`❄️ *AC*: ${acStatus.toUpperCase()} (${acDuration}) [Req: ${config.ac?.temp || '24'}°C] (${acHw})`);
       
@@ -2659,18 +2305,11 @@ async function main() {
       const lightDuration = getDurationString(config.stats.light?.lastChanged);
       const lightHw = wiz ? '✅ Live' : '🌑 Disconnected';
       lines.push(`💡 *Lights*: ${lightStatus.toUpperCase()} (${lightDuration}) [Req: ${config.lights?.brightness || '100'}%] (${lightHw})`);
->>>>>>> Stashed changes
       
       const botUptime = Math.floor(process.uptime());
       const botOffBefore = config.stats.bot?.offtimeBeforeBoot || "N/A";
       const bootedAt = config.stats.bot?.bootedAt ? new Date(config.stats.bot.bootedAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : "Unknown";
       
-<<<<<<< Updated upstream
-      lines.push(`🤖 *Bot*: ONLINE (Since ${bootedAt} IST)`);
-      lines.push(`⏱ *Session Uptime*: ${Math.floor(botUptime/3600)}h ${Math.floor((botUptime%3600)/60)}m`);
-      lines.push(`💤 *Bot Downtime*: Last down for ${botOffBefore}`);
-      
-=======
       lines.push(`⏱ *Session Uptime*: ${Math.floor(botUptime/3600)}h ${Math.floor((botUptime%3600)/60)}m`);
       lines.push(`💤 *Bot Downtime*: Last down for ${botOffBefore}`);
       
@@ -2690,7 +2329,6 @@ async function main() {
         lines.push(`\n⚙️ *System Health*:\n${systemHealth.join('\n')}`);
       }
       
->>>>>>> Stashed changes
       try {
         const logs = fs.readFileSync(LOG_PATH, 'utf-8').trim().split('\n');
         const last = logs[logs.length - 1] || "No events logged yet.";
@@ -2716,8 +2354,6 @@ async function main() {
     }
   });
 
-<<<<<<< Updated upstream
-=======
   // ✨ /today — Quick Stats
   bot.registerCommand({
     command: 'today',
@@ -3277,13 +2913,10 @@ async function main() {
     }
   });
 
->>>>>>> Stashed changes
   // ──────────────────────────────────────────────────────
   // /remind — Delayed Telegram reminder
   // ──────────────────────────────────────────────────────
   bot.registerCommand({
-<<<<<<< Updated upstream
-=======
     command: 'media_aura',
     description: 'Toggle automatic music-light sync: /media_aura on|off',
     handler: async (chatId, args, msg, send) => {
@@ -3300,7 +2933,6 @@ async function main() {
   });
 
   bot.registerCommand({
->>>>>>> Stashed changes
     command: 'remind',
     description: 'Set a reminder: /remind 30m take a break',
     handler: async (chatId, args, msg, send) => {
@@ -3454,13 +3086,6 @@ async function main() {
     try { await bot.answerCallbackQuery(query.id); } catch {}
   };
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-  bot.registerCommand({
-    command: 'schedule_add',
-=======
-=======
->>>>>>> Stashed changes
   // 🪐 God Commands v4.9.2
   bot.registerCommand({
     command: 'aura',
@@ -3476,10 +3101,6 @@ async function main() {
   bot.registerCommand({
     command: 'schedule_add',
        // ... existing command registrations
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     description: 'Add a new schedule: /schedule_add 23:00 ac_off',
     handler: async (chatId, args, msg, send) => {
       if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
@@ -3646,7 +3267,6 @@ async function main() {
             return new Response(`Trigger ${hook} Executed`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
         }
-<<<<<<< Updated upstream
         if (url.pathname.includes('/status')) {
           const w = config.weatherSync !== false ? await new WeatherEngine().getWeather() : null;
           const body = JSON.stringify({
@@ -3684,27 +3304,6 @@ async function main() {
           ArchiveDB.delete(id);
           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
-<<<<<<< Updated upstream
-        if (url.pathname.startsWith('/archive/promote/')) {
-          const { ArchiveDB } = await import('../archive/db');
-          const id = parseInt(url.pathname.split('/').pop() || '0');
-          const items = ArchiveDB.list(1000);
-          const item = items.find(i => i.id === id);
-          if (item) {
-            const entry = `\n### 🪐 Promoted from Archive (${new Date().toLocaleDateString()})\nSource: \`${item.source_app}\`\n\n${item.content}\n\n---\n`;
-            fs.appendFileSync(path.join(process.cwd(), 'prompt_vault.md'), entry);
-            return new Response('Promoted', { headers: { 'Access-Control-Allow-Origin': '*' } });
-          }
-          return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
-        }
-        if (url.pathname.startsWith('/archive/update-labels/')) {
-          const { ArchiveDB } = await import('../archive/db');
-          const id = parseInt(url.pathname.split('/').pop() || '0');
-          const labels = url.searchParams.get('labels') || '';
-          ArchiveDB.updateLabels(id, labels);
-          return new Response('Updated', { headers: { 'Access-Control-Allow-Origin': '*' } });
-=======
-=======
         if (url.pathname.startsWith('/media_aura/')) {
           const state = url.pathname.split('/').pop()?.toLowerCase();
           config.mediaAura = (state === 'on');
@@ -3861,7 +3460,6 @@ async function main() {
           fs.writeFileSync(clipsPath, JSON.stringify(clips, null, 2));
           return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
         }
->>>>>>> Stashed changes
         if (url.pathname.startsWith('/archive/label/')) {
           const clipsPath = path.join(process.cwd(), 'gravity-archive', 'clips.json');
           const id = url.pathname.split('/').pop();
@@ -3890,10 +3488,6 @@ async function main() {
             return new Response('Promoted', { headers: { 'Access-Control-Allow-Origin': '*' } });
           }
           return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
         }
         if (url.pathname === '/system/lock') {
           await execAsync(`pmset displaysleepnow || /System/Library/CoreServices/Menu\\ Extras/User.menu/Contents/Resources/CGSession -suspend`);
@@ -3917,14 +3511,11 @@ async function main() {
           if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: false } });
           return new Response('Bulb Off', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
-<<<<<<< Updated upstream
-=======
         if (url.pathname === '/control/bulb/on') {
           await wiz?.executeAction({ type: 'control', payload: { state: true } });
           updateDeviceState('light', 'on', true);
           return new Response('Bulb On', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
->>>>>>> Stashed changes
         if (url.pathname === '/control/temp') {
           const dir = url.searchParams.get('dir') === 'up' ? 1 : -1;
           if (miraie && (miraie as any).devices.length > 0) {
@@ -3945,15 +3536,12 @@ async function main() {
           }
           return new Response('AC Off', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
-<<<<<<< Updated upstream
-=======
         if (url.pathname === '/control/ac/on') {
           const deviceId = miraie?.devices[0]?.deviceId;
           if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on' });
           updateDeviceState('ac', 'on', true);
           return new Response('AC On', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
->>>>>>> Stashed changes
         if (url.pathname === '/control/ac/mode') {
           const mode = url.searchParams.get('mode') || 'cool';
           if (miraie && (miraie as any).devices.length > 0) {
@@ -3986,8 +3574,6 @@ async function main() {
            exec(`scripts/iftt-clone.sh`); 
            return new Response('Restarting Hub...', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
-<<<<<<< Updated upstream
-=======
         if (url.pathname === '/control/ac/swing') {
           const deviceId = miraie?.devices[0]?.deviceId;
           if (deviceId) {
@@ -4011,7 +3597,6 @@ async function main() {
            (global as any).lastIplEventTs = 0;
            return new Response('Cricket Trigger Force Run', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
->>>>>>> Stashed changes
         if (sceneName) {
           await triggerScene(sceneName);
           return new Response(`Gravity: Scene ${sceneName} Active`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -4065,31 +3650,15 @@ async function main() {
     } finally {
       if (browser) await browser.close();
     }
-<<<<<<< Updated upstream
   }
 
   // Run scraper on boot + every 6 hours
   runPgvclScraper();
   setInterval(runPgvclScraper, 21600000);
   let awayAcMinutes = 0;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 
   setInterval(async () => {
     try {
-<<<<<<< Updated upstream
-      // 1. Auto-Saver Protection (2.5h / 150m limit)
-      if (!isPhoneOnline) {
-        // Only count if an AC is actually on
-        let anyAcOn = false;
-        if (miraie && miraie.devices.length > 0) {
-           for (const d of miraie.devices) {
-             const s = await miraie.getDeviceStatus(d.deviceId);
-             if (s?.ps === 'on' || s?.ps === '1') anyAcOn = true;
-           }
-        }
-=======
       // 1. Battery Guardian (Blink Red if < 15% & unplugged)
       const batt = await getBatteryStatus();
       if (batt && batt.level < 15 && !batt.isPlugged) {
@@ -4106,7 +3675,6 @@ async function main() {
       const currentSpotify = await getSpotifyStatus();
       if (config.mediaAura !== false) {
         const isAd = currentSpotify?.toLowerCase().includes('advertisement') || currentSpotify?.toLowerCase().includes('spotify');
->>>>>>> Stashed changes
         
         if (anyAcOn) {
           awayAcMinutes++;
@@ -4314,24 +3882,13 @@ async function main() {
   
   for (const userId of (config.authorizedUsers || [])) {
     try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
-=======
->>>>>>> Stashed changes
   }
 
-<<<<<<< Updated upstream
-=======
   // Run scraper on boot + every 6 hours
   runPgvclScraper();
   setInterval(runPgvclScraper, 21600000);
-  let awayAcMinutes = 0;
   let lastSpotifyTrack: string | null = null;
   let preMusicLightState: any = null;
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
   // 📋 Hyper-Fast Clipboard Sentry (Instant Recall)
   setInterval(async () => {
@@ -4375,8 +3932,6 @@ async function main() {
          config.stats.lowBattAlerted = false;
       }
 
-<<<<<<< Updated upstream
-=======
        // 1.5 IPL Live Pulse (Cricket Mode)
        if (config.cricketMode || config.automaticScoreUpdates) {
           try {
@@ -4472,7 +4027,6 @@ async function main() {
           } catch (e) { /* Feed silent */ }
        }
 
->>>>>>> Stashed changes
       // 2. Media Aura Sync (Liquid Aura 2.0 - Dynamic Cycling)
       const currentSpotify = await getSpotifyStatus();
       if (config.mediaAura !== false) {
@@ -4735,8 +4289,6 @@ async function main() {
     saveConfig(config);
   }
 
-<<<<<<< Updated upstream
-=======
   // ── 📡 Signal Intelligence Hub (Vibe Engine v4.6.2) ──
   setInterval(async () => {
     try {
@@ -4755,8 +4307,6 @@ async function main() {
            }
         }
 
-<<<<<<< Updated upstream
-=======
            // 📸 Instagram Pulse (New Post Detection)
            for (const igUser of config.socialMonitor.instagram || []) {
              try {
@@ -4809,7 +4359,6 @@ async function main() {
                }
              } catch (e) {}
            }
-        }
     } catch (e) { }
   }, 300000);
 
@@ -4817,7 +4366,6 @@ async function main() {
 
   setInterval(async () => {
     try {
->>>>>>> Stashed changes
         // 2. Prediction Oracle Pulse
         if (config.predictionPulse?.enabled && (Date.now() - ((global as any).lastPredictionCheck || 0) > 600000)) {
            (global as any).lastPredictionCheck = Date.now();
@@ -4960,7 +4508,6 @@ async function main() {
   }, 60000);
 
 
->>>>>>> Stashed changes
   // 🏥 Health Pulse & Maintenance
   if (!CLIPBOARD_ONLY) {
     setInterval(() => {
@@ -4984,8 +4531,6 @@ async function main() {
       try { bot.sendMessage(userId, startMsg, { parse_mode: 'Markdown' }); } catch {}
     }
     console.log(`🚀 Gravity Hub ONLINE [${PLATFORM}]. Polling started.`);
-<<<<<<< Updated upstream
-=======
 
     // 💓 Sovereign Heartbeat & Persistence
     setInterval(() => {
@@ -5092,24 +4637,12 @@ async function main() {
             await bot.sendMessage(chatId, `⚡ *Hyper-Sync:* Refresh rate set to ${ms/1000}s`);
         }
     }});
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
   }
 
->>>>>>> Stashed changes
   // ── Shutdown Guardian ─────────────────────────────
   const shutdown = async (signal: string) => {
     const uptime = Math.floor(process.uptime());
     const uptimeStr = `${Math.floor(uptime/3600)}h ${Math.floor((uptime%3600)/60)}m`;
-<<<<<<< Updated upstream
-    const stopTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
-    const stopMsg = `🔴 *Gravity went OFFLINE*\n⏰ Stopped at *${stopTime} IST* (${signal})\n⏱ Session Uptime: *${uptimeStr}*\n\nHub will not respond until restarted.`;
-=======
     
     // Final Hardware Recall
     const acFinal = config.stats.ac?.status?.toUpperCase() || 'OFF';
@@ -5124,7 +4657,6 @@ async function main() {
     
     const stopMsg = `🔴 *Gravity went OFFLINE*\n━━━━━━━━━━━━━━\n⏰ Stopped: *${stopTime} IST*\n❄️ AC Status: *${acFinal}* (${acDur})\n💡 Light Status: *${lightFinal}* (${lightDur})\n⏱ Session Uptime: *${uptimeStr}*${acStr}${lightStr}\n━━━━━━━━━━━━━━\nHub will not respond until restarted.`;
     
->>>>>>> Stashed changes
     for (const userId of (config.authorizedUsers || [])) {
       try { await bot.sendMessage(userId, stopMsg, { parse_mode: 'Markdown' }); } catch {}
     }
@@ -5176,11 +4708,6 @@ async function getLatestIplData() {
   });
   const latest = path.join(IPL_ROOT, files[0]);
   try {
-<<<<<<< Updated upstream
-    return JSON.parse(fs.readFileSync(latest, 'utf-8'));
-  } catch {
-    return null;
-=======
     const cleaned = text.trim().replace(/^[^({]+/, '').replace(/[^)}]+$/, '');
     if (cleaned.startsWith('(') && cleaned.endsWith(')')) {
        return JSON.parse(cleaned.substring(1, cleaned.length - 1));
@@ -5445,7 +4972,6 @@ async function getLatestIplData(targetMatchId?: string) {
       prevMatch: null, // Local engine doesn't easily know neighbors without manifest
       nextMatch: null
     };
->>>>>>> Stashed changes
   }
 }
 
