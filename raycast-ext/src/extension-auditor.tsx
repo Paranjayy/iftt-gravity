@@ -21,9 +21,14 @@ export default function Command() {
       const res = await fetch("http://localhost:3031/archive/extensions/list");
       const data = await res.json() as Extension[];
       setExtensions(data.sort((a, b) => {
-         const sizeA = parseFloat(a.size);
-         const sizeB = parseFloat(b.size);
-         return sizeB - sizeA;
+         const parseSize = (sizeStr: string) => {
+            let val = parseFloat(sizeStr);
+            if (sizeStr.includes('K')) val *= 1024;
+            else if (sizeStr.includes('M')) val *= 1024 * 1024;
+            else if (sizeStr.includes('G')) val *= 1024 * 1024 * 1024;
+            return val;
+         };
+         return parseSize(b.size) - parseSize(a.size);
       }));
     } catch (e) {
       showToast({ title: "Auditor Offline", style: Toast.Style.Failure });

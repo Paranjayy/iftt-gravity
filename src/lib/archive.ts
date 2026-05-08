@@ -912,13 +912,16 @@ async function main() {
            for (const d of dirs) {
               const fullPath = path.join(extPath, d);
               const pkgPath = path.join(fullPath, 'package.json');
-              if (fs.existsSync(pkgPath)) {
-                 try {
+              try {
+                 const { stdout: sizeOut } = await execAsync(`du -sh "${fullPath}" | cut -f1`);
+                 const size = sizeOut.trim();
+                 if (fs.existsSync(pkgPath)) {
                     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
-                    const { stdout: sizeOut } = await execAsync(`du -sh "${fullPath}" | cut -f1`);
-                    exts.push({ name: pkg.name, title: pkg.title, description: pkg.description, author: pkg.author, size: sizeOut.trim(), path: fullPath });
-                 } catch(e) {}
-              }
+                    exts.push({ name: pkg.name, title: pkg.title || pkg.name, description: pkg.description || "Local Extension", author: pkg.author || "Unknown", size, path: fullPath });
+                 } else {
+                    exts.push({ name: d, title: `Extension (${d.substring(0,8)})`, description: "Store Extension / Data", author: "Unknown", size, path: fullPath });
+                 }
+              } catch(e) {}
            }
            return new Response(JSON.stringify(exts), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }

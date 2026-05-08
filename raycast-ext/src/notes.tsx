@@ -354,6 +354,7 @@ function UniversalSearch() {
                     showToast({ title: "Resource Cloned", message: `New instance: ${path.basename(newPath)}` });
                     load();
                  }} />
+                 <Action.Push title="Move File to..." icon={Icon.ArrowRight} shortcut={{ modifiers: ["cmd", "shift"], key: "m" }} target={<MoveFileForm file={file} onUpdate={load} />} />
                  <Action.ShowInFinder title="Reveal in Finder" path={file.path} shortcut={{ modifiers: ["cmd", "shift"], key: "r" }} />
                  <Action.CopyToClipboard title="Copy File Path" content={file.path} shortcut={{ modifiers: ["cmd", "shift"], key: "p" }} />
                  <Action.Push title="Sovereign Rename" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "m" }} target={
@@ -759,6 +760,31 @@ function EntryAction({ name, type, onUpdate, initialText = "" }: { name: string;
       <Form.TextField id="section" title="Section/Heading" placeholder="e.g. Journal, Reference (optional)" />
       <Form.Checkbox id="parseHeadings" label="Auto-Split Headings into Fragments" defaultValue={false} />
       <Form.TextArea id="text" title="Fragment" defaultValue={initialText} placeholder="Type your thoughts..." autoFocus enableMarkdown />
+    </Form>
+  );
+}
+
+function MoveFileForm({ file, onUpdate }: { file: ExternalFile, onUpdate: () => void }) {
+  const { pop } = useNavigation();
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Execute Move" icon={Icon.ChevronRight} onSubmit={async (v: { dir: string }) => {
+             const newPath = path.join(v.dir, file.name);
+             await fetch("http://localhost:3031/archive/files/move", {
+               method: "POST",
+               body: JSON.stringify({ from: file.path, to: newPath }),
+               headers: { "Content-Type": "application/json" }
+             });
+             showToast({ title: "Resource Relocated", message: `Moved to ${v.dir}` });
+             onUpdate();
+             pop();
+          }} />
+        </ActionPanel>
+      }
+    >
+      <Form.TextField id="dir" title="Destination Directory Path" placeholder="/Users/paranjay/Downloads" />
     </Form>
   );
 }
