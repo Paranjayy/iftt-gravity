@@ -119,23 +119,23 @@ export default function GravityDashboard() {
     }
   };
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   if (loading && !data) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#060608]">
         <motion.div 
+          className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"
           animate={{ opacity: [0.3, 1, 0.3] }} 
           transition={{ repeat: Infinity, duration: 1.5 }}
+        />
+      </div>
+    );
+  }
+
   if (!mounted) return null;
 
-  const triggerScene = async (name: string) => {
-    try {
-      await fetch(`/api/gravity/scene/${name}`);
-      setTimeout(async () => {
-        const res = await fetch('/api/gravity/status');
-        setData(await res.json());
-      }, 1000);
-    } catch (e) { console.error("Scene trigger failed", e); }
-  };
 
   const uptimeHrs = Math.floor((data?.uptime || 0) / 3600);
   const uptimeMins = Math.floor(((data?.uptime || 0) % 3600) / 60);

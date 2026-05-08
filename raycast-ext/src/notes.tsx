@@ -354,6 +354,8 @@ function UniversalSearch() {
                     showToast({ title: "Resource Cloned", message: `New instance: ${path.basename(newPath)}` });
                     load();
                  }} />
+                 <Action.ShowInFinder title="Reveal in Finder" path={file.path} shortcut={{ modifiers: ["cmd", "shift"], key: "r" }} />
+                 <Action.CopyToClipboard title="Copy File Path" content={file.path} shortcut={{ modifiers: ["cmd", "shift"], key: "p" }} />
                  <Action.Push title="Sovereign Rename" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "m" }} target={
                     <Form actions={<ActionPanel><Action.SubmitForm title="Execute Rename" onSubmit={async (v: { p: string }) => {
                        await fetch("http://localhost:3031/archive/files/rename", {
@@ -442,7 +444,7 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
   useEffect(() => { load(); }, []);
 
   const cleanBody = (text: string) => {
-    return text.replace(/Words: \d+ \| Chars: \d+ \| Read Time: [\d.]+m/g, "").trim();
+    return text.replace(/.*(?:Words:|📝).*(?:Chars:|📄).*(?:Read Time:|⏱).*\n?/g, "").replace(/^> \[!.*\]\n/gm, "").trim();
   };
 
   const groupedEntries = entries.reduce((acc, entry) => {
@@ -462,6 +464,7 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
       actions={
         <ActionPanel>
           <Action.Push title="Add New Fragment" icon={Icon.Plus} shortcut={{ modifiers: ["cmd"], key: "n" }} target={<AddEntry name={name} onUpdate={() => { load(); onUpdate(); }} />} />
+          <Action.Open title="Open in Default Editor" target={`/Users/paranjay/Developer/iftt/gravity-notes/${name}`} shortcut={{ modifiers: ["cmd", "shift"], key: "o" }} />
         </ActionPanel>
       }
     >
@@ -670,14 +673,18 @@ function NoteItem({ note, fetchNotes }: { note: NoteFile, fetchNotes: () => void
 
 function AddEntry({ name, onUpdate }: { name: string; onUpdate: () => void }) {
   const { pop } = useNavigation();
+  const [heading, setHeading] = useState("");
   const [content, setContent] = useState("");
 
   async function handleSubmit() {
     if (!content.trim()) return;
+    
+    const finalContent = heading.trim() ? `## ${heading.trim()}\n\n${content}` : content;
+    
     try {
       await fetch("http://localhost:3031/archive/notes/append", {
         method: "POST",
-        body: JSON.stringify({ name, text: content }),
+        body: JSON.stringify({ name, text: finalContent }),
         headers: { "Content-Type": "application/json" }
       });
       showToast({ title: "Fragment Added", style: Toast.Style.Success });
@@ -696,6 +703,7 @@ function AddEntry({ name, onUpdate }: { name: string; onUpdate: () => void }) {
         </ActionPanel>
       }
     >
+      <Form.TextField id="heading" title="Heading (Optional)" placeholder="e.g. Ideas, Tasks, Meeting Notes" value={heading} onChange={setHeading} />
       <Form.TextArea id="content" title="Content" value={content} onChange={setContent} autoFocus enableMarkdown />
     </Form>
   );
