@@ -327,7 +327,7 @@ function UniversalSearch() {
                    <Action.Push title="Quick Look" icon={Icon.Eye} shortcut={{ modifiers: ["cmd"], key: "y" }} target={<FullImageDetail file={file} />} />
                 )}
                 {!file.isDir && <Action.Push title="Read & Edit Content" icon={Icon.Pencil} target={<ExternalFileDetail file={file} />} />}
-                <Action.Push title="Render Markdown" icon={Icon.BlankDocument} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} target={<MarkdownViewer file={file} />} />
+                <Action.Push title="Render Markdown" icon={Icon.Document} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} target={<MarkdownViewer file={file} />} />
                 <Action.Open title="Open" target={file.path} />
                 <Action.ShowInFinder title="Show in Finder" path={file.path} />
               </ActionPanel.Section>
@@ -357,6 +357,8 @@ function UniversalSearch() {
                  <Action.Push title="Move File to..." icon={Icon.ArrowRight} shortcut={{ modifiers: ["cmd", "shift"], key: "m" }} target={<MoveFileForm file={file} onUpdate={load} />} />
                  <Action.ShowInFinder title="Reveal in Finder" path={file.path} shortcut={{ modifiers: ["cmd", "shift"], key: "r" }} />
                  <Action.CopyToClipboard title="Copy File Path" content={file.path} shortcut={{ modifiers: ["cmd", "shift"], key: "p" }} />
+                 <Action.CopyToClipboard title="Copy File Name" content={file.name} />
+                 <Action.CopyToClipboard title="Copy Parent Folder Path" content={path.dirname(file.path)} />
                  <Action.Push title="Sovereign Rename" icon={Icon.Pencil} shortcut={{ modifiers: ["cmd"], key: "m" }} target={
                     <Form actions={<ActionPanel><Action.SubmitForm title="Execute Rename" onSubmit={async (v: { p: string }) => {
                        await fetch("http://localhost:3031/archive/files/rename", {
@@ -482,7 +484,7 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
                   <Action.Push title="Add New Fragment" icon={Icon.Plus} shortcut={{ modifiers: ["cmd"], key: "n" }} target={<AddEntry name={name} onUpdate={() => { load(); onUpdate(); }} />} />
                   <Action.Push title="Edit Entry" icon={Icon.Pencil} target={<EditEntry name={name} entry={entry} onUpdate={() => { load(); onUpdate(); }} />} />
                   <Action.CopyToClipboard title="Copy Content" content={cleanBody(entry.body)} />
-                  <Action.Push title="Render Markdown" icon={Icon.BlankDocument} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} target={<MarkdownViewer file={{ name, path: path.join('gravity-notes', name) } as any} />} />
+                  <Action.Push title="Render Markdown" icon={Icon.Document} shortcut={{ modifiers: ["cmd", "shift"], key: "v" }} target={<MarkdownViewer file={{ name, path: path.join(process.env.HOME || "", "gravity-notes", name) } as any} />} />
                 </ActionPanel>
               }
             />

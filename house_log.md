@@ -3272,3 +3272,2521 @@ ht...)
 [9/5/2026, 2:35:57 AM] 📋 Memory Archive: New clip captured ((42) A conversation ...)
 [9/5/2026, 2:36:52 AM] 📋 Memory Archive: New clip captured (hand-orange-covering...)
 [9/5/2026, 2:43:06 AM] 📋 Memory Archive: New clip captured (did u try new image ...)
+[9/5/2026, 3:04:58 AM] 📱 Presence: Phone detected (HOME)
+[9/5/2026, 3:16:26 AM] 📱 Presence: Phone detected (HOME)
+[9/5/2026, 3:20:55 AM] AC State: OFF (Manual/Remote)
+[9/5/2026, 3:58:16 AM] 📋 Memory Archive: New clip captured (medkit — the clinic ...)
+[9/5/2026, 3:58:25 AM] 📋 Memory Archive: New clip captured (https://medkit-app.v...)
+[9/5/2026, 4:00:55 AM] AC State: ON (Manual/Remote)
+[9/5/2026, 4:11:18 AM] 📋 Memory Archive: New clip captured (oMLX — LLM inference...)
+[9/5/2026, 4:13:30 AM] 📋 Memory Archive: New clip captured ((47) This Is The Bes...)
+[9/5/2026, 4:14:51 AM] 📋 Memory Archive: New clip captured (oMLX — LLM inference...)
+[9/5/2026, 4:15:04 AM] 📋 Memory Archive: New clip captured (oMLX — LLM inference...)
+[9/5/2026, 4:16:56 AM] 📋 Memory Archive: New clip captured (Liquid metal — Anima...)
+[9/5/2026, 4:19:45 AM] 📋 Memory Archive: New clip captured (Shawn.
+https://www.z...)
+[9/5/2026, 4:27:04 AM] 📋 Memory Archive: New clip captured (https://www.learning...)
+[9/5/2026, 4:27:24 AM] 📋 Memory Archive: New clip captured ([Warning] 290 consol...)
+[9/5/2026, 4:47:29 AM] 📋 Memory Archive: New clip captured (1684-4d9c01b4b1d6ba8...)
+[9/5/2026, 4:49:45 AM] 📋 Memory Archive: New clip captured (Say "I Am Alive" | K...)
+[9/5/2026, 4:59:35 AM] AC State: OFF (Manual/Remote)
+[9/5/2026, 5:05:47 AM] 📋 Memory Archive: New clip captured (- add more microinte...)
+[9/5/2026, 5:08:07 AM] AC State: ON (Bot)
+[9/5/2026, 5:27:16 AM] AC State: OFF (Manual/Remote)
+[9/5/2026, 6:07:44 AM] AC State: ON (Manual/Remote)
+[9/5/2026, 6:17:44 AM] AC State: OFF (Manual/Remote)
+[9/5/2026, 6:40:44 AM] AC State: ON (Manual/Remote)
+[9/5/2026, 6:51:56 AM] AC State: OFF (Manual/Remote)
+[9/5/2026, 7:00:26 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[9/5/2026, 7:00:56 AM] AC State: ON (Manual/Remote)
+[9/5/2026, 8:30:29 AM] 📋 Memory Archive: New clip captured (DOWNLOAD QUEUE
+mlx-c...)
+[9/5/2026, 8:44:54 AM] 📋 Memory Archive: New clip captured ((1) Md Rejaullah on ...)
+[9/5/2026, 8:50:50 AM] 📋 Memory Archive: New clip captured (The creators of SWE-...)
+[9/5/2026, 8:54:07 AM] 📋 Memory Archive: New clip captured (https://huggingface....)
+[9/5/2026, 8:54:52 AM] 📋 Memory Archive: New clip captured (paranjay (Paranjay)
+...)
+[9/5/2026, 8:55:37 AM] 📋 Memory Archive: New clip captured (<p align="left">
+  <...)
+[9/5/2026, 8:55:57 AM] 📋 Memory Archive: New clip captured (<a href="https://hug...)
+[9/5/2026, 8:56:42 AM] 📋 Memory Archive: New clip captured (Paranjay Khachar on ...)
+[9/5/2026, 8:57:29 AM] 📋 Memory Archive: New clip captured (<a href="https://cod...)
+[9/5/2026, 8:57:52 AM] 📋 Memory Archive: New clip captured (<a href="https://hug...)
+[9/5/2026, 8:57:55 AM] 📋 Memory Archive: New clip captured (<a href="https://cod...)
+[9/5/2026, 9:00:34 AM] 📋 Memory Archive: New clip captured (<a href="https://hug...)
+[9/5/2026, 9:11:53 AM] 📋 Memory Archive: New clip captured (hey this app has no ...)
+[9/5/2026, 9:19:05 AM] 📋 Memory Archive: New clip captured (continue iterating a...)
+[9/5/2026, 9:19:59 AM] 📋 Memory Archive: New clip captured (continue iterating a...)
+[9/5/2026, 10:10:11 AM] 📋 Memory Archive: New clip captured (- [Speedrun_Theo_Sty...)
+[9/5/2026, 10:10:12 AM] 📋 Memory Archive: New clip captured (continue iterating a...)
+[9/5/2026, 10:10:29 AM] 📋 Memory Archive: New clip captured (- [Speedrun_Theo_Sty...)
+[9/5/2026, 10:13:26 AM] 📋 Memory Archive: New clip captured (are below things wor...)
+[9/5/2026, 10:15:31 AM] 📋 Memory Archive: New clip captured (- [Speedrun_Theo_Sty...)
+[9/5/2026, 10:16:23 AM] 📋 Memory Archive: New clip captured (# get these skills a...)
+[9/5/2026, 10:17:47 AM] 📋 Memory Archive: New clip captured (- are below things w...)
+[9/5/2026, 10:33:45 AM] 📋 Memory Archive: New clip captured (Courses — Learning O...)
+[9/5/2026, 10:33:58 AM] 📋 Memory Archive: New clip captured (LEARNING OS
+
+HOME MO...)
+[9/5/2026, 10:37:53 AM] AC State: OFF (Manual/Remote)
+[9/5/2026, 11:05:02 AM] AC State: ON (Bot)
+[9/5/2026, 11:05:27 AM] 📋 Memory Archive: New clip captured (Create to the extent...)
+[9/5/2026, 11:06:10 AM] 📋 Memory Archive: New clip captured (Create to the extent...)
+[9/5/2026, 11:06:15 AM] 📋 Memory Archive: New clip captured (We’re so sorry, but ...)
+[9/5/2026, 11:09:06 AM] 📋 Memory Archive: New clip captured (Create to the extent...)
+[9/5/2026, 11:10:20 AM] 📋 Memory Archive: New clip captured (sucks to tell codex ...)
+[9/5/2026, 11:14:26 AM] 📋 Memory Archive: New clip captured (- u can create any a...)
+[9/5/2026, 11:14:54 AM] 📋 Memory Archive: New clip captured (continue iterating i...)
+[9/5/2026, 11:17:44 AM] AC State: OFF (Manual/Remote)
+[9/5/2026, 11:23:24 AM] 📋 Memory Archive: New clip captured (now try different id...)
+[9/5/2026, 11:28:11 AM] 📋 Memory Archive: New clip captured (- would u use this v...)
+[9/5/2026, 11:28:29 AM] 📋 Memory Archive: New clip captured (did u accomplish all...)
+[9/5/2026, 11:41:55 AM] 📋 Memory Archive: New clip captured ([Log] [INFO] Synthet...)
+[9/5/2026, 11:46:06 AM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[9/5/2026, 12:03:57 PM] 📋 Memory Archive: New clip captured (- also contiue with ...)
+[9/5/2026, 12:05:19 PM] 📋 Memory Archive: New clip captured (Apple, Intel have re...)
+[9/5/2026, 12:08:53 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[9/5/2026, 12:09:58 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[9/5/2026, 12:10:06 PM] 📋 Memory Archive: New clip captured ((53) Apple-Intel Chi...)
+[9/5/2026, 12:11:51 PM] 📋 Memory Archive: New clip captured (icon-dark.pngfe9083...)
+[9/5/2026, 12:16:06 PM] 📋 Memory Archive: New clip captured (- also contiue with ...)
+[9/5/2026, 12:16:07 PM] 📋 Memory Archive: New clip captured (icon-dark.pngfe9083...)
+[9/5/2026, 12:16:12 PM] 📋 Memory Archive: New clip captured (did u accomplish all...)
+[9/5/2026, 12:16:13 PM] 📋 Memory Archive: New clip captured (icon-dark.pngfe9083...)
+[9/5/2026, 12:42:48 PM] LIGHT State: OFF (Manual/Remote)
+[9/5/2026, 12:42:53 PM] AC State: ON (Bot)
+[9/5/2026, 12:45:32 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[9/5/2026, 12:45:45 PM] 📋 Memory Archive: New clip captured (Application error: a...)
+[9/5/2026, 1:07:52 PM] AC State: OFF (Manual/Remote)
+[9/5/2026, 1:13:09 PM] 📋 Memory Archive: New clip captured ([Warning] 110 consol...)
+[9/5/2026, 1:56:53 PM] AC State: ON (Manual/Remote)
+[9/5/2026, 2:02:27 PM] 📋 Memory Archive: New clip captured (cant find cool shit ...)
+[9/5/2026, 2:03:28 PM] 📋 Memory Archive: New clip captured (i havent played valo...)
+[9/5/2026, 2:06:58 PM] 📋 Memory Archive: New clip captured (Kinda Hard Golf - 05...)
+[9/5/2026, 2:24:01 PM] 📋 Memory Archive: New clip captured (brew upgrade --cask ...)
+[9/5/2026, 2:39:53 PM] AC State: OFF (Manual/Remote)
+[9/5/2026, 2:51:14 PM] AC State: ON (Manual/Remote)
+[9/5/2026, 3:06:59 PM] 📋 Memory Archive: New clip captured (Skip to main content...)
+[10/5/2026, 9:42:42 PM] 📋 Memory Archive: New clip captured (That makes sense. So...)
+[10/5/2026, 9:42:45 PM] 🎭 API Scene Switch: TV
+[10/5/2026, 9:42:45 PM] 🎬 Scene Trigger: TV
+[10/5/2026, 9:42:45 PM] 🎬 Scene: TV TIME (God Build)
+[10/5/2026, 9:43:11 PM] LIGHT State: ON (Manual/Remote)
+[10/5/2026, 9:43:42 PM] 📱 Presence: Phone detected (HOME)
+[10/5/2026, 9:47:41 PM] 📋 Memory Archive: New clip captured (fathah/hermes-deskto...)
+[10/5/2026, 10:06:22 PM] 📋 Memory Archive: New clip captured ((111) LSG vs RCB: Pa...)
+[10/5/2026, 10:09:56 PM] 📋 Memory Archive: New clip captured (also fucked spits of...)
+[10/5/2026, 10:12:20 PM] 📋 Memory Archive: New clip captured (Lasting Volt Stats -...)
+[10/5/2026, 10:20:51 PM] 📋 Memory Archive: New clip captured (https://gravatar.com...)
+[10/5/2026, 10:21:46 PM] 📋 Memory Archive: New clip captured (It looks like the li...)
+[10/5/2026, 10:22:15 PM] 📋 Memory Archive: New clip captured (https://ds.study.iit...)
+[10/5/2026, 10:36:40 PM] 📋 Memory Archive: New clip captured (Visible names from t...)
+[10/5/2026, 10:37:01 PM] 📋 Memory Archive: New clip captured (Very rough estimate ...)
+[10/5/2026, 10:37:55 PM] 📋 Memory Archive: New clip captured (https://ds.study.iit...)
+[10/5/2026, 10:38:09 PM] 📋 Memory Archive: New clip captured (23F1002942...)
+[11/5/2026, 1:09:17 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[11/5/2026, 4:28:57 AM] AC State: OFF (Manual/Remote)
+[11/5/2026, 4:31:03 AM] 📋 Memory Archive: New clip captured (- they used gemini t...)
+[11/5/2026, 4:33:21 AM] 📋 Memory Archive: New clip captured (Love bombing is a ps...)
+[11/5/2026, 4:47:01 AM] 📋 Memory Archive: New clip captured (- kp drop catch of s...)
+[11/5/2026, 4:47:52 AM] 📋 Memory Archive: New clip captured (- kp drop catch of s...)
+[11/5/2026, 4:52:17 AM] 📋 Memory Archive: New clip captured ([10/05/26 16:25] KP:...)
+[11/5/2026, 4:58:57 AM] 📋 Memory Archive: New clip captured ([10/05/26 16:10] KP:...)
+[11/5/2026, 5:02:41 AM] 📋 Memory Archive: New clip captured (- can u create teleg...)
+[11/5/2026, 5:03:44 AM] 📋 Memory Archive: New clip captured ([10/05/26 11:05] KP:...)
+[11/5/2026, 5:09:56 AM] 📋 Memory Archive: New clip captured ([10/05/26 11:05] KP:...)
+[11/5/2026, 5:16:01 AM] 📋 Memory Archive: New clip captured (- around 3k word fs ...)
+[11/5/2026, 5:18:10 AM] 📋 Memory Archive: New clip captured (.............)
+[11/5/2026, 5:20:20 AM] 📋 Memory Archive: New clip captured (Mumbai-Pune Expressw...)
+[11/5/2026, 5:23:44 AM] 📋 Memory Archive: New clip captured (dk if naything else ...)
+[11/5/2026, 5:26:34 AM] 📋 Memory Archive: New clip captured (https://claude.ai/sh...)
+[11/5/2026, 5:28:51 AM] 📋 Memory Archive: New clip captured ((122) AI YouTube Aut...)
+[11/5/2026, 5:38:44 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[11/5/2026, 5:58:31 AM] 📋 Memory Archive: New clip captured (Live Tracking Vehicl...)
+[11/5/2026, 6:00:34 AM] 📋 Memory Archive: New clip captured (Live Tracking Vehicl...)
+[11/5/2026, 6:05:48 AM] 📋 Memory Archive: New clip captured (### DOM CLEANER SNAP...)
+[11/5/2026, 6:07:15 AM] 📋 Memory Archive: New clip captured (add filtering sortin...)
+[11/5/2026, 6:09:14 AM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[11/5/2026, 6:11:14 AM] 📋 Memory Archive: New clip captured ([10/05/26 15:43] KP:...)
+[11/5/2026, 6:13:47 AM] 📋 Memory Archive: New clip captured (- it would be crazy ...)
+[11/5/2026, 6:15:24 AM] 📋 Memory Archive: New clip captured (stop being corny wit...)
+[11/5/2026, 6:19:58 AM] 📋 Memory Archive: New clip captured (GSRTC Nexus | Advanc...)
+[11/5/2026, 6:20:35 AM] 📋 Memory Archive: New clip captured ([Warning] 240 consol...)
+[11/5/2026, 6:21:13 AM] 📋 Memory Archive: New clip captured (https://live.gsrtc.o...)
+[11/5/2026, 6:21:14 AM] 📋 Memory Archive: New clip captured (GJ18ZT1831...)
+[11/5/2026, 6:22:28 AM] 📋 Memory Archive: New clip captured (GSRTC Nexus | Advanc...)
+[11/5/2026, 6:23:04 AM] 📋 Memory Archive: New clip captured (https://live.gsrtc.o...)
+[11/5/2026, 6:23:32 AM] 📋 Memory Archive: New clip captured (https://www.gsrtc.in...)
+[11/5/2026, 6:25:55 AM] 📋 Memory Archive: New clip captured (GJ18ZT1831...)
+[11/5/2026, 6:27:13 AM] 📋 Memory Archive: New clip captured (https://live.gsrtc.o...)
+[11/5/2026, 6:29:00 AM] 📋 Memory Archive: New clip captured (https://www.gsrtc.in...)
+[11/5/2026, 6:30:04 AM] 📋 Memory Archive: New clip captured (https://gsrtc.in/sit...)
+[11/5/2026, 6:31:19 AM] 📋 Memory Archive: New clip captured (https://gsrtc.in/OPR...)
+[11/5/2026, 6:32:40 AM] 📋 Memory Archive: New clip captured (- can u show the dis...)
+[11/5/2026, 6:49:11 AM] 📋 Memory Archive: New clip captured (@w3cj/magic-date-pic...)
+[11/5/2026, 6:49:12 AM] 📋 Memory Archive: New clip captured (- can u show the dis...)
+[11/5/2026, 6:50:57 AM] 📋 Memory Archive: New clip captured (y at key moments sam...)
+[11/5/2026, 7:00:59 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[11/5/2026, 7:00:59 AM] AC State: ON (Manual/Remote)
+[11/5/2026, 7:09:55 AM] 📋 Memory Archive: New clip captured (Exam Seating and Ass...)
+[11/5/2026, 7:10:33 AM] 📋 Memory Archive: New clip captured (Since you're looking...)
+[11/5/2026, 7:11:23 AM] 📋 Memory Archive: New clip captured (https://ds.study.iit...)
+[11/5/2026, 7:11:33 AM] 📋 Memory Archive: New clip captured (25f3006196@ds.study....)
+[11/5/2026, 7:20:15 AM] 📋 Memory Archive: New clip captured (- add robust feature...)
+[11/5/2026, 7:28:59 AM] 🚶 Presence: Phone disconnected (AWAY)
+[11/5/2026, 7:29:00 AM] 🚨 SENTRY: Unauthorized activity detected!
+[11/5/2026, 9:43:05 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[11/5/2026, 9:43:08 PM] 🎭 API Scene Switch: TV
+[11/5/2026, 9:43:08 PM] 🎬 Scene Trigger: TV
+[11/5/2026, 9:43:08 PM] 🎬 Scene: TV TIME (God Build)
+[11/5/2026, 9:44:04 PM] 📱 Presence: Phone detected (HOME)
+[11/5/2026, 10:12:22 PM] 📋 Memory Archive: New clip captured ((150) Office Cold Op...)
+[11/5/2026, 10:12:23 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[11/5/2026, 10:13:59 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[11/5/2026, 10:17:25 PM] 📋 Memory Archive: New clip captured ((150) Why Can’t We B...)
+[11/5/2026, 10:21:20 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[11/5/2026, 10:23:06 PM] 📋 Memory Archive: New clip captured (paperclipai/papercli...)
+[11/5/2026, 10:23:53 PM] 📋 Memory Archive: New clip captured ((150) Why Can’t We B...)
+[11/5/2026, 10:23:54 PM] 📋 Memory Archive: New clip captured (paperclipai/papercli...)
+[11/5/2026, 10:25:24 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[11/5/2026, 10:29:28 PM] 📋 Memory Archive: New clip captured (Billie Eilish – Hit ...)
+[11/5/2026, 10:29:43 PM] 📋 Memory Archive: New clip captured (Billie Eilish: Hit M...)
+[11/5/2026, 10:34:18 PM] 📋 Memory Archive: New clip captured (Billie Eilish (Full ...)
+[11/5/2026, 10:38:04 PM] 📋 Memory Archive: New clip captured ([Info] Content block...)
+[11/5/2026, 10:47:03 PM] 📋 Memory Archive: New clip captured (CONVEX_DEPLOY_KEY...)
+[11/5/2026, 10:49:34 PM] 📋 Memory Archive: New clip captured (dev:strong-bird-103|...)
+[11/5/2026, 10:50:50 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[11/5/2026, 10:55:02 PM] 📋 Memory Archive: New clip captured ([Info] Content block...)
+[11/5/2026, 10:59:38 PM] 📋 Memory Archive: New clip captured ([Warning] 20 console...)
+[11/5/2026, 11:01:14 PM] 📋 Memory Archive: New clip captured ([Info] Content block...)
+[11/5/2026, 11:09:27 PM] 📋 Memory Archive: New clip captured ([Log] WebSocket reco...)
+[11/5/2026, 11:12:18 PM] 📋 Memory Archive: New clip captured (This Convex deployme...)
+[11/5/2026, 11:19:46 PM] 📋 Memory Archive: New clip captured ([11/05/26 21:37] Pra...)
+[11/5/2026, 11:20:01 PM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[11/5/2026, 11:28:42 PM] 📋 Memory Archive: New clip captured ([Info] Content block...)
+[11/5/2026, 11:34:47 PM] 📋 Memory Archive: New clip captured (Spotify Stats
+
+AI To...)
+[11/5/2026, 11:35:04 PM] 📋 Memory Archive: New clip captured (Spotify Stats
+
+AI To...)
+[11/5/2026, 11:35:16 PM] 📋 Memory Archive: New clip captured (Spotify Stats
+
+AI To...)
+[11/5/2026, 11:35:34 PM] 📋 Memory Archive: New clip captured (Spotify Stats
+
+AI To...)
+[11/5/2026, 11:35:46 PM] 📋 Memory Archive: New clip captured (Spotify Stats
+
+AI To...)
+[11/5/2026, 11:39:41 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[11/5/2026, 11:42:15 PM] 📋 Memory Archive: New clip captured (in free accs non fam...)
+[11/5/2026, 11:44:35 PM] 📋 Memory Archive: New clip captured (https://github.com/P...)
+[11/5/2026, 11:45:12 PM] 📋 Memory Archive: New clip captured (feat: robust social ...)
+[11/5/2026, 11:47:46 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[11/5/2026, 11:50:53 PM] 📋 Memory Archive: New clip captured ([Info] Content block...)
+[11/5/2026, 11:55:25 PM] 📋 Memory Archive: New clip captured (all pages goes empty...)
+[11/5/2026, 11:56:44 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[11/5/2026, 11:57:59 PM] 📋 Memory Archive: New clip captured (https://riff-fm-prem...)
+[11/5/2026, 11:59:56 PM] AC State: ON (Manual/Remote)
+[11/5/2026, 11:59:57 PM] LIGHT State: ON (Manual/Remote)
+[12/5/2026, 12:00:01 AM] 📋 Memory Archive: New clip captured (index-C07MAviO.js:9 ...)
+[12/5/2026, 12:01:12 AM] LIGHT State: OFF (Bot)
+[12/5/2026, 12:03:47 AM] 📋 Memory Archive: New clip captured (Error with Permissio...)
+[12/5/2026, 12:10:14 AM] 📋 Memory Archive: New clip captured (Error with Permissio...)
+[12/5/2026, 12:10:37 AM] 📋 Memory Archive: New clip captured (Error with Permissio...)
+[12/5/2026, 12:25:58 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 1:00:18 AM] 🧠 Habit Learner: Scanning manual patterns...
+[12/5/2026, 1:00:18 AM] LIGHT State: ON (Manual/Remote)
+[12/5/2026, 1:00:18 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[12/5/2026, 1:00:18 AM] AC State: ON (Manual/Remote)
+[12/5/2026, 3:45:43 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 4:01:41 AM] 📋 Memory Archive: New clip captured (insane pt & monte ca...)
+[12/5/2026, 4:02:53 AM] 📋 Memory Archive: New clip captured ((1) Theo - t3.gg on ...)
+[12/5/2026, 4:10:20 AM] 📋 Memory Archive: New clip captured (Spotify Stats
+
+AI To...)
+[12/5/2026, 4:10:37 AM] 📋 Memory Archive: New clip captured (stats.fm
+Plus
+Suppor...)
+[12/5/2026, 4:11:01 AM] 📋 Memory Archive: New clip captured (Last.fm
+Search
+Music...)
+[12/5/2026, 4:24:17 AM] 📋 Memory Archive: New clip captured (SPOTIFY_CLIENT_ID...)
+[12/5/2026, 4:24:57 AM] 📋 Memory Archive: New clip captured (522b186070624563ab80...)
+[12/5/2026, 4:25:11 AM] 📋 Memory Archive: New clip captured (SPOTIFY_CLIENT_SECRE...)
+[12/5/2026, 4:26:23 AM] 📋 Memory Archive: New clip captured (2c66b4fca7cd41d784c8...)
+[12/5/2026, 4:26:41 AM] 📋 Memory Archive: New clip captured (GOOGLE_CLIENT_ID...)
+[12/5/2026, 4:29:21 AM] 📋 Memory Archive: New clip captured (google client id and...)
+[12/5/2026, 4:32:20 AM] 📋 Memory Archive: New clip captured (1074870891211-tlht6k...)
+[12/5/2026, 4:32:40 AM] 📋 Memory Archive: New clip captured (GOOGLE_CLIENT_ID...)
+[12/5/2026, 4:32:54 AM] 📋 Memory Archive: New clip captured (GOCSPX-TOI-seUHG-cqK...)
+[12/5/2026, 4:33:06 AM] 📋 Memory Archive: New clip captured (GOOGLE_CLIENT_SECRET...)
+[12/5/2026, 4:37:36 AM] 📋 Memory Archive: New clip captured ((174) Why New Smartp...)
+[12/5/2026, 4:38:56 AM] 📋 Memory Archive: New clip captured ((174) Why New Smartp...)
+[12/5/2026, 4:40:40 AM] 📋 Memory Archive: New clip captured (https://riff-fm-prem...)
+[12/5/2026, 4:41:12 AM] 📋 Memory Archive: New clip captured (https://strong-bird-...)
+[12/5/2026, 4:41:19 AM] 📋 Memory Archive: New clip captured (obsidian://spotify-a...)
+[12/5/2026, 4:42:50 AM] 📋 Memory Archive: New clip captured (SPOTIFY_CLIENT_ID...)
+[12/5/2026, 4:42:51 AM] 📋 Memory Archive: New clip captured (obsidian://spotify-a...)
+[12/5/2026, 4:43:11 AM] 📋 Memory Archive: New clip captured (522b186070624563ab80...)
+[12/5/2026, 4:43:12 AM] 📋 Memory Archive: New clip captured (obsidian://spotify-a...)
+[12/5/2026, 4:43:20 AM] 📋 Memory Archive: New clip captured (SPOTIFY_CLIENT_SECRE...)
+[12/5/2026, 4:43:21 AM] 📋 Memory Archive: New clip captured (obsidian://spotify-a...)
+[12/5/2026, 4:43:29 AM] 📋 Memory Archive: New clip captured (2c66b4fca7cd41d784c8...)
+[12/5/2026, 4:43:30 AM] 📋 Memory Archive: New clip captured (obsidian://spotify-a...)
+[12/5/2026, 4:45:28 AM] 📋 Memory Archive: New clip captured (https://riff-fm-prem...)
+[12/5/2026, 4:45:29 AM] 📋 Memory Archive: New clip captured (obsidian://spotify-a...)
+[12/5/2026, 4:45:40 AM] 📋 Memory Archive: New clip captured (https://strong-bird-...)
+[12/5/2026, 4:52:46 AM] AC State: ON (Manual/Remote)
+[12/5/2026, 4:59:15 AM] 📋 Memory Archive: New clip captured (SPOTIFY_CLIENT_SECRE...)
+[12/5/2026, 4:59:16 AM] 📋 Memory Archive: New clip captured (https://strong-bird-...)
+[12/5/2026, 4:59:21 AM] 📋 Memory Archive: New clip captured (GOOGLE_CLIENT_ID...)
+[12/5/2026, 4:59:22 AM] 📋 Memory Archive: New clip captured (https://strong-bird-...)
+[12/5/2026, 5:01:20 AM] 📋 Memory Archive: New clip captured (# Deployment used by...)
+[12/5/2026, 5:09:35 AM] 📋 Memory Archive: New clip captured (# Local Convex deplo...)
+[12/5/2026, 5:10:00 AM] 📋 Memory Archive: New clip captured (522b186070624563ab80...)
+[12/5/2026, 5:10:01 AM] 📋 Memory Archive: New clip captured (# Local Convex deplo...)
+[12/5/2026, 5:10:12 AM] 📋 Memory Archive: New clip captured (2c66b4fca7cd41d784c8...)
+[12/5/2026, 5:10:13 AM] 📋 Memory Archive: New clip captured (# Local Convex deplo...)
+[12/5/2026, 5:10:56 AM] 📋 Memory Archive: New clip captured (# Local Convex deplo...)
+[12/5/2026, 5:11:31 AM] 📋 Memory Archive: New clip captured (GOOGLE_CLIENT_ID=107...)
+[12/5/2026, 5:17:46 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 5:34:25 AM] 📋 Memory Archive: New clip captured (- also we can have c...)
+[12/5/2026, 5:36:20 AM] 📋 Memory Archive: New clip captured (- also apple music a...)
+[12/5/2026, 5:50:38 AM] 📋 Memory Archive: New clip captured (add filtering sortin...)
+[12/5/2026, 5:50:39 AM] 📋 Memory Archive: New clip captured (- also apple music a...)
+[12/5/2026, 5:51:48 AM] AC State: ON (Manual/Remote)
+[12/5/2026, 5:57:26 AM] 📋 Memory Archive: New clip captured ([11/05/26 21:12] Pra...)
+[12/5/2026, 6:12:48 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 6:40:26 AM] 📋 Memory Archive: New clip captured (https://riff-fm-prem...)
+[12/5/2026, 6:40:27 AM] 📋 Memory Archive: New clip captured ([11/05/26 21:12] Pra...)
+[12/5/2026, 6:42:18 AM] AC State: ON (Manual/Remote)
+[12/5/2026, 6:47:54 AM] 📋 Memory Archive: New clip captured (ppl can use antigrav...)
+[12/5/2026, 6:50:18 AM] 📋 Memory Archive: New clip captured (AI Coding Agent Inde...)
+[12/5/2026, 6:53:38 AM] 📋 Memory Archive: New clip captured (do i add site_url in...)
+[12/5/2026, 6:53:39 AM] 📋 Memory Archive: New clip captured (both spotify/google ...)
+[12/5/2026, 6:54:48 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 6:55:19 AM] 📋 Memory Archive: New clip captured (SITE_URL=https://rif...)
+[12/5/2026, 7:00:52 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[12/5/2026, 7:00:52 AM] AC State: ON (Manual/Remote)
+[12/5/2026, 7:10:14 AM] 📋 Memory Archive: New clip captured (the homepage for fir...)
+[12/5/2026, 7:12:28 AM] 📋 Memory Archive: New clip captured (User attachment
+
+100...)
+[12/5/2026, 7:21:19 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 7:32:23 AM] 📋 Memory Archive: New clip captured (/Users/paranjay/.cod...)
+[12/5/2026, 7:45:47 AM] 📋 Memory Archive: New clip captured (the homepage for fir...)
+[12/5/2026, 7:45:48 AM] 📋 Memory Archive: New clip captured (/Users/paranjay/.cod...)
+[12/5/2026, 7:58:35 AM] 📋 Memory Archive: New clip captured (Instantly know what'...)
+[12/5/2026, 8:04:14 AM] 📋 Memory Archive: New clip captured ((179) My security ps...)
+[12/5/2026, 8:20:24 AM] 📋 Memory Archive: New clip captured (/Users/paranjay/.cod...)
+[12/5/2026, 8:26:49 AM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:28:41 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 8:32:13 AM] 📋 Memory Archive: New clip captured ((180) yeah... no won...)
+[12/5/2026, 8:35:47 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 8:35:56 AM] 📋 Memory Archive: New clip captured ((180) Building pi in...)
+[12/5/2026, 8:47:20 AM] 📋 Memory Archive: New clip captured (Devin Review
+https:/...)
+[12/5/2026, 8:48:15 AM] 📋 Memory Archive: New clip captured (Review — Add seventv...)
+[12/5/2026, 8:51:25 AM] 📋 Memory Archive: New clip captured (paranjayy/riff-fm...)
+[12/5/2026, 8:54:20 AM] 📋 Memory Archive: New clip captured (To view keyboard sho...)
+[12/5/2026, 8:54:55 AM] 📋 Memory Archive: New clip captured (Example prompts:
+I n...)
+[12/5/2026, 8:55:07 AM] 📋 Memory Archive: New clip captured (I don't understand h...)
+[12/5/2026, 8:55:17 AM] 📋 Memory Archive: New clip captured (Example prompt:
+I wa...)
+[12/5/2026, 8:55:24 AM] 📋 Memory Archive: New clip captured (Article
+
+See new pos...)
+[12/5/2026, 8:55:30 AM] 📋 Memory Archive: New clip captured (Example Prompts:
+I'm...)
+[12/5/2026, 8:56:50 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:56:53 AM] 📋 Memory Archive: New clip captured (COMPANION TO THE BLO...)
+[12/5/2026, 8:57:07 AM] 📋 Memory Archive: New clip captured (Simon Willison’s Web...)
+[12/5/2026, 8:57:20 AM] 📋 Memory Archive: New clip captured (I really like many e...)
+[12/5/2026, 8:59:17 AM] 📋 Memory Archive: New clip captured ((1) Thariq on X: "Us...)
+[12/5/2026, 8:59:35 AM] 📋 Memory Archive: New clip captured (I really like many e...)
+[12/5/2026, 8:59:58 AM] 📋 Memory Archive: New clip captured (Paranjayy/riff-fm
+ht...)
+[12/5/2026, 9:00:02 AM] 📋 Memory Archive: New clip captured (Skip to content
+Thar...)
+[12/5/2026, 9:06:36 AM] 📋 Memory Archive: New clip captured (access to jira every...)
+[12/5/2026, 9:15:07 AM] 📋 Memory Archive: New clip captured (- scattered/cluttere...)
+[12/5/2026, 9:15:45 AM] 📋 Memory Archive: New clip captured ((179) My security ps...)
+[12/5/2026, 9:15:46 AM] 📋 Memory Archive: New clip captured (- scattered/cluttere...)
+[12/5/2026, 10:10:22 AM] AC State: ON (Manual/Remote)
+[12/5/2026, 10:11:28 AM] 📋 Memory Archive: New clip captured (Since you're looking...)
+[12/5/2026, 10:11:34 AM] 📋 Memory Archive: New clip captured (find the socials of ...)
+[12/5/2026, 10:14:20 AM] 📋 Memory Archive: New clip captured (create images instea...)
+[12/5/2026, 10:14:25 AM] 📋 Memory Archive: New clip captured (- create images inst...)
+[12/5/2026, 10:16:21 AM] 📋 Memory Archive: New clip captured (hey this app has no ...)
+[12/5/2026, 10:16:22 AM] 📋 Memory Archive: New clip captured (- create images inst...)
+[12/5/2026, 10:16:36 AM] 📋 Memory Archive: New clip captured ((1) Thariq on X: "Us...)
+[12/5/2026, 10:16:37 AM] 📋 Memory Archive: New clip captured (- create images inst...)
+[12/5/2026, 10:17:09 AM] 📋 Memory Archive: New clip captured (Article
+
+See new pos...)
+[12/5/2026, 10:17:10 AM] 📋 Memory Archive: New clip captured (- create images inst...)
+[12/5/2026, 10:19:48 AM] 📋 Memory Archive: New clip captured (Example prompts:
+I n...)
+[12/5/2026, 10:22:05 AM] 📋 Memory Archive: New clip captured (goated ideas inside ...)
+[12/5/2026, 10:33:58 AM] 📋 Memory Archive: New clip captured (https://gravatar.com...)
+[12/5/2026, 10:33:59 AM] 📋 Memory Archive: New clip captured (goated ideas inside ...)
+[12/5/2026, 10:38:13 AM] 📋 Memory Archive: New clip captured (https://www.linkedin...)
+[12/5/2026, 10:38:49 AM] 📋 Memory Archive: New clip captured (find the socials of ...)
+[12/5/2026, 10:52:34 AM] 📋 Memory Archive: New clip captured (Peacock Is Making 4 ...)
+[12/5/2026, 11:06:20 AM] 📋 Memory Archive: New clip captured (coordial irritate pa...)
+[12/5/2026, 11:10:57 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 11:40:27 AM] AC State: ON (Manual/Remote)
+[12/5/2026, 11:50:57 AM] AC State: OFF (Manual/Remote)
+[12/5/2026, 2:25:02 PM] 📋 Memory Archive: New clip captured (“At least four NEET ...)
+[12/5/2026, 2:28:41 PM] 📋 Memory Archive: New clip captured (NEET CANCELLED!!! : ...)
+[12/5/2026, 2:31:08 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[12/5/2026, 2:33:30 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[12/5/2026, 2:35:35 PM] 📋 Memory Archive: New clip captured (NEET CANCELLED!!! : ...)
+[12/5/2026, 2:35:49 PM] 📋 Memory Archive: New clip captured (“At least four NEET ...)
+[12/5/2026, 2:35:53 PM] 📋 Memory Archive: New clip captured (NEET CANCELLED!!! : ...)
+[12/5/2026, 2:36:55 PM] 📋 Memory Archive: New clip captured (Go to JEENEETards
+r/...)
+[12/5/2026, 2:38:04 PM] 📋 Memory Archive: New clip captured (Peacock Is Making 4 ...)
+[12/5/2026, 2:38:05 PM] 📋 Memory Archive: New clip captured (Go to JEENEETards
+r/...)
+[12/5/2026, 2:38:06 PM] 📋 Memory Archive: New clip captured (Peacock Is Making 4 ...)
+[12/5/2026, 2:40:14 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[12/5/2026, 2:40:58 PM] 📋 Memory Archive: New clip captured (NEET is not currentl...)
+[12/5/2026, 2:41:15 PM] 📋 Memory Archive: New clip captured (Yes, the Ministry of...)
+[12/5/2026, 2:41:24 PM] 📋 Memory Archive: New clip captured (y no cbt shift!! fro...)
+[12/5/2026, 2:43:23 PM] 📋 Memory Archive: New clip captured (create 1more somethi...)
+[12/5/2026, 3:02:58 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 3:25:40 PM] 📋 Memory Archive: New clip captured ((1) Thariq on X: "Us...)
+[12/5/2026, 3:25:46 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[12/5/2026, 3:26:04 PM] 📋 Memory Archive: New clip captured ((1) Andrej Karpathy ...)
+[12/5/2026, 3:26:22 PM] 📋 Memory Archive: New clip captured (- is it ag or cursor...)
+[12/5/2026, 3:33:44 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 3:34:17 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 3:34:24 PM] 📋 Memory Archive: New clip captured ((188) Every Clash of...)
+[12/5/2026, 3:54:13 PM] 📋 Memory Archive: New clip captured ((189) Sorry. - YouTu...)
+[12/5/2026, 3:54:35 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[12/5/2026, 3:56:46 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[12/5/2026, 3:57:50 PM] 📋 Memory Archive: New clip captured ((189) Why you should...)
+[12/5/2026, 3:58:01 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 3:58:49 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 3:59:24 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:02:08 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:03:33 PM] 📋 Memory Archive: New clip captured ((189) The Calhoun Ef...)
+[12/5/2026, 4:03:48 PM] 📋 Memory Archive: New clip captured (The "Calhoun effect,...)
+[12/5/2026, 4:04:17 PM] 📋 Memory Archive: New clip captured ((189) Traffic Has a ...)
+[12/5/2026, 4:06:58 PM] 📋 Memory Archive: New clip captured ((189) Why the @#$% i...)
+[12/5/2026, 4:07:59 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:08:24 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:08:58 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 4:09:42 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:13:03 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:14:39 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:14:53 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:19:23 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:20:28 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 4:20:59 PM] 📋 Memory Archive: New clip captured ((189) Do 5 Year Old ...)
+[12/5/2026, 4:24:24 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 4:44:59 PM] 📋 Memory Archive: New clip captured (narendramodi_in on X...)
+[12/5/2026, 4:45:05 PM] 📋 Memory Archive: New clip captured (Twitter account of h...)
+[12/5/2026, 4:46:31 PM] 📋 Memory Archive: New clip captured (To view keyboard sho...)
+[12/5/2026, 4:46:57 PM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[12/5/2026, 4:48:17 PM] 📋 Memory Archive: New clip captured (! also cleaning up p...)
+[12/5/2026, 4:48:59 PM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[12/5/2026, 4:49:00 PM] 📋 Memory Archive: New clip captured (! also cleaning up p...)
+[12/5/2026, 4:49:07 PM] 📋 Memory Archive: New clip captured (Paras Chopra on X: "...)
+[12/5/2026, 4:49:21 PM] 📋 Memory Archive: New clip captured (! also cleaning up p...)
+[12/5/2026, 4:49:22 PM] 📋 Memory Archive: New clip captured (Paras Chopra on X: "...)
+[12/5/2026, 4:49:40 PM] 📋 Memory Archive: New clip captured (- not this tweet the...)
+[12/5/2026, 4:49:58 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 4:54:12 PM] 📋 Memory Archive: New clip captured (- the hell of using ...)
+[12/5/2026, 4:56:49 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[12/5/2026, 5:01:06 PM] 📋 Memory Archive: New clip captured ([11/05/26 10:48] KP:...)
+[12/5/2026, 5:02:08 PM] 📋 Memory Archive: New clip captured (An idle mind is the ...)
+[12/5/2026, 5:06:30 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[12/5/2026, 5:07:56 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[12/5/2026, 5:08:35 PM] 📋 Memory Archive: New clip captured ((190) My security ps...)
+[12/5/2026, 5:10:00 PM] 📋 Memory Archive: New clip captured ((179) My security ps...)
+[12/5/2026, 5:10:01 PM] 📋 Memory Archive: New clip captured ((190) My security ps...)
+[12/5/2026, 5:10:06 PM] 📋 Memory Archive: New clip captured ((1) Theo - t3.gg on ...)
+[12/5/2026, 5:10:07 PM] 📋 Memory Archive: New clip captured ((190) My security ps...)
+[12/5/2026, 5:21:10 PM] 📋 Memory Archive: New clip captured (access jira(not just...)
+[12/5/2026, 5:21:26 PM] 📋 Memory Archive: New clip captured (# few Theo stream/vi...)
+[12/5/2026, 5:22:22 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 5:22:55 PM] 📱 Presence: Phone detected (HOME)
+[12/5/2026, 5:28:35 PM] 📋 Memory Archive: New clip captured (- the archive or cli...)
+[12/5/2026, 5:28:39 PM] 🚶 Presence: Phone disconnected (AWAY)
+[12/5/2026, 5:28:41 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:29:32 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:30:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:31:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:32:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:33:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:34:14 PM] 📋 Memory Archive: New clip captured (Pi Coding Agent
+http...)
+[12/5/2026, 5:34:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:35:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:36:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:37:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:40:31 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:41:27 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:42:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:43:27 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:44:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:45:27 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:46:30 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:48:30 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:50:37 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:51:27 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:51:36 PM] 📋 Memory Archive: New clip captured ((194) My security ps...)
+[12/5/2026, 5:52:40 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:53:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:53:54 PM] 📋 Memory Archive: New clip captured (Some of what we're w...)
+[12/5/2026, 5:54:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 5:55:28 PM] 📱 Presence: Phone detected (HOME)
+[12/5/2026, 5:55:28 PM] 🎬 Scene Trigger: HOME
+[12/5/2026, 5:56:44 PM] 📋 Memory Archive: New clip captured (continue if u got an...)
+[12/5/2026, 5:56:45 PM] 📋 Memory Archive: New clip captured (Some of what we're w...)
+[12/5/2026, 5:58:38 PM] 📋 Memory Archive: New clip captured (u can ask for any pr...)
+[12/5/2026, 6:01:20 PM] 📋 Memory Archive: New clip captured (access jira(not just...)
+[12/5/2026, 6:04:05 PM] 📋 Memory Archive: New clip captured ((1) Andrej Karpathy ...)
+[12/5/2026, 6:04:06 PM] 📋 Memory Archive: New clip captured (access jira(not just...)
+[12/5/2026, 6:04:26 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 6:34:12 PM] 📋 Memory Archive: New clip captured (openclaw/gogcli: Goo...)
+[12/5/2026, 6:35:02 PM] 📋 Memory Archive: New clip captured (googleworkspace/cli:...)
+[12/5/2026, 6:41:28 PM] 🚶 Presence: Phone disconnected (AWAY)
+[12/5/2026, 6:59:27 PM] 📱 Presence: Phone detected (HOME)
+[12/5/2026, 6:59:27 PM] 🎬 Scene Trigger: HOME
+[12/5/2026, 6:59:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 7:06:35 PM] 📋 Memory Archive: New clip captured (<div align="center">...)
+[12/5/2026, 7:17:28 PM] 🚶 Presence: Phone disconnected (AWAY)
+[12/5/2026, 7:20:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:21:29 PM] 📋 Memory Archive: New clip captured (Portfolio
+Home
+About...)
+[12/5/2026, 7:21:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:21:58 PM] 📋 Memory Archive: New clip captured (0 notifications
+
+
+
+H...)
+[12/5/2026, 7:22:04 PM] 📋 Memory Archive: New clip captured (my cousin GitHub rea...)
+[12/5/2026, 7:22:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:22:42 PM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[12/5/2026, 7:23:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:28:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:29:04 PM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[12/5/2026, 7:29:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:30:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:30:47 PM] 📋 Memory Archive: New clip captured (1
+
+
+
+
+kp._.245's pro...)
+[12/5/2026, 7:31:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:32:29 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:33:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:34:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:35:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:36:30 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:37:32 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:38:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:38:44 PM] 📋 Memory Archive: New clip captured ([11/05/26 12:00] KP:...)
+[12/5/2026, 7:39:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:40:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:41:28 PM] 🚨 SENTRY: Unauthorized activity detected!
+[12/5/2026, 7:42:27 PM] 📱 Presence: Phone detected (HOME)
+[12/5/2026, 7:42:27 PM] 🎬 Scene Trigger: HOME
+[12/5/2026, 8:45:30 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:46:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:46:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:47:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:47:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:48:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:48:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:49:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:49:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:50:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:50:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:51:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:51:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:52:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:52:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:53:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:53:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:54:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:54:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:55:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:55:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:56:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:56:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:57:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:57:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:58:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:58:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 8:59:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 8:59:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 9:00:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 9:00:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 9:01:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 9:01:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 9:02:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 9:02:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 9:03:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 9:03:37 PM] 🎭 API Scene Switch: TV
+[12/5/2026, 9:03:37 PM] 🎬 Scene Trigger: TV
+[12/5/2026, 9:03:37 PM] 🎬 Scene: TV TIME (God Build)
+[12/5/2026, 9:12:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 9:13:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 9:13:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 9:14:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 9:14:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 9:15:29 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 9:15:56 PM] AC State: OFF (Manual/Remote)
+[12/5/2026, 9:19:28 PM] 🚶 Presence: Phone disconnected (AWAY)
+[12/5/2026, 9:21:28 PM] 📱 Presence: Phone detected (HOME)
+[12/5/2026, 9:21:28 PM] 🎬 Scene Trigger: HOME
+[12/5/2026, 9:21:28 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 9:37:46 PM] 📋 Memory Archive: New clip captured ((216) Ramayana bigge...)
+[12/5/2026, 10:03:34 PM] 🎭 API Scene Switch: TV
+[12/5/2026, 10:03:34 PM] 🎬 Scene Trigger: TV
+[12/5/2026, 10:03:34 PM] 🎬 Scene: TV TIME (God Build)
+[12/5/2026, 10:09:34 PM] 📋 Memory Archive: New clip captured (Google down? Realtim...)
+[12/5/2026, 10:28:19 PM] 📋 Memory Archive: New clip captured ((218) GOATED Problem...)
+[12/5/2026, 10:29:01 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[12/5/2026, 10:31:45 PM] 📋 Memory Archive: New clip captured ([(218) GOATED Proble...)
+[12/5/2026, 10:33:39 PM] 📋 Memory Archive: New clip captured (- [Duolingo 2025 Rec...)
+[12/5/2026, 10:34:11 PM] 📋 Memory Archive: New clip captured (it has recap but per...)
+[12/5/2026, 10:37:56 PM] 📋 Memory Archive: New clip captured ([60fps - UI/UX anima...)
+[12/5/2026, 10:38:47 PM] 📋 Memory Archive: New clip captured (- [Mobbin — UI & UX ...)
+[12/5/2026, 10:39:28 PM] 📋 Memory Archive: New clip captured (- [ORYZO AI design s...)
+[12/5/2026, 10:40:45 PM] 📋 Memory Archive: New clip captured (- [Mobbin — UI & UX ...)
+[12/5/2026, 10:44:31 PM] 📋 Memory Archive: New clip captured (I dont trust weird d...)
+[12/5/2026, 10:45:24 PM] 📋 Memory Archive: New clip captured ((1) rafa on X: "eu j...)
+[12/5/2026, 10:46:23 PM] 📋 Memory Archive: New clip captured (I dont trust weird d...)
+[12/5/2026, 10:47:50 PM] 📋 Memory Archive: New clip captured (lol linux cve fucked...)
+[12/5/2026, 10:48:03 PM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[12/5/2026, 10:48:08 PM] 📋 Memory Archive: New clip captured (it terminal but in g...)
+[12/5/2026, 10:49:48 PM] 📋 Memory Archive: New clip captured (I am Linux Cursed - ...)
+[12/5/2026, 10:57:35 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[12/5/2026, 11:59:38 PM] AC State: ON (Manual/Remote)
+[12/5/2026, 11:59:38 PM] LIGHT State: ON (Manual/Remote)
+[13/5/2026, 12:19:30 AM] 🚶 Presence: Phone disconnected (AWAY)
+[13/5/2026, 12:19:31 AM] 📋 Memory Archive: New clip captured (getting my cs rank N...)
+[13/5/2026, 12:19:31 AM] 🚨 SENTRY: Unauthorized activity detected!
+[13/5/2026, 12:20:29 AM] 🚨 SENTRY: Unauthorized activity detected!
+[13/5/2026, 12:39:22 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[13/5/2026, 12:39:24 AM] 🎭 API Scene Switch: TV
+[13/5/2026, 12:39:24 AM] 🎬 Scene Trigger: TV
+[13/5/2026, 12:39:24 AM] 🎬 Scene: TV TIME (God Build)
+[13/5/2026, 12:39:28 AM] 🎭 API Scene Switch: TV
+[13/5/2026, 12:39:28 AM] 🎬 Scene Trigger: TV
+[13/5/2026, 12:39:28 AM] 🎬 Scene: TV TIME (God Build)
+[13/5/2026, 12:39:40 AM] 🎭 API Scene Switch: TV
+[13/5/2026, 12:39:40 AM] 🎬 Scene Trigger: TV
+[13/5/2026, 12:39:40 AM] 🎬 Scene: TV TIME (God Build)
+[13/5/2026, 12:39:49 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[13/5/2026, 12:39:59 AM] 🎭 API Scene Switch: TV
+[13/5/2026, 12:39:59 AM] 🎬 Scene Trigger: TV
+[13/5/2026, 12:39:59 AM] 🎬 Scene: TV TIME (God Build)
+[13/5/2026, 12:43:33 AM] 🎭 API Scene Switch: TV
+[13/5/2026, 12:43:33 AM] 🎬 Scene Trigger: TV
+[13/5/2026, 12:43:33 AM] 🎬 Scene: TV TIME (God Build)
+[13/5/2026, 12:43:49 AM] 📱 Presence: Phone detected (HOME)
+[13/5/2026, 12:48:24 AM] 📋 Memory Archive: New clip captured (- lol also spotify d...)
+[13/5/2026, 12:48:30 AM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[13/5/2026, 12:50:16 AM] 📋 Memory Archive: New clip captured (- lol also spotify d...)
+[13/5/2026, 12:59:50 AM] 📋 Memory Archive: New clip captured (AI ACHIEVED INTERNAL...)
+[13/5/2026, 1:00:14 AM] 🎭 API Scene Switch: TV
+[13/5/2026, 1:00:14 AM] 🎬 Scene Trigger: TV
+[13/5/2026, 1:00:14 AM] 🎬 Scene: TV TIME (God Build)
+[13/5/2026, 1:00:48 AM] 🧠 Habit Learner: Scanning manual patterns...
+[13/5/2026, 1:00:48 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[13/5/2026, 1:01:20 AM] 📋 Memory Archive: New clip captured (The 9 biggest new fe...)
+[13/5/2026, 1:02:06 AM] 📋 Memory Archive: New clip captured (New emoji, AI widget...)
+[13/5/2026, 1:04:39 AM] 📋 Memory Archive: New clip captured ((2) Spotify Status o...)
+[13/5/2026, 1:06:27 AM] 📋 Memory Archive: New clip captured (no freaking way all ...)
+[13/5/2026, 1:06:48 AM] 📋 Memory Archive: New clip captured (Google unveils Googl...)
+[13/5/2026, 1:06:54 AM] 📋 Memory Archive: New clip captured (no freaking way all ...)
+[13/5/2026, 1:07:52 AM] 📋 Memory Archive: New clip captured (Google unveils Googl...)
+[13/5/2026, 1:08:03 AM] 📋 Memory Archive: New clip captured (MacBook neo vs lates...)
+[13/5/2026, 1:08:06 AM] 📋 Memory Archive: New clip captured (today's new release ...)
+[13/5/2026, 1:08:22 AM] 📋 Memory Archive: New clip captured (AI ACHIEVED INTERNAL...)
+[13/5/2026, 1:08:36 AM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[13/5/2026, 1:08:52 AM] 📋 Memory Archive: New clip captured (wbu android 16/17/18...)
+[13/5/2026, 1:09:09 AM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[13/5/2026, 1:10:16 AM] 📋 Memory Archive: New clip captured (it aint same as macO...)
+[13/5/2026, 1:10:58 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[13/5/2026, 1:12:13 AM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[13/5/2026, 1:12:26 AM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[13/5/2026, 1:12:48 AM] 📋 Memory Archive: New clip captured ((2) Sony on X: "Simp...)
+[13/5/2026, 1:13:24 AM] 📋 Memory Archive: New clip captured (noway noice Sony red...)
+[13/5/2026, 1:18:49 AM] 📋 Memory Archive: New clip captured (Ek Hee Raasta • Rish...)
+[13/5/2026, 1:18:55 AM] 📋 Memory Archive: New clip captured (Ek Hee Raasta • Rish...)
+[13/5/2026, 1:43:47 AM] 📋 Memory Archive: New clip captured ((226) Google FINALLY...)
+[13/5/2026, 1:47:13 AM] 📋 Memory Archive: New clip captured (chrome becoming agen...)
+[13/5/2026, 1:48:15 AM] 📋 Memory Archive: New clip captured ((226) Try NOT to LAU...)
+[13/5/2026, 1:49:36 AM] 📋 Memory Archive: New clip captured ((227) Billie Eilish ...)
+[13/5/2026, 1:51:31 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[13/5/2026, 1:51:49 AM] 📋 Memory Archive: New clip captured (pareto principle - G...)
+[13/5/2026, 1:51:59 AM] 📋 Memory Archive: New clip captured (Ranked, Modes, Agent...)
+[13/5/2026, 1:52:40 AM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[13/5/2026, 1:53:24 AM] 📋 Memory Archive: New clip captured (Chapter 2: Competiti...)
+[13/5/2026, 1:53:31 AM] 📋 Memory Archive: New clip captured (Ranked, Modes, Agent...)
+[13/5/2026, 1:54:17 AM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[13/5/2026, 2:02:37 AM] 📋 Memory Archive: New clip captured (Civil Services Exam
+...)
+[13/5/2026, 2:09:44 AM] 📋 Memory Archive: New clip captured (- path csv stats...)
+[13/5/2026, 2:27:47 AM] AC State: OFF (Manual/Remote)
+[13/5/2026, 2:46:34 AM] AC State: ON (Manual/Remote)
+[13/5/2026, 3:06:12 AM] AC State: OFF (Manual/Remote)
+[13/5/2026, 6:11:11 AM] AC State: ON (Manual/Remote)
+[13/5/2026, 6:42:52 AM] AC State: OFF (Manual/Remote)
+[13/5/2026, 7:15:07 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[13/5/2026, 7:15:37 AM] AC State: ON (Manual/Remote)
+[13/5/2026, 9:32:39 AM] AC State: OFF (Manual/Remote)
+[13/5/2026, 9:46:58 AM] 📋 Memory Archive: New clip captured ((237) ThePrimeagen t...)
+[13/5/2026, 9:49:22 AM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[13/5/2026, 9:51:53 AM] 📋 Memory Archive: New clip captured (X Rank
+https://xrank...)
+[13/5/2026, 9:52:13 AM] 📋 Memory Archive: New clip captured (INTERNAL X COMPETITI...)
+[13/5/2026, 9:52:25 AM] 📋 Memory Archive: New clip captured (X Rank
+https://xrank...)
+[13/5/2026, 10:26:18 AM] 📋 Memory Archive: New clip captured ((237) The Android Sh...)
+[13/5/2026, 10:43:18 AM] 📋 Memory Archive: New clip captured (CodeBoarding/CodeBoa...)
+[13/5/2026, 10:43:56 AM] 📋 Memory Archive: New clip captured (I do not believe the...)
+[13/5/2026, 10:44:29 AM] 📋 Memory Archive: New clip captured (I believe Google is ...)
+[13/5/2026, 10:49:10 AM] AC State: ON (Manual/Remote)
+[13/5/2026, 11:08:39 AM] AC State: OFF (Manual/Remote)
+[13/5/2026, 11:15:45 AM] 📋 Memory Archive: New clip captured (continue if u got an...)
+[13/5/2026, 12:10:51 PM] 📋 Memory Archive: New clip captured (Trees, from Pierre
+h...)
+[13/5/2026, 12:13:32 PM] 📋 Memory Archive: New clip captured (continue if u got an...)
+[13/5/2026, 12:13:33 PM] 📋 Memory Archive: New clip captured (Trees, from Pierre
+h...)
+[13/5/2026, 12:26:05 PM] 📋 Memory Archive: New clip captured ((237) The Android Sh...)
+[13/5/2026, 12:30:22 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[13/5/2026, 12:33:37 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[13/5/2026, 12:33:49 PM] 📋 Memory Archive: New clip captured ((241) Stop sleeping ...)
+[13/5/2026, 12:41:43 PM] 📋 Memory Archive: New clip captured (- can u create a scr...)
+[13/5/2026, 12:41:55 PM] 📋 Memory Archive: New clip captured (# few Theo stream/vi...)
+[13/5/2026, 12:42:00 PM] 📋 Memory Archive: New clip captured (- [(194) My security...)
+[13/5/2026, 12:42:15 PM] 📋 Memory Archive: New clip captured (- can u give me path...)
+[13/5/2026, 12:42:22 PM] 📋 Memory Archive: New clip captured (- go ahead start cre...)
+[13/5/2026, 12:42:28 PM] 📋 Memory Archive: New clip captured (yo create at new fol...)
+[13/5/2026, 12:42:38 PM] 📋 Memory Archive: New clip captured (- no i want of entir...)
+[13/5/2026, 12:42:50 PM] 📋 Memory Archive: New clip captured (# dawg daisydisk sca...)
+[13/5/2026, 12:42:58 PM] 📋 Memory Archive: New clip captured (- what i need basica...)
+[13/5/2026, 12:43:04 PM] 📋 Memory Archive: New clip captured (like daisydisk in wi...)
+[13/5/2026, 12:43:11 PM] 📋 Memory Archive: New clip captured (- u aint scanning en...)
+[13/5/2026, 12:43:18 PM] 📋 Memory Archive: New clip captured (u can create new rep...)
+[13/5/2026, 12:43:23 PM] 📋 Memory Archive: New clip captured (dawg root as root en...)
+[13/5/2026, 12:43:31 PM] 📋 Memory Archive: New clip captured (export all input pro...)
+[13/5/2026, 12:43:43 PM] 📋 Memory Archive: New clip captured (cant u programticall...)
+[13/5/2026, 12:43:52 PM] 📋 Memory Archive: New clip captured (- can u create a scr...)
+[13/5/2026, 12:49:39 PM] 📋 Memory Archive: New clip captured ([08/05/26 23:09] Yuv...)
+[13/5/2026, 1:45:59 PM] AC State: ON (Manual/Remote)
+[13/5/2026, 1:59:19 PM] 📋 Memory Archive: New clip captured (- oh hellna there mu...)
+[13/5/2026, 2:03:35 PM] 📋 Memory Archive: New clip captured (this insane did u re...)
+[13/5/2026, 2:03:49 PM] 📋 Memory Archive: New clip captured (- oh hellna there mu...)
+[13/5/2026, 2:09:09 PM] 📋 Memory Archive: New clip captured (Panasonic no number:...)
+[13/5/2026, 2:13:28 PM] 📋 Memory Archive: New clip captured ([12/05/26 21:57] KP:...)
+[13/5/2026, 2:14:01 PM] 📋 Memory Archive: New clip captured ([11/05/26 12:25] Yuv...)
+[13/5/2026, 2:14:48 PM] 📋 Memory Archive: New clip captured ([11/05/26 01:01] KP:...)
+[13/5/2026, 2:15:12 PM] 📋 Memory Archive: New clip captured ([10/05/26 11:36] KP:...)
+[13/5/2026, 2:15:51 PM] 📋 Memory Archive: New clip captured ([09/05/26 12:58] KP:...)
+[13/5/2026, 2:17:10 PM] 📋 Memory Archive: New clip captured ([15/09/24 11:53] KP:...)
+[13/5/2026, 2:18:05 PM] 📋 Memory Archive: New clip captured ([14/09/24 00:19] Yuv...)
+[13/5/2026, 2:56:11 PM] 📋 Memory Archive: New clip captured ([01/07/26 21:15] KP:...)
+[13/5/2026, 2:57:11 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[13/5/2026, 2:57:22 PM] 📋 Memory Archive: New clip captured (What if Today is You...)
+[13/5/2026, 3:10:53 PM] 📋 Memory Archive: New clip captured (zero-native | Deskto...)
+[13/5/2026, 3:24:11 PM] AC State: OFF (Manual/Remote)
+[13/5/2026, 3:44:59 PM] AC State: ON (Manual/Remote)
+[13/5/2026, 4:08:00 PM] AC State: OFF (Manual/Remote)
+[13/5/2026, 4:15:00 PM] AC State: ON (Manual/Remote)
+[13/5/2026, 4:36:38 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[13/5/2026, 4:36:52 PM] 📋 Memory Archive: New clip captured ((243) Altman’s Testi...)
+[13/5/2026, 4:55:12 PM] AC State: OFF (Manual/Remote)
+[13/5/2026, 5:52:00 PM] AC State: ON (Manual/Remote)
+[13/5/2026, 6:04:48 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[13/5/2026, 6:06:42 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[13/5/2026, 6:17:00 PM] AC State: OFF (Manual/Remote)
+[13/5/2026, 7:04:01 PM] AC State: ON (Manual/Remote)
+[13/5/2026, 8:26:59 PM] 🎭 API Scene Switch: TV
+[13/5/2026, 8:26:59 PM] 🎬 Scene Trigger: TV
+[13/5/2026, 8:26:59 PM] 🎬 Scene: TV TIME (God Build)
+[13/5/2026, 8:40:33 PM] 📋 Memory Archive: New clip captured (paranjay@Paranjays-M...)
+[13/5/2026, 9:00:31 PM] AC State: OFF (Manual/Remote)
+[13/5/2026, 9:21:31 PM] AC State: ON (Manual/Remote)
+[13/5/2026, 9:22:51 PM] 🎭 API Scene Switch: TV
+[13/5/2026, 9:22:51 PM] 🎬 Scene Trigger: TV
+[13/5/2026, 9:22:51 PM] 🎬 Scene: TV TIME (God Build)
+[13/5/2026, 10:27:44 PM] 📋 Memory Archive: New clip captured (Lovable
+https://lova...)
+[14/5/2026, 1:39:45 AM] 🎭 API Scene Switch: TV
+[14/5/2026, 1:39:45 AM] 🎬 Scene Trigger: TV
+[14/5/2026, 1:39:45 AM] 🎬 Scene: TV TIME (God Build)
+[14/5/2026, 1:40:04 AM] 📋 Memory Archive: New clip captured (panic(cpu 0 caller 0...)
+[14/5/2026, 1:40:39 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[14/5/2026, 1:40:40 AM] 📱 Presence: Phone detected (HOME)
+[14/5/2026, 1:55:06 AM] 📋 Memory Archive: New clip captured (Virat celebrated his...)
+[14/5/2026, 1:55:20 AM] 📋 Memory Archive: New clip captured (Third in the orange ...)
+[14/5/2026, 1:57:07 AM] 📋 Memory Archive: New clip captured (Virat Kohli scores h...)
+[14/5/2026, 2:01:07 AM] 📋 Memory Archive: New clip captured (he is him he still g...)
+[14/5/2026, 2:16:17 AM] 📋 Memory Archive: New clip captured (noway it would 1.3b ...)
+[14/5/2026, 2:25:40 AM] 📋 Memory Archive: New clip captured ((291) “The Biggest A...)
+[14/5/2026, 2:28:58 AM] 📋 Memory Archive: New clip captured (How to Give Birth wi...)
+[14/5/2026, 2:35:40 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[14/5/2026, 2:35:54 AM] 📋 Memory Archive: New clip captured ((291) “The Biggest A...)
+[14/5/2026, 2:44:44 AM] 📋 Memory Archive: New clip captured (https://github.com/d...)
+[14/5/2026, 2:46:05 AM] 📋 Memory Archive: New clip captured (Experiments, based o...)
+[14/5/2026, 2:48:16 AM] 📋 Memory Archive: New clip captured (TIL that in 1999, a ...)
+[14/5/2026, 2:49:39 AM] 📋 Memory Archive: New clip captured (ig need to hire monk...)
+[14/5/2026, 2:53:04 AM] 📋 Memory Archive: New clip captured ((292) Joseph Carlson...)
+[14/5/2026, 2:57:05 AM] 📋 Memory Archive: New clip captured (Nancy Pelosi Trading...)
+[14/5/2026, 2:58:36 AM] 📋 Memory Archive: New clip captured (Warren Buffett - BER...)
+[14/5/2026, 3:02:41 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[14/5/2026, 3:02:53 AM] 📋 Memory Archive: New clip captured ((292) How to Survive...)
+[14/5/2026, 3:04:08 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[14/5/2026, 3:10:56 AM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[14/5/2026, 3:13:28 AM] 📋 Memory Archive: New clip captured (cervix 100% real pho...)
+[14/5/2026, 3:24:55 AM] 📋 Memory Archive: New clip captured (Ladies Special 2 | P...)
+[14/5/2026, 3:25:23 AM] 📋 Memory Archive: New clip captured (Ladies Special 2 | P...)
+[14/5/2026, 3:26:35 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[14/5/2026, 3:26:45 AM] 📋 Memory Archive: New clip captured ((292) Deleting in 4 ...)
+[14/5/2026, 3:28:21 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[14/5/2026, 3:29:08 AM] 📋 Memory Archive: New clip captured ((292) How to Give Bi...)
+[14/5/2026, 3:35:17 AM] 📋 Memory Archive: New clip captured (can add extra text i...)
+[14/5/2026, 3:37:14 AM] 📋 Memory Archive: New clip captured (create fun image of ...)
+[14/5/2026, 3:41:11 AM] 📋 Memory Archive: New clip captured (https://www.patreon....)
+[14/5/2026, 3:41:21 AM] 📋 Memory Archive: New clip captured (Wine About It — A po...)
+[14/5/2026, 3:45:05 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[14/5/2026, 4:08:18 AM] 📋 Memory Archive: New clip captured (Valve Steam Deck LCD...)
+[14/5/2026, 4:18:24 AM] 📋 Memory Archive: New clip captured ((295) Spatial Ops fo...)
+[14/5/2026, 4:23:28 AM] 📋 Memory Archive: New clip captured (also /goal ralph loo...)
+[14/5/2026, 4:24:13 AM] 📋 Memory Archive: New clip captured (Follow a goal | Code...)
+[14/5/2026, 4:25:25 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[14/5/2026, 4:43:32 AM] 📋 Memory Archive: New clip captured ((296) Anthropic fina...)
+[14/5/2026, 4:44:54 AM] 📋 Memory Archive: New clip captured (Sony ups its new A7R...)
+[14/5/2026, 4:52:27 AM] 📋 Memory Archive: New clip captured (github.com/smithersa...)
+[14/5/2026, 5:04:00 AM] 📋 Memory Archive: New clip captured ((296) My AI Channel ...)
+[14/5/2026, 5:05:40 AM] AC State: OFF (Manual/Remote)
+[14/5/2026, 5:13:40 AM] AC State: ON (Manual/Remote)
+[14/5/2026, 5:40:41 AM] AC State: OFF (Manual/Remote)
+[14/5/2026, 5:47:11 AM] AC State: ON (Manual/Remote)
+[14/5/2026, 5:57:59 AM] 📋 Memory Archive: New clip captured (Live Tracking Vehicl...)
+[14/5/2026, 5:58:08 AM] 📋 Memory Archive: New clip captured (RouteLive — Track & ...)
+[14/5/2026, 5:58:12 AM] 📋 Memory Archive: New clip captured (GSRTC E-Pass Portal
+...)
+[14/5/2026, 6:00:46 AM] 📋 Memory Archive: New clip captured (add filtering sortin...)
+[14/5/2026, 6:06:41 AM] AC State: OFF (Manual/Remote)
+[14/5/2026, 6:08:53 AM] LIGHT State: OFF (Manual/Remote)
+[14/5/2026, 6:12:49 AM] 📋 Memory Archive: New clip captured (rightclick & popup n...)
+[14/5/2026, 6:14:28 AM] AC State: ON (Manual/Remote)
+[14/5/2026, 6:30:44 AM] AC State: OFF (Manual/Remote)
+[14/5/2026, 7:00:23 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[14/5/2026, 7:00:23 AM] AC State: ON (Manual/Remote)
+[14/5/2026, 10:06:12 AM] AC State: OFF (Manual/Remote)
+[14/5/2026, 10:18:32 AM] 📋 Memory Archive: New clip captured (- 96 monkeys out of ...)
+[14/5/2026, 10:24:20 AM] 📋 Memory Archive: New clip captured (https://x.com/heyand...)
+[14/5/2026, 10:33:44 AM] 📋 Memory Archive: New clip captured (me stuck in crazy am...)
+[14/5/2026, 10:41:00 AM] 📋 Memory Archive: New clip captured (the browser console ...)
+[14/5/2026, 10:46:39 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[14/5/2026, 10:47:14 AM] 📋 Memory Archive: New clip captured (==
+https://chatgpt.c...)
+[14/5/2026, 10:50:06 AM] 📋 Memory Archive: New clip captured (before current pregn...)
+[14/5/2026, 10:51:08 AM] 📋 Memory Archive: New clip captured (create fun image of ...)
+[14/5/2026, 11:04:08 AM] AC State: ON (Manual/Remote)
+[14/5/2026, 11:10:07 AM] 📋 Memory Archive: New clip captured (i was biology hater ...)
+[14/5/2026, 11:15:38 AM] AC State: OFF (Manual/Remote)
+[14/5/2026, 11:24:33 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[14/5/2026, 11:27:53 AM] 📋 Memory Archive: New clip captured ((309) Apple Vision P...)
+[14/5/2026, 11:31:18 AM] 📋 Memory Archive: New clip captured (Google, WTF is this?...)
+[14/5/2026, 11:50:56 AM] 📋 Memory Archive: New clip captured (forgor somethin abou...)
+[14/5/2026, 12:34:08 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 12:36:14 PM] 📋 Memory Archive: New clip captured (The Performance Ineq...)
+[14/5/2026, 12:39:09 PM] 📋 Memory Archive: New clip captured (my opinion about clg...)
+[14/5/2026, 12:44:24 PM] 📋 Memory Archive: New clip captured (The Performance Ineq...)
+[14/5/2026, 12:48:21 PM] 📋 Memory Archive: New clip captured (https://readymag.web...)
+[14/5/2026, 12:49:06 PM] 📋 Memory Archive: New clip captured (2026-International M...)
+[14/5/2026, 12:49:48 PM] 📋 Memory Archive: New clip captured (https://readymag.web...)
+[14/5/2026, 12:51:57 PM] 📋 Memory Archive: New clip captured (https://readymag.web...)
+[14/5/2026, 12:52:03 PM] 📋 Memory Archive: New clip captured (Readymag – the desig...)
+[14/5/2026, 12:53:38 PM] 📋 Memory Archive: New clip captured (my opinion about clg...)
+[14/5/2026, 12:59:21 PM] 📋 Memory Archive: New clip captured (Spotify just release...)
+[14/5/2026, 1:01:08 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 1:03:43 PM] 📋 Memory Archive: New clip captured (towards...)
+[14/5/2026, 1:17:58 PM] 📋 Memory Archive: New clip captured (forgor to mention th...)
+[14/5/2026, 1:20:38 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 1:26:34 PM] 📋 Memory Archive: New clip captured (Your All-Time Top So...)
+[14/5/2026, 1:26:59 PM] 📋 Memory Archive: New clip captured (first day first song...)
+[14/5/2026, 1:28:13 PM] 📋 Memory Archive: New clip captured (Academics - IIT Madr...)
+[14/5/2026, 1:28:38 PM] 📋 Memory Archive: New clip captured ([21/05/26 11:33] KP:...)
+[14/5/2026, 1:32:01 PM] 📋 Memory Archive: New clip captured ([14/05/26 13:20] KP:...)
+[14/5/2026, 1:35:50 PM] 📋 Memory Archive: New clip captured (https://open.spotify...)
+[14/5/2026, 1:36:38 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 1:41:08 PM] 📋 Memory Archive: New clip captured ([Warning] 20 console...)
+[14/5/2026, 1:47:08 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 1:47:17 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[14/5/2026, 1:48:28 PM] 📋 Memory Archive: New clip captured (https://youtu.be/3Lk...)
+[14/5/2026, 1:52:22 PM] 📋 Memory Archive: New clip captured ([10/05/26 22:00] ift...)
+[14/5/2026, 1:58:39 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 2:01:44 PM] 📋 Memory Archive: New clip captured (please resolve the g...)
+[14/5/2026, 2:06:09 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 2:19:25 PM] 📋 Memory Archive: New clip captured (Skip to content
+Baru...)
+[14/5/2026, 2:20:10 PM] 📋 Memory Archive: New clip captured ([Bug]popup in any ap...)
+[14/5/2026, 2:20:15 PM] 📋 Memory Archive: New clip captured (- create new branch ...)
+[14/5/2026, 2:21:15 PM] 📋 Memory Archive: New clip captured (create release for m...)
+[14/5/2026, 2:21:39 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 2:37:12 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 2:57:45 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 3:00:20 PM] 📋 Memory Archive: New clip captured (CodeBoarding/CodeBoa...)
+[14/5/2026, 3:02:08 PM] 📋 Memory Archive: New clip captured (if feeasible then li...)
+[14/5/2026, 3:46:46 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 4:14:47 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 4:15:22 PM] 🧠 Cortex: Wishlist updated - workout buddy and can we forward msg in tele with tele bot to some group
+[14/5/2026, 4:23:22 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 4:47:11 PM] 📋 Memory Archive: New clip captured (v0.4.8.1...)
+[14/5/2026, 4:51:41 PM] 📋 Memory Archive: New clip captured (my shortcuts and hac...)
+[14/5/2026, 5:15:25 PM] 📋 Memory Archive: New clip captured (🔴 VALORANT GRIND IS...)
+[14/5/2026, 5:18:12 PM] 📋 Memory Archive: New clip captured (🔴 VALORANT GRIND IS...)
+[14/5/2026, 5:19:33 PM] 📋 Memory Archive: New clip captured (🔴 VALORANT GRIND IS...)
+[14/5/2026, 5:32:13 PM] 📋 Memory Archive: New clip captured (Raycast beta just go...)
+[14/5/2026, 5:38:15 PM] 📋 Memory Archive: New clip captured (/Users/paranjay/.con...)
+[14/5/2026, 5:38:30 PM] 📋 Memory Archive: New clip captured (/Users/paranjay/.con...)
+[14/5/2026, 6:03:47 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 6:08:53 PM] 📋 Memory Archive: New clip captured (where are the releas...)
+[14/5/2026, 6:08:59 PM] 📋 Memory Archive: New clip captured (all the network logs...)
+[14/5/2026, 6:19:55 PM] 📋 Memory Archive: New clip captured (Skip to content
+Baru...)
+[14/5/2026, 6:29:15 PM] 📋 Memory Archive: New clip captured (coderabbitai Bot
+lef...)
+[14/5/2026, 6:37:55 PM] 📋 Memory Archive: New clip captured (### DOM CLEANER SNAP...)
+[14/5/2026, 6:42:26 PM] 📋 Memory Archive: New clip captured (**Actionable comment...)
+[14/5/2026, 6:42:46 PM] 📋 Memory Archive: New clip captured (_⚠️ Potential issue_...)
+[14/5/2026, 6:58:23 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 7:22:57 PM] 📋 Memory Archive: New clip captured (_?? Potential issue_...)
+[14/5/2026, 7:23:39 PM] LIGHT State: ON (Bot)
+[14/5/2026, 7:23:43 PM] LIGHT State: OFF (Bot)
+[14/5/2026, 7:23:57 PM] 📱 Presence: Phone detected (HOME)
+[14/5/2026, 8:21:43 PM] 📋 Memory Archive: New clip captured (continue  and stop s...)
+[14/5/2026, 8:32:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:33:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:33:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:34:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:34:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:34:37 PM] 📋 Memory Archive: New clip captured (May 13, 2026 � 3.5: ...)
+[14/5/2026, 8:35:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:35:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:36:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:36:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:37:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:37:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:38:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:38:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:39:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:39:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:40:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:40:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:41:06 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:41:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:42:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:42:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:43:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:43:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:43:23 PM] 📋 Memory Archive: New clip captured (continue  and stop s...)
+[14/5/2026, 8:44:06 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:44:36 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:45:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:45:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:46:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:46:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:47:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:47:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:47:25 PM] 📋 Memory Archive: New clip captured (OFFICIAL DATA LOCK
+S...)
+[14/5/2026, 8:48:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:48:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:49:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:49:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:50:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:50:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:51:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:51:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:52:05 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:52:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:53:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:53:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:54:05 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:54:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:55:04 PM] 📋 Memory Archive: New clip captured ([Warning] 60 console...)
+[14/5/2026, 8:55:05 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:55:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:56:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:56:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:57:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:57:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:58:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:58:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 8:59:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 8:59:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:00:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:00:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:01:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:01:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:02:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:02:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:03:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:03:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:04:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:04:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:05:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:05:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:06:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:06:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:07:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:07:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:08:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:08:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:09:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:09:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:10:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:10:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:11:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:11:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:12:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:12:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:13:04 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:13:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:14:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:14:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:15:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:15:06 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 9:16:03 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 9:24:21 PM] 📋 Memory Archive: New clip captured (### DOM CLEANER SNAP...)
+[14/5/2026, 9:33:38 PM] 📋 Memory Archive: New clip captured (GJ18ZT1831...)
+[14/5/2026, 9:34:11 PM] 📋 Memory Archive: New clip captured (### DOM CLEANER SNAP...)
+[14/5/2026, 9:41:08 PM] 📋 Memory Archive: New clip captured (- first clone paranj...)
+[14/5/2026, 9:56:24 PM] 📋 Memory Archive: New clip captured (### DOM CLEANER SNAP...)
+[14/5/2026, 9:57:53 PM] 📋 Memory Archive: New clip captured (### DOM CLEANER SNAP...)
+[14/5/2026, 9:59:57 PM] 📋 Memory Archive: New clip captured (### DOM CLEANER SNAP...)
+[14/5/2026, 10:03:54 PM] 📋 Memory Archive: New clip captured (it is fun to just de...)
+[14/5/2026, 10:11:57 PM] 📋 Memory Archive: New clip captured (cd /Users/paranjay/D...)
+[14/5/2026, 10:15:41 PM] 📋 Memory Archive: New clip captured (paranjay@Paranjays-M...)
+[14/5/2026, 10:16:52 PM] 📋 Memory Archive: New clip captured (gsrtc-proxy.paranjay...)
+[14/5/2026, 10:17:25 PM] 📋 Memory Archive: New clip captured (paranjay@Paranjays-M...)
+[14/5/2026, 10:20:04 PM] AC State: OFF (Manual/Remote)
+[14/5/2026, 10:24:11 PM] 📋 Memory Archive: New clip captured (GJ18ZT1831...)
+[14/5/2026, 10:24:30 PM] 📋 Memory Archive: New clip captured (eyJhbGciOiJIUzI1NiIs...)
+[14/5/2026, 10:24:42 PM] 📋 Memory Archive: New clip captured (cd /Users/paranjay/D...)
+[14/5/2026, 10:24:47 PM] 📋 Memory Archive: New clip captured (eyJhbGciOiJIUzI1NiIs...)
+[14/5/2026, 10:25:06 PM] 📋 Memory Archive: New clip captured (cd /Users/paranjay/D...)
+[14/5/2026, 10:25:20 PM] 📋 Memory Archive: New clip captured (cd /Users/paranjay/D...)
+[14/5/2026, 10:25:24 PM] 📋 Memory Archive: New clip captured (eyJhbGciOiJIUzI1NiIs...)
+[14/5/2026, 10:25:41 PM] 📋 Memory Archive: New clip captured (VITE_PROXY_BASE = ht...)
+[14/5/2026, 10:33:58 PM] 📋 Memory Archive: New clip captured (Framework:     None ...)
+[14/5/2026, 10:34:23 PM] 📋 Memory Archive: New clip captured (VITE_PROXY_BASE = ht...)
+[14/5/2026, 10:35:20 PM] 📋 Memory Archive: New clip captured (Kparanjay245@gmail.c...)
+[14/5/2026, 10:39:14 PM] 📋 Memory Archive: New clip captured (- [It�s official. An...)
+[14/5/2026, 10:41:11 PM] 📋 Memory Archive: New clip captured (Build command:   npm...)
+[14/5/2026, 10:43:25 PM] 📋 Memory Archive: New clip captured (https://gsrtc.gsrtc-...)
+[14/5/2026, 10:44:15 PM] 📋 Memory Archive: New clip captured (VITE_PROXY_BASE = ht...)
+[14/5/2026, 10:52:38 PM] AC State: ON (Manual/Remote)
+[14/5/2026, 10:54:44 PM] 📋 Memory Archive: New clip captured (Book GSRTC bus ticke...)
+[14/5/2026, 10:56:08 PM] 📋 Memory Archive: New clip captured ([Error] SyntaxError:...)
+[14/5/2026, 11:10:51 PM] 📋 Memory Archive: New clip captured (GJ18ZT1831...)
+[14/5/2026, 11:14:40 PM] 📋 Memory Archive: New clip captured (curl 'https://gsrtc....)
+[14/5/2026, 11:15:17 PM] 📋 Memory Archive: New clip captured (https://gsrtc-proxy....)
+[14/5/2026, 11:15:39 PM] 📋 Memory Archive: New clip captured (fetch("https://gsrtc...)
+[14/5/2026, 11:15:47 PM] 📋 Memory Archive: New clip captured (/favicon.ico:1  Fail...)
+[14/5/2026, 11:16:08 PM] 📋 Memory Archive: New clip captured (curl 'https://gsrtc....)
+[14/5/2026, 11:23:58 PM] 🎭 API Scene Switch: TV
+[14/5/2026, 11:23:58 PM] 🎬 Scene Trigger: TV
+[14/5/2026, 11:23:58 PM] 🎬 Scene: TV TIME (God Build)
+[14/5/2026, 11:24:05 PM] LIGHT State: ON (Manual/Remote)
+[14/5/2026, 11:55:00 PM] AC State: OFF (Manual/Remote)
+[15/5/2026, 1:00:30 AM] 🧠 Habit Learner: Scanning manual patterns...
+[15/5/2026, 1:00:30 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[15/5/2026, 1:01:00 AM] AC State: ON (Manual/Remote)
+[15/5/2026, 2:56:01 AM] AC State: OFF (Manual/Remote)
+[15/5/2026, 2:56:30 AM] AC State: ON (Manual/Remote)
+[15/5/2026, 2:57:30 AM] AC State: OFF (Manual/Remote)
+[15/5/2026, 2:58:01 AM] AC State: ON (Manual/Remote)
+[15/5/2026, 3:07:01 AM] AC State: OFF (Manual/Remote)
+[15/5/2026, 3:07:30 AM] AC State: ON (Manual/Remote)
+[15/5/2026, 3:08:01 AM] AC State: OFF (Manual/Remote)
+[15/5/2026, 3:08:30 AM] AC State: ON (Manual/Remote)
+[15/5/2026, 3:36:30 AM] AC State: OFF (Manual/Remote)
+[15/5/2026, 4:14:30 AM] AC State: ON (Manual/Remote)
+[15/5/2026, 4:26:30 AM] AC State: OFF (Manual/Remote)
+[15/5/2026, 7:00:30 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[15/5/2026, 7:00:30 AM] AC State: ON (Manual/Remote)
+[15/5/2026, 7:06:07 AM] 📋 Memory Archive: New clip captured (- u are tellling 2 s...)
+[15/5/2026, 7:08:26 AM] 📋 Memory Archive: New clip captured (- u are tellling 2 s...)
+[15/5/2026, 7:10:45 AM] 📋 Memory Archive: New clip captured ([15/05/26 00:50] Yuv...)
+[15/5/2026, 7:12:37 AM] 📋 Memory Archive: New clip captured (- u are tellling 2 s...)
+[15/5/2026, 7:16:21 AM] 📋 Memory Archive: New clip captured (Home - Chaos Monkey
+...)
+[15/5/2026, 7:16:50 AM] 📋 Memory Archive: New clip captured (- u are tellling 2 s...)
+[15/5/2026, 7:21:58 AM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[15/5/2026, 7:22:23 AM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[15/5/2026, 7:28:25 AM] 📋 Memory Archive: New clip captured (Shottr Conceal...)
+[15/5/2026, 7:31:40 AM] 📋 Memory Archive: New clip captured (@Paranjayy Paranjayy...)
+[15/5/2026, 7:32:31 AM] AC State: OFF (Manual/Remote)
+[15/5/2026, 7:42:28 AM] 📋 Memory Archive: New clip captured (- i will create and ...)
+[15/5/2026, 8:08:41 AM] 📋 Memory Archive: New clip captured (- i will create and ...)
+[15/5/2026, 8:33:19 AM] 📋 Memory Archive: New clip captured (feat(workspace-bar):...)
+[15/5/2026, 8:50:08 AM] 📋 Memory Archive: New clip captured (- i will create and ...)
+[15/5/2026, 8:50:30 AM] 📋 Memory Archive: New clip captured (feat(workspace-bar):...)
+[15/5/2026, 8:51:18 AM] 📋 Memory Archive: New clip captured (and now looking into...)
+[15/5/2026, 10:06:25 AM] 📋 Memory Archive: New clip captured (- u are tellling 2 s...)
+[15/5/2026, 10:07:00 AM] 📋 Memory Archive: New clip captured (he replied if I have...)
+[15/5/2026, 10:10:06 AM] 📋 Memory Archive: New clip captured (code is supposed to ...)
+[15/5/2026, 10:12:31 AM] AC State: ON (Manual/Remote)
+[15/5/2026, 10:19:21 AM] 📋 Memory Archive: New clip captured (fix(rules): resolve ...)
+[15/5/2026, 10:38:52 AM] 📋 Memory Archive: New clip captured (- create new branch ...)
+[15/5/2026, 10:49:22 AM] 📋 Memory Archive: New clip captured (switching accs might...)
+[15/5/2026, 11:07:32 AM] AC State: OFF (Manual/Remote)
+[15/5/2026, 11:18:29 AM] 📋 Memory Archive: New clip captured (u could have worked ...)
+[15/5/2026, 11:21:16 AM] 📋 Memory Archive: New clip captured (Skip to content
+Baru...)
+[15/5/2026, 11:26:48 AM] 📋 Memory Archive: New clip captured (Skip to content
+Baru...)
+[15/5/2026, 11:31:20 AM] 📋 Memory Archive: New clip captured (twitch.tv/jagzval...)
+[15/5/2026, 11:32:01 AM] 📋 Memory Archive: New clip captured (jagzval - Twitch
+htt...)
+[15/5/2026, 11:36:37 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[15/5/2026, 11:37:20 AM] 📋 Memory Archive: New clip captured ((2) Theo - t3.gg on ...)
+[15/5/2026, 11:40:00 AM] 📋 Memory Archive: New clip captured ((1) trash on X: "i f...)
+[15/5/2026, 11:40:33 AM] 📋 Memory Archive: New clip captured (DeepWiki
+BarutSRB/Om...)
+[15/5/2026, 12:09:03 PM] AC State: ON (Manual/Remote)
+[15/5/2026, 12:19:16 PM] 📋 Memory Archive: New clip captured (@Paranjayy sorry for...)
+[15/5/2026, 12:20:09 PM] 📋 Memory Archive: New clip captured (No worries no rush m...)
+[15/5/2026, 12:20:50 PM] 📋 Memory Archive: New clip captured ((2) Theo - t3.gg on ...)
+[15/5/2026, 12:21:10 PM] 📋 Memory Archive: New clip captured ((1) trash on X: "i f...)
+[15/5/2026, 12:21:24 PM] 📋 Memory Archive: New clip captured (so sorry for pr slop...)
+[15/5/2026, 12:24:06 PM] 📋 Memory Archive: New clip captured (https://github.com/B...)
+[15/5/2026, 12:27:10 PM] 📋 Memory Archive: New clip captured (Skip to content
+Baru...)
+[15/5/2026, 12:31:37 PM] 📋 Memory Archive: New clip captured ((1) Theo - t3.gg on ...)
+[15/5/2026, 12:42:10 PM] 📋 Memory Archive: New clip captured (0.003125...)
+[15/5/2026, 1:04:32 PM] AC State: OFF (Manual/Remote)
+[15/5/2026, 1:07:20 PM] 📋 Memory Archive: New clip captured (nah now kinda unders...)
+[15/5/2026, 1:07:37 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[15/5/2026, 1:10:58 PM] 📋 Memory Archive: New clip captured (514k = 5.5k inr (10....)
+[15/5/2026, 1:11:32 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[15/5/2026, 1:12:09 PM] 📋 Memory Archive: New clip captured (514k = 5.5k inr (10....)
+[15/5/2026, 1:21:31 PM] 📋 Memory Archive: New clip captured (https://github.com/B...)
+[15/5/2026, 1:24:31 PM] 📋 Memory Archive: New clip captured (dawg in here this br...)
+[15/5/2026, 1:26:33 PM] AC State: ON (Manual/Remote)
+[15/5/2026, 1:32:35 PM] 📋 Memory Archive: New clip captured ((1) dax on X: "i had...)
+[15/5/2026, 1:34:53 PM] 📋 Memory Archive: New clip captured ([Bug]popup in any ap...)
+[15/5/2026, 1:43:18 PM] 📋 Memory Archive: New clip captured ((1) Hamza on X: "wen...)
+[15/5/2026, 1:44:50 PM] 📋 Memory Archive: New clip captured ((1) Hamza on X: "wen...)
+[15/5/2026, 1:48:17 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[15/5/2026, 1:54:36 PM] 📋 Memory Archive: New clip captured ((372) UNHINGED BOLLY...)
+[15/5/2026, 1:56:28 PM] 📋 Memory Archive: New clip captured (https://youtu.be/r7X...)
+[15/5/2026, 1:57:37 PM] 📋 Memory Archive: New clip captured (https://x.com/shrav_...)
+[15/5/2026, 2:00:33 PM] AC State: OFF (Manual/Remote)
+[15/5/2026, 2:26:48 PM] AC State: ON (Manual/Remote)
+[15/5/2026, 4:58:18 PM] AC State: OFF (Manual/Remote)
+[15/5/2026, 5:02:24 PM] 📋 Memory Archive: New clip captured ([ Removed by moderat...)
+[15/5/2026, 5:04:02 PM] 📋 Memory Archive: New clip captured (also i slept twice t...)
+[15/5/2026, 5:11:20 PM] 📋 Memory Archive: New clip captured (it is instagramable/...)
+[15/5/2026, 5:21:55 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[15/5/2026, 5:27:52 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 5:28:12 PM] 📋 Memory Archive: New clip captured ((377) How Google Tra...)
+[15/5/2026, 5:28:32 PM] 📋 Memory Archive: New clip captured (https://youtu.be/WJ8...)
+[15/5/2026, 5:28:41 PM] 📋 Memory Archive: New clip captured (https://youtu.be/WJ8...)
+[15/5/2026, 5:29:32 PM] 📋 Memory Archive: New clip captured ((377) How Google Tra...)
+[15/5/2026, 6:30:48 PM] AC State: ON (Manual/Remote)
+[15/5/2026, 6:36:52 PM] 📋 Memory Archive: New clip captured (Top Gun - miniatures...)
+[15/5/2026, 6:39:54 PM] 📋 Memory Archive: New clip captured ((387) Why Apple�s We...)
+[15/5/2026, 6:40:02 PM] 📋 Memory Archive: New clip captured ((387) Why Apple�s We...)
+[15/5/2026, 6:40:16 PM] 📋 Memory Archive: New clip captured ((387) Why Apple�s We...)
+[15/5/2026, 6:40:37 PM] 📋 Memory Archive: New clip captured ((387) Why Apple�s We...)
+[15/5/2026, 6:45:19 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 6:51:15 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[15/5/2026, 6:52:08 PM] 📋 Memory Archive: New clip captured ((387) CLOSING MY BAN...)
+[15/5/2026, 6:59:50 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[15/5/2026, 7:07:43 PM] 📋 Memory Archive: New clip captured (- i dont recall my o...)
+[15/5/2026, 7:07:55 PM] 📋 Memory Archive: New clip captured (How to Get Rid of Ba...)
+[15/5/2026, 7:08:43 PM] 📋 Memory Archive: New clip captured (bad handwriting - Go...)
+[15/5/2026, 7:09:39 PM] 📋 Memory Archive: New clip captured (- the thumbnail of v...)
+[15/5/2026, 7:11:13 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[15/5/2026, 7:11:30 PM] 📋 Memory Archive: New clip captured ((387) CLOSING MY BAN...)
+[15/5/2026, 7:11:50 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[15/5/2026, 7:21:52 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[15/5/2026, 7:24:01 PM] 📋 Memory Archive: New clip captured (As of early 2026, In...)
+[15/5/2026, 7:28:19 PM] 📋 Memory Archive: New clip captured (India Genius Challen...)
+[15/5/2026, 7:29:40 PM] 📋 Memory Archive: New clip captured (India�s demat count ...)
+[15/5/2026, 7:30:10 PM] 📋 Memory Archive: New clip captured (List of Top Investor...)
+[15/5/2026, 7:32:03 PM] 📋 Memory Archive: New clip captured (India Genius Challen...)
+[15/5/2026, 7:34:16 PM] 📋 Memory Archive: New clip captured (IN
+Skip navigation
+
+...)
+[15/5/2026, 7:34:17 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 7:34:45 PM] 📋 Memory Archive: New clip captured ((390) Why Programmer...)
+[15/5/2026, 7:37:19 PM] AC State: OFF (Manual/Remote)
+[15/5/2026, 8:07:34 PM] 📋 Memory Archive: New clip captured (I have yet to accomp...)
+[15/5/2026, 8:20:44 PM] 📋 Memory Archive: New clip captured (https://open.spotify...)
+[15/5/2026, 8:20:48 PM] AC State: ON (Manual/Remote)
+[15/5/2026, 8:23:27 PM] 📋 Memory Archive: New clip captured (Skip to content
+Kapp...)
+[15/5/2026, 8:23:40 PM] 📋 Memory Archive: New clip captured (name	local-client-pr...)
+[15/5/2026, 8:24:57 PM] 📋 Memory Archive: New clip captured (Posts / X
+https://x....)
+[15/5/2026, 8:31:52 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[15/5/2026, 8:32:07 PM] 📋 Memory Archive: New clip captured (Local Client Prospec...)
+[15/5/2026, 8:32:12 PM] 📋 Memory Archive: New clip captured (Local Client Prospec...)
+[15/5/2026, 8:40:25 PM] 📋 Memory Archive: New clip captured ((397) The Great Indi...)
+[15/5/2026, 8:42:03 PM] 📋 Memory Archive: New clip captured ((397) The Great Indi...)
+[15/5/2026, 8:42:58 PM] 📋 Memory Archive: New clip captured ((397) While We Watch...)
+[15/5/2026, 8:44:02 PM] 📋 Memory Archive: New clip captured ((397) Kunal Kamra - ...)
+[15/5/2026, 8:48:08 PM] 📱 Presence: Phone detected (HOME)
+[15/5/2026, 8:52:47 PM] 📋 Memory Archive: New clip captured (if u dont get it lmk...)
+[15/5/2026, 8:53:28 PM] 📋 Memory Archive: New clip captured (did u complete topgu...)
+[15/5/2026, 8:53:56 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 8:54:06 PM] 📋 Memory Archive: New clip captured (ChatGPT
+https://chat...)
+[15/5/2026, 8:54:54 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 8:58:11 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[15/5/2026, 9:00:48 PM] 📋 Memory Archive: New clip captured ((398) Half-Life Alyx...)
+[15/5/2026, 9:15:18 PM] 📋 Memory Archive: New clip captured (IN
+Skip navigation
+
+...)
+[15/5/2026, 9:15:19 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 9:16:58 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 9:19:33 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 9:25:55 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 9:28:15 PM] 📋 Memory Archive: New clip captured (Do Androids Dream of...)
+[15/5/2026, 9:28:22 PM] 📋 Memory Archive: New clip captured (Do Androids Dream of...)
+[15/5/2026, 9:28:25 PM] 📋 Memory Archive: New clip captured ((400) Do Androids Dr...)
+[15/5/2026, 9:30:37 PM] AC State: OFF (Manual/Remote)
+[15/5/2026, 9:32:02 PM] 📋 Memory Archive: New clip captured ((400) Why Gaming on ...)
+[15/5/2026, 9:34:44 PM] 📋 Memory Archive: New clip captured (Context Horizon
+Cont...)
+[15/5/2026, 9:35:07 PM] 📋 Memory Archive: New clip captured (Context Horizon
+Cont...)
+[15/5/2026, 9:39:11 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[15/5/2026, 10:15:37 PM] 📋 Memory Archive: New clip captured (in my village my fat...)
+[15/5/2026, 10:19:51 PM] 📋 Memory Archive: New clip captured ((405) Why AC Gas Fil...)
+[15/5/2026, 10:20:27 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[15/5/2026, 10:22:30 PM] 📋 Memory Archive: New clip captured ((405) Why AC Gas Fil...)
+[15/5/2026, 10:22:46 PM] 📋 Memory Archive: New clip captured (- in my village my f...)
+[15/5/2026, 10:23:11 PM] 📋 Memory Archive: New clip captured ((405) Why AC Gas Fil...)
+[15/5/2026, 10:28:44 PM] 📋 Memory Archive: New clip captured ((405) NSE wants to m...)
+[15/5/2026, 10:29:32 PM] 📋 Memory Archive: New clip captured (unrelated to the sto...)
+[15/5/2026, 11:25:08 PM] AC State: ON (Manual/Remote)
+[15/5/2026, 11:29:46 PM] 📋 Memory Archive: New clip captured (https://x.com/Warloc...)
+[15/5/2026, 11:30:22 PM] 📋 Memory Archive: New clip captured (cool shit & cool par...)
+[15/5/2026, 11:35:40 PM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[15/5/2026, 11:36:10 PM] 📋 Memory Archive: New clip captured (https://x.com/mom_ag...)
+[15/5/2026, 11:36:24 PM] 📋 Memory Archive: New clip captured ((1) Mom on X: "Claud...)
+[15/5/2026, 11:37:46 PM] 📋 Memory Archive: New clip captured (https://x.com/mom_ag...)
+[15/5/2026, 11:42:45 PM] 📋 Memory Archive: New clip captured (it are interpretatio...)
+[15/5/2026, 11:48:29 PM] 📋 Memory Archive: New clip captured (Peter Steinberger ??...)
+[15/5/2026, 11:59:39 PM] AC State: ON (Manual/Remote)
+[15/5/2026, 11:59:39 PM] LIGHT State: ON (Manual/Remote)
+[16/5/2026, 12:02:09 AM] 🎭 API Scene Switch: TV
+[16/5/2026, 12:02:09 AM] 🎬 Scene Trigger: TV
+[16/5/2026, 12:02:09 AM] 🎬 Scene: TV TIME (God Build)
+[16/5/2026, 12:03:55 AM] 📋 Memory Archive: New clip captured (OpenAI Doubles Reven...)
+[16/5/2026, 12:05:26 AM] 📋 Memory Archive: New clip captured (nah codexbar og imag...)
+[16/5/2026, 12:05:43 AM] 📋 Memory Archive: New clip captured (OpenAI Doubles Reven...)
+[16/5/2026, 12:14:34 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 12:14:46 AM] 📋 Memory Archive: New clip captured ((413) On Wasting You...)
+[16/5/2026, 12:20:47 AM] 📋 Memory Archive: New clip captured ((413) What rebuildin...)
+[16/5/2026, 12:23:47 AM] 📋 Memory Archive: New clip captured ((413) What rebuildin...)
+[16/5/2026, 12:24:53 AM] 📋 Memory Archive: New clip captured ((414) Delete the par...)
+[16/5/2026, 12:27:38 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[16/5/2026, 1:00:15 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[16/5/2026, 1:00:17 AM] 🎭 API Scene Switch: TV
+[16/5/2026, 1:00:17 AM] 🎬 Scene Trigger: TV
+[16/5/2026, 1:00:17 AM] 🎬 Scene: TV TIME (God Build)
+[16/5/2026, 1:00:45 AM] 📋 Memory Archive: New clip captured ([(416) The trial of ...)
+[16/5/2026, 1:01:14 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[16/5/2026, 1:01:15 AM] 📱 Presence: Phone detected (HOME)
+[16/5/2026, 1:04:17 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[16/5/2026, 1:11:10 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[16/5/2026, 1:19:11 AM] 📋 Memory Archive: New clip captured (- android dreams of ...)
+[16/5/2026, 1:19:23 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[16/5/2026, 1:36:56 AM] 📋 Memory Archive: New clip captured (done
+
+(401) Danny Ha...)
+[16/5/2026, 1:38:52 AM] 📋 Memory Archive: New clip captured (idk
+
+(111) Subscript...)
+[16/5/2026, 1:39:28 AM] 📋 Memory Archive: New clip captured (iitm
+
+(1) Posts / X
+...)
+[16/5/2026, 1:39:56 AM] 📋 Memory Archive: New clip captured (building!
+
+Paranjay ...)
+[16/5/2026, 2:00:08 AM] 📋 Memory Archive: New clip captured (there is some quote ...)
+[16/5/2026, 2:01:30 AM] 📋 Memory Archive: New clip captured ("A man who procrasti...)
+[16/5/2026, 2:01:35 AM] 📋 Memory Archive: New clip captured ("If you don't make a...)
+[16/5/2026, 2:01:51 AM] 📋 Memory Archive: New clip captured ("A man who procrasti...)
+[16/5/2026, 2:05:43 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[16/5/2026, 2:06:04 AM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[16/5/2026, 2:06:15 AM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[16/5/2026, 2:06:22 AM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[16/5/2026, 2:06:43 AM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[16/5/2026, 2:12:04 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 2:13:50 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 2:42:44 AM] AC State: OFF (Manual/Remote)
+[16/5/2026, 3:40:44 AM] AC State: ON (Manual/Remote)
+[16/5/2026, 3:57:51 AM] AC State: OFF (Manual/Remote)
+[16/5/2026, 7:05:58 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[16/5/2026, 7:06:27 AM] AC State: ON (Manual/Remote)
+[16/5/2026, 7:23:32 AM] AC State: OFF (Manual/Remote)
+[16/5/2026, 8:50:48 AM] 📋 Memory Archive: New clip captured ((426) Every Time Fus...)
+[16/5/2026, 8:51:11 AM] AC State: ON (Manual/Remote)
+[16/5/2026, 9:04:41 AM] AC State: OFF (Manual/Remote)
+[16/5/2026, 9:07:51 AM] 📋 Memory Archive: New clip captured (turning 36 today sli...)
+[16/5/2026, 9:10:00 AM] 📋 Memory Archive: New clip captured (Everything is pwn�d ...)
+[16/5/2026, 9:11:32 AM] 📋 Memory Archive: New clip captured ((428) Giving Advice ...)
+[16/5/2026, 9:14:05 AM] 📋 Memory Archive: New clip captured (watch
+https://www.yo...)
+[16/5/2026, 9:16:06 AM] 📋 Memory Archive: New clip captured ((428) Giving Advice ...)
+[16/5/2026, 9:16:49 AM] 📋 Memory Archive: New clip captured (turning 36 today, of...)
+[16/5/2026, 9:16:56 AM] 📋 Memory Archive: New clip captured (See new posts
+Conver...)
+[16/5/2026, 9:17:41 AM] 📋 Memory Archive: New clip captured (watch
+https://www.yo...)
+[16/5/2026, 9:19:25 AM] 📋 Memory Archive: New clip captured (Can We Agree The Wor...)
+[16/5/2026, 9:19:52 AM] 📋 Memory Archive: New clip captured ((428) Giving Advice ...)
+[16/5/2026, 9:44:52 AM] 📋 Memory Archive: New clip captured (Search within YouTub...)
+[16/5/2026, 9:44:59 AM] 📋 Memory Archive: New clip captured (Filmot - Search in Y...)
+[16/5/2026, 9:45:05 AM] 📋 Memory Archive: New clip captured (Search within YouTub...)
+[16/5/2026, 9:45:41 AM] 📋 Memory Archive: New clip captured (Filmot - Search in Y...)
+[16/5/2026, 9:46:53 AM] 📋 Memory Archive: New clip captured (YardSearch
+https://y...)
+[16/5/2026, 9:47:04 AM] 📋 Memory Archive: New clip captured (Filmot - Search in Y...)
+[16/5/2026, 9:48:57 AM] 📋 Memory Archive: New clip captured (?????...)
+[16/5/2026, 9:50:06 AM] 📋 Memory Archive: New clip captured (oh noway my father's...)
+[16/5/2026, 9:50:29 AM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[16/5/2026, 9:50:41 AM] 📋 Memory Archive: New clip captured (Filmot - Search in Y...)
+[16/5/2026, 9:52:01 AM] 📋 Memory Archive: New clip captured (?????...)
+[16/5/2026, 9:52:38 AM] 📋 Memory Archive: New clip captured (there are 27.7k clip...)
+[16/5/2026, 9:56:57 AM] 📋 Memory Archive: New clip captured (- there are 27.7k cl...)
+[16/5/2026, 9:57:34 AM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[16/5/2026, 9:57:54 AM] 📋 Memory Archive: New clip captured (Windows 11 Is Gettin...)
+[16/5/2026, 9:59:24 AM] 📋 Memory Archive: New clip captured ([15/05/26 10:45] KP:...)
+[16/5/2026, 10:03:29 AM] 📋 Memory Archive: New clip captured (Untitled
+https://www...)
+[16/5/2026, 10:05:14 AM] 📋 Memory Archive: New clip captured (I've built a search ...)
+[16/5/2026, 10:06:03 AM] 📋 Memory Archive: New clip captured ((426) Every Time Fus...)
+[16/5/2026, 10:06:28 AM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[16/5/2026, 11:28:12 AM] AC State: ON (Manual/Remote)
+[16/5/2026, 11:31:57 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 11:32:04 AM] 📋 Memory Archive: New clip captured ((429) Giving Advice ...)
+[16/5/2026, 11:32:49 AM] 📋 Memory Archive: New clip captured (To view keyboard sho...)
+[16/5/2026, 11:34:11 AM] 📋 Memory Archive: New clip captured (https://x.com/shrav_...)
+[16/5/2026, 11:34:20 AM] 📋 Memory Archive: New clip captured (https://x.com/shrav_...)
+[16/5/2026, 11:40:43 AM] AC State: OFF (Manual/Remote)
+[16/5/2026, 12:03:08 PM] 📋 Memory Archive: New clip captured (Amazon Now delivers ...)
+[16/5/2026, 12:06:14 PM] 📋 Memory Archive: New clip captured (| Region            ...)
+[16/5/2026, 12:09:16 PM] 📋 Memory Archive: New clip captured (The Wildlife Sanctua...)
+[16/5/2026, 12:09:45 PM] 📋 Memory Archive: New clip captured (Amazon Now delivers ...)
+[16/5/2026, 12:09:51 PM] 📋 Memory Archive: New clip captured (| Region            ...)
+[16/5/2026, 12:10:38 PM] 📋 Memory Archive: New clip captured (| Country           ...)
+[16/5/2026, 12:12:54 PM] 📋 Memory Archive: New clip captured (Amazon Now delivers ...)
+[16/5/2026, 12:16:34 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 12:20:26 PM] 📋 Memory Archive: New clip captured ((430) The Frustratin...)
+[16/5/2026, 12:22:02 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 12:29:42 PM] 📋 Memory Archive: New clip captured (cool shit & cool par...)
+[16/5/2026, 12:30:23 PM] 📋 Memory Archive: New clip captured ((1) Aditya on X: "Da...)
+[16/5/2026, 12:30:32 PM] 📋 Memory Archive: New clip captured (X
+https://x.com/anur...)
+[16/5/2026, 12:30:53 PM] 📋 Memory Archive: New clip captured (- cool shit & cool p...)
+[16/5/2026, 12:31:26 PM] 📋 Memory Archive: New clip captured ((1) Schindler Rao Sh...)
+[16/5/2026, 12:32:39 PM] 📋 Memory Archive: New clip captured (weird hate to Zakir ...)
+[16/5/2026, 12:51:31 PM] 📋 Memory Archive: New clip captured ((431) Finally Got My...)
+[16/5/2026, 12:53:48 PM] 📋 Memory Archive: New clip captured ((431) Finally Got My...)
+[16/5/2026, 1:07:21 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[16/5/2026, 1:07:49 PM] 📋 Memory Archive: New clip captured ([15/05/26 13:59] KP:...)
+[16/5/2026, 1:08:58 PM] 📋 Memory Archive: New clip captured ((1) Schindler Rao Sh...)
+[16/5/2026, 1:09:26 PM] 📋 Memory Archive: New clip captured ((1) Aditya on X: "Da...)
+[16/5/2026, 1:12:07 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 1:15:30 PM] 📋 Memory Archive: New clip captured (kangaroos and pengui...)
+[16/5/2026, 1:16:50 PM] 📋 Memory Archive: New clip captured (Penguin, Depressed.....)
+[16/5/2026, 1:28:46 PM] 📋 Memory Archive: New clip captured ((1) autist on X: "??...)
+[16/5/2026, 1:30:04 PM] 📋 Memory Archive: New clip captured ((1) neural nets. on ...)
+[16/5/2026, 1:31:28 PM] 📋 Memory Archive: New clip captured (kangaroos and pengui...)
+[16/5/2026, 1:31:52 PM] 📋 Memory Archive: New clip captured ((1) autist on X: "??...)
+[16/5/2026, 1:38:56 PM] 📋 Memory Archive: New clip captured (also cyberpunk/rdr2 ...)
+[16/5/2026, 1:39:39 PM] 📋 Memory Archive: New clip captured ((1) neural nets. on ...)
+[16/5/2026, 1:58:44 PM] AC State: ON (Manual/Remote)
+[16/5/2026, 2:10:15 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[16/5/2026, 2:13:58 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[16/5/2026, 2:26:23 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 2:26:32 PM] 📋 Memory Archive: New clip captured ((435) 2026 India's G...)
+[16/5/2026, 2:26:43 PM] AC State: OFF (Manual/Remote)
+[16/5/2026, 2:29:05 PM] 📋 Memory Archive: New clip captured ([(416) The trial of ...)
+[16/5/2026, 2:30:52 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[16/5/2026, 2:53:44 PM] AC State: ON (Manual/Remote)
+[16/5/2026, 3:02:46 PM] 📋 Memory Archive: New clip captured (Ellie Huxtable?
+~/no...)
+[16/5/2026, 3:16:59 PM] AC State: OFF (Manual/Remote)
+[16/5/2026, 4:18:44 PM] AC State: ON (Manual/Remote)
+[16/5/2026, 4:35:16 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[16/5/2026, 4:35:34 PM] 📋 Memory Archive: New clip captured (Why is Swiggy Instam...)
+[16/5/2026, 4:36:18 PM] 📋 Memory Archive: New clip captured (Why is Swiggy Instam...)
+[16/5/2026, 4:48:23 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 4:48:30 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 4:48:37 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 4:49:54 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 4:50:15 PM] AC State: OFF (Manual/Remote)
+[16/5/2026, 4:52:01 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 4:54:57 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 4:55:04 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 4:55:08 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 5:02:12 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 5:02:14 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 5:02:28 PM] 📋 Memory Archive: New clip captured (Screenshot 2026-05-1...)
+[16/5/2026, 5:09:49 PM] 📋 Memory Archive: New clip captured (The Error 11 (or H11...)
+[16/5/2026, 5:10:38 PM] 📋 Memory Archive: New clip captured ((405) Why AC Gas Fil...)
+[16/5/2026, 5:29:15 PM] AC State: ON (Manual/Remote)
+[16/5/2026, 5:33:38 PM] 📋 Memory Archive: New clip captured (fix(rules): resolve ...)
+[16/5/2026, 5:42:06 PM] 📋 Memory Archive: New clip captured (Runtime state stored...)
+[16/5/2026, 5:42:35 PM] 📋 Memory Archive: New clip captured (Ghost workspace when...)
+[16/5/2026, 5:43:34 PM] 📋 Memory Archive: New clip captured (fix(rules): resolve ...)
+[16/5/2026, 5:51:17 PM] 📋 Memory Archive: New clip captured (my shortcuts and hac...)
+[16/5/2026, 5:56:19 PM] 📋 Memory Archive: New clip captured (# save this raw prom...)
+[16/5/2026, 6:02:15 PM] AC State: OFF (Manual/Remote)
+[16/5/2026, 6:07:58 PM] 📋 Memory Archive: New clip captured (it looks like u have...)
+[16/5/2026, 6:23:40 PM] 📋 Memory Archive: New clip captured (it looks like u have...)
+[16/5/2026, 6:29:47 PM] 📋 Memory Archive: New clip captured (Issues � BarutSRB/Om...)
+[16/5/2026, 6:30:05 PM] 📋 Memory Archive: New clip captured (Floating Windows Not...)
+[16/5/2026, 6:32:13 PM] 📋 Memory Archive: New clip captured (it looks like u have...)
+[16/5/2026, 6:34:40 PM] 📋 Memory Archive: New clip captured (- (also dont forget ...)
+[16/5/2026, 7:01:46 PM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[16/5/2026, 7:02:58 PM] 📋 Memory Archive: New clip captured ([15/05/26 15:14] Yuv...)
+[16/5/2026, 7:03:17 PM] 📋 Memory Archive: New clip captured ((1) autist on X: "??...)
+[16/5/2026, 7:03:54 PM] 📋 Memory Archive: New clip captured (valo is bad game cuz...)
+[16/5/2026, 7:14:39 PM] 📋 Memory Archive: New clip captured (Owner
+BarutSRB
+comme...)
+[16/5/2026, 8:17:16 PM] AC State: ON (Manual/Remote)
+[16/5/2026, 8:20:26 PM] 📋 Memory Archive: New clip captured (Subscriptions - YouT...)
+[16/5/2026, 8:21:29 PM] 📋 Memory Archive: New clip captured ((442) Telling Mohit ...)
+[16/5/2026, 8:23:06 PM] 📋 Memory Archive: New clip captured ((442) Telling Mohit ...)
+[16/5/2026, 8:38:01 PM] 📋 Memory Archive: New clip captured (Issues � BarutSRB/Om...)
+[16/5/2026, 8:38:11 PM] 📋 Memory Archive: New clip captured (Floating Windows Not...)
+[16/5/2026, 8:40:16 PM] AC State: OFF (Manual/Remote)
+[16/5/2026, 9:38:25 PM] 📋 Memory Archive: New clip captured (Issues � BarutSRB/Om...)
+[16/5/2026, 9:38:44 PM] 📋 Memory Archive: New clip captured (BarutSRB/OmniWM | De...)
+[16/5/2026, 9:38:50 PM] 📋 Memory Archive: New clip captured (DeepWiki
+BarutSRB/Om...)
+[16/5/2026, 9:51:36 PM] 🎭 API Scene Switch: TV
+[16/5/2026, 9:51:36 PM] 🎬 Scene Trigger: TV
+[16/5/2026, 9:51:36 PM] 🎬 Scene: TV TIME (God Build)
+[16/5/2026, 9:51:45 PM] AC State: ON (Manual/Remote)
+[16/5/2026, 9:58:54 PM] 📋 Memory Archive: New clip captured (Floating Windows Not...)
+[16/5/2026, 10:02:17 PM] AC State: OFF (Manual/Remote)
+[16/5/2026, 10:33:17 PM] AC State: ON (Manual/Remote)
+[16/5/2026, 10:42:13 PM] 📋 Memory Archive: New clip captured (it looks like u have...)
+[16/5/2026, 11:13:45 PM] AC State: OFF (Manual/Remote)
+[16/5/2026, 11:22:17 PM] AC State: ON (Manual/Remote)
+[17/5/2026, 1:14:46 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[17/5/2026, 1:35:02 AM] AC State: OFF (Manual/Remote)
+[17/5/2026, 7:00:59 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[17/5/2026, 7:01:00 AM] AC State: ON (Manual/Remote)
+[17/5/2026, 7:09:42 AM] 📋 Memory Archive: New clip captured (oh open/anthropic mo...)
+[17/5/2026, 7:10:27 AM] AC State: OFF (Manual/Remote)
+[17/5/2026, 7:22:57 AM] AC State: ON (Manual/Remote)
+[17/5/2026, 7:27:27 AM] AC State: OFF (Manual/Remote)
+[17/5/2026, 7:38:45 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[17/5/2026, 7:39:02 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[17/5/2026, 7:49:10 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[17/5/2026, 7:50:46 AM] 📋 Memory Archive: New clip captured ((467) yappin and the...)
+[17/5/2026, 7:53:37 AM] 📋 Memory Archive: New clip captured (Civil Services Exam
+...)
+[17/5/2026, 7:54:03 AM] 📋 Memory Archive: New clip captured (NEW EPISODE | EP 24 ...)
+[17/5/2026, 7:55:47 AM] 📋 Memory Archive: New clip captured (I let the AI cook - ...)
+[17/5/2026, 8:04:54 AM] 📋 Memory Archive: New clip captured ((468) How To ACTUALL...)
+[17/5/2026, 8:10:34 AM] 📋 Memory Archive: New clip captured (kinda useless spam o...)
+[17/5/2026, 8:34:09 AM] 📋 Memory Archive: New clip captured (Inside Sadhguru's Me...)
+[17/5/2026, 8:58:09 AM] 📋 Memory Archive: New clip captured (Can we please get ka...)
+[17/5/2026, 9:59:29 AM] AC State: ON (Manual/Remote)
+[17/5/2026, 10:13:59 AM] AC State: OFF (Manual/Remote)
+[17/5/2026, 10:27:59 AM] AC State: ON (Manual/Remote)
+[17/5/2026, 10:49:59 AM] AC State: OFF (Manual/Remote)
+[17/5/2026, 11:09:13 AM] 📋 Memory Archive: New clip captured (Private
+
+diaphragm m...)
+[17/5/2026, 11:42:06 AM] 📋 Memory Archive: New clip captured (Microsoft Flight Sim...)
+[17/5/2026, 11:44:16 AM] 📋 Memory Archive: New clip captured (Medical Fitness: Pas...)
+[17/5/2026, 11:46:04 AM] 📋 Memory Archive: New clip captured (Does it need 1-1.5 c...)
+[17/5/2026, 11:46:25 AM] 📋 Memory Archive: New clip captured (Microsoft Flight Sim...)
+[17/5/2026, 11:49:55 AM] 📋 Memory Archive: New clip captured (Microsoft Flight Sim...)
+[17/5/2026, 11:52:53 AM] 📋 Memory Archive: New clip captured (MSFS 2024 Livestream...)
+[17/5/2026, 12:32:16 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[17/5/2026, 12:32:23 PM] 📋 Memory Archive: New clip captured ((471) the science of...)
+[17/5/2026, 12:35:29 PM] 📋 Memory Archive: New clip captured (eumieverse...)
+[17/5/2026, 1:08:24 PM] 📋 Memory Archive: New clip captured (oh hellna i didnt no...)
+[17/5/2026, 1:08:35 PM] 📋 Memory Archive: New clip captured (Microsoft Flight Sim...)
+[17/5/2026, 1:09:17 PM] 📋 Memory Archive: New clip captured (oh hellna i didnt no...)
+[17/5/2026, 1:10:19 PM] 📋 Memory Archive: New clip captured (Microsoft Flight Sim...)
+[17/5/2026, 1:11:17 PM] 📋 Memory Archive: New clip captured (MBBS from AIIMS Delh...)
+[17/5/2026, 1:15:06 PM] 📋 Memory Archive: New clip captured (an-and is funny name...)
+[17/5/2026, 1:17:08 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[17/5/2026, 1:22:42 PM] 📋 Memory Archive: New clip captured ([15/05/26 23:50] KP:...)
+[17/5/2026, 1:23:01 PM] 📋 Memory Archive: New clip captured ([17/05/26 12:23] KP:...)
+[17/5/2026, 1:23:16 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[17/5/2026, 1:26:58 PM] 📋 Memory Archive: New clip captured (nikhil sadienene...)
+[17/5/2026, 1:28:04 PM] 📋 Memory Archive: New clip captured ((471) Meet Sadineni ...)
+[17/5/2026, 1:30:30 PM] 📋 Memory Archive: New clip captured (Such a inspiration :...)
+[17/5/2026, 1:32:59 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[17/5/2026, 1:33:33 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[17/5/2026, 2:29:08 PM] 📋 Memory Archive: New clip captured (I Turned My Desk Int...)
+[17/5/2026, 2:54:23 PM] 📋 Memory Archive: New clip captured (4d theater in india...)
+[17/5/2026, 2:54:37 PM] AC State: ON (Manual/Remote)
+[17/5/2026, 2:54:44 PM] 📋 Memory Archive: New clip captured (4D and 4DX theaters ...)
+[17/5/2026, 3:02:00 PM] 📋 Memory Archive: New clip captured (filmot transcript se...)
+[17/5/2026, 3:09:54 PM] 📋 Memory Archive: New clip captured (How 4DX Works In Mov...)
+[17/5/2026, 3:11:56 PM] 📋 Memory Archive: New clip captured (How 4DX Works In Mov...)
+[17/5/2026, 3:16:34 PM] 📋 Memory Archive: New clip captured (How IMAX 70MM Film i...)
+[17/5/2026, 3:17:35 PM] 📋 Memory Archive: New clip captured (4dx can be distracti...)
+[17/5/2026, 3:27:37 PM] AC State: OFF (Manual/Remote)
+[17/5/2026, 3:41:04 PM] 📋 Memory Archive: New clip captured (jfc top speed 30kmh ...)
+[17/5/2026, 3:47:07 PM] AC State: ON (Manual/Remote)
+[17/5/2026, 3:54:38 PM] AC State: OFF (Manual/Remote)
+[17/5/2026, 4:10:10 PM] 📋 Memory Archive: New clip captured (jfc top speed 30kmh ...)
+[17/5/2026, 4:14:52 PM] 📋 Memory Archive: New clip captured (i would give acc/pas...)
+[17/5/2026, 4:16:38 PM] AC State: ON (Manual/Remote)
+[17/5/2026, 4:19:34 PM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[17/5/2026, 4:19:48 PM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[17/5/2026, 5:27:38 PM] AC State: OFF (Manual/Remote)
+[17/5/2026, 5:43:07 PM] AC State: ON (Manual/Remote)
+[17/5/2026, 5:50:01 PM] 📋 Memory Archive: New clip captured (- can u show the hud...)
+[17/5/2026, 5:51:15 PM] 📋 Memory Archive: New clip captured (* Quiz 1 Examination...)
+[17/5/2026, 5:52:32 PM] 📋 Memory Archive: New clip captured (Update on May 2026 r...)
+[17/5/2026, 5:53:45 PM] 📋 Memory Archive: New clip captured (MBBS from AIIMS Delh...)
+[17/5/2026, 5:59:38 PM] AC State: OFF (Manual/Remote)
+[17/5/2026, 6:04:25 PM] 📋 Memory Archive: New clip captured ((476) Answering Gen ...)
+[17/5/2026, 6:10:24 PM] 📋 Memory Archive: New clip captured ((477) life update. w...)
+[17/5/2026, 6:14:10 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[17/5/2026, 6:15:38 PM] AC State: ON (Manual/Remote)
+[17/5/2026, 6:22:54 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[17/5/2026, 6:50:12 PM] AC State: OFF (Manual/Remote)
+[17/5/2026, 7:22:42 PM] AC State: ON (Manual/Remote)
+[17/5/2026, 7:34:57 PM] 📋 Memory Archive: New clip captured (IN
+Skip navigation
+
+...)
+[17/5/2026, 7:34:58 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[17/5/2026, 7:35:25 PM] 📋 Memory Archive: New clip captured ((482) How To Teach A...)
+[17/5/2026, 7:44:42 PM] AC State: OFF (Manual/Remote)
+[17/5/2026, 9:09:23 PM] 📋 Memory Archive: New clip captured (- gt if loses their ...)
+[17/5/2026, 9:09:30 PM] AC State: ON (Bot)
+[17/5/2026, 9:10:23 PM] 📱 Presence: Phone detected (HOME)
+[17/5/2026, 9:55:48 PM] 🎭 API Scene Switch: TV
+[17/5/2026, 9:55:48 PM] 🎬 Scene Trigger: TV
+[17/5/2026, 9:55:48 PM] 🎬 Scene: TV TIME (God Build)
+[17/5/2026, 10:03:44 PM] 📋 Memory Archive: New clip captured (RaceJohnson on X: "d...)
+[17/5/2026, 10:34:43 PM] 📋 Memory Archive: New clip captured (kp execrable & egreg...)
+[17/5/2026, 10:36:06 PM] 📋 Memory Archive: New clip captured (Sign in
+AI Mode
+All
+...)
+[17/5/2026, 10:36:34 PM] 📋 Memory Archive: New clip captured ([16/05/26 10:12] KP:...)
+[17/5/2026, 10:36:52 PM] 📋 Memory Archive: New clip captured ([17/05/26 14:59] Yuv...)
+[17/5/2026, 11:14:52 PM] AC State: OFF (Manual/Remote)
+[17/5/2026, 11:25:22 PM] AC State: ON (Manual/Remote)
+[17/5/2026, 11:26:41 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[17/5/2026, 11:35:04 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 12:00:36 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 12:50:36 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 1:00:36 AM] 🧠 Habit Learner: Scanning manual patterns...
+[18/5/2026, 1:00:37 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[18/5/2026, 1:01:06 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 2:45:09 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 2:55:09 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 4:29:16 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 4:39:16 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 4:41:46 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 4:45:46 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 4:47:53 AM] 📋 Memory Archive: New clip captured ([17/05/26 22:02] Yuv...)
+[18/5/2026, 4:51:11 AM] 📋 Memory Archive: New clip captured (My sincerest contrit...)
+[18/5/2026, 4:55:49 AM] 📋 Memory Archive: New clip captured (Theo - t3.gg on X: "...)
+[18/5/2026, 4:58:02 AM] 📋 Memory Archive: New clip captured (Polymarket on X: "NE...)
+[18/5/2026, 5:02:08 AM] 📋 Memory Archive: New clip captured (Anushka on X: "i bou...)
+[18/5/2026, 5:07:44 AM] 📋 Memory Archive: New clip captured (The fastest animal o...)
+[18/5/2026, 5:08:07 AM] 📋 Memory Archive: New clip captured (An average horse can...)
+[18/5/2026, 5:08:11 AM] 📋 Memory Archive: New clip captured (An average horse can...)
+[18/5/2026, 5:11:37 AM] 📋 Memory Archive: New clip captured ((1) hopecore on X: "...)
+[18/5/2026, 5:11:50 AM] 📋 Memory Archive: New clip captured ((1) mars on X: "dail...)
+[18/5/2026, 5:13:43 AM] 📋 Memory Archive: New clip captured (more logos in disco ...)
+[18/5/2026, 5:16:09 AM] 📋 Memory Archive: New clip captured ((1) RaceJohnson on X...)
+[18/5/2026, 5:24:46 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 5:32:07 AM] 📋 Memory Archive: New clip captured (what's ur fav cuisin...)
+[18/5/2026, 5:43:25 AM] 📋 Memory Archive: New clip captured (what's ur fav cuisin...)
+[18/5/2026, 5:44:16 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 5:45:03 AM] 📋 Memory Archive: New clip captured ((497) 10 DevOps Conc...)
+[18/5/2026, 5:46:09 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 5:49:15 AM] 📋 Memory Archive: New clip captured ((497) How did they f...)
+[18/5/2026, 5:50:47 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 5:54:46 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 5:55:32 AM] 📋 Memory Archive: New clip captured (## TL;DR
+
+The video ...)
+[18/5/2026, 5:56:02 AM] 📋 Memory Archive: New clip captured (Docker solves packag...)
+[18/5/2026, 5:56:51 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 6:07:16 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 6:15:37 AM] 📋 Memory Archive: New clip captured (Sam Altman on X: "Ch...)
+[18/5/2026, 6:33:16 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 7:00:16 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[18/5/2026, 7:00:17 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 7:16:21 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 7:18:11 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 7:23:18 AM] 📋 Memory Archive: New clip captured ((497) Underneath the...)
+[18/5/2026, 7:23:51 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[18/5/2026, 7:23:59 AM] 📋 Memory Archive: New clip captured ((497) Underneath the...)
+[18/5/2026, 7:25:03 AM] 📋 Memory Archive: New clip captured (First: The �90% Fail...)
+[18/5/2026, 7:26:12 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 7:35:22 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 7:39:26 AM] 📋 Memory Archive: New clip captured ((497) Tesla Solar Ro...)
+[18/5/2026, 7:41:35 AM] 📋 Memory Archive: New clip captured ((497) Tesla Solar Ro...)
+[18/5/2026, 7:42:16 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 7:42:26 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[18/5/2026, 7:44:09 AM] 📋 Memory Archive: New clip captured ((497) Tesla Solar Ro...)
+[18/5/2026, 7:51:50 AM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] KP:...)
+[18/5/2026, 7:52:26 AM] 📋 Memory Archive: New clip captured ([16/05/26 10:12] KP:...)
+[18/5/2026, 7:52:47 AM] 📋 Memory Archive: New clip captured ([15/05/26 23:50] KP:...)
+[18/5/2026, 8:02:20 AM] 📋 Memory Archive: New clip captured (- can u show the hud...)
+[18/5/2026, 8:05:49 AM] 📋 Memory Archive: New clip captured (it looks like u have...)
+[18/5/2026, 8:06:22 AM] 📋 Memory Archive: New clip captured (it looks like u have...)
+[18/5/2026, 8:06:47 AM] 📋 Memory Archive: New clip captured (# save this raw prom...)
+[18/5/2026, 8:20:43 AM] 📋 Memory Archive: New clip captured ((497) A Game to Tort...)
+[18/5/2026, 8:22:33 AM] 📋 Memory Archive: New clip captured ((497) Slime being el...)
+[18/5/2026, 8:22:46 AM] 📋 Memory Archive: New clip captured ((497) Slime being el...)
+[18/5/2026, 8:27:02 AM] 📋 Memory Archive: New clip captured ((497) A Game to Tort...)
+[18/5/2026, 8:40:17 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 8:54:17 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 9:04:38 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[18/5/2026, 9:04:43 AM] 📋 Memory Archive: New clip captured ((497) Ep. 127 Hot Ta...)
+[18/5/2026, 9:17:46 AM] 📋 Memory Archive: New clip captured (## TL;DR
+
+The video ...)
+[18/5/2026, 9:59:47 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 10:01:23 AM] 📋 Memory Archive: New clip captured (not to overuse or us...)
+[18/5/2026, 10:01:37 AM] 📋 Memory Archive: New clip captured (it looks like u have...)
+[18/5/2026, 10:01:54 AM] 📋 Memory Archive: New clip captured (# save this raw prom...)
+[18/5/2026, 10:02:09 AM] 📋 Memory Archive: New clip captured (it looks like u have...)
+[18/5/2026, 10:02:15 AM] 📋 Memory Archive: New clip captured (- does swift test le...)
+[18/5/2026, 10:14:13 AM] 📋 Memory Archive: New clip captured (- sushi ig not in ju...)
+[18/5/2026, 10:17:25 AM] 📋 Memory Archive: New clip captured (It could be insane i...)
+[18/5/2026, 10:17:41 AM] 📋 Memory Archive: New clip captured (Is there any app tha...)
+[18/5/2026, 10:17:53 AM] 📋 Memory Archive: New clip captured (VC Soundboard Apps
+h...)
+[18/5/2026, 10:18:18 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 10:18:50 AM] 📋 Memory Archive: New clip captured (VC Soundboard Apps
+h...)
+[18/5/2026, 10:23:44 AM] 📋 Memory Archive: New clip captured (https://omoggle.com...)
+[18/5/2026, 10:29:55 AM] 📋 Memory Archive: New clip captured (demand supply & jobs...)
+[18/5/2026, 10:33:08 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[18/5/2026, 10:38:26 AM] 📋 Memory Archive: New clip captured (Skip to content
+Baru...)
+[18/5/2026, 10:40:29 AM] 📋 Memory Archive: New clip captured (Skip to content
+Baru...)
+[18/5/2026, 10:40:34 AM] 📋 Memory Archive: New clip captured (Release OmniWM v0.4....)
+[18/5/2026, 10:43:46 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 10:49:35 AM] 📋 Memory Archive: New clip captured (Voicemod - Apps on G...)
+[18/5/2026, 10:54:34 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 10:55:20 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 10:56:41 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 10:57:52 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 10:59:45 AM] 📋 Memory Archive: New clip captured (IN
+Skip navigation
+
+...)
+[18/5/2026, 10:59:45 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 11:01:18 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 11:04:07 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 11:08:17 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 11:12:01 AM] 📋 Memory Archive: New clip captured (pinyin input - Googl...)
+[18/5/2026, 11:12:39 AM] 📋 Memory Archive: New clip captured (Ergonomics vs Econom...)
+[18/5/2026, 11:13:12 AM] 📋 Memory Archive: New clip captured ((498) Why LAX�s $30B...)
+[18/5/2026, 11:13:33 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 11:14:52 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 11:15:20 AM] 📋 Memory Archive: New clip captured ((498) Why the Jeddah...)
+[18/5/2026, 11:39:37 AM] AC State: ON (Manual/Remote)
+[18/5/2026, 11:55:34 AM] AC State: OFF (Manual/Remote)
+[18/5/2026, 3:20:35 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 3:24:05 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 3:50:36 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 4:07:15 PM] 📋 Memory Archive: New clip captured ((501) Dhurandhar Ki ...)
+[18/5/2026, 4:11:23 PM] 📋 Memory Archive: New clip captured ((502) Dhurandhar Ki ...)
+[18/5/2026, 4:15:15 PM] 📋 Memory Archive: New clip captured ((1) beginbot ?? on X...)
+[18/5/2026, 4:18:25 PM] 📋 Memory Archive: New clip captured (1012 lvl ??unheard u...)
+[18/5/2026, 4:18:33 PM] 📋 Memory Archive: New clip captured (dhurandhar 2 netflix...)
+[18/5/2026, 4:18:53 PM] 📋 Memory Archive: New clip captured (The "Paper Airplane ...)
+[18/5/2026, 4:19:04 PM] 📋 Memory Archive: New clip captured ([19/01/38 08:44] Pra...)
+[18/5/2026, 4:32:34 PM] 📋 Memory Archive: New clip captured (SyagNe#aimz's Compet...)
+[18/5/2026, 4:33:36 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 4:35:08 PM] 📋 Memory Archive: New clip captured ((502) ?? VALORANT IS...)
+[18/5/2026, 4:39:12 PM] 📋 Memory Archive: New clip captured (https://x.com/gzcl30...)
+[18/5/2026, 4:39:14 PM] 📋 Memory Archive: New clip captured (https://x.com/laurie...)
+[18/5/2026, 4:39:18 PM] 📋 Memory Archive: New clip captured (https://x.com/TheFig...)
+[18/5/2026, 4:42:36 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 4:48:17 PM] 📋 Memory Archive: New clip captured ((1) yung on X: "i wa...)
+[18/5/2026, 4:48:39 PM] 📋 Memory Archive: New clip captured ((1) The Figen on X: ...)
+[18/5/2026, 4:49:17 PM] 📋 Memory Archive: New clip captured (https://x.com/TheFig...)
+[18/5/2026, 4:52:14 PM] 📋 Memory Archive: New clip captured (Dhurandhar The Reven...)
+[18/5/2026, 4:52:22 PM] 📋 Memory Archive: New clip captured (Watch | Netflix
+http...)
+[18/5/2026, 5:09:06 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 5:28:06 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 5:47:06 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 6:27:23 PM] AC State: ON (Bot)
+[18/5/2026, 6:41:29 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 7:18:06 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 7:32:48 PM] 📋 Memory Archive: New clip captured (/Users/paranjay/Libr...)
+[18/5/2026, 7:55:38 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 8:02:59 PM] 📋 Memory Archive: New clip captured (I think Gemini 3.2 F...)
+[18/5/2026, 8:05:56 PM] 📋 Memory Archive: New clip captured (I sent it earlier bu...)
+[18/5/2026, 8:07:32 PM] 📋 Memory Archive: New clip captured (need exciting or at ...)
+[18/5/2026, 8:09:50 PM] 📋 Memory Archive: New clip captured (https://x.com/vidit_...)
+[18/5/2026, 8:11:16 PM] 📋 Memory Archive: New clip captured (https://www.linkedin...)
+[18/5/2026, 8:14:54 PM] 📋 Memory Archive: New clip captured ((1) Logan Kilpatrick...)
+[18/5/2026, 8:14:58 PM] 📋 Memory Archive: New clip captured ((1) Logan Kilpatrick...)
+[18/5/2026, 8:15:48 PM] 📋 Memory Archive: New clip captured (I sent it earlier bu...)
+[18/5/2026, 8:15:54 PM] 📋 Memory Archive: New clip captured (need exciting or at ...)
+[18/5/2026, 8:17:04 PM] 📋 Memory Archive: New clip captured ((1) vidit._od on X: ...)
+[18/5/2026, 8:46:36 PM] 📋 Memory Archive: New clip captured (AtulChandpara (Atul ...)
+[18/5/2026, 8:47:05 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 8:47:37 PM] 📱 Presence: Phone detected (HOME)
+[18/5/2026, 8:48:16 PM] 📋 Memory Archive: New clip captured (Team | Microsoft AI
+...)
+[18/5/2026, 9:02:05 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 9:15:35 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 9:27:35 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 10:16:03 PM] 📋 Memory Archive: New clip captured (Mission failed succe...)
+[18/5/2026, 10:18:24 PM] 📋 Memory Archive: New clip captured (mouse seem to be get...)
+[18/5/2026, 10:20:58 PM] 📋 Memory Archive: New clip captured (Mission failed succe...)
+[18/5/2026, 10:21:59 PM] 📋 Memory Archive: New clip captured (new yorker pastry - ...)
+[18/5/2026, 10:22:16 PM] 📋 Memory Archive: New clip captured (Skip to main content...)
+[18/5/2026, 10:23:35 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 10:30:09 PM] 📋 Memory Archive: New clip captured (Skip to main content...)
+[18/5/2026, 10:30:30 PM] 📋 Memory Archive: New clip captured (Skip to main content...)
+[18/5/2026, 10:30:30 PM] 📋 Memory Archive: New clip captured (Skip to main content...)
+[18/5/2026, 10:31:00 PM] 📋 Memory Archive: New clip captured (Skip to main content...)
+[18/5/2026, 10:37:06 PM] 📋 Memory Archive: New clip captured ((525) Subscriptions ...)
+[18/5/2026, 10:38:05 PM] 📋 Memory Archive: New clip captured ((525) Ajit Doval v/s...)
+[18/5/2026, 10:40:23 PM] 📋 Memory Archive: New clip captured (Dhurandhar: The Reve...)
+[18/5/2026, 10:40:48 PM] 📋 Memory Archive: New clip captured (Dhurandhar: The Reve...)
+[18/5/2026, 10:43:27 PM] 📋 Memory Archive: New clip captured ((525) Subscriptions ...)
+[18/5/2026, 10:46:20 PM] 📋 Memory Archive: New clip captured (- after some struggl...)
+[18/5/2026, 10:47:47 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 10:48:02 PM] 📋 Memory Archive: New clip captured ((526) Why You Feel D...)
+[18/5/2026, 10:49:14 PM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[18/5/2026, 10:54:15 PM] 📋 Memory Archive: New clip captured ((526) Inside Europe'...)
+[18/5/2026, 10:55:31 PM] 📋 Memory Archive: New clip captured ((526) We Destroyed t...)
+[18/5/2026, 10:57:05 PM] 📋 Memory Archive: New clip captured (tympanus.net/codrops...)
+[18/5/2026, 11:01:08 PM] 📋 Memory Archive: New clip captured (Codrops | Fueling we...)
+[18/5/2026, 11:01:37 PM] 📋 Memory Archive: New clip captured (Whatever's Clever! -...)
+[18/5/2026, 11:02:06 PM] AC State: OFF (Manual/Remote)
+[18/5/2026, 11:03:28 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[18/5/2026, 11:16:04 PM] 📋 Memory Archive: New clip captured (https://www.imdb.com...)
+[18/5/2026, 11:22:06 PM] AC State: ON (Manual/Remote)
+[18/5/2026, 11:29:48 PM] 📋 Memory Archive: New clip captured ((1) Theo - t3.gg on ...)
+[18/5/2026, 11:38:49 PM] 📋 Memory Archive: New clip captured (https://www.reddit.c...)
+[18/5/2026, 11:41:58 PM] 📋 Memory Archive: New clip captured (https://www.reddit.c...)
+[19/5/2026, 12:00:06 AM] AC State: ON (Manual/Remote)
+[19/5/2026, 12:00:06 AM] LIGHT State: ON (Manual/Remote)
+[19/5/2026, 12:01:20 AM] 📋 Memory Archive: New clip captured ((527) India (Finally...)
+[19/5/2026, 12:01:45 AM] 📋 Memory Archive: New clip captured (- (527) India's Chen...)
+[19/5/2026, 12:09:55 AM] 📋 Memory Archive: New clip captured (implement <SPEC> and...)
+[19/5/2026, 12:11:21 AM] 📋 Memory Archive: New clip captured (https://x.com/shrav_...)
+[19/5/2026, 12:13:18 AM] 📋 Memory Archive: New clip captured (https://x.com/jxnlco...)
+[19/5/2026, 12:13:56 AM] 📋 Memory Archive: New clip captured (implement <SPEC> and...)
+[19/5/2026, 12:14:49 AM] 📋 Memory Archive: New clip captured ((1) jason on X: "The...)
+[19/5/2026, 12:15:01 AM] 📋 Memory Archive: New clip captured (https://x.com/jxnlco...)
+[19/5/2026, 12:15:06 AM] 📋 Memory Archive: New clip captured (https://x.com/dr_alp...)
+[19/5/2026, 12:16:29 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 12:16:38 AM] 📋 Memory Archive: New clip captured ((527) Charlie Puth (...)
+[19/5/2026, 12:18:06 AM] AC State: OFF (Manual/Remote)
+[19/5/2026, 12:27:36 AM] AC State: ON (Manual/Remote)
+[19/5/2026, 12:37:06 AM] AC State: OFF (Manual/Remote)
+[19/5/2026, 12:46:24 AM] 📋 Memory Archive: New clip captured (Ajit Deval also trad...)
+[19/5/2026, 12:47:14 AM] 📋 Memory Archive: New clip captured (Instagram
+https://ww...)
+[19/5/2026, 12:47:47 AM] 📋 Memory Archive: New clip captured (- (527) India's Chen...)
+[19/5/2026, 12:49:29 AM] 📋 Memory Archive: New clip captured (Your All-Time Top So...)
+[19/5/2026, 12:52:36 AM] AC State: ON (Manual/Remote)
+[19/5/2026, 1:00:36 AM] 🧠 Habit Learner: Scanning manual patterns...
+[19/5/2026, 1:00:36 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[19/5/2026, 1:00:47 AM] 🎭 API Scene Switch: TV
+[19/5/2026, 1:00:47 AM] 🎬 Scene Trigger: TV
+[19/5/2026, 1:00:47 AM] 🎬 Scene: TV TIME (God Build)
+[19/5/2026, 1:01:25 AM] 📋 Memory Archive: New clip captured ((527) COVID Chaos, I...)
+[19/5/2026, 1:23:54 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 1:28:36 AM] AC State: OFF (Manual/Remote)
+[19/5/2026, 1:31:42 AM] 📋 Memory Archive: New clip captured ((529) 15,000 likes f...)
+[19/5/2026, 1:38:06 AM] AC State: ON (Manual/Remote)
+[19/5/2026, 1:41:53 AM] 📋 Memory Archive: New clip captured ((529) Kimi AI's Huge...)
+[19/5/2026, 1:42:12 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 1:42:25 AM] 📋 Memory Archive: New clip captured ((529) Kimi AI's Huge...)
+[19/5/2026, 1:45:34 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 1:45:50 AM] 📋 Memory Archive: New clip captured ((529) Why A4 Paper I...)
+[19/5/2026, 1:50:26 AM] 📋 Memory Archive: New clip captured ((529) The Harsh Real...)
+[19/5/2026, 1:51:14 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[19/5/2026, 1:52:20 AM] 📋 Memory Archive: New clip captured ((529) Commencement S...)
+[19/5/2026, 1:53:07 AM] AC State: OFF (Manual/Remote)
+[19/5/2026, 2:04:31 AM] 📋 Memory Archive: New clip captured (A4 Paper and Scaling...)
+[19/5/2026, 2:06:07 AM] AC State: ON (Manual/Remote)
+[19/5/2026, 2:15:17 AM] 📋 Memory Archive: New clip captured (- if i press esc in ...)
+[19/5/2026, 2:31:08 AM] AC State: OFF (Manual/Remote)
+[19/5/2026, 4:57:09 AM] AC State: ON (Manual/Remote)
+[19/5/2026, 5:07:39 AM] AC State: OFF (Manual/Remote)
+[19/5/2026, 7:00:39 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[19/5/2026, 7:00:39 AM] AC State: ON (Manual/Remote)
+[19/5/2026, 9:52:40 AM] AC State: OFF (Manual/Remote)
+[19/5/2026, 10:03:44 AM] 📋 Memory Archive: New clip captured (x.com/alykkat...)
+[19/5/2026, 10:09:22 AM] 📋 Memory Archive: New clip captured (https://swiftcast.sp...)
+[19/5/2026, 10:13:57 AM] 📋 Memory Archive: New clip captured (https://x.com/thdxr/...)
+[19/5/2026, 10:14:45 AM] 📋 Memory Archive: New clip captured (website: "built for ...)
+[19/5/2026, 10:15:50 AM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[19/5/2026, 10:20:40 AM] 📋 Memory Archive: New clip captured (https://x.com/Dylano...)
+[19/5/2026, 10:24:28 AM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[19/5/2026, 10:37:50 AM] 📋 Memory Archive: New clip captured ((541) The Century of...)
+[19/5/2026, 10:39:38 AM] 📋 Memory Archive: New clip captured ((1) Dylan O'Sullivan...)
+[19/5/2026, 10:40:50 AM] 📋 Memory Archive: New clip captured (https://react.review...)
+[19/5/2026, 10:42:27 AM] 📋 Memory Archive: New clip captured (- (529) Kimi AI's Hu...)
+[19/5/2026, 10:51:03 AM] 📋 Memory Archive: New clip captured (- A4 Paper and Scali...)
+[19/5/2026, 11:17:12 AM] AC State: ON (Manual/Remote)
+[19/5/2026, 11:26:52 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 11:27:12 AM] AC State: OFF (Manual/Remote)
+[19/5/2026, 11:35:55 AM] 📋 Memory Archive: New clip captured ((541) iRacing Compan...)
+[19/5/2026, 11:37:11 AM] 📋 Memory Archive: New clip captured (it would be insane i...)
+[19/5/2026, 11:38:00 AM] 📋 Memory Archive: New clip captured (elon y soo many unne...)
+[19/5/2026, 11:50:23 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 11:55:25 AM] 📋 Memory Archive: New clip captured (---
+title: "The Cent...)
+[19/5/2026, 11:56:31 AM] 📋 Memory Archive: New clip captured (- [(541) The Century...)
+[19/5/2026, 12:05:48 PM] 📋 Memory Archive: New clip captured (https://score-checke...)
+[19/5/2026, 12:43:49 PM] 📋 Memory Archive: New clip captured ((6c/6c + 2p/2p) = 20...)
+[19/5/2026, 12:53:22 PM] 📋 Memory Archive: New clip captured (conscietesousness...)
+[19/5/2026, 12:53:28 PM] 📋 Memory Archive: New clip captured (conscientiousness...)
+[19/5/2026, 12:55:57 PM] 📋 Memory Archive: New clip captured (iitm bs offline stud...)
+[19/5/2026, 12:56:10 PM] 📋 Memory Archive: New clip captured (in degree level ig t...)
+[19/5/2026, 1:05:29 PM] 📋 Memory Archive: New clip captured (Sad fuckin foundatio...)
+[19/5/2026, 1:07:13 PM] 📋 Memory Archive: New clip captured (Sad fuckin foundatio...)
+[19/5/2026, 1:07:33 PM] 📋 Memory Archive: New clip captured (My Dashboard - IIT M...)
+[19/5/2026, 1:07:42 PM] 📋 Memory Archive: New clip captured (My Dashboard - IIT M...)
+[19/5/2026, 1:08:00 PM] 📋 Memory Archive: New clip captured (My Dashboard - IIT M...)
+[19/5/2026, 1:12:17 PM] 📋 Memory Archive: New clip captured (neural nets. on X: "...)
+[19/5/2026, 1:14:04 PM] 📋 Memory Archive: New clip captured (Glia � Local-first s...)
+[19/5/2026, 1:18:39 PM] 📋 Memory Archive: New clip captured ((1) neural nets. on ...)
+[19/5/2026, 1:20:02 PM] 📋 Memory Archive: New clip captured (https://x.com/artfuI...)
+[19/5/2026, 1:20:16 PM] 📋 Memory Archive: New clip captured (https://x.com/nikita...)
+[19/5/2026, 1:51:34 PM] 📋 Memory Archive: New clip captured (- [(541) The Century...)
+[19/5/2026, 1:52:52 PM] 📋 Memory Archive: New clip captured ((547) JustAdamCurtis...)
+[19/5/2026, 1:53:08 PM] 📋 Memory Archive: New clip captured (The Century of the S...)
+[19/5/2026, 1:55:12 PM] 📋 Memory Archive: New clip captured (https://x.com/theo/s...)
+[19/5/2026, 1:59:25 PM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[19/5/2026, 2:00:06 PM] 📋 Memory Archive: New clip captured (??��(541) The Centur...)
+[19/5/2026, 2:02:18 PM] AC State: ON (Manual/Remote)
+[19/5/2026, 2:03:00 PM] 📋 Memory Archive: New clip captured ((547) Subscriptions ...)
+[19/5/2026, 2:04:51 PM] 📋 Memory Archive: New clip captured (https://www.imdb.com...)
+[19/5/2026, 2:06:10 PM] 📋 Memory Archive: New clip captured (Dhurandhar 2 Uncenso...)
+[19/5/2026, 2:07:11 PM] 📋 Memory Archive: New clip captured (I Tried to Decipher ...)
+[19/5/2026, 2:14:50 PM] 📋 Memory Archive: New clip captured (i investigated the c...)
+[19/5/2026, 2:15:22 PM] 📋 Memory Archive: New clip captured (I Investigated The C...)
+[19/5/2026, 2:15:38 PM] 📋 Memory Archive: New clip captured ((547) This is Depres...)
+[19/5/2026, 2:17:45 PM] 📋 Memory Archive: New clip captured (I Tried to Decipher ...)
+[19/5/2026, 2:25:18 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 2:51:00 PM] 📋 Memory Archive: New clip captured ((548) Main Vaapas Aa...)
+[19/5/2026, 2:51:28 PM] 📋 Memory Archive: New clip captured ((548) Main Vaapas Aa...)
+[19/5/2026, 2:52:10 PM] 📋 Memory Archive: New clip captured ((548) CineDesi - You...)
+[19/5/2026, 3:16:49 PM] AC State: ON (Manual/Remote)
+[19/5/2026, 3:35:28 PM] 📋 Memory Archive: New clip captured (aimless/directionles...)
+[19/5/2026, 3:37:38 PM] 📋 Memory Archive: New clip captured (The new Gemini Flash...)
+[19/5/2026, 3:38:47 PM] 📋 Memory Archive: New clip captured (wtf they sayin since...)
+[19/5/2026, 3:41:59 PM] 📋 Memory Archive: New clip captured (Google AI Studio � A...)
+[19/5/2026, 3:42:25 PM] 📋 Memory Archive: New clip captured (wtf they sayin since...)
+[19/5/2026, 3:43:14 PM] 📋 Memory Archive: New clip captured (wtf they sayin since...)
+[19/5/2026, 3:45:43 PM] 🛰️ ISS overhead detected!
+[19/5/2026, 3:53:15 PM] 📋 Memory Archive: New clip captured ((550) SOUNDBORD Trol...)
+[19/5/2026, 3:54:29 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 3:54:48 PM] 📋 Memory Archive: New clip captured ((550) change your wi...)
+[19/5/2026, 3:58:11 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 4:02:19 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 4:07:11 PM] 📋 Memory Archive: New clip captured (WiGLE: Wireless Netw...)
+[19/5/2026, 4:07:36 PM] 📋 Memory Archive: New clip captured ((550) change your wi...)
+[19/5/2026, 4:29:19 PM] AC State: ON (Manual/Remote)
+[19/5/2026, 4:39:37 PM] 📋 Memory Archive: New clip captured (implement <SPEC> and...)
+[19/5/2026, 4:48:19 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 4:50:27 PM] 📋 Memory Archive: New clip captured ((1) NETAFLIX on X: "...)
+[19/5/2026, 5:03:28 PM] 📋 Memory Archive: New clip captured (continue if u got an...)
+[19/5/2026, 5:06:28 PM] 📋 Memory Archive: New clip captured (- note have 35 other...)
+[19/5/2026, 5:06:30 PM] 📋 Memory Archive: New clip captured (- note there are mul...)
+[19/5/2026, 5:07:00 PM] 📋 Memory Archive: New clip captured (- note have 35 other...)
+[19/5/2026, 5:07:05 PM] 📋 Memory Archive: New clip captured (- note there are mul...)
+[19/5/2026, 5:07:15 PM] 📋 Memory Archive: New clip captured (- note have 35 other...)
+[19/5/2026, 5:12:28 PM] 📋 Memory Archive: New clip captured (implement <SPEC> and...)
+[19/5/2026, 5:12:38 PM] 📋 Memory Archive: New clip captured (also professionally ...)
+[19/5/2026, 5:22:42 PM] 📋 Memory Archive: New clip captured (y didnt u swift test...)
+[19/5/2026, 5:47:38 PM] AC State: ON (Manual/Remote)
+[19/5/2026, 7:00:38 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 8:19:38 PM] AC State: ON (Manual/Remote)
+[19/5/2026, 8:21:55 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 8:23:38 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 8:32:59 PM] 📋 Memory Archive: New clip captured ((561) Google I/O '26...)
+[19/5/2026, 8:36:04 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 8:50:43 PM] 📋 Memory Archive: New clip captured ((561) Google I/O '26...)
+[19/5/2026, 8:50:51 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 8:51:55 PM] 📋 Memory Archive: New clip captured (![](https://www.yout...)
+[19/5/2026, 8:52:21 PM] 📋 Memory Archive: New clip captured ((563) This is Holdin...)
+[19/5/2026, 8:53:39 PM] AC State: ON (Manual/Remote)
+[19/5/2026, 8:55:50 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 8:56:29 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 8:58:09 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 9:16:47 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 9:17:01 PM] 📋 Memory Archive: New clip captured (ChatGPT
+https://chat...)
+[19/5/2026, 9:23:46 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[19/5/2026, 9:23:51 PM] 📋 Memory Archive: New clip captured ((564) The Mahabharat...)
+[19/5/2026, 11:05:26 PM] 📋 Memory Archive: New clip captured (also cursor got insa...)
+[19/5/2026, 11:05:28 PM] 🎭 API Scene Switch: TV
+[19/5/2026, 11:05:28 PM] 🎬 Scene Trigger: TV
+[19/5/2026, 11:05:28 PM] 🎬 Scene: TV TIME (God Build)
+[19/5/2026, 11:05:55 PM] AC State: ON (Manual/Remote)
+[19/5/2026, 11:06:26 PM] 📱 Presence: Phone detected (HOME)
+[19/5/2026, 11:13:13 PM] 📋 Memory Archive: New clip captured (- how tf apple overh...)
+[19/5/2026, 11:27:56 PM] 🎭 API Scene Switch: TV
+[19/5/2026, 11:27:56 PM] 🎬 Scene Trigger: TV
+[19/5/2026, 11:27:56 PM] 🎬 Scene: TV TIME (God Build)
+[19/5/2026, 11:32:08 PM] 📋 Memory Archive: New clip captured (did the maintainer a...)
+[19/5/2026, 11:42:25 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 11:47:55 PM] AC State: ON (Manual/Remote)
+[19/5/2026, 11:59:25 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 11:59:55 PM] AC State: OFF (Manual/Remote)
+[19/5/2026, 11:59:55 PM] LIGHT State: ON (Manual/Remote)
+[20/5/2026, 12:09:55 AM] AC State: ON (Manual/Remote)
+[20/5/2026, 12:21:16 AM] 📋 Memory Archive: New clip captured (- the director didnt...)
+[20/5/2026, 12:23:49 AM] 📋 Memory Archive: New clip captured ((1) Artificial Analy...)
+[20/5/2026, 12:31:54 AM] 📋 Memory Archive: New clip captured (New update issue : r...)
+[20/5/2026, 12:32:57 AM] AC State: OFF (Manual/Remote)
+[20/5/2026, 12:35:04 AM] 📋 Memory Archive: New clip captured (The Collexion Review...)
+[20/5/2026, 12:36:25 AM] 📋 Memory Archive: New clip captured (Team Modi Has A Melt...)
+[20/5/2026, 12:39:18 AM] 📋 Memory Archive: New clip captured ((1) Andrej Karpathy ...)
+[20/5/2026, 12:41:02 AM] 📋 Memory Archive: New clip captured (Andrej Karpathy
+http...)
+[20/5/2026, 12:41:48 AM] 📋 Memory Archive: New clip captured ((1) the tiny corp on...)
+[20/5/2026, 12:42:35 AM] 📋 Memory Archive: New clip captured ((1) Andrej Karpathy ...)
+[20/5/2026, 12:43:37 AM] 📋 Memory Archive: New clip captured (https://www.youtube....)
+[20/5/2026, 12:45:26 AM] AC State: ON (Manual/Remote)
+[20/5/2026, 1:00:30 AM] 🎭 API Scene Switch: TV
+[20/5/2026, 1:00:30 AM] 🎬 Scene Trigger: TV
+[20/5/2026, 1:00:30 AM] 🎬 Scene: TV TIME (God Build)
+[20/5/2026, 1:01:28 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[20/5/2026, 1:04:20 AM] 📱 Presence: Phone detected (HOME)
+[20/5/2026, 10:26:28 AM] 📋 Memory Archive: New clip captured (Take a breather ever...)
+[20/5/2026, 10:27:27 AM] 📱 Presence: Phone detected (HOME)
+[20/5/2026, 10:27:32 AM] 🎬 Scene Trigger: MORNING_BRIEF
+[20/5/2026, 10:53:22 AM] AC State: OFF (Bot)
+[20/5/2026, 11:07:24 AM] 📋 Memory Archive: New clip captured (https://cursor.com/e...)
+[20/5/2026, 11:17:44 AM] 📋 Memory Archive: New clip captured (tw93/Mole: ?? Deep c...)
+[20/5/2026, 11:18:49 AM] 📋 Memory Archive: New clip captured (https://ai.studio/ap...)
+[20/5/2026, 11:22:01 AM] 📋 Memory Archive: New clip captured (Mole � A quiet Mac c...)
+[20/5/2026, 11:23:09 AM] 📋 Memory Archive: New clip captured (- Take a breather ev...)
+[20/5/2026, 11:24:53 AM] 📋 Memory Archive: New clip captured ((1) The Hindu on X: ...)
+[20/5/2026, 11:30:46 AM] 📋 Memory Archive: New clip captured ((1) ?? on X: "HOLY F...)
+[20/5/2026, 11:31:58 AM] 📋 Memory Archive: New clip captured (??10 Claude prompts ...)
+[20/5/2026, 11:33:33 AM] 📋 Memory Archive: New clip captured (??Google Gemini can ...)
+[20/5/2026, 11:33:57 AM] 📋 Memory Archive: New clip captured (??10 Claude prompts ...)
+[20/5/2026, 11:35:48 AM] 📋 Memory Archive: New clip captured (??Researchers create...)
+[20/5/2026, 11:37:57 AM] 📋 Memory Archive: New clip captured (??Andon Labs gave 4 ...)
+[20/5/2026, 11:44:34 AM] 📋 Memory Archive: New clip captured (Trust Tokens-journal...)
+[20/5/2026, 11:46:33 AM] 📋 Memory Archive: New clip captured ('/Users/paranjay/Lib...)
+[20/5/2026, 11:53:40 AM] 📋 Memory Archive: New clip captured (Google Antigravity -...)
+[20/5/2026, 12:19:10 PM] 📋 Memory Archive: New clip captured (- fortnite is suppos...)
+[20/5/2026, 12:25:34 PM] 📋 Memory Archive: New clip captured (https://aistudio.goo...)
+[20/5/2026, 12:27:48 PM] 📋 Memory Archive: New clip captured ((1) Logan Kilpatrick...)
+[20/5/2026, 12:45:40 PM] 📋 Memory Archive: New clip captured (how much do u want t...)
+[20/5/2026, 12:45:51 PM] 📋 Memory Archive: New clip captured (The server cleared a...)
+[20/5/2026, 12:59:12 PM] 📋 Memory Archive: New clip captured (https://www.instagra...)
+[20/5/2026, 1:08:47 PM] 📋 Memory Archive: New clip captured (how much do u want t...)
+[20/5/2026, 1:10:00 PM] 📋 Memory Archive: New clip captured (create anything rand...)
+[20/5/2026, 1:14:04 PM] 📋 Memory Archive: New clip captured (how much do u want t...)
+[20/5/2026, 1:15:45 PM] 📋 Memory Archive: New clip captured (https://gemini.googl...)
+[20/5/2026, 1:16:15 PM] 📋 Memory Archive: New clip captured (create something coo...)
+[20/5/2026, 1:19:26 PM] 📋 Memory Archive: New clip captured (https://gemini.googl...)
+[20/5/2026, 1:21:17 PM] 📋 Memory Archive: New clip captured (create game of thron...)
+[20/5/2026, 1:23:22 PM] 📋 Memory Archive: New clip captured (https://gemini.googl...)
+[20/5/2026, 1:40:57 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 1:44:22 PM] 📋 Memory Archive: New clip captured ((1) Anushka on X: "n...)
+[20/5/2026, 1:44:38 PM] 📋 Memory Archive: New clip captured (Cs commit sucide cou...)
+[20/5/2026, 2:02:18 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[20/5/2026, 2:02:29 PM] 📋 Memory Archive: New clip captured (Release OmniWM v0.4....)
+[20/5/2026, 2:03:16 PM] 📋 Memory Archive: New clip captured (![](https://www.yout...)
+[20/5/2026, 2:20:08 PM] 📋 Memory Archive: New clip captured (??If you're not usin...)
+[20/5/2026, 2:27:27 PM] AC State: OFF (Bot)
+[20/5/2026, 3:33:36 PM] 📋 Memory Archive: New clip captured (We Need to Start Tok...)
+[20/5/2026, 3:33:51 PM] 📋 Memory Archive: New clip captured ((601) A 40 year old ...)
+[20/5/2026, 3:33:56 PM] 🎭 API Scene Switch: TV
+[20/5/2026, 3:33:56 PM] 🎬 Scene Trigger: TV
+[20/5/2026, 3:33:56 PM] 🎬 Scene: TV TIME (God Build)
+[20/5/2026, 3:33:58 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 3:37:43 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[20/5/2026, 3:37:52 PM] 📋 Memory Archive: New clip captured ((601) A 40 year old ...)
+[20/5/2026, 3:38:32 PM] 📋 Memory Archive: New clip captured (![](https://www.yout...)
+[20/5/2026, 3:44:07 PM] 📋 Memory Archive: New clip captured ([20/05/26 13:44] Pra...)
+[20/5/2026, 3:45:31 PM] 📋 Memory Archive: New clip captured (- We Need to Start T...)
+[20/5/2026, 3:46:13 PM] 📋 Memory Archive: New clip captured ([20/05/26 13:44] Pra...)
+[20/5/2026, 3:50:06 PM] 📋 Memory Archive: New clip captured (and windows need to ...)
+[20/5/2026, 4:00:33 PM] 📋 Memory Archive: New clip captured (credit_cards@icici.b...)
+[20/5/2026, 4:03:03 PM] 📋 Memory Archive: New clip captured (busybee@blogtrottr.c...)
+[20/5/2026, 4:03:11 PM] 📋 Memory Archive: New clip captured (notifications@vercel...)
+[20/5/2026, 4:03:16 PM] 📋 Memory Archive: New clip captured (@iitm.ac.in OR @gith...)
+[20/5/2026, 4:03:44 PM] 📋 Memory Archive: New clip captured (noreply@youtube.com...)
+[20/5/2026, 4:03:55 PM] 📋 Memory Archive: New clip captured (noreply@redditmail.c...)
+[20/5/2026, 4:04:06 PM] 📋 Memory Archive: New clip captured (info@account.netflix...)
+[20/5/2026, 4:04:16 PM] 📋 Memory Archive: New clip captured (recommendations@insp...)
+[20/5/2026, 4:04:25 PM] 📋 Memory Archive: New clip captured (noreply@tm.openai.co...)
+[20/5/2026, 4:04:51 PM] 📋 Memory Archive: New clip captured (-from:(@iitm.ac.in O...)
+[20/5/2026, 4:05:30 PM] 📋 Memory Archive: New clip captured (continuing domain pa...)
+[20/5/2026, 4:07:13 PM] 📋 Memory Archive: New clip captured (recommendations@disc...)
+[20/5/2026, 4:07:45 PM] 📋 Memory Archive: New clip captured (-from:(@iitm.ac.in O...)
+[20/5/2026, 4:10:17 PM] 📋 Memory Archive: New clip captured (hello@duolingo.com...)
+[20/5/2026, 4:10:38 PM] 📋 Memory Archive: New clip captured (-from:(@iitm.ac.in O...)
+[20/5/2026, 4:11:10 PM] 📋 Memory Archive: New clip captured (-from:(@iitm.ac.in O...)
+[20/5/2026, 4:13:03 PM] 📋 Memory Archive: New clip captured (updates-noreply@link...)
+[20/5/2026, 4:17:12 PM] 📋 Memory Archive: New clip captured (-from:(@iitm.ac.in O...)
+[20/5/2026, 4:17:43 PM] 📋 Memory Archive: New clip captured (notifications-norepl...)
+[20/5/2026, 4:17:57 PM] 📋 Memory Archive: New clip captured (-from:(@iitm.ac.in O...)
+[20/5/2026, 4:19:23 PM] 📋 Memory Archive: New clip captured (Saw your GitHub : Le...)
+[20/5/2026, 4:19:57 PM] 📋 Memory Archive: New clip captured (Saw your GitHub : Le...)
+[20/5/2026, 4:21:51 PM] 📋 Memory Archive: New clip captured (i am drowning when n...)
+[20/5/2026, 4:26:50 PM] 📋 Memory Archive: New clip captured (Conversation starred...)
+[20/5/2026, 4:48:21 PM] 📋 Memory Archive: New clip captured (devBlog #1 | Musings...)
+[20/5/2026, 5:02:19 PM] 📋 Memory Archive: New clip captured (autoskills � Auto-in...)
+[20/5/2026, 5:25:18 PM] 📋 Memory Archive: New clip captured (how much do u want t...)
+[20/5/2026, 5:55:18 PM] 📋 Memory Archive: New clip captured (implement <SPEC> and...)
+[20/5/2026, 5:55:35 PM] 📋 Memory Archive: New clip captured (also professionally ...)
+[20/5/2026, 6:08:55 PM] 📋 Memory Archive: New clip captured (- how much do u want...)
+[20/5/2026, 6:11:35 PM] 📋 Memory Archive: New clip captured (Google�s Most-Hated ...)
+[20/5/2026, 6:13:41 PM] 📋 Memory Archive: New clip captured (- does swift test le...)
+[20/5/2026, 6:14:19 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[20/5/2026, 6:23:19 PM] 📋 Memory Archive: New clip captured (Where Everybody Know...)
+[20/5/2026, 6:56:56 PM] AC State: OFF (Manual/Remote)
+[20/5/2026, 8:59:08 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 9:08:53 PM] AC State: OFF (Manual/Remote)
+[20/5/2026, 9:09:13 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 9:09:23 PM] AC State: OFF (Manual/Remote)
+[20/5/2026, 9:23:20 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 9:23:28 PM] AC State: OFF (Manual/Remote)
+[20/5/2026, 9:23:59 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 9:24:28 PM] AC State: OFF (Manual/Remote)
+[20/5/2026, 9:25:58 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 10:27:22 PM] AC State: OFF (Bot)
+[20/5/2026, 10:39:59 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 10:49:47 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[20/5/2026, 10:50:01 PM] 📋 Memory Archive: New clip captured ((627) One day someon...)
+[20/5/2026, 11:07:35 PM] AC State: OFF (Bot)
+[20/5/2026, 11:10:19 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[20/5/2026, 11:27:41 PM] 🎭 API Scene Switch: TV
+[20/5/2026, 11:27:41 PM] 🎬 Scene Trigger: TV
+[20/5/2026, 11:27:41 PM] 🎬 Scene: TV TIME (God Build)
+[20/5/2026, 11:27:46 PM] 🎭 API Scene Switch: TV
+[20/5/2026, 11:27:46 PM] 🎬 Scene Trigger: TV
+[20/5/2026, 11:27:46 PM] 🎬 Scene: TV TIME (God Build)
+[20/5/2026, 11:28:05 PM] 🎭 API Scene Switch: TV
+[20/5/2026, 11:28:05 PM] 🎬 Scene Trigger: TV
+[20/5/2026, 11:28:05 PM] 🎬 Scene: TV TIME (God Build)
+[20/5/2026, 11:28:32 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 11:29:03 PM] 📱 Presence: Phone detected (HOME)
+[20/5/2026, 11:37:21 PM] 📋 Memory Archive: New clip captured ((631) Do your friend...)
+[20/5/2026, 11:38:29 PM] 📋 Memory Archive: New clip captured (- (631) Do your frie...)
+[20/5/2026, 11:39:40 PM] 📋 Memory Archive: New clip captured ((631) Old Indian Cen...)
+[20/5/2026, 11:40:55 PM] 📋 Memory Archive: New clip captured (Understand Anything
+...)
+[20/5/2026, 11:55:29 PM] 📋 Memory Archive: New clip captured (- how much do u want...)
+[20/5/2026, 11:59:33 PM] AC State: ON (Manual/Remote)
+[20/5/2026, 11:59:33 PM] LIGHT State: ON (Manual/Remote)
+[21/5/2026, 1:00:03 AM] 🧠 Habit Learner: Scanning manual patterns...
+[21/5/2026, 1:00:03 AM] 🌙 Circadian Shift: AC set to 24°C for sleep hygiene.
+[21/5/2026, 1:04:10 AM] 🎭 API Scene Switch: TV
+[21/5/2026, 1:04:10 AM] 🎬 Scene Trigger: TV
+[21/5/2026, 1:04:10 AM] 🎬 Scene: TV TIME (God Build)
+[21/5/2026, 1:04:14 AM] AC State: OFF (Bot)
+[21/5/2026, 1:10:51 AM] AC State: ON (Bot)
+[21/5/2026, 1:31:44 AM] AC State: OFF (Bot)
+[21/5/2026, 1:36:23 AM] AC State: ON (Manual/Remote)
+[21/5/2026, 1:36:33 AM] 📋 Memory Archive: New clip captured (Here�s why gemini 3....)
+[21/5/2026, 1:37:09 AM] 📋 Memory Archive: New clip captured ([20/05/26 23:38] Pra...)
+[21/5/2026, 1:49:03 AM] AC State: OFF (Manual/Remote)
+[21/5/2026, 1:53:11 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[21/5/2026, 1:53:35 AM] 📋 Memory Archive: New clip captured ((643) Something Stra...)
+[21/5/2026, 1:55:22 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[21/5/2026, 1:55:36 AM] 📋 Memory Archive: New clip captured ((643) I Reinvented T...)
+[21/5/2026, 2:07:19 AM] 📋 Memory Archive: New clip captured (can u create a goate...)
+[21/5/2026, 2:07:28 AM] 📋 Memory Archive: New clip captured (can u create a goate...)
+[21/5/2026, 2:07:55 AM] AC State: ON (Bot)
+[21/5/2026, 2:27:30 AM] AC State: OFF (Bot)
+[21/5/2026, 2:33:12 AM] 📋 Memory Archive: New clip captured (s2 black mirror I do...)
+[21/5/2026, 2:33:58 AM] 📋 Memory Archive: New clip captured (s2 black mirror I do...)
+[21/5/2026, 2:35:04 AM] 📋 Memory Archive: New clip captured (s3 got I dont mind s...)
+[21/5/2026, 3:09:03 AM] AC State: ON (Manual/Remote)
+[21/5/2026, 3:11:31 AM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[21/5/2026, 3:11:44 AM] 📋 Memory Archive: New clip captured ((644) Lore Facts Abo...)
+[21/5/2026, 3:13:42 AM] 📋 Memory Archive: New clip captured (- you(cursed stalkin...)
+[21/5/2026, 3:46:21 AM] 📋 Memory Archive: New clip captured ((645) Github pwn'd, ...)
+[21/5/2026, 3:46:33 AM] AC State: OFF (Manual/Remote)
+[21/5/2026, 3:49:47 AM] 📋 Memory Archive: New clip captured (github.com/jameshclr...)
+[21/5/2026, 3:50:36 AM] 📋 Memory Archive: New clip captured (x.com/domscholz...)
+[21/5/2026, 3:53:55 AM] 📋 Memory Archive: New clip captured (MichealScott24...)
+[21/5/2026, 3:56:26 AM] 📋 Memory Archive: New clip captured ((1) Pierre on X: "di...)
+[21/5/2026, 3:59:03 AM] AC State: ON (Manual/Remote)
+[21/5/2026, 3:59:55 AM] 📋 Memory Archive: New clip captured (marc anderson 20 age...)
+[21/5/2026, 4:01:58 AM] 📋 Memory Archive: New clip captured (DiffsHub, from Pierr...)
+[21/5/2026, 4:02:42 AM] 📋 Memory Archive: New clip captured (github.com/kmccleary...)
+[21/5/2026, 4:03:06 AM] 📋 Memory Archive: New clip captured (kmccleary3301/scroll...)
+[21/5/2026, 4:04:36 AM] 📋 Memory Archive: New clip captured (https://x.com/TFTC21...)
+[21/5/2026, 4:06:33 AM] AC State: OFF (Manual/Remote)
+[21/5/2026, 4:12:28 AM] 📋 Memory Archive: New clip captured (SpaceX Files, OpenAI...)
+[21/5/2026, 4:33:34 AM] AC State: ON (Manual/Remote)
+[21/5/2026, 4:38:34 AM] AC State: OFF (Manual/Remote)
+[21/5/2026, 4:54:42 AM] 📋 Memory Archive: New clip captured (https://x.com/i/grok...)
+[21/5/2026, 4:55:24 AM] 📋 Memory Archive: New clip captured (Sawyer Merritt on X:...)
+[21/5/2026, 4:55:57 AM] 📋 Memory Archive: New clip captured ((1) Sawyer Merritt o...)
+[21/5/2026, 4:57:59 AM] 📋 Memory Archive: New clip captured (- piracy is net posi...)
+[21/5/2026, 4:59:11 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[21/5/2026, 4:59:50 AM] 📋 Memory Archive: New clip captured (# send after ghostin...)
+[21/5/2026, 5:03:04 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[21/5/2026, 5:10:20 AM] 📋 Memory Archive: New clip captured (s3 got I dont mind s...)
+[21/5/2026, 5:10:40 AM] 📋 Memory Archive: New clip captured (create goated image ...)
+[21/5/2026, 5:11:10 AM] 📋 Memory Archive: New clip captured (create goated image ...)
+[21/5/2026, 5:17:28 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[21/5/2026, 5:17:42 AM] 📋 Memory Archive: New clip captured ((1) Pierre on X: "di...)
+[21/5/2026, 5:19:19 AM] 📋 Memory Archive: New clip captured ((631) Do your friend...)
+[21/5/2026, 5:28:19 AM] 📋 Memory Archive: New clip captured (Raycast Store: 7TV E...)
+[21/5/2026, 5:30:32 AM] 📋 Memory Archive: New clip captured (- piracy(https://cha...)
+[21/5/2026, 5:32:15 AM] 📋 Memory Archive: New clip captured (money sleep...)
+[21/5/2026, 5:46:15 AM] 📋 Memory Archive: New clip captured (tw93/Mole: ?? Deep c...)
+[21/5/2026, 5:48:50 AM] 📋 Memory Archive: New clip captured (after 3/4 times 5hr ...)
+[21/5/2026, 5:53:29 AM] 📋 Memory Archive: New clip captured (Mr. Robot ratings by...)
+[21/5/2026, 5:53:53 AM] 📋 Memory Archive: New clip captured (Mr. Robot ratings by...)
+[21/5/2026, 7:00:55 AM] ☀️ Circadian Shift: AC set to 26°C for morning wake.
+[21/5/2026, 7:00:56 AM] AC State: ON (Manual/Remote)
+[21/5/2026, 9:08:49 AM] AC State: OFF (Manual/Remote)
+[21/5/2026, 10:44:28 AM] AC State: ON (Manual/Remote)
+[21/5/2026, 11:00:05 AM] AC State: OFF (Manual/Remote)
+[21/5/2026, 11:05:34 AM] 📋 Memory Archive: New clip captured (Skip to main content...)
+[21/5/2026, 11:05:45 AM] 📋 Memory Archive: New clip captured (SpaceX files for IPO...)
+[21/5/2026, 11:07:45 AM] 📋 Memory Archive: New clip captured (SpaceX files for IPO...)
+[21/5/2026, 11:16:29 AM] 📋 Memory Archive: New clip captured (- nah it isnt just b...)
+[21/5/2026, 11:20:19 AM] 📋 Memory Archive: New clip captured (- nah it isnt just b...)
+[21/5/2026, 11:27:55 AM] 📋 Memory Archive: New clip captured (SpaceX files for IPO...)
+[21/5/2026, 11:29:01 AM] 📋 Memory Archive: New clip captured (https://chatgpt.com/...)
+[21/5/2026, 11:29:06 AM] 📋 Memory Archive: New clip captured (- it is absurd valua...)
+[21/5/2026, 11:34:02 AM] 📋 Memory Archive: New clip captured ((1) Theo - t3.gg on ...)
+[21/5/2026, 11:34:47 AM] 📋 Memory Archive: New clip captured (Theo - t3.gg on X: "...)
+[21/5/2026, 12:00:23 PM] 📋 Memory Archive: New clip captured (https://xranktheo.ve...)
+[21/5/2026, 12:01:08 PM] 📋 Memory Archive: New clip captured (https://xrank.kitlan...)
+[21/5/2026, 12:01:16 PM] 📋 Memory Archive: New clip captured (X LEADERBOARD � LAST...)
+[21/5/2026, 12:01:36 PM] 📋 Memory Archive: New clip captured (INTERNAL X COMPETITI...)
+[21/5/2026, 12:03:58 PM] 📋 Memory Archive: New clip captured (kitlangton/x-rank
+ht...)
+[21/5/2026, 12:04:10 PM] 📋 Memory Archive: New clip captured (AGENTS.md
+https://ag...)
+[21/5/2026, 12:04:58 PM] 📋 Memory Archive: New clip captured (kitlangton/x-rank
+ht...)
+[21/5/2026, 12:39:08 PM] 📋 Memory Archive: New clip captured (https://umbrel.com/?...)
+[21/5/2026, 12:45:22 PM] 📋 Memory Archive: New clip captured (Fear of Being a Burd...)
+[21/5/2026, 12:47:45 PM] 📋 Memory Archive: New clip captured ((1) Logan Kilpatrick...)
+[21/5/2026, 1:17:16 PM] 📋 Memory Archive: New clip captured (Home | Government of...)
+[21/5/2026, 1:20:14 PM] 📋 Memory Archive: New clip captured (- is it feasible for...)
+[21/5/2026, 1:22:49 PM] 📋 Memory Archive: New clip captured (gidayajuvendrasinh@g...)
+[21/5/2026, 1:23:02 PM] 📋 Memory Archive: New clip captured (https://rork.com/inv...)
+[21/5/2026, 1:24:05 PM] 📋 Memory Archive: New clip captured (- is it feasible for...)
+[21/5/2026, 1:36:26 PM] 📋 Memory Archive: New clip captured (Google I/O: Day 1 Re...)
+[21/5/2026, 1:37:12 PM] 📋 Memory Archive: New clip captured (Home | Government of...)
+[21/5/2026, 1:37:47 PM] 📋 Memory Archive: New clip captured (Census of India - Wi...)
+[21/5/2026, 1:38:26 PM] 📋 Memory Archive: New clip captured (Census of India 2027...)
+[21/5/2026, 1:42:36 PM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[21/5/2026, 1:42:57 PM] 📋 Memory Archive: New clip captured ((1) Google on X: "Pr...)
+[21/5/2026, 1:44:11 PM] 📋 Memory Archive: New clip captured (interesting games or...)
+[21/5/2026, 1:48:35 PM] 📋 Memory Archive: New clip captured (Apple co-founder Ste...)
+[21/5/2026, 1:50:39 PM] 📋 Memory Archive: New clip captured (TIL that the company...)
+[21/5/2026, 1:53:36 PM] AC State: ON (Manual/Remote)
+[21/5/2026, 2:19:51 PM] 📋 Memory Archive: New clip captured ([19/05/26 22:44] Yuv...)
+[21/5/2026, 2:20:54 PM] 📋 Memory Archive: New clip captured ([18/05/26 09:59] Yuv...)
+[21/5/2026, 2:21:28 PM] 📋 Memory Archive: New clip captured ([17/05/26 13:10] KP:...)
+[21/5/2026, 2:24:13 PM] 📋 Memory Archive: New clip captured ((1) Instagram
+https:...)
+[21/5/2026, 2:24:24 PM] 📋 Memory Archive: New clip captured (cinelated
+
+ 
+4w
+It s...)
+[21/5/2026, 2:26:04 PM] 📋 Memory Archive: New clip captured ((1)
+[banger fleabag ...)
+[21/5/2026, 2:33:30 PM] 📋 Memory Archive: New clip captured (gidayajuvendrasinh@g...)
+[21/5/2026, 2:34:38 PM] 📋 Memory Archive: New clip captured (Anything - AI app bu...)
+[21/5/2026, 2:42:28 PM] 📋 Memory Archive: New clip captured (gidayajuvendrasinh@g...)
+[21/5/2026, 2:43:00 PM] 📋 Memory Archive: New clip captured (---
+name: grill-me
+d...)
+[21/5/2026, 2:43:35 PM] AC State: OFF (Manual/Remote)
+[21/5/2026, 2:45:04 PM] 📋 Memory Archive: New clip captured ((663) Someone else i...)
+[21/5/2026, 2:51:48 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[21/5/2026, 2:52:14 PM] 📋 Memory Archive: New clip captured (I spent a week livin...)
+[21/5/2026, 3:21:27 PM] 📋 Memory Archive: New clip captured (can u create a goate...)
+[21/5/2026, 3:27:45 PM] AC State: ON (Manual/Remote)
+[21/5/2026, 3:28:15 PM] 📱 Presence: Phone detected (HOME)
+[21/5/2026, 3:47:20 PM] 📋 Memory Archive: New clip captured (V1RUS0706...)
+[21/5/2026, 3:55:00 PM] 📋 Memory Archive: New clip captured (Skip to main content...)
+[21/5/2026, 3:56:26 PM] 📋 Memory Archive: New clip captured (Just a moment...
+htt...)
+[21/5/2026, 3:57:15 PM] AC State: OFF (Manual/Remote)
+[21/5/2026, 4:08:09 PM] 📋 Memory Archive: New clip captured (Skip to content
+core...)
+[21/5/2026, 4:08:17 PM] 📋 Memory Archive: New clip captured (coreyhaines31/market...)
+[21/5/2026, 4:08:35 PM] 📋 Memory Archive: New clip captured (---
+name: grill-me
+d...)
+[21/5/2026, 4:15:06 PM] 📋 Memory Archive: New clip captured (mattpocock/skills: S...)
+[21/5/2026, 4:44:53 PM] 📋 Memory Archive: New clip captured (- Not token efficien...)
+[21/5/2026, 4:54:24 PM] 📋 Memory Archive: New clip captured (kitze on X: "made a ...)
+[21/5/2026, 4:54:35 PM] 📋 Memory Archive: New clip captured (86 kg to 68kg in 5 m...)
+[21/5/2026, 4:54:53 PM] 📋 Memory Archive: New clip captured (open source it dawg ...)
+[21/5/2026, 4:55:24 PM] 📋 Memory Archive: New clip captured (Supermac - Superpowe...)
+[21/5/2026, 4:57:33 PM] 📋 Memory Archive: New clip captured (Get YouTube Premium ...)
+[21/5/2026, 4:59:15 PM] AC State: ON (Manual/Remote)
+[21/5/2026, 4:59:55 PM] 📋 Memory Archive: New clip captured (S M A Sithick on X: ...)
+[21/5/2026, 5:01:28 PM] 📋 Memory Archive: New clip captured (i wanted same thing ...)
+[21/5/2026, 5:02:51 PM] 📋 Memory Archive: New clip captured (sonnet rate limit ma...)
+[21/5/2026, 5:15:45 PM] AC State: OFF (Manual/Remote)
+[21/5/2026, 5:28:34 PM] 📋 Memory Archive: New clip captured (banger gotta replica...)
+[21/5/2026, 5:28:47 PM] 📋 Memory Archive: New clip captured (Dashboard - IITM Cou...)
+[21/5/2026, 5:31:45 PM] AC State: ON (Manual/Remote)
+[21/5/2026, 6:03:32 PM] 📋 Memory Archive: New clip captured (IN
+
+Skip navigation
+...)
+[21/5/2026, 6:03:40 PM] 📋 Memory Archive: New clip captured ((666) Freezing Eggs ...)
+[21/5/2026, 6:08:36 PM] 📋 Memory Archive: New clip captured (https://www.primevid...)
+[21/5/2026, 6:09:15 PM] AC State: OFF (Manual/Remote)
+[21/5/2026, 6:11:17 PM] 📋 Memory Archive: New clip captured (it is exhausting to ...)
+[21/5/2026, 6:33:05 PM] 📋 Memory Archive: New clip captured (Google AI Plans with...)
+[21/5/2026, 6:34:12 PM] 📋 Memory Archive: New clip captured (it is exhausting to ...)
+[21/5/2026, 6:36:53 PM] 📋 Memory Archive: New clip captured ((667) How the OpenCl...)
+[21/5/2026, 6:37:56 PM] 📋 Memory Archive: New clip captured (https://x.com/i/stat...)
+[21/5/2026, 6:52:04 PM] 📋 Memory Archive: New clip captured (Raycast Store: MirAI...)
+[21/5/2026, 6:54:45 PM] AC State: ON (Manual/Remote)
+[21/5/2026, 6:55:19 PM] 📋 Memory Archive: New clip captured (Raycast Store: Mole
+...)
+[21/5/2026, 6:56:33 PM] 📋 Memory Archive: New clip captured (https://github.com/r...)

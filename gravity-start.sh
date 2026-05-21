@@ -21,17 +21,18 @@ pkill -9 -f "server.ts" 2>/dev/null
 sleep 1
 echo "      => Workspace Purified."
 
-# 2. Launching Subsystems
 echo "[2/4] 🚀 Manifesting Core Orchestration Engines..."
 cd "$PROJECT_DIR" || exit
 
 echo "      => Booting Sovereign Archive Node (Port 3031)..."
-nohup "$BUN_BIN" src/lib/archive.ts >> /tmp/gravity-archive.log 2>&1 &
-sleep 1
+# Start the archive backend using Bun
+nohup "$BUN_BIN" "$PROJECT_DIR/src/lib/archive.ts" >> /tmp/gravity-archive.log 2>&1 &
+sleep 2
 
 echo "      => Booting Master Intelligence Bot (Telegram Hub)..."
-nohup "$BUN_BIN" src/lib/bot.ts >> /tmp/gravity-bot.log 2>&1 &
-sleep 1
+# Start the bot backend
+nohup "$BUN_BIN" "$PROJECT_DIR/src/lib/bot.ts" >> /tmp/gravity-bot.log 2>&1 &
+sleep 2
 
 # 3. Validation
 echo "[3/4] 🧬 Validating process topology..."

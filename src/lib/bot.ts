@@ -91,6 +91,7 @@ const bootTime = Date.now();
 (global as any).lastGitHubCheck = Date.now();
 let globalLastAction: string = 'None';
 let globalLastActionTime: number = Date.now();
+let lastSentryTime = 0;
 
 const formatAction = (cmd: string, config: any) => {
   const map: Record<string, string> = {
@@ -1677,12 +1678,16 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
 
             // 🛡️ Ghost Sentry Check
             if (config.sentryActive !== false && !isPhoneOnline) {
-               const idle = await getSystemIdleTime();
-               if (idle < 10) { // Active movement detected
-                  const stamp = new Date().toLocaleTimeString();
-                  logActivity("🚨 SENTRY: Unauthorized activity detected!");
-                  speak("Warning! Unauthorized access. Alerting the owner.");
-                  await notifier.notify(`🚨 *GHOST SENTRY*: Activity detected while you are AWAY!\nTimestamp: \`${stamp}\`\nIdle Time: \`${idle.toFixed(1)}s\``, 'critical');
+               const now = Date.now();
+               if (now - lastSentryTime > 900000) { // 15 minute cooldown
+                  const idle = await getSystemIdleTime();
+                  if (idle < 10) { 
+                     lastSentryTime = now;
+                     const stamp = new Date().toLocaleTimeString();
+                     logActivity("🚨 SENTRY: Unauthorized activity detected!");
+                     speak("Warning! Unauthorized access. Alerting the owner.");
+                     await notifier.notify(`🚨 *GHOST SENTRY*: Activity detected while you are AWAY!\nTimestamp: \`${stamp}\`\nIdle Time: \`${idle.toFixed(1)}s\``, 'critical');
+                  }
                }
             }
           }

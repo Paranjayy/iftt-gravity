@@ -40,3 +40,4 @@ Gravity looks into this file periodically to evolve.
 - [25/4/2026] User: "i dont have thermostat btw so temp would be only from weather u will get"
 - [28/4/2026] User: "inaccurate sometimes off status because it didnt consider analog signals"
 - [28/4/2026] User: "ac default starting at 18* make it 24 and ac u can start at any temp for mac throttle not normally"
+- [14/5/2026] User: "workout buddy and can we forward msg in tele with tele bot to some group"

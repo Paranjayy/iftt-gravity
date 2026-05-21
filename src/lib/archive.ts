@@ -444,20 +444,6 @@ async function main() {
           if (parseHeadings) {
              // Split by markdown headings
              const headingMatches = text.split(/\n(?=# )|\n(?=## )|\n(?=### )/);
-             entriesToAdd = headingMatches.filter((m: string) => m.trim().length > 0);
-          } else {
-             entriesToAdd = [text];
-          }
-
-          for (const entryText of entriesToAdd) {
-            const wordCount = entryText.trim().split(/\s+/).length;
-            const charCount = entryText.length;
-            const readTime = Math.ceil(wordCount / 200);
-            
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const metadata = `| 📝 ${wordCount}w | 📄 ${charCount}c | ⏱️ ${readTime}m`;
-            const entry = timestamp ? `\n\n### 🕒 ${time} ${metadata}\n${entryText}\n` : `\n\n${entryText}\n`;
-            
             if (fs.existsSync(filePath) && section) {
                let content = fs.readFileSync(filePath, 'utf-8');
                const sectionHeading = section.startsWith('#') ? section : `## ${section}`;
