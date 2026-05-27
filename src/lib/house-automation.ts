@@ -53,6 +53,13 @@ export interface SmartThingsModeSnapshot {
   current?: boolean;
 }
 
+export interface SmartThingsRoomSnapshot {
+  id: string;
+  name: string;
+  locationId?: string;
+  deviceCount?: number;
+}
+
 export async function readHouseConfig(): Promise<any> {
   try {
     return JSON.parse(await fs.readFile(CONFIG_PATH, "utf-8"));
@@ -267,6 +274,35 @@ export async function fetchSmartThingsScenes(token: string): Promise<SmartThings
     locationId: scene?.locationId,
     lastExecutedAt: scene?.lastExecutedAt || scene?.lastExecuted || undefined,
   }));
+}
+
+export async function fetchSmartThingsRooms(token: string, locationId: string): Promise<SmartThingsRoomSnapshot[]> {
+  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/rooms`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error("Unable to load SmartThings rooms");
+  }
+  const data = await res.json();
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map((room: any) => ({
+    id: room?.roomId || room?.id,
+    name: room?.name || room?.roomName || "SmartThings Room",
+    locationId: room?.locationId || locationId,
+    deviceCount: room?.deviceCount ?? room?.devices?.length ?? undefined,
+  }));
+}
+
+export async function fetchSmartThingsRoomDevices(token: string, locationId: string, roomId: string): Promise<SmartThingsDeviceSnapshot[]> {
+  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/rooms/${roomId}/devices`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error("Unable to load SmartThings room devices");
+  }
+  const data = await res.json();
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map(normalizeSmartThingsDevice);
 }
 
 export async function executeSmartThingsScene(token: string, sceneId: string) {

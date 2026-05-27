@@ -51,11 +51,19 @@ interface SmartThingsMode {
   current?: boolean;
 }
 
+interface SmartThingsRoom {
+  id: string;
+  name: string;
+  locationId?: string;
+  deviceCount?: number;
+}
+
 export default function SmartThingsCommand() {
   const preferences = getPreferenceValues<Preferences>();
   const [state, setState] = useState<HubState | null>(null);
   const [scenes, setScenes] = useState<SmartThingsScene[]>([]);
   const [modes, setModes] = useState<SmartThingsMode[]>([]);
+  const [rooms, setRooms] = useState<SmartThingsRoom[]>([]);
   const [currentMode, setCurrentMode] = useState<SmartThingsMode | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,9 +80,14 @@ export default function SmartThingsCommand() {
 
   async function refresh() {
     try {
-      const [status, scenesResponse, modesResponse] = await Promise.all([
+      const [status, scenesResponse, roomsResponse, modesResponse] = await Promise.all([
         fetchJson<HubState>("http://127.0.0.1:3030/status"),
         fetchJson<{ scenes: SmartThingsScene[] }>("http://127.0.0.1:3030/control/smartthings/scenes").catch(() => ({ scenes: [] })),
+        locationId
+          ? fetchJson<{ rooms: SmartThingsRoom[] }>(
+              `http://127.0.0.1:3030/control/smartthings/rooms?locationId=${encodeURIComponent(locationId)}`
+            ).catch(() => ({ rooms: [] }))
+          : Promise.resolve({ rooms: [] }),
         locationId
           ? fetchJson<{ modes: SmartThingsMode[]; currentMode?: SmartThingsMode }>(
               `http://127.0.0.1:3030/control/smartthings/modes?locationId=${encodeURIComponent(locationId)}`
@@ -84,6 +97,7 @@ export default function SmartThingsCommand() {
 
       setState(status);
       setScenes(scenesResponse.scenes || []);
+      setRooms(roomsResponse.rooms || []);
       setModes(modesResponse.modes || []);
       setCurrentMode(modesResponse.currentMode || null);
       setError(null);
@@ -209,6 +223,35 @@ export default function SmartThingsCommand() {
         </List.Section>
       ) : null}
 
+      {rooms.length ? (
+        <List.Section title="Rooms">
+          {rooms.map((room) => (
+            <List.Item
+              key={room.id}
+              icon={Icon.House}
+              title={room.name}
+              subtitle={room.deviceCount ? `${room.deviceCount} device(s)` : "Room"}
+              actions={
+                <ActionPanel>
+                  <Action.Push
+                    title="Open Room"
+                    icon={Icon.House}
+                    target={
+                      <SmartThingsRoomDetail
+                        room={room}
+                        locationId={locationId}
+                        onDone={refresh}
+                      />
+                    }
+                  />
+                  <Action.CopyToClipboard title="Copy Room ID" content={room.id} />
+                </ActionPanel>
+              }
+            />
+          ))}
+        </List.Section>
+      ) : null}
+
       {scenes.length ? (
         <List.Section title="Scenes">
           {scenes.map((scene) => (
@@ -324,6 +367,102 @@ function buildQuickActions(device: NonNullable<HubState["smartthings"]>["devices
   }
 
   return actions;
+}
+
+function SmartThingsRoomDetail({
+  room,
+  locationId,
+  onDone,
+}: {
+  room: SmartThingsRoom;
+  locationId: string;
+  onDone: () => void;
+}) {
+  const [devices, setDevices] = useState<NonNullable<HubState["smartthings"]>["devices"]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadRoomDevices() {
+    try {
+      const res = await fetch(`http://127.0.0.1:3030/control/smartthings/room-devices?locationId=${encodeURIComponent(locationId)}&roomId=${encodeURIComponent(room.id)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.success === false) {
+        throw new Error(data?.error || "Failed to load room devices");
+      }
+      setDevices(data.devices || []);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message || "Failed to load room");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    // SmartThings room device fetching is intentionally lazy until we add a dedicated backend route.
+    // For now, the room detail shows the room context and lets users continue from the room browser.
+    loadRoomDevices();
+  }, [locationId, room.id]);
+
+  return (
+    <List isLoading={isLoading} searchBarPlaceholder={`Room: ${room.name}`}>
+      <List.Section title={`Room: ${room.name}`}>
+        <List.Item
+          icon={Icon.House}
+          title={room.name}
+          subtitle={error || `${room.deviceCount || 0} device(s) in this room`}
+          accessories={[{ text: error ? "CHECK ROOM" : "READY", color: error ? Color.Red : Color.Green }]}
+          actions={
+            <ActionPanel>
+              <Action title="Refresh" icon={Icon.Repeat} onAction={loadRoomDevices} />
+              <Action.CopyToClipboard title="Copy Room ID" content={room.id} />
+            </ActionPanel>
+          }
+        />
+      </List.Section>
+      {devices.length ? (
+        <List.Section title="Devices in Room">
+          {devices.map((device) => (
+            <List.Item
+              key={device.id}
+              icon={device.type === "monitor" ? Icon.Desktop : device.type === "light" ? Icon.LightBulb : Icon.Tv}
+              title={device.name}
+              subtitle={`${device.type || "device"} · ${device.capabilities?.slice(0, 4).join(", ") || "no capabilities listed"}`}
+              accessories={[{ text: device.online ? "ONLINE" : "OFFLINE", color: device.online ? Color.Green : Color.Red }]}
+              actions={
+                <ActionPanel title="Room Device Control">
+                  {buildQuickActions(device).map((action) => (
+                    <Action
+                      key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
+                      title={action.title}
+                      icon={action.icon}
+                      onAction={async () => {
+                        const query = new URLSearchParams({
+                          deviceId: device.id,
+                          capability: action.capability,
+                          command: action.command,
+                        });
+                        if (action.args?.length) {
+                          query.set("args", JSON.stringify(action.args));
+                        }
+                        const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || data?.success === false) {
+                          throw new Error(data?.error || "Failed");
+                        }
+                        onDone();
+                        loadRoomDevices();
+                      }}
+                    />
+                  ))}
+                </ActionPanel>
+              }
+            />
+          ))}
+        </List.Section>
+      ) : null}
+    </List>
+  );
 }
 
 function SmartThingsLinkForm({

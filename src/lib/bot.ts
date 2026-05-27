@@ -23,6 +23,8 @@ import {
   getPrimaryMiraieDevice,
   fetchSmartThingsDevices,
   fetchSmartThingsScenes,
+  fetchSmartThingsRooms,
+  fetchSmartThingsRoomDevices,
   fetchSmartThingsModes,
   fetchSmartThingsCurrentMode,
   executeSmartThingsScene,
@@ -4251,6 +4253,67 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             });
           } catch (e: any) {
             return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings scenes failed' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+        }
+        if (url.pathname === '/control/smartthings/rooms') {
+          try {
+            const token = config.smartthings?.token;
+            const locationId = String(url.searchParams.get('locationId') || config.smartthings?.locationId || '').trim();
+            if (!token) {
+              return new Response(JSON.stringify({ success: false, error: 'SmartThings not linked' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            if (!locationId) {
+              return new Response(JSON.stringify({ success: false, error: 'Missing locationId' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            const rooms = await fetchSmartThingsRooms(token, locationId);
+            return new Response(JSON.stringify({ success: true, rooms }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e: any) {
+            return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings rooms failed' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+        }
+        if (url.pathname === '/control/smartthings/room-devices') {
+          try {
+            const token = config.smartthings?.token;
+            const locationId = String(url.searchParams.get('locationId') || config.smartthings?.locationId || '').trim();
+            const roomId = String(url.searchParams.get('roomId') || '').trim();
+            if (!token) {
+              return new Response(JSON.stringify({ success: false, error: 'SmartThings not linked' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            if (!locationId) {
+              return new Response(JSON.stringify({ success: false, error: 'Missing locationId' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            if (!roomId) {
+              return new Response(JSON.stringify({ success: false, error: 'Missing roomId' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            const devices = await fetchSmartThingsRoomDevices(token, locationId, roomId);
+            return new Response(JSON.stringify({ success: true, devices }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e: any) {
+            return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings room devices failed' }), {
               status: 500,
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });

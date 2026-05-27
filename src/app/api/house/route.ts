@@ -7,6 +7,8 @@ import {
   evaluateCoolingDecision,
   fetchSmartThingsDevices,
   fetchSmartThingsScenes,
+  fetchSmartThingsRooms,
+  fetchSmartThingsRoomDevices,
   fetchSmartThingsModes,
   fetchSmartThingsCurrentMode,
   executeSmartThingsScene,
@@ -115,6 +117,34 @@ export async function POST(req: Request) {
       }
       const scenes = await fetchSmartThingsScenes(config.smartthings.token);
       return NextResponse.json({ success: true, scenes });
+    }
+
+    if (action === "smartthings-rooms") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      const locationId = String(body.locationId || config.smartthings?.locationId || "").trim();
+      if (!locationId) {
+        return NextResponse.json({ success: false, error: "Missing SmartThings locationId" }, { status: 400 });
+      }
+      const rooms = await fetchSmartThingsRooms(config.smartthings.token, locationId);
+      return NextResponse.json({ success: true, rooms });
+    }
+
+    if (action === "smartthings-room-devices") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      const locationId = String(body.locationId || config.smartthings?.locationId || "").trim();
+      const roomId = String(body.roomId || "").trim();
+      if (!locationId) {
+        return NextResponse.json({ success: false, error: "Missing SmartThings locationId" }, { status: 400 });
+      }
+      if (!roomId) {
+        return NextResponse.json({ success: false, error: "Missing SmartThings roomId" }, { status: 400 });
+      }
+      const devices = await fetchSmartThingsRoomDevices(config.smartthings.token, locationId, roomId);
+      return NextResponse.json({ success: true, devices });
     }
 
     if (action === "smartthings-execute-scene") {
