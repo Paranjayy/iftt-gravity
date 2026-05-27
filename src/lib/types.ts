@@ -1,7 +1,7 @@
 export interface Device {
   id: string;
   name: string;
-  type: 'ac' | 'tv' | 'light' | 'bot' | 'pc';
+  type: 'ac' | 'tv' | 'monitor' | 'light' | 'bot' | 'pc' | 'switch' | 'sensor';
   status: 'online' | 'offline' | 'active';
   lastSeen: Date;
 }

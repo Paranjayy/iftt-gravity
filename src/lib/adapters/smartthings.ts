@@ -1,4 +1,5 @@
 import { Adapter, Device, Action } from '../types';
+import { fetchSmartThingsDevices, sendSmartThingsCommand } from '../house-automation';
 
 export class SmartThingsAdapter extends Adapter {
   name = 'Samsung SmartThings';
@@ -17,40 +18,25 @@ export class SmartThingsAdapter extends Adapter {
   }
 
   async getDevices(): Promise<Device[]> {
-    const res = await fetch(`https://api.smartthings.com/v1/devices`, {
-      headers: { 'Authorization': `Bearer ${this.apiToken}` }
-    });
-    const data = await res.json();
-    return data.items
-      .filter((d: any) => d.deviceTypeName.toLowerCase().includes('tv'))
-      .map((d: any) => ({
-        id: d.deviceId,
-        name: d.label || d.name,
-        type: 'tv',
-        status: 'online',
-        lastSeen: new Date()
-      }));
+    const devices = await fetchSmartThingsDevices(this.apiToken);
+    return devices.map(device => ({
+      id: device.id,
+      name: device.name,
+      type: device.type === 'other' ? 'tv' : device.type,
+      status: device.online ? 'online' : 'offline',
+      lastSeen: new Date(device.lastSeen),
+    }));
   }
 
   async executeAction(action: Action): Promise<void> {
     const { deviceId, command, arguments: args } = action.payload;
     console.log(`Executing ${command} command on SmartThings device ${deviceId}`);
-    
-    // API Call: https://api.smartthings.com/v1/devices/${deviceId}/commands
-    await fetch(`https://api.smartthings.com/v1/devices/${deviceId}/commands`, {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${this.apiToken}`,
-        'Content-Type': 'application/json' 
-      },
-      body: JSON.stringify({
-        commands: [{
-          component: 'main',
-          capability: command.capability,
-          command: command.name,
-          arguments: args || []
-        }]
-      })
-    });
+    await sendSmartThingsCommand(
+      this.apiToken,
+      deviceId,
+      command.capability,
+      command.name,
+      args || []
+    );
   }
 }

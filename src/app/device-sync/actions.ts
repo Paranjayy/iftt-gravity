@@ -7,6 +7,7 @@ import { HomeyAdapter } from "../../lib/adapters/homey";
 import { WizAdapter } from "../../lib/adapters/wiz";
 import { discoverWizBulbs } from "../../lib/discovery/wiz";
 import { scrapeJioRouterClients } from "../../lib/discovery/router";
+import { fetchSmartThingsDevices, sendSmartThingsCommand } from "../../lib/house-automation";
 
 const CONFIG_PATH = path.join(process.cwd(), "config.json");
 
@@ -54,6 +55,7 @@ export async function linkMiraie(mobile: string, password: string) {
 
 export async function controlMiraieAC(deviceId: string, command: {
   power?: boolean; temperature?: number; mode?: "COOL" | "DRY" | "FAN" | "AUTO" | "HEAT";
+  source?: "manual" | "automation";
 }) {
   try {
     const config = await readConfig();
@@ -67,6 +69,80 @@ export async function controlMiraieAC(deviceId: string, command: {
       ...(command.temperature && { actmp: String(command.temperature) }),
       ...(command.mode && { acmd: command.mode.toLowerCase() }),
     });
+
+    config.automation = config.automation || {};
+    config.automation.acGuard = config.automation.acGuard || {};
+    config.automation.acGuard.lastActionAt = new Date().toISOString();
+    config.automation.acGuard.lastSource = command.source || "manual";
+    if (command.source === "automation" && command.power !== undefined) {
+      config.automation.acGuard.active = command.power;
+      config.automation.acGuard.manualOverrideUntil = null;
+    }
+    if (command.source !== "automation") {
+      config.automation.acGuard.manualOverrideUntil = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+      if (command.power === false) {
+        config.automation.acGuard.active = false;
+      }
+    }
+    await writeConfig(config);
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ─── SmartThings ─────────────────────────────────────
+export async function linkSmartThings(token: string, locationId?: string) {
+  try {
+    const devices = await fetchSmartThingsDevices(token.trim());
+    const config = await readConfig();
+    config.smartthings = {
+      token: token.trim(),
+      locationId: locationId?.trim() || config.smartthings?.locationId || "",
+      deviceCount: devices.length,
+      devices: devices.slice(0, 50).map(d => ({
+        id: d.id,
+        name: d.name,
+        type: d.type,
+        online: d.online,
+        capabilities: d.capabilities,
+      })),
+      linkedAt: new Date().toISOString(),
+      lastSyncedAt: new Date().toISOString(),
+    };
+    await writeConfig(config);
+    return { success: true, deviceCount: devices.length, devices: config.smartthings.devices };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to connect SmartThings." };
+  }
+}
+
+export async function syncSmartThingsDevices() {
+  try {
+    const config = await readConfig();
+    if (!config.smartthings?.token) return { success: false, error: "SmartThings not linked" };
+    const devices = await fetchSmartThingsDevices(config.smartthings.token);
+    config.smartthings.devices = devices.slice(0, 50).map(d => ({
+      id: d.id,
+      name: d.name,
+      type: d.type,
+      online: d.online,
+      capabilities: d.capabilities,
+    }));
+    config.smartthings.deviceCount = devices.length;
+    config.smartthings.lastSyncedAt = new Date().toISOString();
+    await writeConfig(config);
+    return { success: true, deviceCount: devices.length, devices: config.smartthings.devices };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to sync SmartThings." };
+  }
+}
+
+export async function controlSmartThingsDevice(deviceId: string, capability: string, command: string, args: any[] = []) {
+  try {
+    const config = await readConfig();
+    if (!config.smartthings?.token) return { success: false, error: "SmartThings not linked" };
+    await sendSmartThingsCommand(config.smartthings.token, deviceId, capability, command, args);
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };

@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import {
   linkMiraie, linkTelegram, linkWiz, linkHomey, linkRouter, discoverWiz,
-  getDashboardData, controlMiraieAC, controlWizLight, controlHomeyDevice, triggerScene
+  getDashboardData, controlMiraieAC, controlWizLight, controlHomeyDevice, triggerScene,
+  linkSmartThings, controlSmartThingsDevice, syncSmartThingsDevices
 } from "./actions";
 
 // ─── Types ───────────────────────────────────────────
@@ -17,6 +18,7 @@ interface LinkResult { success?: boolean; error?: string; devices?: any[]; devic
 
 const CARDS: DeviceCard[] = [
   { id: "miraie", name: "Panasonic Smart AC", brand: "MIRAIE", icon: Wind },
+  { id: "smartthings", name: "Samsung SmartThings", brand: "SMARTTHINGS", icon: Tv },
   { id: "wiz",    name: "Bedroom Light",       brand: "WIZ 2.0",     icon: Lightbulb },
   { id: "telegram", name: "Automation Bot",    brand: "TELEGRAM",    icon: Bot },
   { id: "homey",  name: "Homey Hub",            brand: "HOMEY",       icon: Home },
@@ -40,6 +42,11 @@ export default function DeviceSyncPage() {
   // Telegram state
   const [tgToken, setTgToken] = useState("");
   const [tgChatId, setTgChatId] = useState("");
+
+  // SmartThings state
+  const [stToken, setStToken] = useState("");
+  const [stLocationId, setStLocationId] = useState("");
+  const [stDeviceId, setStDeviceId] = useState("");
 
   // WiZ state
   const [wizIp, setWizIp] = useState("");
@@ -70,6 +77,7 @@ export default function DeviceSyncPage() {
     const c = config[id];
     if (!c) return "offline";
     if (id === "miraie") return c.devices?.length ? "linked" : "offline";
+    if (id === "smartthings") return c.devices?.length ? "linked" : "offline";
     if (id === "telegram") return c.username ? "online" : "offline";
     if (id === "wiz") return c.ip ? "linked" : "offline";
     if (id === "homey") return c.deviceCount > 0 ? "linked" : "offline";
@@ -83,6 +91,7 @@ export default function DeviceSyncPage() {
     let res: LinkResult = { success: false };
 
     if (selected?.id === "miraie") res = await linkMiraie(mobile, password);
+    else if (selected?.id === "smartthings") res = await linkSmartThings(stToken, stLocationId);
     else if (selected?.id === "telegram") res = await linkTelegram(tgToken, tgChatId);
     else if (selected?.id === "wiz") res = await linkWiz(wizIp, wizName, wizMac);
     else if (selected?.id === "homey") res = await linkHomey(homeyToken, homeyId);
@@ -122,7 +131,41 @@ export default function DeviceSyncPage() {
     handleDeepSync(); // refresh status
   }
 
+  function getSmartThingsActions(device: any) {
+    const caps = new Set((device.capabilities || []).map((cap: string) => String(cap).toLowerCase()));
+    const actions: Array<{ title: string; capability: string; command: string; args?: any[] }> = [];
+
+    if (caps.has("switch")) {
+      actions.push({ title: "On", capability: "switch", command: "on" });
+      actions.push({ title: "Off", capability: "switch", command: "off" });
+    }
+    if (caps.has("switchlevel")) {
+      actions.push({ title: "25%", capability: "switchLevel", command: "setLevel", args: [25] });
+      actions.push({ title: "50%", capability: "switchLevel", command: "setLevel", args: [50] });
+      actions.push({ title: "100%", capability: "switchLevel", command: "setLevel", args: [100] });
+    }
+    if (caps.has("colortemperature")) {
+      actions.push({ title: "Warm", capability: "colorTemperature", command: "setColorTemperature", args: [2700] });
+      actions.push({ title: "Daylight", capability: "colorTemperature", command: "setColorTemperature", args: [5000] });
+    }
+    if (caps.has("audiomute")) {
+      actions.push({ title: "Mute", capability: "audioMute", command: "mute" });
+      actions.push({ title: "Unmute", capability: "audioMute", command: "unmute" });
+    }
+    if (caps.has("mediaplayback")) {
+      actions.push({ title: "Play", capability: "mediaPlayback", command: "play" });
+      actions.push({ title: "Pause", capability: "mediaPlayback", command: "pause" });
+    }
+
+    if (!actions.length) {
+      actions.push({ title: "On", capability: "switch", command: "on" });
+    }
+
+    return actions;
+  }
+
   const linkedACs: any[] = config.miraie?.devices ?? [];
+  const smartThingsDevices: any[] = config.smartthings?.devices ?? [];
   const wizBulb = config.wiz;
   const homeyDevices: any[] = config.homey?.devices ?? [];
 
@@ -202,6 +245,51 @@ export default function DeviceSyncPage() {
                         className="flex-1 py-1.5 text-[10px] font-black uppercase rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition border border-white/5"
                       >{m}</button>
                     ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Live SmartThings Devices */}
+        {smartThingsDevices.length > 0 && (
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-cyan-400 mb-4 flex items-center gap-2">
+              <Tv className="w-3.5 h-3.5" />
+              {smartThingsDevices.length} SmartThings device{smartThingsDevices.length > 1 ? "s" : ""} linked
+            </p>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {smartThingsDevices.map((d: any) => (
+                <div key={d.id} className="rounded-2xl border border-white/5 bg-[#0f0f1a] p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-white text-sm">{d.name}</h3>
+                      <p className="text-[10px] uppercase tracking-widest text-cyan-400/60">{d.type}</p>
+                    </div>
+                    <div className={`w-2.5 h-2.5 rounded-full ${d.online ? "bg-emerald-400" : "bg-white/10"}`} />
+                  </div>
+                  <div className="grid gap-2">
+                    <button
+                      onClick={() => {
+                        setSelected({ id: "smartthings", name: "Samsung SmartThings", brand: "SMARTTHINGS", icon: Tv });
+                        setStDeviceId(d.id);
+                      }}
+                      className="w-full py-2 text-[10px] font-black uppercase rounded-xl bg-white/5 hover:bg-white/10 text-white/60 border border-white/5"
+                    >
+                      Manage
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      {getSmartThingsActions(d).slice(0, 4).map(action => (
+                        <button
+                          key={`${d.id}-${action.capability}-${action.command}-${action.title}`}
+                          onClick={() => controlSmartThingsDevice(d.id, action.capability, action.command, action.args || [])}
+                          className="py-2 px-3 text-[10px] font-black uppercase rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20"
+                        >
+                          {action.title}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -426,6 +514,50 @@ export default function DeviceSyncPage() {
               <Field label="Router Admin Password" type="password" placeholder="••••••••" value={routerPass} onChange={setRouterPass} />
               {result && <ResultBanner result={result} successMsg={`Synced! Found ${result.clientCount} network clients.`} />}
               <LinkButton onClick={handleLink} loading={loading} disabled={!routerPass} label="Link Router Sync" />
+            </div>
+          )}
+
+          {/* ── SmartThings ── */}
+          {selected.id === "smartthings" && (
+            <div className="space-y-5 flex-1">
+              <div className="rounded-xl bg-white/3 border border-white/8 p-4 text-xs text-white/50 space-y-2">
+                <p>Link your Samsung SmartThings account to pull in TVs, monitors, switches, and lights.</p>
+                <p>We normalize the device list so Raycast and the dashboard can use the same controls.</p>
+              </div>
+              <Field label="SmartThings Personal Token" type="password" placeholder="pat-..." value={stToken} onChange={setStToken} />
+              <Field label="SmartThings Location ID" type="text" placeholder="UUID from SmartThings" value={stLocationId} onChange={setStLocationId} hint="Optional for Gravity, required by the official Raycast connector." />
+              {result && <ResultBanner result={result} successMsg={`SmartThings linked! Found ${result.deviceCount} device(s).`} />}
+              <div className="flex gap-2">
+                <LinkButton onClick={handleLink} loading={loading} disabled={!stToken} label="Link SmartThings" />
+                <button
+                  onClick={async () => {
+                    setLoading(true);
+                    setResult(null);
+                    const res = await syncSmartThingsDevices();
+                    setResult(res);
+                    if (res.success) {
+                      const c = await getDashboardData();
+                      setConfig(c);
+                    }
+                    setLoading(false);
+                  }}
+                  className="px-4 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 border border-white/5 text-xs font-bold uppercase"
+                >
+                  Sync
+                </button>
+              </div>
+              {config.smartthings?.deviceCount && (
+                <p className="text-[10px] text-white/25">{config.smartthings.deviceCount} SmartThings device(s) indexed</p>
+              )}
+              {config.smartthings?.locationId && (
+                <p className="text-[10px] text-white/25">Location ID saved: {config.smartthings.locationId}</p>
+              )}
+              {config.smartthings?.lastSyncedAt && (
+                <p className="text-[10px] text-white/25">Last sync: {new Date(config.smartthings.lastSyncedAt).toLocaleString()}</p>
+              )}
+              {stDeviceId && (
+                <p className="text-[10px] text-white/25">Selected device: {stDeviceId}</p>
+              )}
             </div>
           )}
 

@@ -1,6 +1,7 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard, Detail } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard, Detail, Form, useNavigation, getPreferenceValues } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import ACControlDetail from "./ac-control-detail";
 
 interface HubState {
   online: boolean;
@@ -12,13 +13,31 @@ interface HubState {
   units: string;
   estimatedPgBill: number;
   mediaAura: boolean;
+  smartthings?: {
+    deviceCount?: number;
+    locationId?: string;
+    lastSyncedAt?: string;
+    devices?: Array<{
+      id: string;
+      name: string;
+      type?: string;
+      online?: boolean;
+      capabilities?: string[];
+    }>;
+  };
   solis?: { today: string; current: string; battery: string; status: string };
   weather?: { temp: number; humidity: number; condition: string; aqi: number; sunrise: string; sunset: string };
   stats?: { ac?: { status: string }; light?: { status: string }; archiveCount?: number };
   pgvcl?: { units: string; bill: string };
 }
 
+interface Preferences {
+  smartThingsPat?: string;
+  smartThingsLocationId?: string;
+}
+
 export default function Command() {
+  const preferences = getPreferenceValues<Preferences>();
   const [state, setState] = useState<HubState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,8 +83,96 @@ export default function Command() {
     return `${h}h ${m}m`;
   };
 
+  const runSmartThingsCommand = (deviceId: string, capability: string, command: string, args: any[] = []) => {
+    const query = new URLSearchParams({ deviceId, capability, command });
+    if (args.length) query.set("args", JSON.stringify(args));
+    return runAction(`SmartThings ${command}`, `/control/smartthings?${query.toString()}`);
+  };
+
+  const smartThingsActionSet = (device: NonNullable<HubState["smartthings"]>["devices"][number]) => {
+    const caps = new Set((device.capabilities || []).map((cap) => String(cap).toLowerCase()));
+    const actions: Array<{ title: string; icon: any; capability: string; command: string; args?: any[] }> = [];
+
+    if (caps.has("switch")) {
+      actions.push({ title: "On", icon: Icon.Power, capability: "switch", command: "on" });
+      actions.push({ title: "Off", icon: Icon.Power, capability: "switch", command: "off" });
+    }
+    if (caps.has("switchlevel")) {
+      actions.push({ title: "25%", icon: Icon.Minus, capability: "switchLevel", command: "setLevel", args: [25] });
+      actions.push({ title: "50%", icon: Icon.Minus, capability: "switchLevel", command: "setLevel", args: [50] });
+      actions.push({ title: "100%", icon: Icon.Plus, capability: "switchLevel", command: "setLevel", args: [100] });
+    }
+    if (caps.has("colortemperature")) {
+      actions.push({ title: "Warm", icon: Icon.Sun, capability: "colorTemperature", command: "setColorTemperature", args: [2700] });
+      actions.push({ title: "Daylight", icon: Icon.Sun, capability: "colorTemperature", command: "setColorTemperature", args: [5000] });
+    }
+    if (caps.has("audiomute")) {
+      actions.push({ title: "Mute", icon: Icon.SpeakerOff, capability: "audioMute", command: "mute" });
+      actions.push({ title: "Unmute", icon: Icon.SpeakerHigh, capability: "audioMute", command: "unmute" });
+    }
+    if (caps.has("mediaplayback")) {
+      actions.push({ title: "Play", icon: Icon.Play, capability: "mediaPlayback", command: "play" });
+      actions.push({ title: "Pause", icon: Icon.Pause, capability: "mediaPlayback", command: "pause" });
+    }
+
+    if (!actions.length) {
+      actions.push({ title: "On", icon: Icon.Power, capability: "switch", command: "on" });
+    }
+
+    return actions;
+  };
+
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Precision Control Center...">
+      <List.Section title="SmartThings Setup">
+        <List.Item
+          icon={Icon.Key}
+          title="Link SmartThings PAT"
+          subtitle={state?.smartthings?.deviceCount
+            ? `${state.smartthings.deviceCount} devices synced${state.smartthings.locationId ? " · location saved" : ""}${state.smartthings.lastSyncedAt ? " · refreshed" : ""}`
+            : preferences.smartThingsPat
+              ? "Raycast prefs already have a token"
+              : "Store token in Gravity"}
+          actions={
+            <ActionPanel>
+              <Action.Push
+                title="Open Link Form"
+                icon={Icon.Key}
+                target={<SmartThingsLinkForm onDone={refresh} defaultToken={preferences.smartThingsPat || ""} defaultLocationId={preferences.smartThingsLocationId || ""} />}
+              />
+              <Action
+                title="Sync Devices"
+                icon={Icon.Repeat}
+                onAction={() => runAction("SmartThings Sync", "/control/smartthings/sync")}
+              />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.QuestionMark}
+          title="SmartThings Setup Guide"
+          subtitle="Where to put the PAT and what the Location ID means"
+          actions={
+            <ActionPanel>
+              <Action.Push
+                title="Open Guide"
+                icon={Icon.QuestionMark}
+                target={<SmartThingsSetupGuide />}
+              />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Globe}
+          title="Open Device Sync"
+          subtitle="Use the web setup page if you prefer"
+          actions={
+            <ActionPanel>
+              <Action.OpenInBrowser title="Open Device Sync" url="http://127.0.0.1:3000/device-sync" />
+            </ActionPanel>
+          }
+        />
+      </List.Section>
       
       <List.Section title="Gravity Scenes (Intents)">
         <List.Item
@@ -96,9 +203,10 @@ export default function Command() {
           accessories={[{ text: acStatus, color: acColor }]}
           actions={
             <ActionPanel title="AC Precision Pulse">
-              <Action icon={Icon.ChevronDown} title="Temperature DOWN" onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
-              <Action icon={Icon.ChevronUp} title="Temperature UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
-              <ActionPanel.Section title="Climate Precision">
+              <Action.Push icon={Icon.Wind} title="Detailed Control Panel" target={<ACControlDetail />} />
+              <ActionPanel.Section title="Quick Command Pulse">
+                <Action icon={Icon.ChevronDown} title="Temperature DOWN" shortcut={{ modifiers: ["cmd"], key: "j" }} onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
+                <Action icon={Icon.ChevronUp} title="Temperature UP" shortcut={{ modifiers: ["cmd"], key: "k" }} onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
                 <Action icon={Icon.Video} title="TV Mode (Cool & Quiet)" onAction={() => runAction("TV AC", "/control/ac_tv")} />
                 <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "t" }} onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
                 <Action icon={Icon.Snowflake} title="Cool Mode" onAction={() => runAction("Cool", "/control/ac/mode?mode=cool")} />
@@ -127,6 +235,38 @@ export default function Command() {
           }
         />
       </List.Section>
+
+      {state?.smartthings?.devices?.length ? (
+        <List.Section title="SmartThings Devices">
+          {state.smartthings.devices.map((device) => (
+            <List.Item
+              key={device.id}
+              icon={device.type === "monitor" ? Icon.Desktop : device.type === "light" ? Icon.LightBulb : Icon.Tv}
+              title={device.name}
+              subtitle={`${device.type || "device"} · ${device.capabilities?.slice(0, 3).join(", ") || "no capabilities listed"}`}
+              accessories={[{ text: device.online ? "ONLINE" : "OFFLINE", color: device.online ? Color.Green : Color.Red }]}
+              actions={
+                <ActionPanel title="SmartThings Control">
+                  {smartThingsActionSet(device).map((action) => (
+                    <Action
+                      key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
+                      title={action.title}
+                      icon={action.icon}
+                      onAction={() => runSmartThingsCommand(device.id, action.capability, action.command, action.args || [])}
+                    />
+                  ))}
+                  <Action
+                    title="Refresh State"
+                    icon={Icon.Repeat}
+                    shortcut={{ modifiers: ["cmd"], key: "r" }}
+                    onAction={refresh}
+                  />
+                </ActionPanel>
+              }
+            />
+          ))}
+        </List.Section>
+      ) : null}
 
       <List.Section title="Sovereignty Dashboard">
         <List.Item
@@ -177,6 +317,99 @@ export default function Command() {
       </List.Section>
     </List>
   );
+}
+
+function SmartThingsLinkForm({
+  onDone,
+  defaultToken,
+  defaultLocationId,
+}: {
+  onDone: () => void;
+  defaultToken: string;
+  defaultLocationId: string;
+}) {
+  const { pop } = useNavigation();
+  const [token, setToken] = useState(defaultToken);
+  const [locationId, setLocationId] = useState(defaultLocationId);
+
+  async function handleSubmit(values: { token: string; locationId?: string }) {
+    const toast = await showToast({ style: Toast.Style.Animated, title: "Linking SmartThings..." });
+    try {
+      const res = await fetch("http://127.0.0.1:3030/control/smartthings/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const data = await res.json();
+      if (!res.ok || data?.success === false) {
+        throw new Error(data?.error || "SmartThings link failed");
+      }
+      toast.style = Toast.Style.Success;
+      toast.title = "SmartThings linked";
+      toast.message = `${data.deviceCount || 0} device(s) synced`;
+      onDone();
+      pop();
+    } catch (error: any) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "SmartThings link failed";
+      toast.message = error.message || "Unknown error";
+    }
+  }
+
+  return (
+    <Form
+      navigationTitle="Link SmartThings"
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Save SmartThings PAT" onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.Description text="Gravity uses the token directly. Location ID is optional here and only useful if you want to keep it on hand for the official SmartThings connector." />
+      <Form.TextField id="token" title="SmartThings PAT" placeholder="eyJ..." value={token} onChange={setToken} autoFocus />
+      <Form.TextField id="locationId" title="Location ID" placeholder="UUID from SmartThings" value={locationId} onChange={setLocationId} />
+    </Form>
+  );
+}
+
+function SmartThingsSetupGuide() {
+  const markdown = `
+# SmartThings Setup
+
+## 1. Create the token
+
+Go to [account.smartthings.com/tokens](https://account.smartthings.com/tokens) and create a Personal Access Token for the Samsung account that owns your devices.
+
+## 2. Where to put it
+
+- In Gravity: use **Control House** or the **Device Sync** page and paste the PAT there.
+- In Raycast: open the **Gravity Hub** extension settings. If the preferences do not show up yet, reload the extension after running the local dev server.
+
+## 3. What the Location ID is
+
+The Location ID is the UUID for your SmartThings home/location. It is **not** a device ID.
+
+Gravity does not need it for basic device control, but the official Raycast SmartThings connector asks for it and some API calls can use it as a filter.
+
+## 4. How to find it
+
+Use the SmartThings API with your PAT:
+
+\`\`\`bash
+curl -H "Authorization: Bearer YOUR_PAT" https://api.smartthings.com/v1/locations
+\`\`\`
+
+Look for the \`locationId\` field in the response and paste that UUID into the Location ID field when you want to keep it on hand.
+
+## 5. Good test order
+
+1. Save the PAT.
+2. Sync devices.
+3. Test a simple switch or light.
+4. Move on to monitor / TV / media controls once the token works.
+`;
+
+  return <Detail markdown={markdown} />;
 }
 
 function SolisSetupGuide() {

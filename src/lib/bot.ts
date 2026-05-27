@@ -17,6 +17,7 @@ import { PCAdapter } from './adapters/pc';
 import { getFrequentedStats } from './stats';
 import { WeatherEngine } from './weather';
 import { CodexSDK } from './codex';
+import { evaluateCoolingDecision, getMacThermalLevel, getPrimaryMiraieDevice, fetchSmartThingsDevices } from './house-automation';
 import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
@@ -1719,18 +1720,41 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       if (config.autoAc && (Date.now() - bootTime > 300000)) {
         const w: any = await (weather as any).getWeather();
         if (w) {
-          if (w.temp > 31 && config.stats.ac?.status === 'off' && isPhoneOnline) {
-            // Dynamic AC setting based on severity of weather
-            const dynamicTemp = w.temp > 38 ? '18' : (w.temp > 35 ? '22' : '24');
-            const d = miraie?.devices[0]?.deviceId;
-            if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: dynamicTemp, acmd: 'cool' });
-            
-            await notifier.notify(`🌡️ *Sovereignty:* External temp hit *${w.temp}°C*. Engaged AC at ${dynamicTemp}°C to prevent Mac throttling.`, 'low');
-          } else if (w.temp < 27 && config.stats.ac?.status === 'on') {
-            const d = miraie?.devices[0]?.deviceId;
-            if (d) await miraie?.controlDevice(d, { ps: 'off' });
+          const decision = evaluateCoolingDecision({
+            now,
+            roomTemp: w.temp,
+            acOn: config.stats.ac?.status === 'on',
+            config,
+          });
+
+          const d = getPrimaryMiraieDevice(config) || miraie?.devices[0]?.deviceId;
+          if (decision.action === 'start' && d && isPhoneOnline) {
+            await miraie?.controlDevice(d, {
+              ps: 'on',
+              actmp: String(decision.targetTemp ?? 24),
+              acmd: (decision.mode || 'COOL').toLowerCase(),
+              acfs: decision.fan === 'HIGH' ? '3' : '4',
+            });
+            config.automation = config.automation || {};
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            saveConfig(config);
+            await notifier.notify(`🌡️ *Sovereignty:* Room heat hit *${w.temp}°C*. AC set to *${decision.targetTemp ?? 24}°C* (${decision.reason}).`, 'low');
+          } else if (decision.action === 'adjust' && d && isPhoneOnline) {
+            await miraie?.controlDevice(d, {
+              ps: 'on',
+              actmp: String(decision.targetTemp ?? 23),
+              acmd: (decision.mode || 'COOL').toLowerCase(),
+            });
+            config.automation = config.automation || {};
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            saveConfig(config);
+          } else if (decision.action === 'stop' && d) {
+            await miraie?.controlDevice(d, { ps: 'off' });
             updateDeviceState('ac', 'off');
-            await notifier.notify(`🍃 *Sovereignty:* External temp dropped to *${w.temp}°C*. Turning off the AC to balance the room.`, 'low');
+            config.automation = config.automation || {};
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: false, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            saveConfig(config);
+            await notifier.notify(`🍃 *Sovereignty:* Cooling eased off after the room stabilized (${decision.reason}).`, 'low');
           }
         }
       }
@@ -3970,6 +3994,12 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             autoAc: config.autoAc,
             autoLight: config.autoLight,
             mediaAura: config.mediaAura !== false,
+            smartthings: config.smartthings ? {
+              deviceCount: config.smartthings.deviceCount || config.smartthings.devices?.length || 0,
+              locationId: config.smartthings.locationId || "",
+              lastSyncedAt: config.smartthings.lastSyncedAt || "",
+              devices: config.smartthings.devices || [],
+            } : null,
             habitStats: {
               stretches: config.stats.stretches || 0,
               hydration: config.stats.hydration || 0,
@@ -3977,6 +4007,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             },
             platform: 'Local Mac',
             archive: { status: 'ONLINE', pulse: '5s' },
+            miraie: miraie ? { devices: miraie.devices } : null,
             ipl: await getLatestIplData()
           }, null, 2);
           return new Response(body, { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
@@ -4159,6 +4190,112 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           if (wiz) await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
           return new Response('Bulb TV Mode Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
+        if (url.pathname === '/control/smartthings') {
+          try {
+            const deviceId = url.searchParams.get('deviceId') || '';
+            const capability = url.searchParams.get('capability') || 'switch';
+            const command = url.searchParams.get('command') || 'on';
+            const argsRaw = url.searchParams.get('args');
+            const args = argsRaw ? JSON.parse(argsRaw) : [];
+            const token = config.smartthings?.token;
+            if (!deviceId) return new Response('Missing deviceId', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+            if (!token) return new Response('SmartThings not linked', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+            const res = await fetch(`https://api.smartthings.com/v1/devices/${deviceId}/commands`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                commands: [{
+                  component: 'main',
+                  capability,
+                  command,
+                  arguments: args
+                }]
+              })
+            });
+            if (!res.ok) {
+              const body = await res.text().catch(() => '');
+              return new Response(body || 'SmartThings command failed', { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+            }
+            return new Response(JSON.stringify({ status: 'ok', deviceId, capability, command }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e: any) {
+            return new Response(e.message || 'SmartThings command failed', { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+        if (url.pathname === '/control/smartthings/sync') {
+          try {
+            const token = config.smartthings?.token;
+            if (!token) {
+              return new Response(JSON.stringify({ success: false, error: 'Missing SmartThings token' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            const devices = await fetchSmartThingsDevices(token);
+            config.smartthings = {
+              ...(config.smartthings || {}),
+              deviceCount: devices.length,
+              devices: devices.slice(0, 50).map((d: any) => ({
+                id: d.id,
+                name: d.name,
+                type: d.type,
+                online: d.online,
+                capabilities: d.capabilities,
+              })),
+              lastSyncedAt: new Date().toISOString(),
+            };
+            saveConfig(config);
+            return new Response(JSON.stringify({ success: true, deviceCount: devices.length, devices: config.smartthings.devices }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e: any) {
+            return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings sync failed' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+        }
+        if (url.pathname === '/control/smartthings/link') {
+          try {
+            const body = req.method === 'POST' ? await req.json() : {};
+            const token = String(body.token || '').trim();
+            const locationId = String(body.locationId || '').trim();
+            if (!token) {
+              return new Response(JSON.stringify({ success: false, error: 'Missing SmartThings token' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            const devices = await fetchSmartThingsDevices(token);
+            config.smartthings = {
+              token,
+              locationId,
+              deviceCount: devices.length,
+              devices: devices.slice(0, 50).map(d => ({
+                id: d.id,
+                name: d.name,
+                type: d.type,
+                online: d.online,
+                capabilities: d.capabilities,
+              })),
+              linkedAt: new Date().toISOString(),
+              lastSyncedAt: new Date().toISOString(),
+            };
+            saveConfig(config);
+            return new Response(JSON.stringify({ success: true, deviceCount: devices.length, devices: config.smartthings.devices }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e: any) {
+            return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings link failed' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+        }
         if (url.pathname === '/control/ac_tv' || url.pathname === '/control/actmpv' || url.pathname === '/scene/tv' || url.pathname === '/scene/TV') {
           await triggerScene('TV');
           return new Response('Global TV Mode Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -4227,6 +4364,34 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             }
           }
           return new Response(`Timer Set: ${mins}m`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/ac/set') {
+          try {
+            let cmd: any = {};
+            if (req.method === 'POST') {
+              cmd = await req.json();
+            } else {
+              url.searchParams.forEach((val, key) => {
+                let parsedVal: any = val;
+                if (!isNaN(Number(val))) parsedVal = Number(val);
+                cmd[key] = parsedVal;
+              });
+            }
+            const deviceId = miraie?.devices[0]?.deviceId;
+            if (deviceId && miraie) {
+              await miraie.controlDevice(deviceId, cmd);
+              if (cmd.ps !== undefined) {
+                updateDeviceState('ac', cmd.ps, true);
+              }
+              return new Response(JSON.stringify({ status: 'success', payload: cmd }), { 
+                status: 200, 
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+              });
+            }
+            return new Response('No device or adapter not active', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+          } catch (e: any) {
+            return new Response(`Error: ${e.message}`, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
         }
         if (url.pathname === '/control/volume') {
           const dir = url.searchParams.get('dir') === 'up' ? 'up' : 'down';
@@ -4598,7 +4763,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         const stats = config.stats;
         const dateStr = now.toLocaleDateString('en-IN');
         const dailyUnits = (stats.acMinutes / 60 * 1.65) + (stats.lightMinutes / 60 * 0.012);
-        const dailyCost = calculatePgvclBill(dailyUnits);
+        const dailyCost = Number(calculatePgvclBill(dailyUnits));
         const pg = config.stats.pgvcl;
         const hasActual = pg && pg.units && pg.units !== '0' && pg.units !== '--';
         const totalUnits = hasActual ? pg.units : `~${(dailyUnits * 30).toFixed(1)} (Est.)`;
@@ -5040,23 +5205,47 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            if (nowTime !== config.solarRhythm.wakeTime) (global as any).wakeTriggered = false;
 
         // 9. Thermal & Battery Sync (Hardware Guardian)
-        const temp = await getCpuTemp();
+        const temp = await getMacThermalLevel();
         const batt = await getBattery();
-        if (temp > 75 && (Date.now() - bootTime > 300000)) {
-          logActivity(`🔥 Thermal Alert: CPU at ${temp}°C. Boosting cooling.`);
-          await blinkLight(2, { r: 255, g: 100, b: 0 }); // Orange Pulse
-          if (config.stats.ac?.status === "off") {
-            const deviceId = miraie?.devices[0]?.deviceId;
-            if (deviceId) {
-               await miraie?.controlDevice(deviceId, { ps: "on", acfs: "high", actmp: "18", acmd: "cool" });
-               thermalAcActive = true;
-            }
+        if (temp !== null && (Date.now() - bootTime > 300000)) {
+          const decision = evaluateCoolingDecision({
+            now: new Date(),
+            macThermalLevel: temp,
+            acOn: config.stats.ac?.status === "on",
+            config,
+          });
+
+          const deviceId = getPrimaryMiraieDevice(config) || miraie?.devices[0]?.deviceId;
+          if (decision.action === "start" && deviceId) {
+            logActivity(`🔥 Thermal Alert: CPU at ${temp}°C. Boosting cooling.`);
+            await blinkLight(2, { r: 255, g: 100, b: 0 }); // Orange Pulse
+            await miraie?.controlDevice(deviceId, {
+              ps: "on",
+              acfs: decision.fan === "HIGH" ? "high" : "auto",
+              actmp: String(decision.targetTemp ?? 18),
+              acmd: (decision.mode || "COOL").toLowerCase(),
+            });
+            config.automation = config.automation || {};
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            saveConfig(config);
+            thermalAcActive = true;
+          } else if (decision.action === "adjust" && deviceId) {
+            await miraie?.controlDevice(deviceId, {
+              ps: "on",
+              actmp: String(decision.targetTemp ?? 23),
+              acmd: (decision.mode || "COOL").toLowerCase(),
+            });
+            config.automation = config.automation || {};
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            saveConfig(config);
+          } else if (decision.action === "stop" && thermalAcActive && deviceId) {
+            logActivity(`❄️ Thermal Safe: CPU at ${temp}°C. Restoring AC.`);
+            await miraie?.controlDevice(deviceId, { ps: "off" });
+            config.automation = config.automation || {};
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: false, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            saveConfig(config);
+            thermalAcActive = false;
           }
-        } else if (temp < 60 && thermalAcActive) {
-          logActivity(`❄️ Thermal Safe: CPU at ${temp}°C. Restoring AC.`);
-          const deviceId = miraie?.devices[0]?.deviceId;
-          if (deviceId) await miraie?.controlDevice(deviceId, { ps: "off" });
-          thermalAcActive = false;
         }
         if (batt < 15 && !batteryAlertSent) {
           batteryAlertSent = true;

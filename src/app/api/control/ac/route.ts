@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     else if (!isNaN(Number(command))) payload.temperature = Number(command);
     else payload.mode = command.toUpperCase();
 
-    const res = await controlMiraieAC(targetId, payload);
+    const res = await controlMiraieAC(targetId, { ...payload, source: "manual" });
     return NextResponse.json(res);
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -1,0 +1,128 @@
+import { NextResponse } from "next/server";
+import {
+  readHouseConfig,
+  writeHouseConfig,
+  getPrimaryMiraieDevice,
+  getMacThermalLevel,
+  evaluateCoolingDecision,
+  fetchSmartThingsDevices,
+  sendSmartThingsCommand,
+} from "../../../lib/house-automation";
+import { controlMiraieAC } from "../../../app/device-sync/actions";
+
+export async function GET() {
+  try {
+    const config = await readHouseConfig();
+    return NextResponse.json({
+      automation: config.automation ?? {},
+      miraie: {
+        linked: Boolean(config.miraie?.devices?.length),
+        deviceId: getPrimaryMiraieDevice(config),
+        devices: config.miraie?.devices ?? [],
+      },
+      smartthings: {
+        linked: Boolean(config.smartthings?.devices?.length),
+        deviceCount: config.smartthings?.devices?.length ?? 0,
+        devices: config.smartthings?.devices ?? [],
+        lastSyncedAt: config.smartthings?.lastSyncedAt ?? null,
+      },
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || "Failed to load house status" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => ({}));
+    const config = await readHouseConfig();
+    const action = String(body.action || body.command || "").toLowerCase();
+
+    if (action === "thermal-check") {
+      const macThermalLevel = await getMacThermalLevel();
+      const acOn = Boolean(config.automation?.acGuard?.active || config.stats?.ac?.status === "on");
+      const decision = evaluateCoolingDecision({
+        now: new Date(),
+        macThermalLevel,
+        roomTemp: typeof body.roomTemp === "number" ? body.roomTemp : null,
+        acOn,
+        config,
+      });
+
+      const deviceId = getPrimaryMiraieDevice(config);
+      if (deviceId && decision.action === "start") {
+        await controlMiraieAC(deviceId, {
+          power: true,
+          temperature: decision.targetTemp ?? 24,
+          mode: decision.mode ?? "COOL",
+          source: "automation",
+        });
+      } else if (deviceId && decision.action === "adjust") {
+        await controlMiraieAC(deviceId, {
+          power: true,
+          temperature: decision.targetTemp ?? 23,
+          mode: decision.mode ?? "COOL",
+          source: "automation",
+        });
+      } else if (deviceId && decision.action === "stop") {
+        await controlMiraieAC(deviceId, {
+          power: false,
+          source: "automation",
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        macThermalLevel,
+        decision,
+      });
+    }
+
+    if (action === "ac-start" || action === "ac-stop") {
+      const deviceId = body.deviceId || getPrimaryMiraieDevice(config);
+      if (!deviceId) return NextResponse.json({ success: false, error: "No MirAie device linked" }, { status: 400 });
+      const payload =
+        action === "ac-start"
+          ? { power: true, temperature: Number(body.temperature ?? 24), mode: String(body.mode ?? "COOL").toUpperCase() as "COOL" | "DRY" | "FAN" | "AUTO" | "HEAT", source: "automation" as const }
+          : { power: false, source: "automation" as const };
+      const result = await controlMiraieAC(deviceId, payload);
+      return NextResponse.json(result);
+    }
+
+    if (action === "smartthings-command") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      const result = await sendSmartThingsCommand(
+        config.smartthings.token,
+        body.deviceId,
+        body.capability,
+        body.name || body.command,
+        Array.isArray(body.arguments) ? body.arguments : []
+      );
+      return NextResponse.json({ success: true, result });
+    }
+
+    if (action === "smartthings-sync") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      const devices = await fetchSmartThingsDevices(config.smartthings.token);
+      config.smartthings.devices = devices.slice(0, 50).map((device) => ({
+        id: device.id,
+        name: device.name,
+        type: device.type,
+        online: device.online,
+        capabilities: device.capabilities,
+      }));
+      config.smartthings.deviceCount = devices.length;
+      config.smartthings.lastSyncedAt = new Date().toISOString();
+      await writeHouseConfig(config);
+      return NextResponse.json({ success: true, deviceCount: devices.length, devices: config.smartthings.devices, lastSyncedAt: config.smartthings.lastSyncedAt });
+    }
+
+    return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message || "House automation failed" }, { status: 500 });
+  }
+}

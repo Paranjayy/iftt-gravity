@@ -51,6 +51,22 @@
       "mode": "no-view"
     }
   ],
+  "preferences": [
+    {
+      "name": "smartThingsPat",
+      "title": "SmartThings PAT",
+      "description": "Personal access token for SmartThings linking",
+      "type": "password",
+      "required": false
+    },
+    {
+      "name": "smartThingsLocationId",
+      "title": "SmartThings Location ID",
+      "description": "Optional SmartThings location UUID",
+      "type": "text",
+      "required": false
+    }
+  ],
   "dependencies": {
     "@raycast/api": "^1.71.0",
     "node-fetch": "^3.3.2",

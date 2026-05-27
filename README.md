@@ -49,6 +49,26 @@ npm install
 ./gravity-launch.sh
 ```
 
+### SmartThings setup
+- Create a Samsung SmartThings personal access token at [account.smartthings.com/tokens](https://account.smartthings.com/tokens) after signing into the same Samsung account that owns your devices.
+- SmartThings PATs are short-lived and are meant for personal/testing use, so you may need to refresh them from time to time.
+- Put the PAT in one of these places:
+  - Gravity Hub in Raycast: open **Control House** and use the **SmartThings Setup** section or the **SmartThings Setup Guide** card.
+  - Gravity Hub web UI: open `http://localhost:3000/device-sync` while the app is running, then paste the PAT into the SmartThings section there.
+- The optional SmartThings Location ID is the UUID of your SmartThings home/location. It is **not** a device ID.
+- Gravity does not need the Location ID for basic device control. The official Raycast SmartThings connector asks for it, and you can also keep it in Gravity for convenience.
+- To find the Location ID, call the SmartThings locations endpoint with your PAT and copy the `locationId` value from the response:
+  ```bash
+  curl -H "Authorization: Bearer YOUR_PAT" https://api.smartthings.com/v1/locations
+  ```
+- SmartThings device control is now exposed through the local hub backend, so Raycast can talk to it once the hub is running.
+- The official Raycast SmartThings Connector is separate from Gravity. I did not clone it into this repo; I only used its public setup shape and your screenshots to understand the expected fields.
+- `./iftt-clone.sh` now boots the Next.js web app, the Gravity bot, and the archive watcher together so `localhost:3000`, `3030`, and `3031` come up from one button.
+
+### Startup notes
+- `raycast-ext/iftt-clone.sh` is still the Raycast launcher for the local backend. It starts `src/lib/bot.ts` on `localhost:3030`, so the extension keeps using the same hub backend as before.
+- `raycast-ext/hub-start.sh` and `scripts/raycast-hub.sh` are wrappers around the same local boot path.
+
 ---
 ## 🔭 Further Iterations (Roadmap)
 - **Vision Engine**: Use FaceTime camera to detect "Desk Presence" (auto-pause alerts when away).
