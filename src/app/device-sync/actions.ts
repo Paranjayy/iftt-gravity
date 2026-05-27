@@ -7,7 +7,7 @@ import { HomeyAdapter } from "../../lib/adapters/homey";
 import { WizAdapter } from "../../lib/adapters/wiz";
 import { discoverWizBulbs } from "../../lib/discovery/wiz";
 import { scrapeJioRouterClients } from "../../lib/discovery/router";
-import { fetchSmartThingsDevices, sendSmartThingsCommand } from "../../lib/house-automation";
+import { fetchSmartThingsDevices, fetchSmartThingsLocations, sendSmartThingsCommand } from "../../lib/house-automation";
 
 const CONFIG_PATH = path.join(process.cwd(), "config.json");
 
@@ -135,6 +135,17 @@ export async function syncSmartThingsDevices() {
     return { success: true, deviceCount: devices.length, devices: config.smartthings.devices };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to sync SmartThings." };
+  }
+}
+
+export async function loadSmartThingsLocations() {
+  try {
+    const config = await readConfig();
+    if (!config.smartthings?.token) return { success: false, error: "SmartThings not linked" };
+    const locations = await fetchSmartThingsLocations(config.smartthings.token);
+    return { success: true, locations };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to load SmartThings locations." };
   }
 }
 

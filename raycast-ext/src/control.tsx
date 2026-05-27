@@ -401,6 +401,8 @@ curl -H "Authorization: Bearer YOUR_PAT" https://api.smartthings.com/v1/location
 
 Look for the \`locationId\` field in the response and paste that UUID into the Location ID field when you want to keep it on hand.
 
+If you already have Gravity Hub open, the **Device Sync** page can also list your locations straight from the same PAT, which is handy if you want to test the third-party Raycast connector without leaving the app.
+
 ## 5. Good test order
 
 1. Save the PAT.

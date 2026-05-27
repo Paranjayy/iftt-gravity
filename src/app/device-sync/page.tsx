@@ -9,7 +9,7 @@ import {
 import {
   linkMiraie, linkTelegram, linkWiz, linkHomey, linkRouter, discoverWiz,
   getDashboardData, controlMiraieAC, controlWizLight, controlHomeyDevice, triggerScene,
-  linkSmartThings, controlSmartThingsDevice, syncSmartThingsDevices
+  linkSmartThings, controlSmartThingsDevice, syncSmartThingsDevices, loadSmartThingsLocations
 } from "./actions";
 
 // ─── Types ───────────────────────────────────────────
@@ -47,6 +47,7 @@ export default function DeviceSyncPage() {
   const [stToken, setStToken] = useState("");
   const [stLocationId, setStLocationId] = useState("");
   const [stDeviceId, setStDeviceId] = useState("");
+  const [stLocations, setStLocations] = useState<any[]>([]);
 
   // WiZ state
   const [wizIp, setWizIp] = useState("");
@@ -101,6 +102,22 @@ export default function DeviceSyncPage() {
     if (res.success) {
       const c = await getDashboardData();
       setConfig(c);
+    }
+    setLoading(false);
+  }
+
+  async function handleLoadSmartThingsLocations() {
+    setLoading(true);
+    setResult(null);
+    const res = await loadSmartThingsLocations();
+    if (res.success) {
+      setStLocations(res.locations || []);
+      setResult({ success: true, deviceCount: res.locations?.length || 0 });
+      if (res.locations?.length && !stLocationId) {
+        setStLocationId(res.locations[0].id);
+      }
+    } else {
+      setResult({ success: false, error: res.error });
     }
     setLoading(false);
   }
@@ -526,6 +543,13 @@ export default function DeviceSyncPage() {
               </div>
               <Field label="SmartThings Personal Token" type="password" placeholder="pat-..." value={stToken} onChange={setStToken} />
               <Field label="SmartThings Location ID" type="text" placeholder="UUID from SmartThings" value={stLocationId} onChange={setStLocationId} hint="Optional for Gravity, required by the official Raycast connector." />
+              <button
+                onClick={handleLoadSmartThingsLocations}
+                className="text-[10px] font-black uppercase text-cyan-400 hover:text-cyan-300 transition-colors flex items-center gap-1.5"
+              >
+                <ShieldCheck className="w-3 h-3" />
+                Load Locations from PAT
+              </button>
               {result && <ResultBanner result={result} successMsg={`SmartThings linked! Found ${result.deviceCount} device(s).`} />}
               <div className="flex gap-2">
                 <LinkButton onClick={handleLink} loading={loading} disabled={!stToken} label="Link SmartThings" />
@@ -554,6 +578,21 @@ export default function DeviceSyncPage() {
               )}
               {config.smartthings?.lastSyncedAt && (
                 <p className="text-[10px] text-white/25">Last sync: {new Date(config.smartthings.lastSyncedAt).toLocaleString()}</p>
+              )}
+              {stLocations.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] uppercase font-black tracking-widest text-cyan-400/70">Locations</p>
+                  {stLocations.map((location: any) => (
+                    <button
+                      key={location.id}
+                      onClick={() => setStLocationId(location.id)}
+                      className={`w-full text-left rounded-xl border px-3 py-2 text-xs transition ${stLocationId === location.id ? "border-cyan-400/50 bg-cyan-500/10 text-cyan-200" : "border-white/5 bg-white/5 text-white/60 hover:bg-white/10"}`}
+                    >
+                      <div className="font-bold">{location.name}</div>
+                      <div className="text-[10px] text-white/30 break-all">{location.id}</div>
+                    </button>
+                  ))}
+                </div>
               )}
               {stDeviceId && (
                 <p className="text-[10px] text-white/25">Selected device: {stDeviceId}</p>

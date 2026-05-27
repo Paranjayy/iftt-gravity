@@ -33,6 +33,12 @@ export interface SmartThingsDeviceSnapshot {
   lastSeen: string;
 }
 
+export interface SmartThingsLocationSnapshot {
+  id: string;
+  name: string;
+  countryCode?: string;
+}
+
 export async function readHouseConfig(): Promise<any> {
   try {
     return JSON.parse(await fs.readFile(CONFIG_PATH, "utf-8"));
@@ -205,6 +211,22 @@ export async function fetchSmartThingsDevices(token: string): Promise<SmartThing
   const data = await res.json();
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map(normalizeSmartThingsDevice);
+}
+
+export async function fetchSmartThingsLocations(token: string): Promise<SmartThingsLocationSnapshot[]> {
+  const res = await fetch("https://api.smartthings.com/v1/locations", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error("Unable to load SmartThings locations");
+  }
+  const data = await res.json();
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map((location: any) => ({
+    id: location?.locationId || location?.id,
+    name: location?.name || location?.locationName || "SmartThings Location",
+    countryCode: location?.countryCode,
+  }));
 }
 
 export async function sendSmartThingsCommand(
