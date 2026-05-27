@@ -54,6 +54,7 @@ npm install
 - SmartThings PATs are short-lived and are meant for personal/testing use, so you may need to refresh them from time to time.
 - Put the PAT in one of these places:
   - Gravity Hub in Raycast: open **Control House** and use the **SmartThings Setup** section or the **SmartThings Setup Guide** card.
+  - Gravity Hub in Raycast: open the standalone **SmartThings** command for a focused browser over devices, scenes, and location modes.
   - Gravity Hub web UI: open `http://localhost:3000/device-sync` while the app is running, then paste the PAT into the SmartThings section there.
 - The optional SmartThings Location ID is the UUID of your SmartThings home/location. It is **not** a device ID.
 - Gravity does not need the Location ID for basic device control. The official Raycast SmartThings connector asks for it, and you can also keep it in Gravity for convenience.

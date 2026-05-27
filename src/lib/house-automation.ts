@@ -39,6 +39,20 @@ export interface SmartThingsLocationSnapshot {
   countryCode?: string;
 }
 
+export interface SmartThingsSceneSnapshot {
+  id: string;
+  name: string;
+  locationId?: string;
+  lastExecutedAt?: string;
+}
+
+export interface SmartThingsModeSnapshot {
+  id: string;
+  name: string;
+  locationId?: string;
+  current?: boolean;
+}
+
 export async function readHouseConfig(): Promise<any> {
   try {
     return JSON.parse(await fs.readFile(CONFIG_PATH, "utf-8"));
@@ -85,11 +99,20 @@ export function evaluateCoolingDecision(input: CoolingPolicyInput): CoolingDecis
   const roomTemp = typeof input.roomTemp === "number" ? input.roomTemp : null;
   const manualOverrideUntil = guard.manualOverrideUntil ? new Date(guard.manualOverrideUntil).getTime() : 0;
   const manualOverrideActive = manualOverrideUntil > now.getTime();
+  const cooldownUntil = guard.cooldownUntil ? new Date(guard.cooldownUntil).getTime() : 0;
+  const cooldownActive = cooldownUntil > now.getTime();
 
   if (manualOverrideActive && (macThermalLevel === null || macThermalLevel < severeThreshold) && (roomTemp === null || roomTemp < Number(guard.roomOverrideTemp ?? 36))) {
     return {
       action: "none",
       reason: "manual-override-active",
+    };
+  }
+
+  if (cooldownActive && (macThermalLevel === null || macThermalLevel < severeThreshold) && (roomTemp === null || roomTemp < Number(guard.roomRestartTemp ?? 34))) {
+    return {
+      action: "none",
+      reason: "cooldown-active",
     };
   }
 
@@ -227,6 +250,85 @@ export async function fetchSmartThingsLocations(token: string): Promise<SmartThi
     name: location?.name || location?.locationName || "SmartThings Location",
     countryCode: location?.countryCode,
   }));
+}
+
+export async function fetchSmartThingsScenes(token: string): Promise<SmartThingsSceneSnapshot[]> {
+  const res = await fetch("https://api.smartthings.com/v1/scenes", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error("Unable to load SmartThings scenes");
+  }
+  const data = await res.json();
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map((scene: any) => ({
+    id: scene?.sceneId || scene?.id,
+    name: scene?.name || scene?.sceneName || "SmartThings Scene",
+    locationId: scene?.locationId,
+    lastExecutedAt: scene?.lastExecutedAt || scene?.lastExecuted || undefined,
+  }));
+}
+
+export async function executeSmartThingsScene(token: string, sceneId: string) {
+  const res = await fetch(`https://api.smartthings.com/v1/scenes/${sceneId}/execute`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(body || "SmartThings scene execution failed");
+  }
+  return res.json().catch(() => ({}));
+}
+
+export async function fetchSmartThingsModes(token: string, locationId: string): Promise<SmartThingsModeSnapshot[]> {
+  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/modes`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error("Unable to load SmartThings modes");
+  }
+  const data = await res.json();
+  const items = Array.isArray(data?.items) ? data.items : [];
+  return items.map((mode: any) => ({
+    id: mode?.modeId || mode?.id,
+    name: mode?.name || mode?.label || "SmartThings Mode",
+    locationId: mode?.locationId || locationId,
+    current: Boolean(mode?.current),
+  }));
+}
+
+export async function fetchSmartThingsCurrentMode(token: string, locationId: string): Promise<SmartThingsModeSnapshot | null> {
+  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/modes/current`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    return null;
+  }
+  const mode = await res.json().catch(() => null);
+  if (!mode) return null;
+  return {
+    id: mode?.modeId || mode?.id,
+    name: mode?.name || mode?.label || "Current Mode",
+    locationId: mode?.locationId || locationId,
+    current: true,
+  };
+}
+
+export async function setSmartThingsCurrentMode(token: string, locationId: string, modeId: string) {
+  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/modes/current`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ modeId }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(body || "SmartThings mode change failed");
+  }
+  return res.json().catch(() => ({}));
 }
 
 export async function sendSmartThingsCommand(

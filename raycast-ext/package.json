@@ -9,6 +9,13 @@
   "license": "MIT",
   "commands": [
     {
+      "name": "smartthings",
+      "title": "SmartThings",
+      "description": "Browse devices, scenes, and location modes",
+      "icon": "assets/icon.png",
+      "mode": "view"
+    },
+    {
       "name": "control",
       "title": "Control House",
       "description": "Manage AC, Lights, and Scenes",

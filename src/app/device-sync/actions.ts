@@ -77,9 +77,15 @@ export async function controlMiraieAC(deviceId: string, command: {
     if (command.source === "automation" && command.power !== undefined) {
       config.automation.acGuard.active = command.power;
       config.automation.acGuard.manualOverrideUntil = null;
+      if (command.power) {
+        config.automation.acGuard.cooldownUntil = null;
+      } else {
+        config.automation.acGuard.cooldownUntil = new Date(Date.now() + 90 * 60 * 1000).toISOString();
+      }
     }
     if (command.source !== "automation") {
       config.automation.acGuard.manualOverrideUntil = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+      config.automation.acGuard.cooldownUntil = new Date(Date.now() + 45 * 60 * 1000).toISOString();
       if (command.power === false) {
         config.automation.acGuard.active = false;
       }

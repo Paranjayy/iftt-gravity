@@ -6,6 +6,11 @@ import {
   getMacThermalLevel,
   evaluateCoolingDecision,
   fetchSmartThingsDevices,
+  fetchSmartThingsScenes,
+  fetchSmartThingsModes,
+  fetchSmartThingsCurrentMode,
+  executeSmartThingsScene,
+  setSmartThingsCurrentMode,
   sendSmartThingsCommand,
 } from "../../../lib/house-automation";
 import { controlMiraieAC } from "../../../app/device-sync/actions";
@@ -25,6 +30,7 @@ export async function GET() {
         deviceCount: config.smartthings?.devices?.length ?? 0,
         devices: config.smartthings?.devices ?? [],
         lastSyncedAt: config.smartthings?.lastSyncedAt ?? null,
+        locationId: config.smartthings?.locationId ?? null,
       },
     });
   } catch (err: any) {
@@ -100,6 +106,57 @@ export async function POST(req: Request) {
         body.name || body.command,
         Array.isArray(body.arguments) ? body.arguments : []
       );
+      return NextResponse.json({ success: true, result });
+    }
+
+    if (action === "smartthings-scenes") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      const scenes = await fetchSmartThingsScenes(config.smartthings.token);
+      return NextResponse.json({ success: true, scenes });
+    }
+
+    if (action === "smartthings-execute-scene") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      if (!body.sceneId) {
+        return NextResponse.json({ success: false, error: "Missing sceneId" }, { status: 400 });
+      }
+      const result = await executeSmartThingsScene(config.smartthings.token, String(body.sceneId));
+      return NextResponse.json({ success: true, result });
+    }
+
+    if (action === "smartthings-modes" || action === "smartthings-current-mode") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      const locationId = String(body.locationId || config.smartthings?.locationId || "").trim();
+      if (!locationId) {
+        return NextResponse.json({ success: false, error: "Missing SmartThings locationId" }, { status: 400 });
+      }
+      if (action === "smartthings-current-mode") {
+        const mode = await fetchSmartThingsCurrentMode(config.smartthings.token, locationId);
+        return NextResponse.json({ success: true, mode });
+      }
+      const modes = await fetchSmartThingsModes(config.smartthings.token, locationId);
+      const currentMode = await fetchSmartThingsCurrentMode(config.smartthings.token, locationId);
+      return NextResponse.json({ success: true, modes, currentMode });
+    }
+
+    if (action === "smartthings-set-mode") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      const locationId = String(body.locationId || config.smartthings?.locationId || "").trim();
+      if (!locationId) {
+        return NextResponse.json({ success: false, error: "Missing SmartThings locationId" }, { status: 400 });
+      }
+      if (!body.modeId) {
+        return NextResponse.json({ success: false, error: "Missing modeId" }, { status: 400 });
+      }
+      const result = await setSmartThingsCurrentMode(config.smartthings.token, locationId, String(body.modeId));
       return NextResponse.json({ success: true, result });
     }
 
