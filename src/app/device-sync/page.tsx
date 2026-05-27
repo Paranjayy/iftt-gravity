@@ -48,6 +48,9 @@ export default function DeviceSyncPage() {
   const [stLocationId, setStLocationId] = useState("");
   const [stDeviceId, setStDeviceId] = useState("");
   const [stLocations, setStLocations] = useState<any[]>([]);
+  const [stRawCapability, setStRawCapability] = useState("switch");
+  const [stRawCommand, setStRawCommand] = useState("on");
+  const [stRawArgs, setStRawArgs] = useState("[]");
 
   // WiZ state
   const [wizIp, setWizIp] = useState("");
@@ -120,6 +123,28 @@ export default function DeviceSyncPage() {
       setResult({ success: false, error: res.error });
     }
     setLoading(false);
+  }
+
+  async function handleRawSmartThingsCommand() {
+    if (!stDeviceId) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const args = stRawArgs.trim()
+        ? JSON.parse(stRawArgs)
+        : [];
+      const normalizedArgs = Array.isArray(args) ? args : [args];
+      const res = await controlSmartThingsDevice(stDeviceId, stRawCapability.trim(), stRawCommand.trim(), normalizedArgs);
+      setResult(res);
+      if (res.success) {
+        const c = await getDashboardData();
+        setConfig(c);
+      }
+    } catch (error: any) {
+      setResult({ success: false, error: error.message || "Invalid SmartThings JSON args" });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleTogglePower(deviceId: string) {
@@ -291,6 +316,8 @@ export default function DeviceSyncPage() {
                       onClick={() => {
                         setSelected({ id: "smartthings", name: "Samsung SmartThings", brand: "SMARTTHINGS", icon: Tv });
                         setStDeviceId(d.id);
+                        setStRawCapability((d.capabilities?.[0] || "switch").toString());
+                        setStRawCommand((d.capabilities || []).some((cap: string) => String(cap).toLowerCase() === "switchlevel") ? "setLevel" : "on");
                       }}
                       className="w-full py-2 text-[10px] font-black uppercase rounded-xl bg-white/5 hover:bg-white/10 text-white/60 border border-white/5"
                     >
@@ -596,6 +623,20 @@ export default function DeviceSyncPage() {
               )}
               {stDeviceId && (
                 <p className="text-[10px] text-white/25">Selected device: {stDeviceId}</p>
+              )}
+              {stDeviceId && (
+                <div className="space-y-3 rounded-2xl border border-white/5 bg-[#0f0f1a] p-4">
+                  <div className="text-[10px] uppercase font-black tracking-widest text-cyan-400/70">Raw SmartThings Command</div>
+                  <Field label="Capability" type="text" placeholder="switch / mediaPlayback / KeypadInput" value={stRawCapability} onChange={setStRawCapability} />
+                  <Field label="Command" type="text" placeholder="on / setLevel / sendKey" value={stRawCommand} onChange={setStRawCommand} />
+                  <Field label="Arguments JSON" type="text" placeholder='[] or [50] or ["KEY_HOME"]' value={stRawArgs} onChange={setStRawArgs} hint="Optional. Leave [] for commands without args." />
+                  <button
+                    onClick={handleRawSmartThingsCommand}
+                    className="w-full rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-500/20 text-xs font-black uppercase py-2.5"
+                  >
+                    Run Raw Command
+                  </button>
+                </div>
               )}
             </div>
           )}

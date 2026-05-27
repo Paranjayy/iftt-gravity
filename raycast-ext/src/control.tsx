@@ -89,6 +89,18 @@ export default function Command() {
     return runAction(`SmartThings ${command}`, `/control/smartthings?${query.toString()}`);
   };
 
+  const runRawSmartThingsCommand = (deviceId: string, capability: string, command: string, argsJson: string) => {
+    const args = argsJson.trim() ? (() => {
+      try {
+        const parsed = JSON.parse(argsJson);
+        return Array.isArray(parsed) ? parsed : [parsed];
+      } catch {
+        return [argsJson];
+      }
+    })() : [];
+    return runSmartThingsCommand(deviceId, capability, command, args);
+  };
+
   const smartThingsActionSet = (device: NonNullable<HubState["smartthings"]>["devices"][number]) => {
     const caps = new Set((device.capabilities || []).map((cap) => String(cap).toLowerCase()));
     const actions: Array<{ title: string; icon: any; capability: string; command: string; args?: any[] }> = [];
@@ -255,6 +267,17 @@ export default function Command() {
                       onAction={() => runSmartThingsCommand(device.id, action.capability, action.command, action.args || [])}
                     />
                   ))}
+                  <Action.Push
+                    title="Raw Command"
+                    icon={Icon.Terminal}
+                    target={
+                      <SmartThingsRawCommandForm
+                        device={device}
+                        onDone={refresh}
+                        onRun={runRawSmartThingsCommand}
+                      />
+                    }
+                  />
                   <Action
                     title="Refresh State"
                     icon={Icon.Repeat}
@@ -412,6 +435,45 @@ If you already have Gravity Hub open, the **Device Sync** page can also list you
 `;
 
   return <Detail markdown={markdown} />;
+}
+
+function SmartThingsRawCommandForm({
+  device,
+  onDone,
+  onRun,
+}: {
+  device: NonNullable<HubState["smartthings"]>["devices"][number];
+  onDone: () => void;
+  onRun: (deviceId: string, capability: string, command: string, argsJson: string) => Promise<void>;
+}) {
+  const { pop } = useNavigation();
+  const [capability, setCapability] = useState((device.capabilities?.[0] || "switch").toString());
+  const [command, setCommand] = useState("on");
+  const [args, setArgs] = useState("");
+
+  async function handleSubmit() {
+    const toast = await showToast({ style: Toast.Style.Animated, title: "Sending SmartThings command..." });
+    try {
+      await onRun(device.id, capability.trim(), command.trim(), args);
+      toast.style = Toast.Style.Success;
+      toast.title = "SmartThings command sent";
+      onDone();
+      pop();
+    } catch (error: any) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "SmartThings command failed";
+      toast.message = error.message || "Unknown error";
+    }
+  }
+
+  return (
+    <Form navigationTitle={`Raw Command: ${device.name}`} actions={<ActionPanel><Action.SubmitForm title="Send Command" onSubmit={handleSubmit} /></ActionPanel>}>
+      <Form.Description text="Use this when a device exposes a capability the quick buttons do not cover. If the device has the capability, SmartThings will try to run it." />
+      <Form.TextField id="capability" title="Capability" value={capability} onChange={setCapability} />
+      <Form.TextField id="command" title="Command" value={command} onChange={setCommand} />
+      <Form.TextField id="args" title="Arguments JSON" placeholder='["optional","args"]' value={args} onChange={setArgs} />
+    </Form>
+  );
 }
 
 function SolisSetupGuide() {
