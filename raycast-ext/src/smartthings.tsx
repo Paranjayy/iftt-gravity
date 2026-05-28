@@ -44,6 +44,12 @@ interface SmartThingsScene {
   lastExecutedAt?: string;
 }
 
+interface SmartThingsLocation {
+  id: string;
+  name: string;
+  countryCode?: string;
+}
+
 interface SmartThingsMode {
   id: string;
   name: string;
@@ -62,6 +68,7 @@ export default function SmartThingsCommand() {
   const preferences = getPreferenceValues<Preferences>();
   const [state, setState] = useState<HubState | null>(null);
   const [scenes, setScenes] = useState<SmartThingsScene[]>([]);
+  const [locations, setLocations] = useState<SmartThingsLocation[]>([]);
   const [modes, setModes] = useState<SmartThingsMode[]>([]);
   const [rooms, setRooms] = useState<SmartThingsRoom[]>([]);
   const [currentMode, setCurrentMode] = useState<SmartThingsMode | null>(null);
@@ -80,9 +87,10 @@ export default function SmartThingsCommand() {
 
   async function refresh() {
     try {
-      const [status, scenesResponse, roomsResponse, modesResponse] = await Promise.all([
+      const [status, scenesResponse, locationsResponse, roomsResponse, modesResponse] = await Promise.all([
         fetchJson<HubState>("http://127.0.0.1:3030/status"),
         fetchJson<{ scenes: SmartThingsScene[] }>("http://127.0.0.1:3030/control/smartthings/scenes").catch(() => ({ scenes: [] })),
+        fetchJson<{ locations: SmartThingsLocation[] }>("http://127.0.0.1:3030/control/smartthings/locations").catch(() => ({ locations: [] })),
         locationId
           ? fetchJson<{ rooms: SmartThingsRoom[] }>(
               `http://127.0.0.1:3030/control/smartthings/rooms?locationId=${encodeURIComponent(locationId)}`
@@ -97,6 +105,7 @@ export default function SmartThingsCommand() {
 
       setState(status);
       setScenes(scenesResponse.scenes || []);
+      setLocations(locationsResponse.locations || []);
       setRooms(roomsResponse.rooms || []);
       setModes(modesResponse.modes || []);
       setCurrentMode(modesResponse.currentMode || null);
@@ -176,6 +185,11 @@ export default function SmartThingsCommand() {
           subtitle={locationId ? `Using ${locationId}` : "Load it from PAT or save it in Raycast prefs"}
           actions={
             <ActionPanel>
+              <Action
+                title="Load Locations"
+                icon={Icon.Download}
+                onAction={() => runAction("Load SmartThings Locations", "/control/smartthings/locations")}
+              />
               <Action.OpenInBrowser title="Open Device Sync" url="http://127.0.0.1:3000/device-sync" />
             </ActionPanel>
           }
@@ -275,6 +289,25 @@ export default function SmartThingsCommand() {
                     }
                   />
                   <Action.CopyToClipboard title="Copy Scene ID" content={scene.id} />
+                </ActionPanel>
+              }
+            />
+          ))}
+        </List.Section>
+      ) : null}
+
+      {locations.length ? (
+        <List.Section title="Locations">
+          {locations.map((location) => (
+            <List.Item
+              key={location.id}
+              icon={Icon.Globe}
+              title={location.name}
+              subtitle={location.countryCode ? `Country ${location.countryCode}` : "SmartThings location"}
+              accessories={[{ text: location.id === locationId ? "ACTIVE" : "READY", color: location.id === locationId ? Color.Green : undefined }]}
+              actions={
+                <ActionPanel>
+                  <Action.CopyToClipboard title="Copy Location ID" content={location.id} />
                 </ActionPanel>
               }
             />

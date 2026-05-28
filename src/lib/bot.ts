@@ -22,6 +22,7 @@ import {
   getMacThermalLevel,
   getPrimaryMiraieDevice,
   fetchSmartThingsDevices,
+  fetchSmartThingsLocations,
   fetchSmartThingsScenes,
   fetchSmartThingsRooms,
   fetchSmartThingsRoomDevices,
@@ -4253,6 +4254,26 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             });
           } catch (e: any) {
             return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings scenes failed' }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          }
+        }
+        if (url.pathname === '/control/smartthings/locations') {
+          try {
+            const token = config.smartthings?.token;
+            if (!token) {
+              return new Response(JSON.stringify({ success: false, error: 'SmartThings not linked' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            const locations = await fetchSmartThingsLocations(token);
+            return new Response(JSON.stringify({ success: true, locations }), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+            });
+          } catch (e: any) {
+            return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings locations failed' }), {
               status: 500,
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });

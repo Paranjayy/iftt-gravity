@@ -6,6 +6,7 @@ import {
   getMacThermalLevel,
   evaluateCoolingDecision,
   fetchSmartThingsDevices,
+  fetchSmartThingsLocations,
   fetchSmartThingsScenes,
   fetchSmartThingsRooms,
   fetchSmartThingsRoomDevices,
@@ -117,6 +118,14 @@ export async function POST(req: Request) {
       }
       const scenes = await fetchSmartThingsScenes(config.smartthings.token);
       return NextResponse.json({ success: true, scenes });
+    }
+
+    if (action === "smartthings-locations") {
+      if (!config.smartthings?.token) {
+        return NextResponse.json({ success: false, error: "SmartThings not linked" }, { status: 400 });
+      }
+      const locations = await fetchSmartThingsLocations(config.smartthings.token);
+      return NextResponse.json({ success: true, locations });
     }
 
     if (action === "smartthings-rooms") {
