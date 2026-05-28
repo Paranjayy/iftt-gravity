@@ -34,6 +34,8 @@ export async function GET() {
         devices: config.smartthings?.devices ?? [],
         lastSyncedAt: config.smartthings?.lastSyncedAt ?? null,
         locationId: config.smartthings?.locationId ?? null,
+        lastError: config.smartthings?.lastError ?? null,
+        lastErrorAt: config.smartthings?.lastErrorAt ?? null,
       },
     });
   } catch (err: any) {
@@ -213,6 +215,8 @@ export async function POST(req: Request) {
       }));
       config.smartthings.deviceCount = devices.length;
       config.smartthings.lastSyncedAt = new Date().toISOString();
+      config.smartthings.lastError = null;
+      config.smartthings.lastErrorAt = null;
       await writeHouseConfig(config);
       return NextResponse.json({ success: true, deviceCount: devices.length, devices: config.smartthings.devices, lastSyncedAt: config.smartthings.lastSyncedAt });
     }

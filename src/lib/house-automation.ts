@@ -60,6 +60,90 @@ export interface SmartThingsRoomSnapshot {
   deviceCount?: number;
 }
 
+const SMARTTHINGS_ERROR_PREVIEW = 280;
+
+function stripWhitespace(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function previewSmartThingsBody(value: string) {
+  return stripWhitespace(value).slice(0, SMARTTHINGS_ERROR_PREVIEW);
+}
+
+function extractSmartThingsMessage(payload: any): string {
+  if (!payload) return "";
+  if (typeof payload === "string") return payload;
+  if (Array.isArray(payload)) return payload.map(extractSmartThingsMessage).filter(Boolean).join(" | ");
+  if (typeof payload !== "object") return "";
+  const fields = [
+    payload.error,
+    payload.message,
+    payload.detail,
+    payload.details,
+    payload.description,
+    payload.cause,
+  ];
+  return fields
+    .flatMap((field) => Array.isArray(field) ? field : [field])
+    .filter((value) => value !== undefined && value !== null && String(value).trim().length > 0)
+    .map((value) => String(value).trim())
+    .join(" | ");
+}
+
+async function readSmartThingsFailure(endpoint: string, res: Response, fallback: string): Promise<string> {
+  const body = await res.text().catch(() => "");
+  let parsed = "";
+  try {
+    parsed = extractSmartThingsMessage(body ? JSON.parse(body) : null);
+  } catch {
+    parsed = "";
+  }
+
+  const preview = previewSmartThingsBody(body);
+  const statusText = `${res.status}${res.statusText ? ` ${res.statusText}` : ""}`;
+  const detail = parsed || preview || "";
+
+  console.error("[SmartThings] Request failed", {
+    endpoint,
+    status: res.status,
+    statusText: res.statusText,
+    preview,
+  });
+
+  return detail
+    ? `${fallback} (${statusText}) ${detail}`
+    : `${fallback} (${statusText})`;
+}
+
+async function smartThingsJson<T>(
+  endpoint: string,
+  token: string,
+  init: RequestInit,
+  fallback: string,
+  allowFailure = false
+): Promise<T | null> {
+  const res = await fetch(`https://api.smartthings.com/v1${endpoint}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(init.headers || {}),
+    },
+  });
+
+  if (!res.ok) {
+    const message = await readSmartThingsFailure(endpoint, res, fallback);
+    if (allowFailure) return null;
+    throw new Error(message);
+  }
+
+  if (res.status === 204) return {} as T;
+  return res.json().catch(() => ({} as T));
+}
+
+export function looksLikeUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
 export async function readHouseConfig(): Promise<any> {
   try {
     return JSON.parse(await fs.readFile(CONFIG_PATH, "utf-8"));
@@ -241,25 +325,13 @@ export function normalizeSmartThingsDevice(device: any): SmartThingsDeviceSnapsh
 }
 
 export async function fetchSmartThingsDevices(token: string): Promise<SmartThingsDeviceSnapshot[]> {
-  const res = await fetch("https://api.smartthings.com/v1/devices", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error("Unable to load SmartThings devices");
-  }
-  const data = await res.json();
+  const data = await smartThingsJson<{ items?: any[] }>("/devices", token, {}, "Unable to load SmartThings devices");
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map(normalizeSmartThingsDevice);
 }
 
 export async function fetchSmartThingsLocations(token: string): Promise<SmartThingsLocationSnapshot[]> {
-  const res = await fetch("https://api.smartthings.com/v1/locations", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error("Unable to load SmartThings locations");
-  }
-  const data = await res.json();
+  const data = await smartThingsJson<{ items?: any[] }>("/locations", token, {}, "Unable to load SmartThings locations");
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map((location: any) => ({
     id: location?.locationId || location?.id,
@@ -269,13 +341,7 @@ export async function fetchSmartThingsLocations(token: string): Promise<SmartThi
 }
 
 export async function fetchSmartThingsScenes(token: string): Promise<SmartThingsSceneSnapshot[]> {
-  const res = await fetch("https://api.smartthings.com/v1/scenes", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error("Unable to load SmartThings scenes");
-  }
-  const data = await res.json();
+  const data = await smartThingsJson<{ items?: any[] }>("/scenes", token, {}, "Unable to load SmartThings scenes");
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map((scene: any) => ({
     id: scene?.sceneId || scene?.id,
@@ -286,13 +352,7 @@ export async function fetchSmartThingsScenes(token: string): Promise<SmartThings
 }
 
 export async function fetchSmartThingsRooms(token: string, locationId: string): Promise<SmartThingsRoomSnapshot[]> {
-  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/rooms`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error("Unable to load SmartThings rooms");
-  }
-  const data = await res.json();
+  const data = await smartThingsJson<{ items?: any[] }>(`/locations/${locationId}/rooms`, token, {}, "Unable to load SmartThings rooms");
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map((room: any) => ({
     id: room?.roomId || room?.id,
@@ -303,37 +363,19 @@ export async function fetchSmartThingsRooms(token: string, locationId: string): 
 }
 
 export async function fetchSmartThingsRoomDevices(token: string, locationId: string, roomId: string): Promise<SmartThingsDeviceSnapshot[]> {
-  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/rooms/${roomId}/devices`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error("Unable to load SmartThings room devices");
-  }
-  const data = await res.json();
+  const data = await smartThingsJson<{ items?: any[] }>(`/locations/${locationId}/rooms/${roomId}/devices`, token, {}, "Unable to load SmartThings room devices");
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map(normalizeSmartThingsDevice);
 }
 
 export async function executeSmartThingsScene(token: string, sceneId: string) {
-  const res = await fetch(`https://api.smartthings.com/v1/scenes/${sceneId}/execute`, {
+  return smartThingsJson(`/scenes/${sceneId}/execute`, token, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(body || "SmartThings scene execution failed");
-  }
-  return res.json().catch(() => ({}));
+  }, "SmartThings scene execution failed");
 }
 
 export async function fetchSmartThingsModes(token: string, locationId: string): Promise<SmartThingsModeSnapshot[]> {
-  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/modes`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error("Unable to load SmartThings modes");
-  }
-  const data = await res.json();
+  const data = await smartThingsJson<{ items?: any[] }>(`/locations/${locationId}/modes`, token, {}, "Unable to load SmartThings modes");
   const items = Array.isArray(data?.items) ? data.items : [];
   return items.map((mode: any) => ({
     id: mode?.modeId || mode?.id,
@@ -344,13 +386,7 @@ export async function fetchSmartThingsModes(token: string, locationId: string): 
 }
 
 export async function fetchSmartThingsCurrentMode(token: string, locationId: string): Promise<SmartThingsModeSnapshot | null> {
-  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/modes/current`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    return null;
-  }
-  const mode = await res.json().catch(() => null);
+  const mode = await smartThingsJson<any>(`/locations/${locationId}/modes/current`, token, {}, "Unable to load SmartThings current mode", true);
   if (!mode) return null;
   return {
     id: mode?.modeId || mode?.id,
@@ -361,19 +397,13 @@ export async function fetchSmartThingsCurrentMode(token: string, locationId: str
 }
 
 export async function setSmartThingsCurrentMode(token: string, locationId: string, modeId: string) {
-  const res = await fetch(`https://api.smartthings.com/v1/locations/${locationId}/modes/current`, {
+  return smartThingsJson(`/locations/${locationId}/modes/current`, token, {
     method: "PUT",
     headers: {
-      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ modeId }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(body || "SmartThings mode change failed");
-  }
-  return res.json().catch(() => ({}));
+  }, "SmartThings mode change failed");
 }
 
 export async function sendSmartThingsCommand(
@@ -383,10 +413,9 @@ export async function sendSmartThingsCommand(
   command: string,
   args: any[] = []
 ) {
-  const res = await fetch(`https://api.smartthings.com/v1/devices/${deviceId}/commands`, {
+  return smartThingsJson(`/devices/${deviceId}/commands`, token, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -399,14 +428,7 @@ export async function sendSmartThingsCommand(
         },
       ],
     }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(body || "SmartThings command failed");
-  }
-
-  return res.json().catch(() => ({}));
+  }, "SmartThings command failed");
 }
 
 export function buildSmartThingsPresetActions(device: SmartThingsDeviceSnapshot) {

@@ -27,6 +27,8 @@ interface HubState {
     deviceCount?: number;
     locationId?: string;
     lastSyncedAt?: string;
+    lastError?: string;
+    lastErrorAt?: string;
     devices?: Array<{
       id: string;
       name: string;
@@ -356,10 +358,24 @@ export default function SmartThingsCommand() {
         <List.Item
           icon={Icon.Info}
           title="Location Sync"
-          subtitle={error ? error : state?.smartthings?.lastSyncedAt ? `Last sync ${new Date(state.smartthings.lastSyncedAt).toLocaleString()}` : "No sync time yet"}
+          subtitle={error ? error : state?.smartthings?.lastError ? `Last error: ${state.smartthings.lastError}` : state?.smartthings?.lastSyncedAt ? `Last sync ${new Date(state.smartthings.lastSyncedAt).toLocaleString()}` : "No sync time yet"}
           accessories={[{ text: error ? "OFFLINE" : "LIVE", color: error ? Color.Red : Color.Green }]}
           actions={<ActionPanel><Action title="Refresh" icon={Icon.Repeat} onAction={refresh} /></ActionPanel>}
         />
+        {state?.smartthings?.lastError ? (
+          <List.Item
+            icon={Icon.ExclamationMark}
+            title="SmartThings Last Error"
+            subtitle={state.smartthings.lastErrorAt ? `${state.smartthings.lastError} · ${new Date(state.smartthings.lastErrorAt).toLocaleString()}` : state.smartthings.lastError}
+            accessories={[{ text: "ERROR", color: Color.Red }]}
+            actions={
+              <ActionPanel>
+                <Action.CopyToClipboard title="Copy Error" content={state.smartthings.lastError} />
+                <Action title="Refresh" icon={Icon.Repeat} onAction={refresh} />
+              </ActionPanel>
+            }
+          />
+        ) : null}
       </List.Section>
     </List>
   );
@@ -544,7 +560,7 @@ function SmartThingsLinkForm({
         </ActionPanel>
       }
     >
-      <Form.Description text="Gravity uses the token directly. Location ID is optional here and only useful if you want to keep it on hand for the official SmartThings connector." />
+      <Form.Description text="Gravity uses the token directly. Location ID is optional here and only useful if you want to keep it on hand for the official SmartThings connector. If your input is a 36-character UUID, that is usually the Location ID, not the PAT." />
       <Form.TextField id="token" title="SmartThings PAT" placeholder="eyJ..." value={token} onChange={setToken} autoFocus />
       <Form.TextField id="locationId" title="Location ID" placeholder="UUID from SmartThings" value={locationId} onChange={setLocationId} />
     </Form>

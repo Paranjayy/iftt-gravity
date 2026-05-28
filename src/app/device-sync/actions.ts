@@ -7,7 +7,7 @@ import { HomeyAdapter } from "../../lib/adapters/homey";
 import { WizAdapter } from "../../lib/adapters/wiz";
 import { discoverWizBulbs } from "../../lib/discovery/wiz";
 import { scrapeJioRouterClients } from "../../lib/discovery/router";
-import { fetchSmartThingsDevices, fetchSmartThingsLocations, sendSmartThingsCommand } from "../../lib/house-automation";
+import { fetchSmartThingsDevices, fetchSmartThingsLocations, looksLikeUuid, sendSmartThingsCommand } from "../../lib/house-automation";
 
 const CONFIG_PATH = path.join(process.cwd(), "config.json");
 
@@ -101,11 +101,20 @@ export async function controlMiraieAC(deviceId: string, command: {
 // ─── SmartThings ─────────────────────────────────────
 export async function linkSmartThings(token: string, locationId?: string) {
   try {
-    const devices = await fetchSmartThingsDevices(token.trim());
+    const cleanToken = token.trim();
+    const cleanLocationId = locationId?.trim() || "";
+    if (looksLikeUuid(cleanToken)) {
+      return {
+        success: false,
+        error: "That looks like a SmartThings Location ID, not a PAT. Paste the Personal Access Token from account.smartthings.com/tokens.",
+      };
+    }
+
+    const devices = await fetchSmartThingsDevices(cleanToken);
     const config = await readConfig();
     config.smartthings = {
-      token: token.trim(),
-      locationId: locationId?.trim() || config.smartthings?.locationId || "",
+      token: cleanToken,
+      locationId: cleanLocationId || config.smartthings?.locationId || "",
       deviceCount: devices.length,
       devices: devices.slice(0, 50).map(d => ({
         id: d.id,
@@ -116,10 +125,20 @@ export async function linkSmartThings(token: string, locationId?: string) {
       })),
       linkedAt: new Date().toISOString(),
       lastSyncedAt: new Date().toISOString(),
+      lastError: null,
+      lastErrorAt: null,
     };
     await writeConfig(config);
     return { success: true, deviceCount: devices.length, devices: config.smartthings.devices };
   } catch (err: any) {
+    console.error("[SmartThings] link failed", err?.message || err);
+    const config = await readConfig();
+    config.smartthings = {
+      ...(config.smartthings || {}),
+      lastError: err?.message || "Failed to connect SmartThings.",
+      lastErrorAt: new Date().toISOString(),
+    };
+    await writeConfig(config);
     return { success: false, error: err.message || "Failed to connect SmartThings." };
   }
 }
@@ -138,9 +157,18 @@ export async function syncSmartThingsDevices() {
     }));
     config.smartthings.deviceCount = devices.length;
     config.smartthings.lastSyncedAt = new Date().toISOString();
+    config.smartthings.lastError = null;
+    config.smartthings.lastErrorAt = null;
     await writeConfig(config);
     return { success: true, deviceCount: devices.length, devices: config.smartthings.devices };
   } catch (err: any) {
+    console.error("[SmartThings] sync failed", err?.message || err);
+    const config = await readConfig();
+    if (config.smartthings) {
+      config.smartthings.lastError = err?.message || "Failed to sync SmartThings.";
+      config.smartthings.lastErrorAt = new Date().toISOString();
+      await writeConfig(config);
+    }
     return { success: false, error: err.message || "Failed to sync SmartThings." };
   }
 }

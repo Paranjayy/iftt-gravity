@@ -7,12 +7,19 @@
 
 /* eslint-disable @typescript-eslint/ban-types */
 
-type ExtensionPreferences = {}
+type ExtensionPreferences = {
+  /** SmartThings PAT - Personal access token for SmartThings linking */
+  "smartThingsPat"?: string,
+  /** SmartThings Location ID - Optional SmartThings location UUID */
+  "smartThingsLocationId"?: unknown
+}
 
 /** Preferences accessible in all the extension's commands */
 declare type Preferences = ExtensionPreferences
 
 declare namespace Preferences {
+  /** Preferences accessible in the `smartthings` command */
+  export type Smartthings = ExtensionPreferences & {}
   /** Preferences accessible in the `control` command */
   export type Control = ExtensionPreferences & {}
   /** Preferences accessible in the `logs` command */
@@ -28,6 +35,8 @@ declare namespace Preferences {
 }
 
 declare namespace Arguments {
+  /** Arguments passed to the `smartthings` command */
+  export type Smartthings = {}
   /** Arguments passed to the `control` command */
   export type Control = {}
   /** Arguments passed to the `logs` command */

@@ -606,6 +606,15 @@ export default function DeviceSyncPage() {
               {config.smartthings?.lastSyncedAt && (
                 <p className="text-[10px] text-white/25">Last sync: {new Date(config.smartthings.lastSyncedAt).toLocaleString()}</p>
               )}
+              {config.smartthings?.lastError && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-[10px] text-red-200">
+                  <p className="font-black uppercase tracking-widest text-red-300/80">Last SmartThings Error</p>
+                  <p className="mt-1 break-words">{config.smartthings.lastError}</p>
+                  {config.smartthings.lastErrorAt && (
+                    <p className="mt-1 text-red-200/60">{new Date(config.smartthings.lastErrorAt).toLocaleString()}</p>
+                  )}
+                </div>
+              )}
               {stLocations.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-[10px] uppercase font-black tracking-widest text-cyan-400/70">Locations</p>
