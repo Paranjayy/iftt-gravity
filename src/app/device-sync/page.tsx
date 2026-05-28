@@ -177,6 +177,19 @@ export default function DeviceSyncPage() {
     const caps = new Set((device.capabilities || []).map((cap: string) => String(cap).toLowerCase()));
     const actions: Array<{ title: string; capability: string; command: string; args?: any[] }> = [];
 
+    if (caps.has("keypadinput")) {
+      actions.push({ title: "Up", capability: "keypadInput", command: "sendKey", args: ["UP"] });
+      actions.push({ title: "Down", capability: "keypadInput", command: "sendKey", args: ["DOWN"] });
+      actions.push({ title: "Left", capability: "keypadInput", command: "sendKey", args: ["LEFT"] });
+      actions.push({ title: "Right", capability: "keypadInput", command: "sendKey", args: ["RIGHT"] });
+      actions.push({ title: "Select", capability: "keypadInput", command: "sendKey", args: ["SELECT"] });
+      actions.push({ title: "Back", capability: "keypadInput", command: "sendKey", args: ["BACK"] });
+      actions.push({ title: "Home", capability: "keypadInput", command: "sendKey", args: ["HOME"] });
+      actions.push({ title: "Source", capability: "keypadInput", command: "sendKey", args: ["INPUT"] });
+      actions.push({ title: "Menu", capability: "keypadInput", command: "sendKey", args: ["MENU"] });
+      actions.push({ title: "Guide", capability: "keypadInput", command: "sendKey", args: ["GUIDE"] });
+      actions.push({ title: "Power", capability: "keypadInput", command: "sendKey", args: ["POWER"] });
+    }
     if (caps.has("switch")) {
       actions.push({ title: "On", capability: "switch", command: "on" });
       actions.push({ title: "Off", capability: "switch", command: "off" });
@@ -197,6 +210,7 @@ export default function DeviceSyncPage() {
     if (caps.has("mediaplayback")) {
       actions.push({ title: "Play", capability: "mediaPlayback", command: "play" });
       actions.push({ title: "Pause", capability: "mediaPlayback", command: "pause" });
+      actions.push({ title: "Stop", capability: "mediaPlayback", command: "stop" });
     }
 
     if (!actions.length) {

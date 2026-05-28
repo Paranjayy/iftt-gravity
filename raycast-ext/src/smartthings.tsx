@@ -66,6 +66,22 @@ interface SmartThingsRoom {
   deviceCount?: number;
 }
 
+type SmartThingsDevice = {
+  id: string;
+  name: string;
+  type?: string;
+  online?: boolean;
+  capabilities?: string[];
+};
+
+type SmartThingsAction = {
+  title: string;
+  icon: any;
+  capability: string;
+  command: string;
+  args?: any[];
+};
+
 export default function SmartThingsCommand() {
   const preferences = getPreferenceValues<Preferences>();
   const [state, setState] = useState<HubState | null>(null);
@@ -78,9 +94,9 @@ export default function SmartThingsCommand() {
   const [error, setError] = useState<string | null>(null);
   const locationId = state?.smartthings?.locationId || preferences.smartThingsLocationId || "";
 
-  async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  async function fetchJson<T>(url: string, init?: any): Promise<T> {
     const res = await fetch(url, init);
-    const data = await res.json().catch(() => ({}));
+    const data: any = await res.json().catch(() => ({}));
     if (!res.ok || data?.success === false) {
       throw new Error(data?.error || `Request failed: ${res.status}`);
     }
@@ -125,11 +141,11 @@ export default function SmartThingsCommand() {
     return () => clearInterval(timer);
   }, [locationId]);
 
-  async function runAction(name: string, endpoint: string, init?: RequestInit) {
+  async function runAction(name: string, endpoint: string, init?: any) {
     const toast = await showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
       const res = await fetch(`http://127.0.0.1:3030${endpoint}`, init);
-      const data = await res.json().catch(() => ({}));
+      const data: any = await res.json().catch(() => ({}));
       if (!res.ok || data?.success === false) {
         throw new Error(data?.error || "Failed");
       }
@@ -322,25 +338,46 @@ export default function SmartThingsCommand() {
           {smartthingsDevices.map((device) => (
             <List.Item
               key={device.id}
-              icon={device.type === "monitor" ? Icon.Desktop : device.type === "light" ? Icon.LightBulb : Icon.Tv}
+              icon={device.type === "monitor" ? Icon.Desktop : device.type === "light" ? Icon.LightBulb : Icon.Desktop}
               title={device.name}
               subtitle={`${device.type || "device"} · ${device.capabilities?.slice(0, 4).join(", ") || "no capabilities listed"}`}
               accessories={[{ text: device.online ? "ONLINE" : "OFFLINE", color: device.online ? Color.Green : Color.Red }]}
               actions={
                 <ActionPanel title="SmartThings Control">
-                  {buildQuickActions(device).map((action) => (
-                    <Action
-                      key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
-                      title={action.title}
-                      icon={action.icon}
-                      onAction={() =>
-                        runAction(
-                          `SmartThings ${action.title}`,
-                          `/control/smartthings?deviceId=${encodeURIComponent(device.id)}&capability=${encodeURIComponent(action.capability)}&command=${encodeURIComponent(action.command)}${action.args?.length ? `&args=${encodeURIComponent(JSON.stringify(action.args))}` : ""}`
-                        )
-                      }
-                    />
-                  ))}
+                  {buildSmartThingsActionGroups(device).quick.length ? (
+                    <ActionPanel.Section title="Quick Controls">
+                      {buildSmartThingsActionGroups(device).quick.map((action) => (
+                        <Action
+                          key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
+                          title={action.title}
+                          icon={action.icon}
+                          onAction={() =>
+                            runAction(
+                              `SmartThings ${action.title}`,
+                              `/control/smartthings?deviceId=${encodeURIComponent(device.id)}&capability=${encodeURIComponent(action.capability)}&command=${encodeURIComponent(action.command)}${action.args?.length ? `&args=${encodeURIComponent(JSON.stringify(action.args))}` : ""}`
+                            )
+                          }
+                        />
+                      ))}
+                    </ActionPanel.Section>
+                  ) : null}
+                  {buildSmartThingsActionGroups(device).remote.length ? (
+                    <ActionPanel.Section title="Remote Control">
+                      {buildSmartThingsActionGroups(device).remote.map((action) => (
+                        <Action
+                          key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
+                          title={action.title}
+                          icon={action.icon}
+                          onAction={() =>
+                            runAction(
+                              `SmartThings ${action.title}`,
+                              `/control/smartthings?deviceId=${encodeURIComponent(device.id)}&capability=${encodeURIComponent(action.capability)}&command=${encodeURIComponent(action.command)}${action.args?.length ? `&args=${encodeURIComponent(JSON.stringify(action.args))}` : ""}`
+                            )
+                          }
+                        />
+                      ))}
+                    </ActionPanel.Section>
+                  ) : null}
                   <Action.Push
                     title="Raw Capability Command"
                     icon={Icon.Terminal}
@@ -381,41 +418,61 @@ export default function SmartThingsCommand() {
   );
 }
 
-function buildQuickActions(device: NonNullable<HubState["smartthings"]>["devices"][number]) {
-  const caps = new Set((device.capabilities || []).map((cap) => String(cap).toLowerCase()));
-  const actions: Array<{ title: string; icon: any; capability: string; command: string; args?: any[] }> = [];
+function buildSmartThingsActionGroups(device: SmartThingsDevice) {
+  const caps = new Set((device.capabilities || []).map((cap: string) => String(cap).toLowerCase()));
+  const quick: SmartThingsAction[] = [];
+  const remote: SmartThingsAction[] = [];
 
   if (caps.has("switch")) {
-    actions.push({ title: "On", icon: Icon.Power, capability: "switch", command: "on" });
-    actions.push({ title: "Off", icon: Icon.Power, capability: "switch", command: "off" });
+    quick.push({ title: "On", icon: Icon.Power, capability: "switch", command: "on" });
+    quick.push({ title: "Off", icon: Icon.Power, capability: "switch", command: "off" });
   }
   if (caps.has("switchlevel")) {
-    actions.push({ title: "25%", icon: Icon.Minus, capability: "switchLevel", command: "setLevel", args: [25] });
-    actions.push({ title: "50%", icon: Icon.Minus, capability: "switchLevel", command: "setLevel", args: [50] });
-    actions.push({ title: "100%", icon: Icon.Plus, capability: "switchLevel", command: "setLevel", args: [100] });
+    quick.push({ title: "25%", icon: Icon.Minus, capability: "switchLevel", command: "setLevel", args: [25] });
+    quick.push({ title: "50%", icon: Icon.Minus, capability: "switchLevel", command: "setLevel", args: [50] });
+    quick.push({ title: "100%", icon: Icon.Plus, capability: "switchLevel", command: "setLevel", args: [100] });
   }
   if (caps.has("colortemperature")) {
-    actions.push({ title: "Warm", icon: Icon.Sun, capability: "colorTemperature", command: "setColorTemperature", args: [2700] });
-    actions.push({ title: "Daylight", icon: Icon.Sun, capability: "colorTemperature", command: "setColorTemperature", args: [5000] });
+    quick.push({ title: "Warm", icon: Icon.Sun, capability: "colorTemperature", command: "setColorTemperature", args: [2700] });
+    quick.push({ title: "Daylight", icon: Icon.Sun, capability: "colorTemperature", command: "setColorTemperature", args: [5000] });
   }
   if (caps.has("audiomute")) {
-    actions.push({ title: "Mute", icon: Icon.SpeakerOff, capability: "audioMute", command: "mute" });
-    actions.push({ title: "Unmute", icon: Icon.SpeakerHigh, capability: "audioMute", command: "unmute" });
+    quick.push({ title: "Mute", icon: Icon.SpeakerOff, capability: "audioMute", command: "mute" });
+    quick.push({ title: "Unmute", icon: Icon.SpeakerHigh, capability: "audioMute", command: "unmute" });
   }
   if (caps.has("mediaplayback")) {
-    actions.push({ title: "Play", icon: Icon.Play, capability: "mediaPlayback", command: "play" });
-    actions.push({ title: "Pause", icon: Icon.Pause, capability: "mediaPlayback", command: "pause" });
+    quick.push({ title: "Play", icon: Icon.Play, capability: "mediaPlayback", command: "play" });
+    quick.push({ title: "Pause", icon: Icon.Pause, capability: "mediaPlayback", command: "pause" });
+    quick.push({ title: "Stop", icon: Icon.Stop, capability: "mediaPlayback", command: "stop" });
   }
   if (caps.has("mediatrackcontrol")) {
-    actions.push({ title: "Next", icon: Icon.ArrowRight, capability: "mediaTrackControl", command: "nextTrack" });
-    actions.push({ title: "Previous", icon: Icon.ArrowLeft, capability: "mediaTrackControl", command: "previousTrack" });
+    quick.push({ title: "Next", icon: Icon.ArrowRight, capability: "mediaTrackControl", command: "nextTrack" });
+    quick.push({ title: "Previous", icon: Icon.ArrowLeft, capability: "mediaTrackControl", command: "previousTrack" });
   }
 
-  if (!actions.length) {
-    actions.push({ title: "On", icon: Icon.Power, capability: "switch", command: "on" });
+  if (caps.has("keypadinput")) {
+    remote.push({ title: "Up", icon: Icon.ArrowUp, capability: "keypadInput", command: "sendKey", args: ["UP"] });
+    remote.push({ title: "Down", icon: Icon.ArrowDown, capability: "keypadInput", command: "sendKey", args: ["DOWN"] });
+    remote.push({ title: "Left", icon: Icon.ArrowLeft, capability: "keypadInput", command: "sendKey", args: ["LEFT"] });
+    remote.push({ title: "Right", icon: Icon.ArrowRight, capability: "keypadInput", command: "sendKey", args: ["RIGHT"] });
+    remote.push({ title: "Select", icon: Icon.Circle, capability: "keypadInput", command: "sendKey", args: ["SELECT"] });
+    remote.push({ title: "Back", icon: Icon.ArrowLeft, capability: "keypadInput", command: "sendKey", args: ["BACK"] });
+    remote.push({ title: "Home", icon: Icon.House, capability: "keypadInput", command: "sendKey", args: ["HOME"] });
+    remote.push({ title: "Source", icon: Icon.Video, capability: "keypadInput", command: "sendKey", args: ["INPUT"] });
+    remote.push({ title: "Menu", icon: Icon.List, capability: "keypadInput", command: "sendKey", args: ["MENU"] });
+    remote.push({ title: "Guide", icon: Icon.List, capability: "keypadInput", command: "sendKey", args: ["GUIDE"] });
+    remote.push({ title: "Power", icon: Icon.Power, capability: "keypadInput", command: "sendKey", args: ["POWER"] });
   }
 
-  return actions;
+  if (!quick.length) {
+    quick.push({ title: "On", icon: Icon.Power, capability: "switch", command: "on" });
+  }
+
+  return { quick, remote };
+}
+
+function buildQuickActions(device: SmartThingsDevice) {
+  return buildSmartThingsActionGroups(device).quick;
 }
 
 function SmartThingsRoomDetail({
@@ -427,14 +484,14 @@ function SmartThingsRoomDetail({
   locationId: string;
   onDone: () => void;
 }) {
-  const [devices, setDevices] = useState<NonNullable<HubState["smartthings"]>["devices"]>([]);
+  const [devices, setDevices] = useState<SmartThingsDevice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function loadRoomDevices() {
     try {
       const res = await fetch(`http://127.0.0.1:3030/control/smartthings/room-devices?locationId=${encodeURIComponent(locationId)}&roomId=${encodeURIComponent(room.id)}`);
-      const data = await res.json().catch(() => ({}));
+      const data: any = await res.json().catch(() => ({}));
       if (!res.ok || data?.success === false) {
         throw new Error(data?.error || "Failed to load room devices");
       }
@@ -474,36 +531,68 @@ function SmartThingsRoomDetail({
           {devices.map((device) => (
             <List.Item
               key={device.id}
-              icon={device.type === "monitor" ? Icon.Desktop : device.type === "light" ? Icon.LightBulb : Icon.Tv}
+              icon={device.type === "monitor" ? Icon.Desktop : device.type === "light" ? Icon.LightBulb : Icon.Desktop}
               title={device.name}
               subtitle={`${device.type || "device"} · ${device.capabilities?.slice(0, 4).join(", ") || "no capabilities listed"}`}
               accessories={[{ text: device.online ? "ONLINE" : "OFFLINE", color: device.online ? Color.Green : Color.Red }]}
               actions={
                 <ActionPanel title="Room Device Control">
-                  {buildQuickActions(device).map((action) => (
-                    <Action
-                      key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
-                      title={action.title}
-                      icon={action.icon}
-                      onAction={async () => {
-                        const query = new URLSearchParams({
-                          deviceId: device.id,
-                          capability: action.capability,
-                          command: action.command,
-                        });
-                        if (action.args?.length) {
-                          query.set("args", JSON.stringify(action.args));
-                        }
-                        const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
-                        const data = await res.json().catch(() => ({}));
-                        if (!res.ok || data?.success === false) {
-                          throw new Error(data?.error || "Failed");
-                        }
-                        onDone();
-                        loadRoomDevices();
-                      }}
-                    />
-                  ))}
+                  {buildSmartThingsActionGroups(device).quick.length ? (
+                    <ActionPanel.Section title="Quick Controls">
+                      {buildSmartThingsActionGroups(device).quick.map((action) => (
+                        <Action
+                          key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
+                          title={action.title}
+                          icon={action.icon}
+                          onAction={async () => {
+                            const query = new URLSearchParams({
+                              deviceId: device.id,
+                              capability: action.capability,
+                              command: action.command,
+                            });
+                            if (action.args?.length) {
+                              query.set("args", JSON.stringify(action.args));
+                            }
+                            const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
+                            const data: any = await res.json().catch(() => ({}));
+                            if (!res.ok || data?.success === false) {
+                              throw new Error(data?.error || "Failed");
+                            }
+                            onDone();
+                            loadRoomDevices();
+                          }}
+                        />
+                      ))}
+                    </ActionPanel.Section>
+                  ) : null}
+                  {buildSmartThingsActionGroups(device).remote.length ? (
+                    <ActionPanel.Section title="Remote Control">
+                      {buildSmartThingsActionGroups(device).remote.map((action) => (
+                        <Action
+                          key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
+                          title={action.title}
+                          icon={action.icon}
+                          onAction={async () => {
+                            const query = new URLSearchParams({
+                              deviceId: device.id,
+                              capability: action.capability,
+                              command: action.command,
+                            });
+                            if (action.args?.length) {
+                              query.set("args", JSON.stringify(action.args));
+                            }
+                            const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
+                            const data: any = await res.json().catch(() => ({}));
+                            if (!res.ok || data?.success === false) {
+                              throw new Error(data?.error || "Failed");
+                            }
+                            onDone();
+                            loadRoomDevices();
+                          }}
+                        />
+                      ))}
+                    </ActionPanel.Section>
+                  ) : null}
                 </ActionPanel>
               }
             />
@@ -535,7 +624,7 @@ function SmartThingsLinkForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-      const data = await res.json();
+      const data: any = await res.json();
       if (!res.ok || data?.success === false) {
         throw new Error(data?.error || "SmartThings link failed");
       }
@@ -571,7 +660,7 @@ function SmartThingsRawCommandForm({
   device,
   onDone,
 }: {
-  device: NonNullable<HubState["smartthings"]>["devices"][number];
+  device: SmartThingsDevice;
   onDone: () => void;
 }) {
   const { pop } = useNavigation();
@@ -601,7 +690,7 @@ function SmartThingsRawCommandForm({
         query.set("args", JSON.stringify(normalizedArgs));
       }
       const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
-      const data = await res.json();
+      const data: any = await res.json();
       if (!res.ok || data?.success === false) {
         throw new Error(data?.error || "SmartThings command failed");
       }
