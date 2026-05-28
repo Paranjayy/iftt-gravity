@@ -74,6 +74,7 @@ export async function controlMiraieAC(deviceId: string, command: {
     config.automation.acGuard = config.automation.acGuard || {};
     config.automation.acGuard.lastActionAt = new Date().toISOString();
     config.automation.acGuard.lastSource = command.source || "manual";
+    config.automation.acGuard.minActionGapMs = config.automation.acGuard.minActionGapMs ?? 20 * 60 * 1000;
     if (command.source === "automation" && command.power !== undefined) {
       config.automation.acGuard.active = command.power;
       config.automation.acGuard.manualOverrideUntil = null;

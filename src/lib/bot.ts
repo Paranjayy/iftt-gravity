@@ -1748,7 +1748,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               acfs: decision.fan === 'HIGH' ? '3' : '4',
             });
             config.automation = config.automation || {};
-            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, cooldownUntil: null, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, cooldownUntil: null, minActionGapMs: config.automation.acGuard?.minActionGapMs ?? 20 * 60 * 1000, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
             saveConfig(config);
             await notifier.notify(`🌡️ *Sovereignty:* Room heat hit *${w.temp}°C*. AC set to *${decision.targetTemp ?? 24}°C* (${decision.reason}).`, 'low');
           } else if (decision.action === 'adjust' && d && isPhoneOnline) {
@@ -1758,13 +1758,13 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               acmd: (decision.mode || 'COOL').toLowerCase(),
             });
             config.automation = config.automation || {};
-            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, minActionGapMs: config.automation.acGuard?.minActionGapMs ?? 20 * 60 * 1000, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
             saveConfig(config);
           } else if (decision.action === 'stop' && d) {
             await miraie?.controlDevice(d, { ps: 'off' });
             updateDeviceState('ac', 'off');
             config.automation = config.automation || {};
-            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: false, cooldownUntil: new Date(Date.now() + 90 * 60 * 1000).toISOString(), lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: false, cooldownUntil: new Date(Date.now() + 90 * 60 * 1000).toISOString(), minActionGapMs: config.automation.acGuard?.minActionGapMs ?? 20 * 60 * 1000, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
             saveConfig(config);
             await notifier.notify(`🍃 *Sovereignty:* Cooling eased off after the room stabilized (${decision.reason}).`, 'low');
           }
@@ -5389,7 +5389,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               acmd: (decision.mode || "COOL").toLowerCase(),
             });
             config.automation = config.automation || {};
-            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, cooldownUntil: null, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, cooldownUntil: null, minActionGapMs: config.automation.acGuard?.minActionGapMs ?? 20 * 60 * 1000, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
             saveConfig(config);
             thermalAcActive = true;
           } else if (decision.action === "adjust" && deviceId) {
@@ -5399,13 +5399,13 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               acmd: (decision.mode || "COOL").toLowerCase(),
             });
             config.automation = config.automation || {};
-            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: true, minActionGapMs: config.automation.acGuard?.minActionGapMs ?? 20 * 60 * 1000, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
             saveConfig(config);
           } else if (decision.action === "stop" && thermalAcActive && deviceId) {
             logActivity(`❄️ Thermal Safe: CPU at ${temp}°C. Restoring AC.`);
             await miraie?.controlDevice(deviceId, { ps: "off" });
             config.automation = config.automation || {};
-            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: false, cooldownUntil: new Date(Date.now() + 90 * 60 * 1000).toISOString(), lastActionAt: new Date().toISOString(), lastSource: 'automation' };
+            config.automation.acGuard = { ...(config.automation.acGuard || {}), active: false, cooldownUntil: new Date(Date.now() + 90 * 60 * 1000).toISOString(), minActionGapMs: config.automation.acGuard?.minActionGapMs ?? 20 * 60 * 1000, lastActionAt: new Date().toISOString(), lastSource: 'automation' };
             saveConfig(config);
             thermalAcActive = false;
           }

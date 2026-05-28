@@ -108,6 +108,8 @@ export function evaluateCoolingDecision(input: CoolingPolicyInput): CoolingDecis
   const manualOverrideActive = manualOverrideUntil > now.getTime();
   const cooldownUntil = guard.cooldownUntil ? new Date(guard.cooldownUntil).getTime() : 0;
   const cooldownActive = cooldownUntil > now.getTime();
+  const lastActionAt = guard.lastActionAt ? new Date(guard.lastActionAt).getTime() : 0;
+  const recentActionActive = lastActionAt > 0 && (now.getTime() - lastActionAt) < Number(guard.minActionGapMs ?? 20 * 60 * 1000);
 
   if (manualOverrideActive && (macThermalLevel === null || macThermalLevel < severeThreshold) && (roomTemp === null || roomTemp < Number(guard.roomOverrideTemp ?? 36))) {
     return {
@@ -120,6 +122,13 @@ export function evaluateCoolingDecision(input: CoolingPolicyInput): CoolingDecis
     return {
       action: "none",
       reason: "cooldown-active",
+    };
+  }
+
+  if (recentActionActive && (macThermalLevel === null || macThermalLevel < severeThreshold) && (roomTemp === null || roomTemp < Number(guard.roomRestartTemp ?? 34))) {
+    return {
+      action: "none",
+      reason: "recent-action-debounce",
     };
   }
 
