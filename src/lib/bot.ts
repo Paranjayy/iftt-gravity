@@ -30,6 +30,7 @@ import {
   fetchSmartThingsCurrentMode,
   executeSmartThingsScene,
   setSmartThingsCurrentMode,
+  looksLikeUuid,
 } from './house-automation';
 import fs from 'fs';
 import path from 'path';
@@ -4011,6 +4012,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               deviceCount: config.smartthings.deviceCount || config.smartthings.devices?.length || 0,
               locationId: config.smartthings.locationId || "",
               lastSyncedAt: config.smartthings.lastSyncedAt || "",
+              lastError: config.smartthings.lastError || "",
+              lastErrorAt: config.smartthings.lastErrorAt || "",
               devices: config.smartthings.devices || [],
             } : null,
             habitStats: {
@@ -4431,12 +4434,21 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                 capabilities: d.capabilities,
               })),
               lastSyncedAt: new Date().toISOString(),
+              lastError: null,
+              lastErrorAt: null,
             };
             saveConfig(config);
             return new Response(JSON.stringify({ success: true, deviceCount: devices.length, devices: config.smartthings.devices }), {
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });
           } catch (e: any) {
+            console.error('[SmartThings] sync failed', e?.message || e);
+            config.smartthings = {
+              ...(config.smartthings || {}),
+              lastError: e?.message || 'SmartThings sync failed',
+              lastErrorAt: new Date().toISOString(),
+            };
+            saveConfig(config);
             return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings sync failed' }), {
               status: 500,
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
@@ -4450,6 +4462,15 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             const locationId = String(body.locationId || '').trim();
             if (!token) {
               return new Response(JSON.stringify({ success: false, error: 'Missing SmartThings token' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+              });
+            }
+            if (looksLikeUuid(token)) {
+              return new Response(JSON.stringify({
+                success: false,
+                error: 'That looks like a SmartThings Location ID, not a PAT. Paste the Personal Access Token from account.smartthings.com/tokens.',
+              }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
               });
@@ -4468,12 +4489,21 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               })),
               linkedAt: new Date().toISOString(),
               lastSyncedAt: new Date().toISOString(),
+              lastError: null,
+              lastErrorAt: null,
             };
             saveConfig(config);
             return new Response(JSON.stringify({ success: true, deviceCount: devices.length, devices: config.smartthings.devices }), {
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
             });
           } catch (e: any) {
+            console.error('[SmartThings] link failed', e?.message || e);
+            config.smartthings = {
+              ...(config.smartthings || {}),
+              lastError: e?.message || 'SmartThings link failed',
+              lastErrorAt: new Date().toISOString(),
+            };
+            saveConfig(config);
             return new Response(JSON.stringify({ success: false, error: e.message || 'SmartThings link failed' }), {
               status: 500,
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
