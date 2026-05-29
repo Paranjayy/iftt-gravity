@@ -126,6 +126,24 @@ export default function Command() {
     if (caps.has("mediaplayback")) {
       actions.push({ title: "Play", icon: Icon.Play, capability: "mediaPlayback", command: "play" });
       actions.push({ title: "Pause", icon: Icon.Pause, capability: "mediaPlayback", command: "pause" });
+      actions.push({ title: "Stop", icon: Icon.Stop, capability: "mediaPlayback", command: "stop" });
+    }
+    if (caps.has("mediatrackcontrol")) {
+      actions.push({ title: "Next", icon: Icon.ArrowRight, capability: "mediaTrackControl", command: "nextTrack" });
+      actions.push({ title: "Previous", icon: Icon.ArrowLeft, capability: "mediaTrackControl", command: "previousTrack" });
+    }
+    if (caps.has("keypadinput")) {
+      actions.push({ title: "Remote Up", icon: Icon.ArrowUp, capability: "keypadInput", command: "sendKey", args: ["UP"] });
+      actions.push({ title: "Remote Down", icon: Icon.ArrowDown, capability: "keypadInput", command: "sendKey", args: ["DOWN"] });
+      actions.push({ title: "Remote Left", icon: Icon.ArrowLeft, capability: "keypadInput", command: "sendKey", args: ["LEFT"] });
+      actions.push({ title: "Remote Right", icon: Icon.ArrowRight, capability: "keypadInput", command: "sendKey", args: ["RIGHT"] });
+      actions.push({ title: "Remote Select", icon: Icon.Circle, capability: "keypadInput", command: "sendKey", args: ["SELECT"] });
+      actions.push({ title: "Remote Back", icon: Icon.ArrowLeft, capability: "keypadInput", command: "sendKey", args: ["BACK"] });
+      actions.push({ title: "Remote Home", icon: Icon.House, capability: "keypadInput", command: "sendKey", args: ["HOME"] });
+      actions.push({ title: "Remote Source", icon: Icon.Video, capability: "keypadInput", command: "sendKey", args: ["INPUT"] });
+      actions.push({ title: "Remote Menu", icon: Icon.List, capability: "keypadInput", command: "sendKey", args: ["MENU"] });
+      actions.push({ title: "Remote Guide", icon: Icon.List, capability: "keypadInput", command: "sendKey", args: ["GUIDE"] });
+      actions.push({ title: "Remote Power", icon: Icon.Power, capability: "keypadInput", command: "sendKey", args: ["POWER"] });
     }
 
     if (!actions.length) {
@@ -268,7 +286,7 @@ export default function Command() {
           {state.smartthings.devices.map((device) => (
             <List.Item
               key={device.id}
-              icon={device.type === "monitor" ? Icon.Desktop : device.type === "light" ? Icon.LightBulb : Icon.Tv}
+              icon={device.type === "monitor" ? Icon.Desktop : device.type === "light" ? Icon.LightBulb : Icon.Desktop}
               title={device.name}
               subtitle={`${device.type || "device"} · ${device.capabilities?.slice(0, 3).join(", ") || "no capabilities listed"}`}
               accessories={[{ text: device.online ? "ONLINE" : "OFFLINE", color: device.online ? Color.Green : Color.Red }]}

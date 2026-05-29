@@ -91,7 +91,7 @@ export default function SmartThingsCommand() {
   const [currentMode, setCurrentMode] = useState<SmartThingsMode | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const locationId = state?.smartthings?.locationId || preferences.smartThingsLocationId || "";
+  const locationId = state?.smartthings?.locationId || "";
 
   async function fetchJson<T>(url: string, init?: any): Promise<T> {
     const res = await fetch(url, init);
@@ -503,6 +503,35 @@ function SmartThingsRoomDetail({
     }
   }
 
+  async function runRoomAction(device: SmartThingsDevice, action: SmartThingsAction) {
+    const toast = await showToast({ style: Toast.Style.Animated, title: `Sending ${action.title}...` });
+    try {
+      const query = new URLSearchParams({
+        deviceId: device.id,
+        capability: action.capability,
+        command: action.command,
+      });
+      if (action.args?.length) {
+        query.set("args", JSON.stringify(action.args));
+      }
+
+      const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
+      const data: any = await res.json().catch(() => ({}));
+      if (!res.ok || data?.success === false) {
+        throw new Error(data?.error || "Failed");
+      }
+
+      toast.style = Toast.Style.Success;
+      toast.title = `Sent ${action.title}`;
+      onDone();
+      loadRoomDevices();
+    } catch (e: any) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "SmartThings command failed";
+      toast.message = e.message || "Hub Offline";
+    }
+  }
+
   useEffect(() => {
     // SmartThings room device fetching is intentionally lazy until we add a dedicated backend route.
     // For now, the room detail shows the room context and lets users continue from the room browser.
@@ -543,23 +572,7 @@ function SmartThingsRoomDetail({
                           key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
                           title={action.title}
                           icon={action.icon}
-                          onAction={async () => {
-                            const query = new URLSearchParams({
-                              deviceId: device.id,
-                              capability: action.capability,
-                              command: action.command,
-                            });
-                            if (action.args?.length) {
-                              query.set("args", JSON.stringify(action.args));
-                            }
-                            const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
-                            const data: any = await res.json().catch(() => ({}));
-                            if (!res.ok || data?.success === false) {
-                              throw new Error(data?.error || "Failed");
-                            }
-                            onDone();
-                            loadRoomDevices();
-                          }}
+                          onAction={() => runRoomAction(device, action)}
                         />
                       ))}
                     </ActionPanel.Section>
@@ -571,23 +584,7 @@ function SmartThingsRoomDetail({
                           key={`${device.id}-${action.capability}-${action.command}-${action.title}`}
                           title={action.title}
                           icon={action.icon}
-                          onAction={async () => {
-                            const query = new URLSearchParams({
-                              deviceId: device.id,
-                              capability: action.capability,
-                              command: action.command,
-                            });
-                            if (action.args?.length) {
-                              query.set("args", JSON.stringify(action.args));
-                            }
-                            const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
-                            const data: any = await res.json().catch(() => ({}));
-                            if (!res.ok || data?.success === false) {
-                              throw new Error(data?.error || "Failed");
-                            }
-                            onDone();
-                            loadRoomDevices();
-                          }}
+                          onAction={() => runRoomAction(device, action)}
                         />
                       ))}
                     </ActionPanel.Section>
