@@ -35,7 +35,6 @@ interface HubState {
 
 interface Preferences {
   smartThingsPat?: string;
-  smartThingsLocationId?: string;
 }
 
 export default function Command() {
@@ -152,7 +151,7 @@ export default function Command() {
               <Action.Push
                 title="Open Link Form"
                 icon={Icon.Key}
-                target={<SmartThingsLinkForm onDone={refresh} defaultToken={preferences.smartThingsPat || ""} defaultLocationId={preferences.smartThingsLocationId || ""} />}
+                target={<SmartThingsLinkForm onDone={refresh} defaultToken={preferences.smartThingsPat || ""} defaultLocationId={state?.smartthings?.locationId || ""} />}
               />
               <Action
                 title="Sync Devices"
@@ -404,7 +403,7 @@ function SmartThingsLinkForm({
         </ActionPanel>
       }
     >
-      <Form.Description text="Gravity uses the token directly. Location ID is optional here and only useful if you want to keep it on hand for the official SmartThings connector. If your input is a 36-character UUID, that is usually the Location ID, not the PAT." />
+      <Form.Description text="Gravity uses the token directly. If you also know the Location ID, you can paste it here so the hub can keep it with your SmartThings setup. If your input is a 36-character UUID, that is usually the Location ID, not the PAT." />
       <Form.TextField id="token" title="SmartThings PAT" placeholder="eyJ..." value={token} onChange={setToken} autoFocus />
       <Form.TextField id="locationId" title="Location ID" placeholder="UUID from SmartThings" value={locationId} onChange={setLocationId} />
     </Form>

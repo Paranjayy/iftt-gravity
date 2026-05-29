@@ -58,7 +58,7 @@ npm install
   - If Raycast has not refreshed the extension yet, use the fallback **SmartThings** script command in the same folder. It shows a live status summary and opens the local device sync page.
   - Gravity Hub web UI: open `http://localhost:3000/device-sync` while the app is running, then paste the PAT into the SmartThings section there.
 - The optional SmartThings Location ID is the UUID of your SmartThings home/location. It is **not** a device ID.
-- Gravity does not need the Location ID for basic device control. The official Raycast SmartThings connector asks for it, and you can also keep it in Gravity for convenience.
+- Gravity does not need the Location ID for basic device control. If you want to keep it around, enter it in the SmartThings link form or copy it from the Device Sync page.
 - If you forget the Location ID, open the SmartThings section in Gravity Hub and use **Load Locations from PAT**. It will list the locations returned by the SmartThings API and let you pick the one you want.
 - To find the Location ID, call the SmartThings locations endpoint with your PAT and copy the `locationId` value from the response:
   ```bash

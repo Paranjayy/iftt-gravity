@@ -65,13 +65,6 @@
       "description": "Personal access token for SmartThings linking",
       "type": "password",
       "required": false
-    },
-    {
-      "name": "smartThingsLocationId",
-      "title": "SmartThings Location ID",
-      "description": "Optional SmartThings location UUID",
-      "type": "text",
-      "required": false
     }
   ],
   "dependencies": {
