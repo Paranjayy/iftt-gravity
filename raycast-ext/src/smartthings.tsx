@@ -222,6 +222,20 @@ export default function SmartThingsCommand() {
             </ActionPanel>
           }
         />
+        <List.Item
+          icon={Icon.Heartbeat}
+          title="SmartThings Diagnostics"
+          subtitle="Check PAT, Samsung APIs, cached devices, scenes, rooms, and modes"
+          actions={
+            <ActionPanel>
+              <Action.Push
+                title="Run Diagnostics"
+                icon={Icon.Heartbeat}
+                target={<SmartThingsDiagnosticsDetail locationId={locationId} />}
+              />
+            </ActionPanel>
+          }
+        />
       </List.Section>
 
       {modeItems.length ? (
@@ -472,6 +486,92 @@ function buildSmartThingsActionGroups(device: SmartThingsDevice) {
 
 function buildQuickActions(device: SmartThingsDevice) {
   return buildSmartThingsActionGroups(device).quick;
+}
+
+function SmartThingsDiagnosticsDetail({ locationId }: { locationId: string }) {
+  const [markdown, setMarkdown] = useState("# SmartThings Diagnostics\n\nRunning checks...");
+  const [isLoading, setIsLoading] = useState(true);
+
+  async function loadDiagnostics() {
+    setIsLoading(true);
+    try {
+      const query = locationId ? `?locationId=${encodeURIComponent(locationId)}` : "";
+      const res = await fetch(`http://127.0.0.1:3030/control/smartthings/diagnostics${query}`);
+      const data: any = await res.json().catch(() => ({}));
+      setMarkdown(renderSmartThingsDiagnostics(data, res.status));
+    } catch (e: any) {
+      setMarkdown(`# SmartThings Diagnostics\n\n**Backend unreachable**\n\n${e.message || "Could not reach Gravity backend on port 3030."}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDiagnostics();
+  }, [locationId]);
+
+  return (
+    <Detail
+      isLoading={isLoading}
+      markdown={markdown}
+      actions={
+        <ActionPanel>
+          <Action title="Run Again" icon={Icon.Repeat} onAction={loadDiagnostics} />
+          <Action.CopyToClipboard title="Copy Diagnostics" content={markdown} />
+        </ActionPanel>
+      }
+    />
+  );
+}
+
+function renderSmartThingsDiagnostics(data: any, status: number) {
+  const checks = Array.isArray(data?.checks) ? data.checks : [];
+  const lines = [
+    "# SmartThings Diagnostics",
+    "",
+    `**Overall:** ${data?.success ? "OK" : "Needs attention"} (${status})`,
+    `**Checked:** ${data?.checkedAt ? new Date(data.checkedAt).toLocaleString() : "Unknown"}`,
+    "",
+    "## Setup",
+    "",
+    `- Token stored: ${data?.token?.present ? "yes" : "no"}`,
+    `- Location ID: ${data?.location?.id || "not saved"}`,
+    `- Cached devices: ${data?.cache?.deviceCount ?? 0}`,
+    `- Last sync: ${data?.cache?.lastSyncedAt ? new Date(data.cache.lastSyncedAt).toLocaleString() : "never"}`,
+    `- Last error: ${data?.cache?.lastError || "none"}`,
+    "",
+    "## API Checks",
+    "",
+  ];
+
+  if (!checks.length) {
+    lines.push("- No checks returned.");
+  } else {
+    for (const check of checks) {
+      lines.push(`### ${check.ok ? "OK" : "FAILED"}: ${check.name}`);
+      lines.push("");
+      lines.push(`- Time: ${check.ms ?? 0}ms`);
+      if (check.error) lines.push(`- Error: ${check.error}`);
+      if (typeof check.count === "number") lines.push(`- Count: ${check.count}`);
+      if (typeof check.online === "number") lines.push(`- Online: ${check.online}`);
+      if (check.currentMode) lines.push(`- Current mode: ${check.currentMode}`);
+      if (Array.isArray(check.sample) && check.sample.length) {
+        lines.push("- Sample:");
+        for (const item of check.sample) {
+          lines.push(`  - ${typeof item === "string" ? item : `${item.name || item.id || "item"}${item.type ? ` (${item.type})` : ""}${item.online === false ? " offline" : ""}`}`);
+        }
+      }
+      lines.push("");
+    }
+  }
+
+  lines.push("## Raw");
+  lines.push("");
+  lines.push("```json");
+  lines.push(JSON.stringify(data || {}, null, 2));
+  lines.push("```");
+
+  return lines.join("\n");
 }
 
 function SmartThingsRoomDetail({

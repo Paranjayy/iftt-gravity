@@ -3779,7 +3779,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   // ── Web Control API (Port 3030) ─────────────────────
   // Perfect for Raycast / Siri Shortcuts (curl http://localhost:3030/scene/tv)
   try {
-    if (typeof (globalThis as any).Bun !== "undefined") (globalThis as any).Bun.serve({
+    if (typeof (globalThis as any).Bun !== "undefined") (global as any).gravityWebServer = (globalThis as any).Bun.serve({
       port: 3030,
       async fetch(req: any) {
         const url = new URL(req.url);
@@ -4242,6 +4242,109 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             return new Response(e.message || 'SmartThings command failed', { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
         }
+        if (url.pathname === '/control/smartthings/diagnostics') {
+          const token = config.smartthings?.token;
+          const locationId = String(url.searchParams.get('locationId') || config.smartthings?.locationId || '').trim();
+          const diagnostics: any = {
+            success: true,
+            checkedAt: new Date().toISOString(),
+            backend: { ok: true },
+            token: { present: Boolean(token) },
+            location: { id: locationId || null, present: Boolean(locationId) },
+            cache: {
+              deviceCount: config.smartthings?.deviceCount || config.smartthings?.devices?.length || 0,
+              lastSyncedAt: config.smartthings?.lastSyncedAt || null,
+              lastError: config.smartthings?.lastError || null,
+              lastErrorAt: config.smartthings?.lastErrorAt || null,
+            },
+            checks: [] as any[],
+          };
+
+          async function recordCheck(name: string, run: () => Promise<any>) {
+            const startedAt = Date.now();
+            try {
+              const result = await run();
+              diagnostics.checks.push({
+                name,
+                ok: true,
+                ms: Date.now() - startedAt,
+                ...result,
+              });
+            } catch (e: any) {
+              diagnostics.success = false;
+              diagnostics.checks.push({
+                name,
+                ok: false,
+                ms: Date.now() - startedAt,
+                error: e?.message || String(e),
+              });
+            }
+          }
+
+          if (!token) {
+            diagnostics.success = false;
+            diagnostics.checks.push({ name: 'Token', ok: false, error: 'SmartThings not linked' });
+          } else {
+            await recordCheck('Locations API', async () => {
+              const locations = await fetchSmartThingsLocations(token);
+              return {
+                count: locations.length,
+                sample: locations.slice(0, 3).map((location: any) => ({
+                  id: location.id,
+                  name: location.name,
+                })),
+              };
+            });
+
+            await recordCheck('Devices API', async () => {
+              const devices = await fetchSmartThingsDevices(token);
+              return {
+                count: devices.length,
+                online: devices.filter((device: any) => device.online).length,
+                sample: devices.slice(0, 5).map((device: any) => ({
+                  id: device.id,
+                  name: device.name,
+                  type: device.type,
+                  online: device.online,
+                  capabilities: device.capabilities?.slice(0, 8) || [],
+                })),
+              };
+            });
+
+            await recordCheck('Scenes API', async () => {
+              const scenes = await fetchSmartThingsScenes(token);
+              return { count: scenes.length, sample: scenes.slice(0, 5).map((scene: any) => scene.name) };
+            });
+
+            if (locationId) {
+              await recordCheck('Rooms API', async () => {
+                const rooms = await fetchSmartThingsRooms(token, locationId);
+                return {
+                  count: rooms.length,
+                  sample: rooms.slice(0, 5).map((room: any) => ({
+                    id: room.id,
+                    name: room.name,
+                    deviceCount: room.deviceCount,
+                  })),
+                };
+              });
+              await recordCheck('Modes API', async () => {
+                const modes = await fetchSmartThingsModes(token, locationId);
+                const currentMode = await fetchSmartThingsCurrentMode(token, locationId);
+                return {
+                  count: modes.length,
+                  currentMode: currentMode?.name || null,
+                  sample: modes.slice(0, 5).map((mode: any) => mode.name),
+                };
+              });
+            }
+          }
+
+          return new Response(JSON.stringify(diagnostics, null, 2), {
+            status: diagnostics.success ? 200 : 207,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
         if (url.pathname === '/control/smartthings/scenes') {
           try {
             const token = config.smartthings?.token;
@@ -4655,6 +4758,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         return new Response("Gravity API Active", { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
       },
     });
+    (global as any).gravityWebKeepAlive = (global as any).gravityWebKeepAlive || setInterval(() => {}, 60_000);
     console.log('🌐 Web API enabled: :3030/scene/[NAME]');
   } catch(e) { console.warn('API error (port likely in use)'); }
 
