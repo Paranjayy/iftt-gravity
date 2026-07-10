@@ -7,7 +7,7 @@
 # @raycast.packageName Gravity Tools
 
 # Optional parameters:
-# @raycast.icon 🪐
+# @raycast.icon ./hub.png
 # @raycast.currentDirectoryPath /Users/paranjay/Developer/iftt/raycast-ext
 
 # Documentation:

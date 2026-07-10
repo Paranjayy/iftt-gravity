@@ -2,6 +2,7 @@ import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard, Det
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import ACControlDetail from "./ac-control-detail";
+import BulbControlDetail from "./bulb-control-detail";
 
 interface HubState {
   online: boolean;
@@ -26,6 +27,7 @@ interface HubState {
       online?: boolean;
       capabilities?: string[];
     }>;
+    hasToken?: boolean;
   };
   solis?: { today: string; current: string; battery: string; status: string };
   weather?: { temp: number; humidity: number; condition: string; aqi: number; sunrise: string; sunset: string };
@@ -35,6 +37,7 @@ interface HubState {
 
 interface Preferences {
   smartThingsPat?: string;
+  smartThingsLocationId?: string;
 }
 
 export default function Command() {
@@ -60,6 +63,25 @@ export default function Command() {
     const timer = setInterval(refresh, 10000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const pat = preferences.smartThingsPat?.trim();
+    const locId = preferences.smartThingsLocationId?.trim() || "";
+    if (pat && state && (!state.smartthings?.hasToken || state.smartthings?.locationId !== locId)) {
+      fetch("http://127.0.0.1:3030/control/smartthings/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: pat, locationId: locId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            refresh();
+          }
+        })
+        .catch((e) => console.error("[SmartThings] Auto-sync failed", e));
+    }
+  }, [preferences.smartThingsPat, preferences.smartThingsLocationId, state?.smartthings?.hasToken, state?.smartthings?.locationId]);
 
   async function runAction(name: string, endpoint: string) {
     showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
@@ -155,6 +177,108 @@ export default function Command() {
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Precision Control Center...">
+      <List.Section title="Gravity Scenes (Intents)">
+        <List.Item
+          icon={Icon.Video}
+          title="TV TIME"
+          subtitle="Dim Purple & AC Cool"
+          actions={<ActionPanel><Action title="Activate" icon={Icon.Video} onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
+        />
+        <List.Item
+          icon={Icon.ComputerSpeaker}
+          title="WORK MODE"
+          subtitle="Bright White & AC Fan"
+          actions={<ActionPanel><Action title="Activate" icon={Icon.ComputerSpeaker} onAction={() => runAction("Work", "/scene/work")} /></ActionPanel>}
+        />
+        <List.Item
+          icon={Icon.House}
+          title="BACK HOME"
+          subtitle="Warm Welcome"
+          actions={<ActionPanel><Action title="Activate" icon={Icon.House} onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
+        />
+      </List.Section>
+
+      <List.Section title="Precision Hardware Control">
+        <List.Item
+          icon={Icon.Wind}
+          title="Panasonic AC Controller"
+          subtitle={acStatus === 'ON' ? `Running for ${state?.ac_duration || '0m'}` : "Standby"}
+          accessories={[{ text: acStatus, color: acColor }]}
+          actions={
+            <ActionPanel title="AC Precision Pulse">
+              <Action.Push icon={Icon.Wind} title="Detailed Control Panel" target={<ACControlDetail />} />
+              <ActionPanel.Section title="Quick Command Pulse">
+                <Action icon={Icon.ChevronDown} title="Temperature DOWN" shortcut={{ modifiers: ["cmd"], key: "j" }} onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
+                <Action icon={Icon.ChevronUp} title="Temperature UP" shortcut={{ modifiers: ["cmd"], key: "k" }} onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
+                <Action icon={Icon.Video} title="TV Mode (Cool & Quiet)" onAction={() => runAction("TV AC", "/control/ac_tv")} />
+                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "t" }} onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
+                <Action icon={Icon.Snowflake} title="Cool Mode" onAction={() => runAction("Cool", "/control/ac/mode?mode=cool")} />
+                <Action icon={Icon.Repeat} title="Vertical Swing" onAction={() => runAction("Swing", "/control/ac/swing")} />
+                <Action icon={Icon.Bolt} title="Powerful Mode" onAction={() => runAction("Powerful", "/control/ac/powerful?ps=on")} />
+              </ActionPanel.Section>
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Sun}
+          title="Wiz Lighting Hub"
+          subtitle={ltStatus === 'ON' ? `Running for ${state?.light_duration || '1h 32m'}` : "Standby"}
+          accessories={[{ text: ltStatus, color: ltColor }]}
+          actions={
+            <ActionPanel title="Light Tactical Pulse">
+              <Action.Push icon={Icon.LightBulb} title="Detailed Control Panel" target={<BulbControlDetail />} />
+              <Action icon={Icon.Minus} title="Brightness DOWN" onAction={() => runAction("Bright Down", "/control/brightness?dir=down")} />
+              <Action icon={Icon.Plus} title="Brightness UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Bright Up", "/control/brightness?dir=up")} />
+              <ActionPanel.Section title="Atmospheric Controls">
+                <Action icon={Icon.Video} title="TV Mode (Dim to 10%)" onAction={() => runAction("TV Lights", "/control/bulb_tv")} />
+                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
+                <Action icon={Icon.Star} title="Aura Sync (Media)" onAction={() => runAction("Aura", "/control/aura/toggle")} />
+                <Action icon={Icon.Circle} title="White Bulb Mode" onAction={() => runAction("White", "/control/bulb/color?temp=4500")} />
+                <Action icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
+              </ActionPanel.Section>
+            </ActionPanel>
+          }
+        />
+      </List.Section>
+
+      <List.Section title="Sovereignty Dashboard">
+        <List.Item
+          icon={Icon.Bolt}
+          title="PGVCL Energy Pulse"
+          subtitle={`Actual: ₹${state?.pgvcl?.bill || '--'} (${state?.pgvcl?.units || '--'}U) | Today: ₹${state?.estimatedPgBill || '0'} (${state?.units || '0'}U)`}
+          accessories={[{ text: "⚡ BILLING ACTIVE" }]}
+          actions={<ActionPanel><Action icon={Icon.Cloud} title="Sync Vault" onAction={() => runAction("Vault Sync", "/archive/sync")} /></ActionPanel>}
+        />
+        <List.Item
+          icon={Icon.Tray}
+          title="Archive Intelligence"
+          subtitle={`Vault Velocity: HIGH | ${state?.stats?.archiveCount || '41K+'} fragments`}
+          accessories={[{ text: error ? "HUB OFFLINE" : "🕵️ HOARDING ACTIVE", color: error ? Color.Red : undefined }]}
+          actions={
+            <ActionPanel>
+              <Action icon={Icon.Repeat} title="Restart All Backend Services" onAction={() => runAction("HUB RESET", "/control/restart")} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Sun}
+          title="SolisCloud Solar Intel"
+          subtitle={`${state?.solis?.today || '--'} kWh Today | ${state?.solis?.current || '--'} kW Now`}
+          accessories={[{ text: state?.solis?.status || "OPTIMAL" }]}
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.QuestionMark} title="How to Setup SolisCloud" target={<SolisSetupGuide />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Cloud}
+          title="Atmospheric Context"
+          subtitle={`${state?.weather?.temp || '??'}°C | AQI: ${state?.weather?.aqi || '??'}`}
+          accessories={[{ text: `🌇 ${state?.weather?.sunset || '--'} | 🌅 ${state?.weather?.sunrise || '--'}` }]}
+        />
+      </List.Section>
+
       <List.Section title="SmartThings Setup">
         <List.Item
           icon={Icon.Key}
@@ -218,68 +342,6 @@ export default function Command() {
           />
         ) : null}
       </List.Section>
-      
-      <List.Section title="Gravity Scenes (Intents)">
-        <List.Item
-          icon={Icon.Video}
-          title="TV TIME"
-          subtitle="Dim Purple & AC Cool"
-          actions={<ActionPanel><Action title="Activate" icon={Icon.Video} onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
-        />
-        <List.Item
-          icon={Icon.ComputerSpeaker}
-          title="WORK MODE"
-          subtitle="Bright White & AC Fan"
-          actions={<ActionPanel><Action title="Activate" icon={Icon.ComputerSpeaker} onAction={() => runAction("Work", "/scene/work")} /></ActionPanel>}
-        />
-        <List.Item
-          icon={Icon.House}
-          title="BACK HOME"
-          subtitle="Warm Welcome"
-          actions={<ActionPanel><Action title="Activate" icon={Icon.House} onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
-        />
-      </List.Section>
-
-      <List.Section title="Precision Hardware Control">
-        <List.Item
-          icon={Icon.Wind}
-          title="Panasonic AC Controller"
-          subtitle={acStatus === 'ON' ? `Running for ${state?.ac_duration || '0m'}` : "Standby"}
-          accessories={[{ text: acStatus, color: acColor }]}
-          actions={
-            <ActionPanel title="AC Precision Pulse">
-              <Action.Push icon={Icon.Wind} title="Detailed Control Panel" target={<ACControlDetail />} />
-              <ActionPanel.Section title="Quick Command Pulse">
-                <Action icon={Icon.ChevronDown} title="Temperature DOWN" shortcut={{ modifiers: ["cmd"], key: "j" }} onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
-                <Action icon={Icon.ChevronUp} title="Temperature UP" shortcut={{ modifiers: ["cmd"], key: "k" }} onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
-                <Action icon={Icon.Video} title="TV Mode (Cool & Quiet)" onAction={() => runAction("TV AC", "/control/ac_tv")} />
-                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "t" }} onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
-                <Action icon={Icon.Snowflake} title="Cool Mode" onAction={() => runAction("Cool", "/control/ac/mode?mode=cool")} />
-                <Action icon={Icon.Repeat} title="Vertical Swing" onAction={() => runAction("Swing", "/control/ac/swing")} />
-                <Action icon={Icon.Bolt} title="Powerful Mode" onAction={() => runAction("Powerful", "/control/ac/powerful?ps=on")} />
-              </ActionPanel.Section>
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={Icon.Sun}
-          title="Wiz Lighting Hub"
-          subtitle={ltStatus === 'ON' ? `Running for ${state?.light_duration || '1h 32m'}` : "Standby"}
-          accessories={[{ text: ltStatus, color: ltColor }]}
-          actions={
-            <ActionPanel title="Light Tactical Pulse">
-              <Action icon={Icon.Minus} title="Brightness DOWN" onAction={() => runAction("Bright Down", "/control/brightness?dir=down")} />
-              <Action icon={Icon.Plus} title="Brightness UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Bright Up", "/control/brightness?dir=up")} />
-              <ActionPanel.Section title="Atmospheric Controls">
-                <Action icon={Icon.Video} title="TV Mode (Dim to 10%)" onAction={() => runAction("TV Lights", "/control/bulb_tv")} />
-                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
-                <Action icon={Icon.Star} title="Aura Sync (Media)" onAction={() => runAction("Aura", "/control/aura/toggle")} />
-                <Action icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
-              </ActionPanel.Section>
-            </ActionPanel>
-          }
-        />
-      </List.Section>
 
       {state?.smartthings?.devices?.length ? (
         <List.Section title="SmartThings Devices">
@@ -323,44 +385,6 @@ export default function Command() {
           ))}
         </List.Section>
       ) : null}
-
-      <List.Section title="Sovereignty Dashboard">
-        <List.Item
-          icon={Icon.Bolt}
-          title="PGVCL Energy Pulse"
-          subtitle={`Actual: ₹${state?.pgvcl?.bill || '--'} (${state?.pgvcl?.units || '--'}U) | Today: ₹${state?.estimatedPgBill || '0'} (${state?.units || '0'}U)`}
-          accessories={[{ text: "⚡ BILLING ACTIVE" }]}
-          actions={<ActionPanel><Action icon={Icon.Cloud} title="Sync Vault" onAction={() => runAction("Vault Sync", "/archive/sync")} /></ActionPanel>}
-        />
-        <List.Item
-          icon={Icon.Tray}
-          title="Archive Intelligence"
-          subtitle={`Vault Velocity: HIGH | ${state?.stats?.archiveCount || '41K+'} fragments`}
-          accessories={[{ text: error ? "HUB OFFLINE" : "🕵️ HOARDING ACTIVE", color: error ? Color.Red : undefined }]}
-          actions={
-            <ActionPanel>
-              <Action icon={Icon.Repeat} title="Restart All Backend Services" onAction={() => runAction("HUB RESET", "/control/restart")} />
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={Icon.Sun}
-          title="SolisCloud Solar Intel"
-          subtitle={`${state?.solis?.today || '--'} kWh Today | ${state?.solis?.current || '--'} kW Now`}
-          accessories={[{ text: state?.solis?.status || "OPTIMAL" }]}
-          actions={
-            <ActionPanel>
-              <Action.Push icon={Icon.QuestionMark} title="How to Setup SolisCloud" target={<SolisSetupGuide />} />
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={Icon.Cloud}
-          title="Atmospheric Context"
-          subtitle={`${state?.weather?.temp || '??'}°C | AQI: ${state?.weather?.aqi || '??'}`}
-          accessories={[{ text: `🌇 ${state?.weather?.sunset || '--'} | 🌅 ${state?.weather?.sunrise || '--'}` }]}
-        />
-      </List.Section>
 
       <List.Section title="System Telemetry">
         <List.Item

@@ -4,7 +4,7 @@
 # @raycast.schemaVersion 1
 # @raycast.title Start Gravity Hub
 # @raycast.mode compact
-# @raycast.icon 🪐
+# @raycast.icon ./hub.png
 # @raycast.packageName Gravity Tools
 
 # Documentation:

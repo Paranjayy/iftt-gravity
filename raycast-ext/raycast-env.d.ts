@@ -9,7 +9,9 @@
 
 type ExtensionPreferences = {
   /** SmartThings PAT - Personal access token for SmartThings linking */
-  "smartThingsPat"?: string
+  "smartThingsPat"?: string,
+  /** SmartThings Location ID - Optional location ID UUID for SmartThings */
+  "smartThingsLocationId"?: string
 }
 
 /** Preferences accessible in all the extension's commands */

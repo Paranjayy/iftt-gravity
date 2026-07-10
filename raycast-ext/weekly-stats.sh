@@ -6,7 +6,7 @@
 # @raycast.mode fullOutput
 
 # Optional parameters:
-# @raycast.icon 🚀
+# @raycast.icon ./stats.png
 # @raycast.packageName Developer Utilities
 
 AUTHOR=$(git config --global user.name)

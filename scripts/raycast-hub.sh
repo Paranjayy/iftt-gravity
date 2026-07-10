@@ -6,7 +6,7 @@
 # @raycast.mode compact
 
 # Optional parameters:
-# @raycast.icon 🪐
+# @raycast.icon /Users/paranjay/Developer/iftt/raycast-ext/hub.png
 # @raycast.packageName Gravity Utilities
 
 # Documentation:

@@ -7,6 +7,6 @@
 # @raycast.packageName Gravity Tools
 
 # Optional parameters:
-# @raycast.icon 🪐
+# @raycast.icon ./hub.png
 
 exec /Users/paranjay/Developer/iftt/iftt-clone.sh "$@"
