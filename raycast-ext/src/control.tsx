@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import ACControlDetail from "./ac-control-detail";
 import BulbControlDetail from "./bulb-control-detail";
+import HubPulse from "./hub_pulse";
 
 interface HubState {
   online: boolean;
@@ -392,7 +393,13 @@ export default function Command() {
           title="Sovereign Pulse"
           subtitle={`Hub: ${getUptimeStr(state?.uptime || 0)} | Archive: ONLINE`}
           accessories={[{ text: error ? "OFFLINE" : "HEALTHY", color: error ? Color.Red : Color.Green }]}
-          actions={<ActionPanel><Action icon={Icon.Repeat} title="Re-Pulse All Services" onAction={() => runAction("REBUILD", "/control/restart")} /></ActionPanel>}
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.BarChart} title="Open Hub Pulse" target={<HubPulse />} />
+              <Action icon={Icon.Repeat} title="Re-Pulse All Services" onAction={() => runAction("REBUILD", "/control/restart")} />
+              <Action.OpenInBrowser title="Open Web Dashboard" url="http://127.0.0.1:3000" />
+            </ActionPanel>
+          }
         />
       </List.Section>
     </List>

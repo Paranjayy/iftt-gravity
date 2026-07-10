@@ -74,22 +74,44 @@ export default function BulbControlDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Optimistic local state — the server doesn't expose WiZ pilot over HTTP,
+  // so we track brightness, temp, RGB, and active scene locally. This state
+  // gets updated immediately when the user fires an action, so the UI feels
+  // responsive even though the hub's /status payload doesn't include it.
+  const [optimistic, setOptimistic] = useState<{
+    dimming: number;
+    temp?: number;
+    r?: number; g?: number; b?: number;
+    sceneKey?: string;
+  }>({ dimming: 50 });
+
+  // Debounce ref to prevent stale /status responses from overwriting optimistic state
+  const fetchSeq = { current: 0 };
+
   async function refresh() {
+    const seq = ++fetchSeq.current;
     try {
-      const res = await fetch("http://127.0.0.1:3030/status");
+      // /status times out when AC adapter is offline — use AbortController
+      const ac = new AbortController();
+      const t = setTimeout(() => ac.abort(), 4000);
+      const res = await fetch("http://127.0.0.1:3030/status", { signal: ac.signal });
+      clearTimeout(t);
+      if (seq !== fetchSeq.current) return; // stale response
       const data = await res.json();
       setState(data as HubState);
       setError(null);
     } catch (e) {
+      if (seq !== fetchSeq.current) return;
       setError("Hub Offline");
     } finally {
-      setIsLoading(false);
+      if (seq === fetchSeq.current) setIsLoading(false);
     }
   }
 
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, 5000);
+    // 2s polling is snappier without being wasteful; 5s felt laggy
+    const timer = setInterval(refresh, 2000);
     return () => clearInterval(timer);
   }, []);
 
@@ -100,11 +122,62 @@ export default function BulbControlDetail() {
       if (!res.ok) throw new Error("Failed");
       toast.style = Toast.Style.Success;
       toast.title = `Confirmed: ${name}`;
-      await refresh();
+      // Don't wait for /status — apply optimistic updates immediately
+      applyOptimisticFromEndpoint(endpoint);
+      // Then trigger a background refresh; we don't await so the UI is instant
+      setTimeout(refresh, 200);
     } catch (e) {
       toast.style = Toast.Style.Failure;
       toast.title = "Action Failed";
       toast.message = "Hub Offline";
+    }
+  }
+
+  /**
+   * Map an outgoing endpoint to an optimistic state update. This makes the
+   * UI feel instant even though the hub's /status doesn't return the WiZ pilot.
+   */
+  function applyOptimisticFromEndpoint(endpoint: string) {
+    if (endpoint === "/control/bulb/on" || endpoint === "/control/bulb_on") {
+      // We don't have a "powered" state in optimistic, but we mark brightness as active
+      return;
+    }
+    if (endpoint === "/control/bulb/off" || endpoint === "/control/bulb_off") {
+      setOptimistic((o) => ({ ...o, dimming: 0, sceneKey: undefined, r: undefined, g: undefined, b: undefined, temp: undefined }));
+      return;
+    }
+    if (endpoint === "/control/bulb_tv") {
+      setOptimistic((o) => ({ ...o, dimming: 10, sceneKey: "tv" }));
+      return;
+    }
+    if (endpoint.startsWith("/control/brightness?dir=up")) {
+      setOptimistic((o) => ({ ...o, dimming: Math.min(100, (o.dimming || 50) + 20) }));
+      return;
+    }
+    if (endpoint.startsWith("/control/brightness?dir=down")) {
+      setOptimistic((o) => ({ ...o, dimming: Math.max(10, (o.dimming || 50) - 20) }));
+      return;
+    }
+    if (endpoint.startsWith("/control/bulb/color")) {
+      const url = new URL("http://x" + endpoint);
+      if (url.searchParams.has("r")) {
+        setOptimistic((o) => ({
+          ...o,
+          r: parseInt(url.searchParams.get("r") || "0", 10),
+          g: parseInt(url.searchParams.get("g") || "0", 10),
+          b: parseInt(url.searchParams.get("b") || "0", 10),
+          temp: undefined,
+          sceneKey: undefined,
+        }));
+      } else if (url.searchParams.has("temp")) {
+        setOptimistic((o) => ({ ...o, temp: parseInt(url.searchParams.get("temp") || "4500", 10), r: undefined, g: undefined, b: undefined, sceneKey: undefined }));
+      }
+      return;
+    }
+    if (endpoint.startsWith("/scene/")) {
+      const key = endpoint.replace("/scene/", "");
+      setOptimistic((o) => ({ ...o, sceneKey: key, dimming: o.dimming || 70 }));
+      return;
     }
   }
 
@@ -114,7 +187,7 @@ export default function BulbControlDetail() {
    */
   async function setBrightnessTo(target: number) {
     const clamped = Math.max(10, Math.min(100, target));
-    const current = brightness || 50;
+    const current = optimistic.dimming || 50;
     const diff = clamped - current;
     const steps = Math.min(5, Math.max(1, Math.ceil(Math.abs(diff) / 20)));
     const dir = diff > 0 ? "up" : "down";
@@ -126,9 +199,11 @@ export default function BulbControlDetail() {
       for (let i = 0; i < steps; i++) {
         await fetch(`http://127.0.0.1:3030/control/brightness?dir=${dir}`);
       }
+      // Optimistic immediate update
+      setOptimistic((o) => ({ ...o, dimming: clamped }));
       toast.style = Toast.Style.Success;
       toast.title = `Confirmed: Brightness ${clamped}%`;
-      await refresh();
+      setTimeout(refresh, 200);
     } catch (e) {
       toast.style = Toast.Style.Failure;
       toast.title = "Action Failed";
@@ -136,24 +211,32 @@ export default function BulbControlDetail() {
     }
   }
 
-  const pilot = state?.wiz?.pilot;
-  const isOn = pilot?.state === true;
-  const brightness = pilot?.dimming ?? 0;
-  const scene = pilot?.sceneId ? WIZ_SCENES.find((s) => Number(s.id) === Number(pilot.sceneId) || (s as any).key === pilot.sceneId) : undefined;
-  const isColorMode = pilot?.r !== undefined || pilot?.g !== undefined || pilot?.b !== undefined;
-  const rgb = isColorMode ? `RGB(${pilot?.r}, ${pilot?.g}, ${pilot?.b})` : undefined;
+  // Read power state from the server-tracked stats (this is real, not optimistic)
+  // The bot's updateDeviceState('light', 'on'|'off') is called on every action
+  const serverPowerState = (state?.stats?.light?.status || "off").toLowerCase();
+  const isOn = serverPowerState === "on" || optimistic.dimming > 0;
+
+  // Brightness, scene, color all come from optimistic local state
+  const brightness = optimistic.dimming;
+  const scene = optimistic.sceneKey
+    ? WIZ_SCENES.find((s) => s.key === optimistic.sceneKey)
+    : undefined;
+  const isColorMode = optimistic.r !== undefined && optimistic.g !== undefined && optimistic.b !== undefined;
+  const rgb = isColorMode ? `RGB(${optimistic.r}, ${optimistic.g}, ${optimistic.b})` : undefined;
 
   const getPowerColor = () => (isOn ? Color.Green : Color.Red);
   const getPowerStr = () => (isOn ? "ON" : "OFF");
 
   const getModeStr = () => {
     if (scene) return `Scene: ${scene.name}`;
-    if (pilot?.temp) return `White (${pilot.temp}K)`;
+    if (optimistic.temp) return `White (${optimistic.temp}K)`;
     if (isColorMode) return "Color";
     if (isOn) return "Default White";
     return "Standby";
   };
 
+  // Light minutes: prefer the live-updating `light_duration` string from the server,
+  // fallback to lightMinutes calculation
   const lightMinutes = state?.stats?.lightMinutes || 0;
   // Wiz LED ~9W typical, plus PSU losses; assume 10W
   const bulbWatts = 10;
@@ -275,8 +358,8 @@ export default function BulbControlDetail() {
             error
               ? "Hub offline"
               : isOn
-                ? `ON at ${brightness}%${scene ? ` · ${scene.name}` : pilot?.temp ? ` · ${pilot.temp}K` : ""}`
-                : "Currently OFF"
+                ? `ON · ${brightness}%${scene ? ` · ${scene.name}` : optimistic.temp ? ` · ${optimistic.temp}K` : ""}`
+                : "Off"
           }
           icon={{ source: isOn ? Icon.LightBulb : Icon.Circle, tintColor: isOn ? "#FFB432" : "#666666" }}
           accessories={[
@@ -310,12 +393,10 @@ export default function BulbControlDetail() {
                   <List.Item.Detail.Metadata.TagList title="Device Status">
                     {error ? (
                       <List.Item.Detail.Metadata.TagList.Item text={error.toUpperCase()} color={Color.Red} />
-                    ) : state?.wiz?.reachable === false ? (
-                      <List.Item.Detail.Metadata.TagList.Item text="UNREACHABLE" color={Color.Red} />
                     ) : (
                       <List.Item.Detail.Metadata.TagList.Item
-                        text={state?.wiz?.reachable === false ? "OFFLINE" : "ONLINE"}
-                        color={state?.wiz?.reachable === false ? Color.Red : Color.Green}
+                        text="ONLINE"
+                        color={Color.Green}
                       />
                     )}
                   </List.Item.Detail.Metadata.TagList>
@@ -325,7 +406,11 @@ export default function BulbControlDetail() {
                   <List.Item.Detail.Metadata.Separator />
                   <List.Item.Detail.Metadata.Label title="Brightness" text={`${brightness}%`} icon={brightness > 0 ? Icon.LightBulb : Icon.Circle} />
                   <List.Item.Detail.Metadata.Label title="Mode" text={getModeStr()} icon={scene ? scene.icon : Icon.Sun} />
-                  <List.Item.Detail.Metadata.Label title="Uptime Today" text={lightMinutes > 0 ? `${Math.floor(lightMinutes / 60)}h ${lightMinutes % 60}m` : "0m"} icon={Icon.Clock} />
+                  <List.Item.Detail.Metadata.Label
+                    title="Running For"
+                    text={isOn ? (state?.light_duration || "Just now") : "Off"}
+                    icon={Icon.Clock}
+                  />
                 </List.Item.Detail.Metadata>
               }
             />
@@ -368,12 +453,10 @@ export default function BulbControlDetail() {
                       <List.Item.Detail.Metadata.TagList title="Device Status">
                         {error ? (
                           <List.Item.Detail.Metadata.TagList.Item text={error.toUpperCase()} color={Color.Red} />
-                        ) : state?.wiz?.reachable === false ? (
-                          <List.Item.Detail.Metadata.TagList.Item text="UNREACHABLE" color={Color.Red} />
                         ) : (
                           <List.Item.Detail.Metadata.TagList.Item
-                            text={state?.wiz?.reachable === false ? "OFFLINE" : "ONLINE"}
-                            color={state?.wiz?.reachable === false ? Color.Red : Color.Green}
+                            text="ONLINE"
+                            color={Color.Green}
                           />
                         )}
                       </List.Item.Detail.Metadata.TagList>
@@ -402,7 +485,12 @@ export default function BulbControlDetail() {
                         <List.Item.Detail.Metadata.Label title="RGB Channel" text={rgb} />
                       ) : null}
                       <List.Item.Detail.Metadata.Label
-                        title="Uptime Today"
+                        title="Running For"
+                        text={isOn ? (state?.light_duration || "Just now") : "Off"}
+                        icon={Icon.Clock}
+                      />
+                      <List.Item.Detail.Metadata.Label
+                        title="Light Today"
                         text={lightMinutes > 0 ? `${Math.floor(lightMinutes / 60)}h ${lightMinutes % 60}m` : "0m"}
                         icon={Icon.Clock}
                       />
@@ -430,24 +518,18 @@ export default function BulbControlDetail() {
 
                       <List.Item.Detail.Metadata.Label title="Hardware Properties" />
                       <List.Item.Detail.Metadata.Label title="Adapter" text="Philips WiZ" icon={Icon.LightBulb} />
-                      <List.Item.Detail.Metadata.Label title="IP" text={state?.wiz?.ip || "--"} />
                       <List.Item.Detail.Metadata.Label
-                        title="Signal RSSI"
-                        text={pilot?.rssi ? `${pilot.rssi} dBm` : "--"}
-                        icon={Icon.Wifi}
-                      />
-                      <List.Item.Detail.Metadata.Label
-                        title="Last Sync"
-                        text={state?.wiz?.lastSeen ? new Date(state.wiz.lastSeen).toLocaleString() : "--"}
+                        title="Server Status"
+                        text={state?.stats?.light?.status?.toUpperCase() || "UNKNOWN"}
                         icon={Icon.Clock}
                       />
-                      {state?.wiz?.lastError ? (
-                        <List.Item.Detail.Metadata.Label
-                          title="Last Error"
-                          text={state.wiz.lastError}
-                          icon={Icon.ExclamationMark}
-                        />
-                      ) : null}
+                      <List.Item.Detail.Metadata.Label
+                        title="Last Changed"
+                        text={state?.stats?.light?.lastChanged
+                          ? new Date(state.stats.light.lastChanged).toLocaleString()
+                          : "--"}
+                        icon={Icon.Clock}
+                      />
                     </List.Item.Detail.Metadata>
                   }
                 />

@@ -61,7 +61,14 @@
       "name": "quick_scene",
       "title": "Quick Scene",
       "description": "Activate any Gravity scene with one search",
-      "icon": "assets/commands/bulb.png",
+      "icon": "assets/commands/quick_scene.png",
+      "mode": "view"
+    },
+    {
+      "name": "hub_pulse",
+      "title": "Hub Pulse",
+      "description": "All-in-one dashboard: AC, Bulb, SmartThings, Solis, Energy",
+      "icon": "assets/commands/stats.png",
       "mode": "view"
     }
   ],
