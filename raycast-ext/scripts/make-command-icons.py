@@ -29,6 +29,7 @@ COMMANDS = [
     ("aura_toggle", "A", (255, 90, 170, 110),   "Aura - hot pink"),
     ("ac",          "AC",(110, 180, 255, 120),  "AC detail - sky blue"),
     ("bulb",        "B", (255, 180, 80, 120),   "Bulb detail - warm gold"),
+    ("quick_scene", "Q", (170, 90, 255, 120),   "Quick scene - purple"),
 ]
 
 

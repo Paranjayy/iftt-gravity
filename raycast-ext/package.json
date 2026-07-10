@@ -56,6 +56,13 @@
       "description": "Toggle automatic music-light sync",
       "icon": "assets/commands/aura_toggle.png",
       "mode": "no-view"
+    },
+    {
+      "name": "quick_scene",
+      "title": "Quick Scene",
+      "description": "Activate any Gravity scene with one search",
+      "icon": "assets/commands/bulb.png",
+      "mode": "view"
     }
   ],
   "preferences": [

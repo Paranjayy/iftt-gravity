@@ -32,6 +32,8 @@ declare namespace Preferences {
   export type Notes = ExtensionPreferences & {}
   /** Preferences accessible in the `aura_toggle` command */
   export type AuraToggle = ExtensionPreferences & {}
+  /** Preferences accessible in the `quick_scene` command */
+  export type QuickScene = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -49,5 +51,7 @@ declare namespace Arguments {
   export type Notes = {}
   /** Arguments passed to the `aura_toggle` command */
   export type AuraToggle = {}
+  /** Arguments passed to the `quick_scene` command */
+  export type QuickScene = {}
 }
 

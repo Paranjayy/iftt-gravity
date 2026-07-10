@@ -255,6 +255,8 @@ export default function BulbControlDetail() {
       { id: "wake",  title: "Wake Up (Sunrise Warm-Up)",            icon: Icon.Sun,   endpoint: "/scene/sunrise", name: "Wake Up" },
       { id: "sleep", title: "Bedtime (Fade to Dark)",               icon: Icon.Moon,  endpoint: "/scene/bedtime", name: "Bedtime" },
       { id: "aura",  title: "Toggle Media Aura Sync",               icon: Icon.Star,  endpoint: "/control/aura/toggle", name: "Aura Toggle" },
+      { id: "autolight", title: "Toggle Auto-Pilot Lights",        icon: Icon.RotateClockwise, endpoint: "/control/auto/light", name: "Auto-Light Toggle" },
+      { id: "statuscard", title: "Generate Status Card (PNG)",     icon: Icon.Image, endpoint: "/card",          name: "Status Card" },
     ],
   };
 
