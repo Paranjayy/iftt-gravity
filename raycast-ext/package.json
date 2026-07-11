@@ -77,6 +77,13 @@
       "description": "One-tap multi-step scene combos (Movie, Focus, Dinner, Bedtime…)",
       "icon": "commands/mood_presets.png",
       "mode": "view"
+    },
+    {
+      "name": "recent_activity",
+      "title": "Recent Hub Activity",
+      "description": "Tail the last 20 entries from house_log.md in the dashboard",
+      "icon": "commands/logs.png",
+      "mode": "view"
     }
   ],
   "preferences": [
