@@ -1,4 +1,14 @@
-import { List, ActionPanel, Action, Icon, Color, showToast, Toast, confirmAlert, Detail } from "@raycast/api";
+import {
+  List,
+  ActionPanel,
+  Action,
+  Icon,
+  Color,
+  showToast,
+  Toast,
+  confirmAlert,
+  Detail,
+} from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 
@@ -32,9 +42,37 @@ export default function Command() {
   async function fetchItems() {
     if (filter === "demo") {
       setItems([
-        { id: 999, content: "SELECT * FROM universe WHERE life = 'good';", type: "snippet", source_app: "VS Code", labels: "SQL, DB", token_count: 42, is_bookmarked: true, created_at: new Date().toISOString() },
-        { id: 998, content: "https://github.com/paranjayy/gravity-hub", type: "url", source_app: "Arc", labels: "GitHub", token_count: 12, is_bookmarked: false, created_at: new Date().toISOString() },
-        { id: 997, content: "{\n  \"status\": \"success\",\n  \"message\": \"Gravity God Build active\"\n}", type: "snippet", source_app: "Postman", labels: "JSON, API", token_count: 85, is_bookmarked: false, created_at: new Date().toISOString() }
+        {
+          id: 999,
+          content: "SELECT * FROM universe WHERE life = 'good';",
+          type: "snippet",
+          source_app: "VS Code",
+          labels: "SQL, DB",
+          token_count: 42,
+          is_bookmarked: true,
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: 998,
+          content: "https://github.com/paranjayy/gravity-hub",
+          type: "url",
+          source_app: "Arc",
+          labels: "GitHub",
+          token_count: 12,
+          is_bookmarked: false,
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: 997,
+          content:
+            '{\n  "status": "success",\n  "message": "Gravity God Build active"\n}',
+          type: "snippet",
+          source_app: "Postman",
+          labels: "JSON, API",
+          token_count: 85,
+          is_bookmarked: false,
+          created_at: new Date().toISOString(),
+        },
       ]);
       setIsLoading(false);
       return;
@@ -43,19 +81,27 @@ export default function Command() {
     try {
       setIsLoading(true);
       const query = searchText ? `?q=${encodeURIComponent(searchText)}` : "";
-      
+
       let res;
       try {
-        res = await fetch(`http://localhost:3031/archive/${searchText ? "search" : "list"}${query}`);
+        res = await fetch(
+          `http://localhost:3031/archive/${searchText ? "search" : "list"}${query}`,
+        );
       } catch (e) {
-        res = await fetch(`http://localhost:3030/archive/${searchText ? "search" : "list"}${query}`);
+        res = await fetch(
+          `http://localhost:3030/archive/${searchText ? "search" : "list"}${query}`,
+        );
       }
-      
+
       if (!res.ok) throw new Error("Offline");
       const data = await res.json();
       setItems(data as ArchiveItem[]);
     } catch (e) {
-      showToast({ style: Toast.Style.Failure, title: "Offline", message: "Run ./scripts/archive-runner.sh start" });
+      showToast({
+        style: Toast.Style.Failure,
+        title: "Offline",
+        message: "Run ./scripts/archive-runner.sh start",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +135,11 @@ export default function Command() {
         res = await fetch(`http://localhost:3030/archive/promote/${item.id}`);
       }
       if (res.ok) {
-        showToast({ style: Toast.Style.Success, title: "Promoted!", message: "Added to prompt_vault.md" });
+        showToast({
+          style: Toast.Style.Success,
+          title: "Promoted!",
+          message: "Added to prompt_vault.md",
+        });
       } else {
         throw new Error();
       }
@@ -99,7 +149,12 @@ export default function Command() {
   }
 
   async function deleteItem(item: ArchiveItem) {
-    if (await confirmAlert({ title: "Delete Item?", message: "This cannot be undone." })) {
+    if (
+      await confirmAlert({
+        title: "Delete Item?",
+        message: "This cannot be undone.",
+      })
+    ) {
       try {
         try {
           await fetch(`http://localhost:3031/archive/delete/${item.id}`);
@@ -116,23 +171,64 @@ export default function Command() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "url": return { source: Icon.Link, color: Color.Blue };
-      case "email": return { source: Icon.Envelope, color: Color.Yellow };
-      case "snippet": return { source: Icon.Code, color: Color.Magenta };
-      default: return { source: Icon.Text, color: Color.SecondaryText };
+      case "url":
+        return { source: Icon.Link, color: Color.Blue };
+      case "email":
+        return { source: Icon.Envelope, color: Color.Yellow };
+      case "snippet":
+        return { source: Icon.Code, color: Color.Magenta };
+      default:
+        return { source: Icon.Text, color: Color.SecondaryText };
     }
   };
 
-  const filteredItems = items.filter(item => {
+  const filteredItems = items.filter((item) => {
     if (filter === "all" || filter === "pinned") return true;
-    return item.type === filter || item.labels?.includes(filter) || item.source_app === filter;
+    return (
+      item.type === filter ||
+      item.labels?.includes(filter) ||
+      item.source_app === filter
+    );
   });
 
-  const pinned = filteredItems.filter(i => i.is_bookmarked);
-  const others = filteredItems.filter(i => !i.is_bookmarked);
+  const pinned = filteredItems.filter((i) => i.is_bookmarked);
+  const others = filteredItems.filter((i) => !i.is_bookmarked);
+
+  // Day-group the non-pinned items (additive: doesn't affect existing pinned/recent sections)
+  function dayOf(d: string): "today" | "yesterday" | "week" | "older" {
+    const dt = new Date(d);
+    const now = new Date();
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    ).getTime();
+    const startOfYesterday = startOfToday - 86_400_000;
+    const t = dt.getTime();
+    if (t >= startOfToday) return "today";
+    if (t >= startOfYesterday) return "yesterday";
+    if (t >= startOfToday - 6 * 86_400_000) return "week";
+    return "older";
+  }
+  const today = others.filter((i) => dayOf(i.created_at) === "today");
+  const yesterday = others.filter((i) => dayOf(i.created_at) === "yesterday");
+  const thisWeek = others.filter((i) => dayOf(i.created_at) === "week");
+  const older = others.filter((i) => dayOf(i.created_at) === "older");
+
+  // Stats (for the "Today" header)
+  const topApp = (() => {
+    const counts: Record<string, number> = {};
+    for (const i of others)
+      counts[i.source_app] = (counts[i.source_app] || 0) + 1;
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return sorted[0]?.[0] || "—";
+  })();
+  const totalTokens = others.reduce((s, i) => s + (i.token_count || 0), 0);
 
   // Get unique source apps for the dropdown
-  const sourceApps = Array.from(new Set(items.map(i => i.source_app))).filter(Boolean);
+  const sourceApps = Array.from(new Set(items.map((i) => i.source_app))).filter(
+    Boolean,
+  );
 
   return (
     <L
@@ -155,7 +251,7 @@ export default function Command() {
             <LDI title="Structured JSON" value="Data" icon={Icon.Code} />
           </LDS>
           <LDS title="Captured From">
-            {sourceApps.map(app => (
+            {sourceApps.map((app) => (
               <LDI key={app} title={app} value={app} icon={Icon.AppWindow} />
             ))}
           </LDS>
@@ -165,35 +261,89 @@ export default function Command() {
       {pinned.length > 0 && (
         <LDS title="Pinned Clips" subtitle={`${pinned.length} items`}>
           {pinned.map((item) => (
-            <ArchiveListItem 
-              key={item.id} 
-              item={item} 
-              getTypeIcon={getTypeIcon} 
-              toggleBookmark={toggleBookmark} 
-              promoteToVault={promoteToVault} 
-              deleteItem={deleteItem} 
+            <ArchiveListItem
+              key={item.id}
+              item={item}
+              getTypeIcon={getTypeIcon}
+              toggleBookmark={toggleBookmark}
+              promoteToVault={promoteToVault}
+              deleteItem={deleteItem}
             />
           ))}
         </LDS>
       )}
 
-      <LDS title={pinned.length > 0 ? "Recent Clips" : "Clipboard History"} subtitle={`${others.length} items`}>
-        {others.map((item) => (
-          <ArchiveListItem 
-            key={item.id} 
-            item={item} 
-            getTypeIcon={getTypeIcon} 
-            toggleBookmark={toggleBookmark} 
-            promoteToVault={promoteToVault} 
-            deleteItem={deleteItem} 
-          />
-        ))}
-      </LDS>
+      {/* Today: stat header + grouped clips */}
+      {today.length > 0 && (
+        <LDS
+          title="Today"
+          subtitle={`${today.length} clips · top: ${topApp} · ${totalTokens.toLocaleString()} tokens`}
+        >
+          {today.map((item) => (
+            <ArchiveListItem
+              key={item.id}
+              item={item}
+              getTypeIcon={getTypeIcon}
+              toggleBookmark={toggleBookmark}
+              promoteToVault={promoteToVault}
+              deleteItem={deleteItem}
+            />
+          ))}
+        </LDS>
+      )}
+      {yesterday.length > 0 && (
+        <LDS title="Yesterday" subtitle={`${yesterday.length} clips`}>
+          {yesterday.map((item) => (
+            <ArchiveListItem
+              key={item.id}
+              item={item}
+              getTypeIcon={getTypeIcon}
+              toggleBookmark={toggleBookmark}
+              promoteToVault={promoteToVault}
+              deleteItem={deleteItem}
+            />
+          ))}
+        </LDS>
+      )}
+      {thisWeek.length > 0 && (
+        <LDS title="This Week" subtitle={`${thisWeek.length} clips`}>
+          {thisWeek.map((item) => (
+            <ArchiveListItem
+              key={item.id}
+              item={item}
+              getTypeIcon={getTypeIcon}
+              toggleBookmark={toggleBookmark}
+              promoteToVault={promoteToVault}
+              deleteItem={deleteItem}
+            />
+          ))}
+        </LDS>
+      )}
+      {older.length > 0 && (
+        <LDS title="Older" subtitle={`${older.length} clips`}>
+          {older.map((item) => (
+            <ArchiveListItem
+              key={item.id}
+              item={item}
+              getTypeIcon={getTypeIcon}
+              toggleBookmark={toggleBookmark}
+              promoteToVault={promoteToVault}
+              deleteItem={deleteItem}
+            />
+          ))}
+        </LDS>
+      )}
     </L>
   );
 }
 
-function ArchiveListItem({ item, getTypeIcon, toggleBookmark, promoteToVault, deleteItem }: any) {
+function ArchiveListItem({
+  item,
+  getTypeIcon,
+  toggleBookmark,
+  promoteToVault,
+  deleteItem,
+}: any) {
   return (
     <LI
       key={item.id}
@@ -201,14 +351,25 @@ function ArchiveListItem({ item, getTypeIcon, toggleBookmark, promoteToVault, de
       title={item.content.trim().split("\n")[0]}
       subtitle={item.source_app}
       accessories={[
-        ...(item.labels ? item.labels.split(", ").map((l: string) => ({ tag: { value: l, color: Color.Blue } })) : []),
+        ...(item.labels
+          ? item.labels
+              .split(", ")
+              .map((l: string) => ({ tag: { value: l, color: Color.Blue } }))
+          : []),
         { text: `🪙 ${item.token_count || 0}` },
         { text: new Date(item.created_at).toLocaleDateString() },
-        item.is_bookmarked ? { icon: { source: Icon.Pin, tintColor: Color.Yellow } } : {},
+        item.is_bookmarked
+          ? { icon: { source: Icon.Pin, tintColor: Color.Yellow } }
+          : {},
       ]}
       actions={
         <AP>
           <A.CopyToClipboard title="Copy to Clipboard" content={item.content} />
+          <A.CopyToClipboard
+            title="Copy with Timestamp Prefix"
+            content={`[${new Date(item.created_at).toLocaleString()}] ${item.content}`}
+            shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+          />
           <A
             title={item.is_bookmarked ? "Unpin from Top" : "Pin to Top"}
             icon={Icon.Pin}
@@ -243,7 +404,10 @@ function DetailContent({ item }: { item: ArchiveItem }) {
   let displayContent = item.content;
   let language = "";
 
-  if (item.content.trim().startsWith("{") || item.content.trim().startsWith("[")) {
+  if (
+    item.content.trim().startsWith("{") ||
+    item.content.trim().startsWith("[")
+  ) {
     try {
       displayContent = JSON.stringify(JSON.parse(item.content), null, 2);
       language = "json";

@@ -175,6 +175,46 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 - Schedule view migrated from Detail to List for per-row delete
 - Hub Diagnostic includes the schedule list endpoint
 
+### Round 9: Store prep scaffolding
+- `ROADMAP_STORE.md` (separate file) — phased plan for Raycast Store release
+- `raycast-ext/src/config.ts` — getHubUrl/getArchiveUrl/getDashboardUrl helpers
+  (defaults match local iftt setup; no consumers yet — Phase E will sweep)
+- `raycast-ext/README.md` — public-facing draft
+- `raycast-ext/LICENSE` — MIT
+
+### Round 10 (this PR): UX improvements + rename
+- **Archive**: day-grouped sections (Today / Yesterday / This week / Older),
+  stats header (top app + total tokens), "Copy with Timestamp Prefix" action
+- **Notes**: "Quick Capture Templates" section (5 one-tap templates: Idea,
+  Bug, Meeting, Reflection, Todo), per-note Pin/Unpin (LocalStorage-backed
+  `homepulse-pinned-notes` key), human-readable "5m/2h/3d" age, separate
+  Pinned section at top
+- **NEW command: Prompt Library** (`prompts.tsx`) — 8 seeded prompts aimed
+  at power users (commit message, code review, bug triage, refactor, ADR,
+  etc.), variable substitution (`{{date}} {{time}} {{dt}} {{clip}} {{file}}`),
+  use-count tracking, Top 5 / Recently used / Favorites sections, edit
+  + delete + new forms
+- **Renamed**: `gravity-hub` → `homepulse` (package.json `name` + `title`).
+  Version bumped 1.2.0 → 1.3.0. **NOTE**: The old `gravity-hub` build
+  dir is intentionally NOT deleted; you'll see both in your Raycast
+  extensions list until you uninstall the old one manually. State
+  (LocalStorage, preferences) does NOT migrate — you'll need to:
+  - Re-paste SmartThings PAT in the new extension's preferences
+  - Manually re-add any prompts you created (the 8 seeds re-seed)
+  - Pin notes again (LocalStorage key changed from auto-generated to
+    `homepulse-pinned-notes`)
+  - The bulb optimistic state rebuilds from `/status` polls within 2s
+
+### Files added/modified in Round 10
+- `raycast-ext/src/archive.tsx` — day groupings + stats + copy-with-ts
+- `raycast-ext/src/notes.tsx` — templates section + pin/unpin + age
+- `raycast-ext/src/prompts.tsx` — NEW (15th command)
+- `raycast-ext/package.json` — `prompts` command + `homepulse` rename
+- `raycast-ext/scripts/make-command-icons.py` — added `prompts` entry
+- `raycast-ext/assets/commands/prompts.png` — NEW (lime green tinted)
+- `raycast-ext/README.md` — HomePulse instead of HomePilot
+- `ROADMAP_STORE.md` — `homepulse` recorded as the chosen name
+
 ---
 
 ## Potholes (read this before you change anything)

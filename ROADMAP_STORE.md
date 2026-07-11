@@ -39,9 +39,10 @@ Agreed. Current name ties us to the personal `iftt` repo and the
 | `roomboss`       | Fun, implies "you're in charge"            | Maybe too casual           |
 | `nestray`        | Nest + Raycast                             | Trademark-y                |
 | `homeboard`      | Mission-board for your home                | "Dashboard" is overused    |
+| `homepulse`      | Pulse = heartbeat, fits the "sovereign" vibe | Distinctive, sounds pro   |
 
-**My pick:** `homepilot` — short, neutral, Googleable, doesn't clash
-with anything, scales beyond just "home" (could be a small office).
+**My pick:** `homepulse` — distinctive, fits the existing "Pulse" theme
+(Hub Pulse, Pulse Check, etc.), and the user picked it themselves.
 
 Final decision is yours; nothing renames until you say so.
 
@@ -285,7 +286,7 @@ If this thread dies and another agent picks up:
 |:-----------|:---------------------------------------------------------------|
 | 2026-07-11 | Created this file. Prep mode only, no publishing without user sign-off. |
 | 2026-07-11 | All changes default to current behavior for the local user     |
-| 2026-07-11 | Naming: `homepilot` proposed, awaiting user pick               |
+| 2026-07-11 | Naming: `homepulse` proposed, user picked it; applied in package.json |
 | 2026-07-11 | Phases A-F are independently committable; no global sweeps until proven |
 | 2026-07-11 | Public reference bot will be a separate artifact, not part of extension |
 | 2026-07-11 | Phase A: created `raycast-ext/src/config.ts` with `getHubUrl()` / `getArchiveUrl()` / `getDashboardUrl()` helpers + `hubUrl(path)` / `archiveUrl(path)` / `dashboardUrl(path)` builders. All defaults match local user setup. No consumers yet — wire-up happens in Phase E. **Preferences for these URLs are NOT yet declared in package.json** (avoids user confusion before the sweep). Build clean. |

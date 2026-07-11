@@ -1,4 +1,4 @@
-# HomePilot — Raycast Mission Control for your Smart Home
+# HomePulse — Raycast Mission Control for your Smart Home
 
 > Local-first. One-keyword. For power users who already run a home
 > automation backend.
@@ -9,7 +9,7 @@
 
 ## What is this?
 
-HomePilot is a [Raycast](https://raycast.com) extension that gives you
+HomePulse is a [Raycast](https://raycast.com) extension that gives you
 keyboard-driven mission control over your smart home. It talks to a
 **Hub backend that you run** (a single HTTP service) and gives you
 fast access to every device, scene, schedule, and piece of energy data
