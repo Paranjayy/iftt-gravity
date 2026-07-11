@@ -1,4 +1,4 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation, LocalStorage } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 
@@ -84,6 +84,28 @@ export default function BulbControlDetail() {
     r?: number; g?: number; b?: number;
     sceneKey?: string;
   }>({ dimming: 50 });
+
+  // Hydrate optimistic state from LocalStorage on mount, so the bulb detail
+  // view doesn't reset to "0%" every time the user re-opens it. Latest write
+  // wins (one entry per user).
+  useEffect(() => {
+    (async () => {
+      const stored = await LocalStorage.getItem<string>("gravity-bulb-state");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === "object" && typeof parsed.dimming === "number") {
+            setOptimistic(parsed);
+          }
+        } catch {}
+      }
+    })();
+  }, []);
+
+  // Persist on every change
+  useEffect(() => {
+    LocalStorage.setItem("gravity-bulb-state", JSON.stringify(optimistic));
+  }, [optimistic]);
 
   // Debounce ref to prevent stale /status responses from overwriting optimistic state
   const fetchSeq = { current: 0 };
@@ -427,28 +449,27 @@ export default function BulbControlDetail() {
               icon={item.icon as any}
               actions={
                 <ActionPanel>
-                  <Action
-                    title={item.title}
-                    icon={item.icon as any}
-                    onAction={() => {
-                      if (item.endpoint.startsWith("__brightness__:")) {
-                        const pct = parseInt(item.endpoint.split(":")[1], 10);
-                        setBrightnessTo(pct);
-                      } else if (item.endpoint === "__form__:bulbTimer") {
-                        // opened via secondary action below
-                        return;
-                      } else {
-                        runAction(item.name, item.endpoint);
-                      }
-                    }}
-                  />
                   {item.endpoint === "__form__:bulbTimer" ? (
                     <Action.Push
                       title="Open Custom Bulb Timer Form"
                       icon={Icon.Pencil}
+                      shortcut={{ modifiers: [], key: "return" }}
                       target={<CustomBulbTimerForm onDone={refresh} />}
                     />
-                  ) : null}
+                  ) : (
+                    <Action
+                      title={item.title}
+                      icon={item.icon as any}
+                      onAction={() => {
+                        if (item.endpoint.startsWith("__brightness__:")) {
+                          const pct = parseInt(item.endpoint.split(":")[1], 10);
+                          setBrightnessTo(pct);
+                        } else {
+                          runAction(item.name, item.endpoint);
+                        }
+                      }}
+                    />
+                  )}
                   <Action
                     title="Force Refresh State"
                     icon={Icon.Repeat}

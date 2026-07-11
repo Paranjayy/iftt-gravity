@@ -69,6 +69,16 @@ export default function ACControlDetail() {
   async function runAction(name: string, endpoint: string) {
     const toast = await showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
+      // Special: Powerful + Freeze Guard fires two endpoints sequentially
+      if (endpoint === "__powerful_safe__") {
+        await fetch("http://127.0.0.1:3030/control/ac/powerful?ps=on");
+        await fetch("http://127.0.0.1:3030/control/ac/timer?mins=10");
+        toast.style = Toast.Style.Success;
+        toast.title = `Confirmed: ${name}`;
+        toast.message = "AC at 18°C with 10-min safety cap";
+        await refresh();
+        return;
+      }
       const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
       if (!res.ok) throw new Error("Failed");
       toast.style = Toast.Style.Success;
@@ -235,6 +245,7 @@ export default function ACControlDetail() {
       items: [
         { id: "preset-tv", title: "TV Mode (Cool & Quiet)", icon: Icon.Video, endpoint: "/control/ac_tv", name: "TV Mode" },
         { id: "preset-powerful", title: "Powerful Boost Mode", icon: Icon.Bolt, endpoint: "/control/ac/powerful?ps=on", name: "Powerful Mode" },
+        { id: "preset-powerful-safe", title: "❄️  Powerful 18°C + 10m Freeze Guard", icon: Icon.Snowflake, endpoint: "__powerful_safe__", name: "Powerful + Freeze Guard" },
         { id: "preset-eco", title: "Eco Mode (26°C)", icon: Icon.Leaf, endpoint: "/control/ac/set?acem=on&acpm=off&acec=off&actmp=26&cnv=0", name: "Eco Mode" },
         { id: "preset-clean", title: "Filter Clean Mode", icon: Icon.Eraser, endpoint: "/control/ac/set?acem=off&acpm=off&acec=on&cnv=0", name: "Clean Mode" },
         { id: "preset-none", title: "Clear Preset (Standard)", icon: Icon.RotateAntiClockwise, endpoint: "/control/ac/set?acem=off&acpm=off&acec=off&cnv=0", name: "Clear Preset" }
@@ -252,6 +263,7 @@ export default function ACControlDetail() {
     {
       section: "Off Timer Scheduler",
       items: [
+        { id: "timer-10m", title: "❄️  Freeze Guard: 10 min cap", icon: Icon.Snowflake, endpoint: "/control/ac/timer?mins=10", name: "Freeze Guard 10m" },
         { id: "timer-30m", title: "Turn Off in 30 Minutes", icon: Icon.Clock, endpoint: "/control/ac/timer?mins=30", name: "Off Timer 30m" },
         { id: "timer-1h", title: "Turn Off in 1 Hour", icon: Icon.Clock, endpoint: "/control/ac/timer?mins=60", name: "Off Timer 1h" },
         { id: "timer-2h", title: "Turn Off in 2 Hours", icon: Icon.Clock, endpoint: "/control/ac/timer?mins=120", name: "Off Timer 2h" },
@@ -277,24 +289,20 @@ export default function ACControlDetail() {
               icon={item.icon}
               actions={
                 <ActionPanel>
-                  <Action
-                    title={item.title}
-                    icon={item.icon}
-                    onAction={() => {
-                      if (item.endpoint === "__form__:customTimer") {
-                        // The form will be shown via the secondary action below
-                        return;
-                      }
-                      runAction(item.name, item.endpoint);
-                    }}
-                  />
                   {item.endpoint === "__form__:customTimer" ? (
                     <Action.Push
                       title="Open Custom Timer Form"
                       icon={Icon.Pencil}
+                      shortcut={{ modifiers: [], key: "return" }}
                       target={<CustomACTimerForm onDone={refresh} />}
                     />
-                  ) : null}
+                  ) : (
+                    <Action
+                      title={item.title}
+                      icon={item.icon}
+                      onAction={() => runAction(item.name, item.endpoint)}
+                    />
+                  )}
                   <Action
                     title="Force Refresh State"
                     icon={Icon.Repeat}
