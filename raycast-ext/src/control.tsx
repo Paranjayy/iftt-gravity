@@ -639,7 +639,15 @@ function AddScheduleForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ time, action, days }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      // Old bot (pre v1.2.0): returns 'Gravity: Scene ADD Active' instead of JSON
+      // Detect and tell user to restart
+      if (!text.startsWith("{")) {
+        throw new Error(
+          "Bot is on an older version. Run 'Gravity Hub(Start)' from Raycast to restart with schedule support."
+        );
+      }
+      const data = JSON.parse(text);
       if (data.error) throw new Error(data.error);
       toast.style = Toast.Style.Success;
       toast.title = `Scheduled: ${action} @ ${time}`;

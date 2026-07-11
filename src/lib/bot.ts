@@ -114,7 +114,7 @@ const formatAction = (cmd: string, config: any) => {
     'bulb_on': 'Lights 💡: ✅ ON', 'bulb_off': 'Lights 🌑: ❌ OFF',
     'temp_up': 'Temp 🌡️ +1°', 'temp_down': 'Temp 🌡️ -1°',
     'bright_up': 'Brighten ➕', 'bright_down': 'Dim ➖',
-    'bulb_warm': 'Warm Aura 🕯️', 'bulb_cool': 'Cool Aura ❄️',
+    'bulb_warm': 'Warm Aura 🕯️', 'bulb_cool': 'Cool Aura ❄️', 'bulb_white': 'White Bulb 🔆',
     'bulb_tv': 'TV Mode 🌘', 
     'aura_toggle': `Aura Sync 🌈: ${config.mediaAura !== false ? '✅ ON' : '❌ OFF'}`,
     'cricket_toggle': `Cricket Mode 🏏: ${config.cricketMode ? '✅ ON' : '❌ OFF'}`, 
@@ -285,24 +285,38 @@ class GravityScheduler {
     const now = new Date();
     const istTime = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
     const day = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    // 0 = Sun, 1 = Mon, ... 6 = Sat (getDay())
+    const dow = now.getDay();
 
     for (const job of this.jobs) {
-      if (job.time === istTime && (job.days === 'daily' || job.days.includes(day))) {
-        if (job.lastRun === istTime) continue;
-        
-        console.log(`[Scheduler] Triggering: ${job.name || job.action}`);
-        const action = this.actions[job.action];
-        if (action) {
-          try { await action(job.params); } catch (e) { console.error(`Job ${job.action} failed:`, e); }
-        }
-        job.lastRun = istTime;
+      if (job.time !== istTime) continue;
+      // Robust day-filter handling: 'daily' | 'weekdays' | 'weekends' | 'monday,tuesday,...'
+      let shouldFire = false;
+      if (!job.days || job.days === 'daily') {
+        shouldFire = true;
+      } else if (job.days === 'weekdays') {
+        shouldFire = dow >= 1 && dow <= 5;
+      } else if (job.days === 'weekends') {
+        shouldFire = dow === 0 || dow === 6;
+      } else {
+        // Comma-separated list of full day names
+        shouldFire = job.days.toLowerCase().split(',').map((s: string) => s.trim()).includes(day);
+      }
+      if (!shouldFire) continue;
+      if (job.lastRun === istTime) continue;
 
-        // If it's a 'once' job, remove it after execution
-        if (job.once) {
-          this.config.scheduler = this.config.scheduler.filter((j: any) => j.id !== job.id);
-          saveConfig(this.config);
-          this.refresh();
-        }
+      console.log(`[Scheduler] Triggering: ${job.name || job.action}`);
+      const action = this.actions[job.action];
+      if (action) {
+        try { await action(job.params); } catch (e) { console.error(`Job ${job.action} failed:`, e); }
+      }
+      job.lastRun = istTime;
+
+      // If it's a 'once' job, remove it after execution
+      if (job.once) {
+        this.config.scheduler = this.config.scheduler.filter((j: any) => j.id !== job.id);
+        saveConfig(this.config);
+        this.refresh();
       }
     }
   }
@@ -1074,6 +1088,10 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            const finalTemp = Math.min(30, Math.max(16, subCommand === 'temp_up' ? cur + 1 : cur - 1));
            if (deviceId) await miraie?.controlDevice(deviceId as string, { actmp: String(finalTemp), ps: 'on' });
            recordHabit(subCommand);
+        } else if (subCommand === 'bulb_warm' || subCommand === 'bulb_cool' || subCommand === 'bulb_white') {
+           const temp = subCommand === 'bulb_warm' ? 2700 : (subCommand === 'bulb_white' ? 4500 : 6500);
+           await wiz?.executeAction({ type: 'control', payload: { state: true, temp } });
+           recordHabit(subCommand);
         } else if (subCommand === 'bright_up' || subCommand === 'bright_down') {
            const p = await wiz?.getPilot();
            const cur = p?.dimming || 50;
@@ -1502,6 +1520,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         ],
         [
           { text: '❄️ Cool (6K)', callback_data: 'control:bulb_cool:level:light' },
+          { text: '🔆 White (4.5K)', callback_data: 'control:bulb_white:level:light' },
           { text: '🕯️ Warm (2K)', callback_data: 'control:bulb_warm:level:light' }
         ],
         [
@@ -4015,6 +4034,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
               lastError: config.smartthings.lastError || "",
               lastErrorAt: config.smartthings.lastErrorAt || "",
               devices: config.smartthings.devices || [],
+              hasToken: !!config.smartthings.token,
             } : null,
             habitStats: {
               stretches: config.stats.stretches || 0,
@@ -4081,6 +4101,53 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            return new Response(JSON.stringify({ status: 'toggled', autoLight: config.autoLight }), { 
               headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
            });
+        }
+
+        if (url.pathname === '/control/schedule/add') {
+          // Add a new schedule entry (added 2026-07-11 — Raycast bridge)
+          // POST: { time: "HH:MM", action: "ac_on|ac_off|bulb_on|bulb_off|...", days?: "daily|weekdays|weekends" }
+          try {
+            const body: any = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
+            const time = body.time;
+            const action = body.action;
+            const days = body.days || 'daily';
+            if (!time || !/^\d{1,2}:\d{2}$/.test(time)) {
+              return new Response(JSON.stringify({ error: 'time must be HH:MM' }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+            }
+            if (!action) {
+              return new Response(JSON.stringify({ error: 'action is required' }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+            }
+            const newJob: any = { time, action, days, lastRun: '' };
+            if (days === 'weekdays' || days === 'weekends') newJob.weekdaysOnly = (days === 'weekdays');
+            config.scheduler = config.scheduler || [];
+            config.scheduler.push(newJob);
+            saveConfig(config);
+            scheduler.refresh();
+            logActivity(`🕰 Scheduler: New routine added via Raycast - ${action} @ ${time} (${days})`);
+            return new Response(JSON.stringify({ status: 'added', job: newJob }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          } catch (e) {
+            return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+        if (url.pathname === '/control/schedule/list') {
+          // List current schedules (added 2026-07-11)
+          const jobs = (config.scheduler || []).map((j: any, i: number) => ({
+            index: i,
+            time: j.time,
+            action: j.action,
+            days: j.days || 'daily',
+            weekdaysOnly: !!j.weekdaysOnly,
+            lastRun: j.lastRun || '',
+          }));
+          return new Response(JSON.stringify({ jobs }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/schedule/clear') {
+          // Clear all schedules (added 2026-07-11)
+          const cleared = (config.scheduler || []).length;
+          config.scheduler = [];
+          saveConfig(config);
+          scheduler.refresh();
+          return new Response(JSON.stringify({ status: 'cleared', cleared }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 
         // 🪐 GRAVITY ARCHIVE API
@@ -4205,6 +4272,39 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         if (url.pathname === '/control/bulb_tv') {
           if (wiz) await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
           return new Response('Bulb TV Mode Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/bulb/timer') {
+          // Custom off-timer for the bulb (added 2026-07-11 — was missing!)
+          // Accepts ?mins=N where N is the number of minutes until auto-off
+          // (or ?at=HH:MM for absolute clock time)
+          const wizAdapter: any = wiz;
+          const setOff = async () => {
+            if (wizAdapter) await wizAdapter.executeAction({ type: 'control', payload: { state: false } });
+            updateDeviceState('light', 'off', true);
+          };
+          const minsParam = url.searchParams.get('mins');
+          const atParam = url.searchParams.get('at');
+          if (minsParam !== null) {
+            const mins = parseInt(minsParam, 10);
+            if (!isFinite(mins) || mins < 0 || mins > 1440) {
+              return new Response('Invalid mins (0-1440)', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+            }
+            if (mins === 0) {
+              return new Response('Bulb Timer: cleared', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+            }
+            setTimeout(setOff, mins * 60 * 1000);
+            return new Response(`Bulb will turn OFF in ${mins} minutes`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          if (atParam && /^\d{1,2}:\d{2}$/.test(atParam)) {
+            const [h, m] = atParam.split(':').map((n) => parseInt(n, 10));
+            const target = new Date();
+            target.setHours(h, m, 0, 0);
+            if (target.getTime() < Date.now()) target.setDate(target.getDate() + 1);
+            const delayMs = target.getTime() - Date.now();
+            setTimeout(setOff, delayMs);
+            return new Response(`Bulb will turn OFF at ${atParam}`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          return new Response('Use ?mins=N (0-1440) or ?at=HH:MM', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/smartthings') {
           try {
