@@ -91,6 +91,13 @@
       "description": "Probe all hub endpoints in parallel: hub, archive, dashboard, devices",
       "icon": "commands/hub_pulse.png",
       "mode": "view"
+    },
+    {
+      "name": "sun_position",
+      "title": "Sun Position",
+      "description": "Sunrise/sunset countdown, current phase, schedule suggestions",
+      "icon": "commands/stats.png",
+      "mode": "view"
     }
   ],
   "preferences": [

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import QuickScene from "./quick_scene";
 import MoodPresets from "./mood_presets";
+import SunPosition from "./sun_position";
 
 interface HubState {
   online: boolean;
@@ -312,6 +313,16 @@ export default function HubPulse() {
           actions={
             <ActionPanel>
               <Action.Push icon={Icon.Star} title="Open Mood Presets" target={<MoodPresets />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Sun}
+          title="Open Sun Position…"
+          subtitle="Sunrise/sunset countdown + schedule suggestions"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.Sun} title="Open Sun Position" target={<SunPosition />} />
             </ActionPanel>
           }
         />

@@ -13,10 +13,11 @@ const PROBES: Probe[] = [
   { name: "Gravity Hub API (port 3030)",        url: "http://127.0.0.1:3030/status",         category: "hub" },
   { name: "Archive API (port 3031)",            url: "http://127.0.0.1:3031/archive/notes/list", category: "archive" },
   { name: "Web Dashboard (port 3000)",          url: "http://127.0.0.1:3000",               category: "dashboard" },
-  { name: "WiZ Bulb reachable",                  url: "http://127.0.0.1:3030/scene/cozy",     category: "device" },
-  { name: "AC controllable",                     url: "http://127.0.0.1:3030/control/ac/on",  category: "device" },
-  { name: "Scene orchestration",                 url: "http://127.0.0.1:3030/scene/away",     category: "hub" },
+  { name: "WiZ Scene orchestration",             url: "http://127.0.0.1:3030/scene/cozy",     category: "device" },
 ];
+
+// Some endpoints cause side effects (turn on AC, change scene).
+// Make them safe to probe by using read-only ones for diagnostics.
 
 interface ProbeResult {
   name: string;
