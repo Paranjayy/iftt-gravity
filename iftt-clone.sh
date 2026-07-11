@@ -19,6 +19,7 @@ ROOT="/Users/paranjay/Developer/iftt"
 WEB_LOG="/tmp/gravity-web.log"
 BOT_LOG="/tmp/gravity-bot.log"
 ARCHIVE_LOG="/tmp/gravity-archive.log"
+PRELOAD="$ROOT/scripts/bot-preload.cjs"
 
 wait_for_port() {
   local port="$1"
@@ -45,6 +46,14 @@ if [ "$1" == "archive" ]; then
   ps aux | grep "src/lib/archive.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
   launch_detached "$ARCHIVE_LOG" "$BUN" src/lib/archive.ts
   echo "✅ Archive Sentry is now live (Port 3031)."
+  exit 0
+fi
+
+if [ "$1" == "bot" ]; then
+  echo "🤖 Gravity: Launching Hub Bot alone..."
+  ps aux | grep "src/lib/bot.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
+  launch_detached "$BOT_LOG" "$BUN" --preload "$PRELOAD" src/lib/bot.ts
+  echo "✅ Hub Bot is now live (Port 3030)."
   exit 0
 fi
 
@@ -77,7 +86,8 @@ echo "  ↳ 📂 Gravity Archive engaged."
 launch_detached "$ARCHIVE_LOG" "$BUN" src/lib/archive.ts
 
 echo "  ↳ 📂 Gravity Hub ambassador live."
-launch_detached "$BOT_LOG" "$BUN" src/lib/bot.ts
+# Preload shim fixes Bun CJS interop bug with debug@4.x (otherwise bot crashes on startup)
+launch_detached "$BOT_LOG" "$BUN" --preload "$PRELOAD" src/lib/bot.ts
 
 sleep 4
 # Final Pulse Check
