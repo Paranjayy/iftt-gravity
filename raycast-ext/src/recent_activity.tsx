@@ -1,6 +1,7 @@
-import { Detail, ActionPanel, Action, Icon, useNavigation } from "@raycast/api";
+import { Detail, ActionPanel, Action, Icon } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import HubOfflineDetail from "./hub_offline";
 
 interface LogLine {
   ts: string;
@@ -46,14 +47,14 @@ export default function Command() {
     return () => clearInterval(t);
   }, []);
 
+  if (error) {
+    return <HubOfflineDetail context="recent activity (Next.js dashboard on :3000)" onRetry={refresh} />;
+  }
+
   return (
     <Detail
       isLoading={isLoading}
-      markdown={
-        error
-          ? `# ❌ ${error}\n\nIs the Gravity Hub + Next.js dashboard running?`
-          : `# 🪐 Recent Hub Activity\n\n\`\`\`\n${log || "(no activity)"}\n\`\`\`\n\n_Last refresh: ${new Date().toLocaleTimeString()}_`
-      }
+      markdown={`# 🪐 Recent Hub Activity\n\n\`\`\`\n${log || "(no activity)"}\n\`\`\`\n\n_Last refresh: ${new Date().toLocaleTimeString()}_`}
       actions={
         <ActionPanel title="Activity">
           <Action icon={Icon.Repeat} title="Force Refresh" shortcut={{ modifiers: ["cmd"], key: "r" }} onAction={refresh} />

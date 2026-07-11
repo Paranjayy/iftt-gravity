@@ -1,4 +1,4 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon, Color } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, Color, open } from "@raycast/api";
 import { useState } from "react";
 import fetch from "node-fetch";
 
@@ -118,6 +118,15 @@ function PresetItem({ preset }: { preset: SchedulePreset }) {
       toast.style = Toast.Style.Failure;
       toast.title = `Added ${added}/${preset.jobs.length}`;
       toast.message = failed[0] || "Some failed";
+      // Offer a one-tap restart path if the bot is offline
+      if (added === 0) {
+        toast.primaryAction = {
+          title: "Restart Bot",
+          onAction: () => {
+            void open("/Users/paranjay/Developer/iftt/iftt-clone.sh", "Terminal");
+          },
+        };
+      }
     }
     setIsAdding(false);
   }

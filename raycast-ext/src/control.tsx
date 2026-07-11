@@ -5,6 +5,7 @@ import ACControlDetail from "./ac-control-detail";
 import BulbControlDetail from "./bulb-control-detail";
 import HubPulse from "./hub_pulse";
 import SchedulePresetsList from "./schedule_presets";
+import HubOfflineDetail from "./hub_offline";
 
 interface HubState {
   online: boolean;
@@ -737,15 +738,21 @@ function ViewSchedules() {
   const [jobs, setJobs] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function refresh() {
+    setError(null);
+    setJobs(null);
     fetch("http://127.0.0.1:3030/control/schedule/list")
       .then((r) => r.json())
       .then((data) => setJobs(data.jobs || []))
       .catch(() => setError("Hub Offline"));
+  }
+
+  useEffect(() => {
+    refresh();
   }, []);
 
   if (error) {
-    return <Detail markdown={`# ❌ Hub Offline\n\nCannot reach the schedule list. Is the Gravity Hub running?\n\n${error}`} />;
+    return <HubOfflineDetail context="schedule list" onRetry={refresh} />;
   }
   if (!jobs) {
     return <Detail isLoading={true} markdown="Loading schedules..." />;
