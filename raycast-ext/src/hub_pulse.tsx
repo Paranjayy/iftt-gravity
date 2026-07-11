@@ -4,6 +4,7 @@ import fetch from "node-fetch";
 import QuickScene from "./quick_scene";
 import MoodPresets from "./mood_presets";
 import SunPosition from "./sun_position";
+import SchedulePresetsList from "./schedule_presets";
 
 interface HubState {
   online: boolean;
@@ -327,6 +328,16 @@ export default function HubPulse() {
           }
         />
         <List.Item
+          icon={Icon.Bolt}
+          title="Open Schedule Presets…"
+          subtitle="One-tap add 7am safety, 11pm sleep, sunset, wake, panic-net"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.Bolt} title="Open Schedule Presets" target={<SchedulePresetsList />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
           icon={Icon.Pencil}
           title="Quick Log to Today's Note…"
           subtitle="Append a timestamped entry to today's daily note"
@@ -486,6 +497,7 @@ export default function HubPulse() {
           const [text, setText] = useState("");
           const [heading, setHeading] = useState("");
           const [section, setSection] = useState("");
+          const [category, setCategory] = useState("");
 
           async function handleSubmit() {
             if (!text.trim()) {
@@ -493,7 +505,9 @@ export default function HubPulse() {
               return;
             }
             const today = `Daily Note ${new Date().toISOString().split("T")[0]}.md`;
-            const fullText = heading.trim() ? `## ${heading.trim()}\n\n${text}` : text;
+            const ts = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false });
+            const fullText = heading.trim() ? `## ${heading.trim()}\n\n${text}` : `${ts} · ${category ? `[${category}] ` : ""}${text}`;
+            const finalSection = section.trim() || category || undefined;
             const toast = await showToast({ title: "Logging to today's note…", style: Toast.Style.Animated });
             try {
               const res = await fetch("http://127.0.0.1:3031/archive/notes/append", {
@@ -502,13 +516,13 @@ export default function HubPulse() {
                 body: JSON.stringify({
                   name: today,
                   text: fullText,
-                  section: section.trim() || undefined,
+                  section: finalSection,
                 }),
               });
               if (!res.ok) throw new Error("Failed");
               toast.style = Toast.Style.Success;
               toast.title = "Logged to today's note";
-              toast.message = today;
+              toast.message = category ? `${category} · ${today}` : today;
               pop();
             } catch (e: any) {
               toast.style = Toast.Style.Failure;
@@ -525,7 +539,24 @@ export default function HubPulse() {
                 </ActionPanel>
               }
             >
-              <Form.Description text="Append a quick timestamped entry to today's daily note. Optional heading and section." />
+              <Form.Description text="Append a quick timestamped entry to today's daily note. Optional category for filtering later." />
+              <Form.Dropdown
+                id="category"
+                title="Category (optional)"
+                value={category}
+                onChange={setCategory}
+                info="Used as section name + prefix in the note. Easy to grep/filter later."
+              >
+                <Form.Dropdown.Item value="" title="(none)" />
+                <Form.Dropdown.Item value="food" title="🍽️ Food" />
+                <Form.Dropdown.Item value="exercise" title="🏃 Exercise" />
+                <Form.Dropdown.Item value="work" title="💻 Work" />
+                <Form.Dropdown.Item value="sleep" title="😴 Sleep" />
+                <Form.Dropdown.Item value="mood" title="💭 Mood" />
+                <Form.Dropdown.Item value="reading" title="📚 Reading" />
+                <Form.Dropdown.Item value="idea" title="💡 Idea" />
+                <Form.Dropdown.Item value="task" title="✅ Task" />
+              </Form.Dropdown>
               <Form.TextArea
                 id="text"
                 title="Note text"
@@ -534,21 +565,22 @@ export default function HubPulse() {
                 onChange={setText}
                 info="The text you want to log. Timestamps are added automatically."
               />
+              <Form.Separator />
               <Form.TextField
                 id="heading"
-                title="Optional heading (## Markdown)"
-                placeholder="Workout — Lower Body"
+                title="Custom heading (overrides category)"
+                placeholder="e.g. Sprint — Daily Sync"
                 value={heading}
                 onChange={setHeading}
-                info="Will be inserted as ## heading before the text"
+                info="If set, will be inserted as ## heading instead of the timestamp+category line"
               />
               <Form.TextField
                 id="section"
-                title="Optional section"
-                placeholder="Daily Log"
+                title="Custom section name"
+                placeholder="Leave empty to use category"
                 value={section}
                 onChange={setSection}
-                info="For notes with multiple sections (e.g. 'Workout', 'Meals', 'Reading')"
+                info="For multi-section notes. Defaults to category if blank."
               />
             </Form>
           );

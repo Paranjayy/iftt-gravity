@@ -4,6 +4,7 @@ import fetch from "node-fetch";
 import ACControlDetail from "./ac-control-detail";
 import BulbControlDetail from "./bulb-control-detail";
 import HubPulse from "./hub_pulse";
+import SchedulePresetsList from "./schedule_presets";
 
 interface HubState {
   online: boolean;
@@ -207,6 +208,16 @@ export default function Command() {
           actions={
             <ActionPanel>
               <Action.Push icon={Icon.PlusCircle} title="Open Add Schedule Form" target={<AddScheduleForm />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Bolt}
+          title="Schedule Presets (one-tap add)..."
+          subtitle="7am safety, 11pm sleep, sunset, wake, panic-net"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.Bolt} title="Open Schedule Presets" target={<SchedulePresetsList />} />
             </ActionPanel>
           }
         />

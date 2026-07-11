@@ -98,6 +98,13 @@
       "description": "Sunrise/sunset countdown, current phase, schedule suggestions",
       "icon": "commands/stats.png",
       "mode": "view"
+    },
+    {
+      "name": "schedule_presets",
+      "title": "Schedule Presets",
+      "description": "One-tap add common routines (7am safety, 11pm sleep, sunset, wake, panic)",
+      "icon": "commands/control.png",
+      "mode": "view"
     }
   ],
   "preferences": [
