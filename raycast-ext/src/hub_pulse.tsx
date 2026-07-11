@@ -273,6 +273,53 @@ export default function HubPulse() {
             </ActionPanel>
           }
         />
+        <List.Item
+          icon={Icon.XmarkCircle}
+          title="🛑  PANIC MODE — Turn Off Everything"
+          subtitle="AC off + Bulb off + Aura off (instant)"
+          actions={
+            <ActionPanel>
+              <Action
+                icon={Icon.XmarkCircle}
+                title="Engage Panic Mode"
+                onAction={async () => {
+                  const toast = await showToast({ style: Toast.Style.Animated, title: "PANIC: shutting down…" });
+                  try {
+                    await Promise.all([
+                      fetch(`${HUB_URL}/control/ac/off`),
+                      fetch(`${HUB_URL}/control/bulb/off`),
+                      fetch(`${HUB_URL}/control/aura/toggle`),
+                    ]);
+                    toast.style = Toast.Style.Success;
+                    toast.title = "Panic complete";
+                    toast.message = "AC + Bulb + Aura all OFF";
+                    setTimeout(refresh, 500);
+                  } catch (e) {
+                    toast.style = Toast.Style.Failure;
+                    toast.title = "Panic failed";
+                    toast.message = "Hub Offline";
+                  }
+                }}
+              />
+              <Action icon={Icon.Repeat} title="Refresh" onAction={refresh} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Hammer}
+          title="Restart Hub Backend"
+          subtitle="Re-pulse all services (use if hub is sluggish)"
+          actions={
+            <ActionPanel>
+              <Action
+                icon={Icon.Hammer}
+                title="Restart Hub"
+                onAction={() => runHubAction("HUB RESTART", "/control/restart")}
+              />
+              <Action.OpenInBrowser title="Open Web Dashboard" url="http://127.0.0.1:3000" />
+            </ActionPanel>
+          }
+        />
       </List.Section>
     </List>
   );
