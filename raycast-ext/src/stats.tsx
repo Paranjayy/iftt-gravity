@@ -126,6 +126,31 @@ ${data?.smartthings?.lastError ? `- **Last Error**: ${data.smartthings.lastError
 
 _Last refresh: ${lastRefresh.toLocaleTimeString()}_ · _Refresh: ⌘R_`;
 
+  // Telegram-formatted version (uses Telegram's bold/italic/mono syntax instead of markdown)
+  const telegramStatus = error
+    ? "❌ *Hub Offline*"
+    : `🌌 *Gravity Hub Status*
+${dateStr} · ${timeStr}
+
+━━━━━━
+❄️ *Climate*
+  AC: ${acOn ? "🟢 ON" : "⚫ OFF"}${data?.ac_duration ? ` (${data.ac_duration})` : ""}
+  AC Today: ${data?.stats?.acMinutes ? `${Math.floor(data.stats.acMinutes / 60)}h ${data.stats.acMinutes % 60}m` : "0m"}
+  Auto-Pilot: ${data?.autoAc ? "🤖 ON" : "👤 OFF"}
+
+💡 *Illumination*
+  Light: ${lightOn ? "🟢 ON" : "⚫ OFF"}${data?.light_duration ? ` (${data.light_duration})` : ""}
+  Light Today: ${data?.stats?.lightMinutes ? `${Math.floor(data.stats.lightMinutes / 60)}h ${data.stats.lightMinutes % 60}m` : "0m"}
+  Aura: ${data?.mediaAura !== false ? "🌈 ON" : "🌑 OFF"}
+
+🏠 *SmartThings*
+  ${stOnline}/${stCount} online
+${data?.smartthings?.lastError ? `  ⚠️ ${data.smartthings.lastError}\n` : ""}☀️ *Solar*: ${data?.solis?.today || "—"} kWh today · ${data?.solis?.current || "—"} kW now
+⚡ *Energy*: ${data?.units || "0"} kWh · est ₹${data?.estimatedPgBill || 0}
+🌤 *Weather*: ${data?.weather?.temp || "—"}°C · AQI ${data?.weather?.aqi || "—"}
+🛡 *Hub*: ${hubHealth} · up ${Math.floor((data?.uptime || 0) / 3600)}h ${Math.floor(((data?.uptime || 0) % 3600) / 60)}m · network ${networkHealth}
+🔋 *Mac*: ${data?.battery ? `${data.battery.level}%` : "—"}`;
+
   return (
     <Detail
       isLoading={isLoading}
@@ -144,9 +169,14 @@ _Last refresh: ${lastRefresh.toLocaleTimeString()}_ · _Refresh: ⌘R_`;
             shortcut={{ modifiers: ["cmd"], key: "c" }}
           />
           <Action.CopyToClipboard
+            title="Copy as Telegram (bold + emoji)"
+            content={telegramStatus}
+            shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+          />
+          <Action.CopyToClipboard
             title="Copy as JSON"
             content={JSON.stringify(data, null, 2)}
-            shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+            shortcut={{ modifiers: ["cmd", "alt"], key: "c" }}
           />
           <Action.OpenInBrowser
             title="Open Web Dashboard"

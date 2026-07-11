@@ -1,6 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import QuickScene from "./quick_scene";
 
 interface HubState {
   online: boolean;
@@ -209,6 +210,66 @@ export default function HubPulse() {
             <ActionPanel>
               <Action icon={Icon.Sun} title="Activate Sunrise" onAction={() => runHubAction("Sunrise", "/scene/sunrise")} />
               <Action icon={Icon.Repeat} title="Refresh" onAction={refresh} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Eye}
+          title="Focus Mode"
+          subtitle="Crisp daylight white, AC quiet"
+          actions={
+            <ActionPanel>
+              <Action icon={Icon.Eye} title="Activate Focus" onAction={() => runHubAction("Focus", "/scene/focus")} />
+              <Action icon={Icon.Repeat} title="Refresh" onAction={refresh} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.House}
+          title="Cozy"
+          subtitle="Soft warm white, reading glow"
+          actions={
+            <ActionPanel>
+              <Action icon={Icon.House} title="Activate Cozy" onAction={() => runHubAction("Cozy", "/scene/cozy")} />
+              <Action icon={Icon.Repeat} title="Refresh" onAction={refresh} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Snowflake}
+          title="❄️  Max Cool + 10m Freeze Guard"
+          subtitle="18°C powerful with auto-shutoff safety"
+          actions={
+            <ActionPanel>
+              <Action
+                icon={Icon.Snowflake}
+                title="Activate Max Cool + Freeze Guard"
+                onAction={async () => {
+                  const toast = await showToast({ style: Toast.Style.Animated, title: "Max Cool + Freeze Guard..." });
+                  try {
+                    await fetch(`${HUB_URL}/control/ac/powerful?ps=on`);
+                    await fetch(`${HUB_URL}/control/ac/timer?mins=10`);
+                    toast.style = Toast.Style.Success;
+                    toast.title = "Max Cool armed";
+                    toast.message = "AC at 18°C, auto-off in 10 min";
+                  } catch (e) {
+                    toast.style = Toast.Style.Failure;
+                    toast.title = "Failed";
+                    toast.message = "Hub Offline";
+                  }
+                }}
+              />
+              <Action icon={Icon.Repeat} title="Refresh" onAction={refresh} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Wand}
+          title="Open Quick Scene…"
+          subtitle="Browse + fire any scene by name"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.Wand} title="Open Quick Scene" target={<QuickScene />} />
             </ActionPanel>
           }
         />
