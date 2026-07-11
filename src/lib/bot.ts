@@ -4117,14 +4117,14 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             if (!action) {
               return new Response(JSON.stringify({ error: 'action is required' }), { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
             }
-            const newJob: any = { time, action, days, lastRun: '' };
+            const newJob: any = { id: `job-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, time, action, days, lastRun: '' };
             if (days === 'weekdays' || days === 'weekends') newJob.weekdaysOnly = (days === 'weekdays');
             config.scheduler = config.scheduler || [];
             config.scheduler.push(newJob);
             saveConfig(config);
             scheduler.refresh();
             logActivity(`🕰 Scheduler: New routine added via Raycast - ${action} @ ${time} (${days})`);
-            return new Response(JSON.stringify({ status: 'added', job: newJob }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+            return new Response(JSON.stringify({ status: 'added', job: newJob }), { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
           } catch (e) {
             return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
@@ -4133,13 +4133,14 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           // List current schedules (added 2026-07-11)
           const jobs = (config.scheduler || []).map((j: any, i: number) => ({
             index: i,
+            id: j.id || `legacy-${i}`,
             time: j.time,
             action: j.action,
             days: j.days || 'daily',
             weekdaysOnly: !!j.weekdaysOnly,
             lastRun: j.lastRun || '',
           }));
-          return new Response(JSON.stringify({ jobs }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          return new Response(JSON.stringify({ jobs }), { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/schedule/clear') {
           // Clear all schedules (added 2026-07-11)
@@ -4147,7 +4148,35 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           config.scheduler = [];
           saveConfig(config);
           scheduler.refresh();
-          return new Response(JSON.stringify({ status: 'cleared', cleared }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          return new Response(JSON.stringify({ status: 'cleared', cleared }), { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/schedule/remove' && req.method === 'POST') {
+          // Remove a single schedule by id (preferred) or by index (fallback)
+          // POST: { id: string } | { index: number }
+          try {
+            const body: any = await req.json().catch(() => ({}));
+            const jobs = config.scheduler || [];
+            let removed: any = null;
+            let removeIdx = -1;
+            if (body.id) {
+              removeIdx = jobs.findIndex((j: any) => (j.id || `legacy-${jobs.indexOf(j)}`) === body.id);
+            } else if (typeof body.index === 'number' && body.index >= 0 && body.index < jobs.length) {
+              removeIdx = body.index;
+            }
+            if (removeIdx >= 0) {
+              removed = jobs.splice(removeIdx, 1)[0];
+            }
+            if (!removed) {
+              return new Response(JSON.stringify({ error: 'no matching schedule found' }), { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+            }
+            config.scheduler = jobs;
+            saveConfig(config);
+            scheduler.refresh();
+            logActivity(`🕰 Scheduler: Removed routine - ${removed.action} @ ${removed.time} (${removed.days || 'daily'})`);
+            return new Response(JSON.stringify({ status: 'removed', removed }), { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+          } catch (e) {
+            return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
         }
 
         // 🪐 GRAVITY ARCHIVE API

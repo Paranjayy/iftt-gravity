@@ -631,19 +631,51 @@ Restart the Hub once you have the keys!
 
 /**
  * Add a new schedule. Submits to /control/schedule/add.
- * NOTE: bot must be restarted to load the new endpoint.
+ * Supports a preset (daily / weekdays / weekends / custom) and per-day
+ * checkboxes when 'custom' is picked.
  */
 function AddScheduleForm() {
   const { pop } = useNavigation();
   const [time, setTime] = useState("07:00");
   const [action, setAction] = useState("ac_on");
-  const [days, setDays] = useState("daily");
+  const [preset, setPreset] = useState("daily");
+  const [mon, setMon] = useState(true);
+  const [tue, setTue] = useState(true);
+  const [wed, setWed] = useState(true);
+  const [thu, setThu] = useState(true);
+  const [fri, setFri] = useState(true);
+  const [sat, setSat] = useState(false);
+  const [sun, setSun] = useState(false);
+
+  function computeDays(): string {
+    if (preset === "daily") return "daily";
+    if (preset === "weekdays") return "weekdays";
+    if (preset === "weekends") return "weekends";
+    // custom: build comma-separated list from checked days
+    const dayMap: Record<string, boolean> = {
+      monday: mon, tuesday: tue, wednesday: wed, thursday: thu,
+      friday: fri, saturday: sat, sunday: sun,
+    };
+    const selected = Object.entries(dayMap).filter(([, v]) => v).map(([k]) => k);
+    if (selected.length === 0) return "daily"; // sane default if none selected
+    if (selected.length === 7) return "daily";
+    return selected.join(",");
+  }
+
+  function applyPreset(p: string) {
+    setPreset(p);
+    if (p === "daily") { setMon(true); setTue(true); setWed(true); setThu(true); setFri(true); setSat(true); setSun(true); }
+    if (p === "weekdays") { setMon(true); setTue(true); setWed(true); setThu(true); setFri(true); setSat(false); setSun(false); }
+    if (p === "weekends") { setMon(false); setTue(false); setWed(false); setThu(false); setFri(false); setSat(true); setSun(true); }
+    // "custom" doesn't auto-flip checkboxes
+  }
 
   async function handleSubmit() {
     if (!/^\d{1,2}:\d{2}$/.test(time)) {
       await showToast({ title: "Time must be HH:MM (24h)", style: Toast.Style.Failure });
       return;
     }
+    const days = computeDays();
     const toast = await showToast({ title: `Adding schedule: ${action} @ ${time} (${days})`, style: Toast.Style.Animated });
     try {
       const res = await fetch("http://127.0.0.1:3030/control/schedule/add", {
@@ -653,7 +685,6 @@ function AddScheduleForm() {
       });
       const text = await res.text();
       // Old bot (pre v1.2.0): returns 'Gravity: Scene ADD Active' instead of JSON
-      // Detect and tell user to restart
       if (!text.startsWith("{")) {
         throw new Error(
           "Bot is on an older version. Run 'Gravity Hub(Start)' from Raycast to restart with schedule support."
@@ -715,16 +746,28 @@ function AddScheduleForm() {
       </Form.Dropdown>
       <Form.Separator />
       <Form.Dropdown
-        id="days"
+        id="preset"
         title="Recurrence"
-        value={days}
-        onChange={setDays}
-        info="Daily = every day. Weekdays = Mon-Fri. Weekends = Sat-Sun."
+        value={preset}
+        onChange={applyPreset}
+        info="Pick a preset, or 'Custom' to choose individual days below"
       >
         <Form.Dropdown.Item value="daily" title="Every day" />
         <Form.Dropdown.Item value="weekdays" title="Weekdays only (Mon-Fri)" />
         <Form.Dropdown.Item value="weekends" title="Weekends only (Sat-Sun)" />
+        <Form.Dropdown.Item value="custom" title="Custom days…" />
       </Form.Dropdown>
+      {preset === "custom" ? (
+        <>
+          <Form.Checkbox id="mon" label="Monday" value={mon} onChange={setMon} />
+          <Form.Checkbox id="tue" label="Tuesday" value={tue} onChange={setTue} />
+          <Form.Checkbox id="wed" label="Wednesday" value={wed} onChange={setWed} />
+          <Form.Checkbox id="thu" label="Thursday" value={thu} onChange={setThu} />
+          <Form.Checkbox id="fri" label="Friday" value={fri} onChange={setFri} />
+          <Form.Checkbox id="sat" label="Saturday" value={sat} onChange={setSat} />
+          <Form.Checkbox id="sun" label="Sunday" value={sun} onChange={setSun} />
+        </>
+      ) : null}
       <Form.Separator />
       <Form.Description text="Tip: The safe 7am routine is 'AC Turn ON at 07:00 weekdays' + 'AC Turn OFF at 07:10 weekdays' — that gives you a hard 10-min cap." />
     </Form>
@@ -733,10 +776,13 @@ function AddScheduleForm() {
 
 /**
  * View active schedules. Fetches /control/schedule/list.
+ * Each schedule is a row with delete, so the user can surgically remove one
+ * without nuking the whole list.
  */
 function ViewSchedules() {
   const [jobs, setJobs] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   function refresh() {
     setError(null);
@@ -750,6 +796,31 @@ function ViewSchedules() {
   useEffect(() => {
     refresh();
   }, []);
+
+  async function removeOne(id: string, label: string) {
+    setBusyId(id);
+    const toast = await showToast({ style: Toast.Style.Animated, title: `Removing: ${label}…` });
+    try {
+      const res = await fetch("http://127.0.0.1:3030/control/schedule/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || `HTTP ${res.status}`);
+      toast.style = Toast.Style.Success;
+      toast.title = "Removed";
+      toast.message = label;
+      // Optimistic local removal
+      setJobs((prev) => (prev ? prev.filter((j) => j.id !== id) : prev));
+    } catch (e: any) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Failed to remove";
+      toast.message = String(e?.message || "Hub Offline");
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   if (error) {
     return <HubOfflineDetail context="schedule list" onRetry={refresh} />;
@@ -765,13 +836,68 @@ function ViewSchedules() {
 |---|------|--------|------|----------|
 ${jobs.map((j, i) => `| ${i + 1} | \`${j.time}\` | \`${j.action}\` | ${j.days || 'daily'} | ${j.lastRun || '—'}`).join("\n")}`;
   return (
-    <Detail
-      markdown={`# 📅 Active Schedules (${jobs.length})\n\n${table}\n\n---\n\n*Refresh: ⌘R · Use "Clear All Schedules" in Control House to wipe.*`}
-      actions={
-        <ActionPanel>
-          <Action.CopyToClipboard title="Copy as Markdown" content={table} />
-        </ActionPanel>
-      }
-    />
+    <List searchBarPlaceholder="Search schedules (try time, action, or day)…" isLoading={false}>
+      <List.Section title={`Active Schedules (${jobs.length})`}>
+        {jobs.map((j, i) => {
+          const id = j.id || `legacy-${i}`;
+          const label = `${j.time} ${j.action} (${j.days || 'daily'})`;
+          return (
+            <List.Item
+              key={id}
+              title={j.time}
+              subtitle={`${j.action} · ${j.days || 'daily'}`}
+              icon={busyId === id ? { source: Icon.CircleProgress, tintColor: Color.Yellow } : { source: Icon.Clock, tintColor: Color.Blue }}
+              accessories={[
+                ...(j.lastRun ? [{ text: `last: ${j.lastRun}` }] : []),
+              ]}
+              actions={
+                <ActionPanel title={label}>
+                  <Action
+                    icon={Icon.Trash}
+                    title={`Remove ${label}`}
+                    shortcut={{ modifiers: ["cmd"], key: "delete" }}
+                    onAction={() => removeOne(id, label)}
+                  />
+                  <Action
+                    icon={Icon.Repeat}
+                    title="Refresh"
+                    shortcut={{ modifiers: ["cmd"], key: "r" }}
+                    onAction={refresh}
+                  />
+                  <Action.CopyToClipboard
+                    icon={Icon.Clipboard}
+                    title="Copy Job as JSON"
+                    content={JSON.stringify(j, null, 2)}
+                    shortcut={{ modifiers: ["cmd"], key: "c" }}
+                  />
+                </ActionPanel>
+              }
+            />
+          );
+        })}
+      </List.Section>
+      <List.Section title="Bulk">
+        <List.Item
+          title="Copy all as Markdown table"
+          subtitle="Paste into a note or chat"
+          icon={Icon.Clipboard}
+          actions={
+            <ActionPanel>
+              <Action.CopyToClipboard title="Copy Markdown Table" content={table} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          title="View as Detail (markdown)"
+          subtitle="Open the legacy table view"
+          icon={Icon.Text}
+          actions={
+            <ActionPanel>
+              <Action.Push title="Open Detail View" target={<Detail markdown={`# 📅 Active Schedules (${jobs.length})\n\n${table}\n\n---\n\n*Use ⌘⌫ on any row to remove that schedule. Refresh: ⌘R.*`} />} />
+            </ActionPanel>
+          }
+        />
+      </List.Section>
+    </List>
   );
 }

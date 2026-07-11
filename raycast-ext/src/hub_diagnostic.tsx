@@ -11,6 +11,7 @@ interface Probe {
 
 const PROBES: Probe[] = [
   { name: "Gravity Hub API (port 3030)",        url: "http://127.0.0.1:3030/status",         category: "hub" },
+  { name: "Schedule List endpoint",              url: "http://127.0.0.1:3030/control/schedule/list", category: "hub" },
   { name: "Archive API (port 3031)",            url: "http://127.0.0.1:3031/archive/notes/list", category: "archive" },
   { name: "Web Dashboard (port 3000)",          url: "http://127.0.0.1:3000",               category: "dashboard" },
   { name: "WiZ Scene orchestration",             url: "http://127.0.0.1:3030/scene/cozy",     category: "device" },
