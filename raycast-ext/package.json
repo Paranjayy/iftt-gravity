@@ -84,6 +84,13 @@
       "description": "Tail the last 20 entries from house_log.md in the dashboard",
       "icon": "commands/logs.png",
       "mode": "view"
+    },
+    {
+      "name": "hub_diagnostic",
+      "title": "Hub Diagnostic",
+      "description": "Probe all hub endpoints in parallel: hub, archive, dashboard, devices",
+      "icon": "commands/hub_pulse.png",
+      "mode": "view"
     }
   ],
   "preferences": [
