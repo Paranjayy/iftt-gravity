@@ -295,6 +295,16 @@ export default function HubPulse() {
           }
         />
         <List.Item
+          icon={Icon.Text}
+          title="Jot Quick Fragment…"
+          subtitle="Quick text capture to the gravity archive (auto-tagged)"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.Text} title="Open Jot Form" target={<JotForm />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
           icon={Icon.XmarkCircle}
           title="🛑  PANIC MODE — Turn Off Everything"
           subtitle="AC off + Bulb off + Aura off (instant)"
@@ -341,8 +351,87 @@ export default function HubPulse() {
             </ActionPanel>
           }
         />
+        <List.Item
+          icon={Icon.Lock}
+          title="Lock Screen Now"
+          subtitle="One-tap mac screen lock (pmset displaysleepnow)"
+          actions={
+            <ActionPanel>
+              <Action
+                icon={Icon.Lock}
+                title="Lock Screen"
+                onAction={async () => {
+                  const toast = await showToast({ style: Toast.Style.Animated, title: "Locking…" });
+                  try {
+                    // Use the bot's /system/lock endpoint (already exists)
+                    await fetch(`${HUB_URL}/system/lock`);
+                    toast.style = Toast.Style.Success;
+                    toast.title = "Locked";
+                  } catch (e) {
+                    toast.style = Toast.Style.Failure;
+                    toast.title = "Lock failed";
+                    toast.message = "Hub Offline — use Ctrl+Cmd+Q instead";
+                  }
+                }}
+              />
+              <Action.OpenInBrowser title="Open macOS Focus Settings" url="x-apple.systempreferences:com.apple.preference.notifications" />
+            </ActionPanel>
+          }
+        />
               </List.Section>
             </List>
+          );
+        }
+
+        /**
+         * Quick Jot — push form, calls /archive/jot on port 3031
+         */
+        function JotForm() {
+          const { pop } = useNavigation();
+          const [text, setText] = useState("");
+
+          async function handleSubmit() {
+            if (!text.trim()) {
+              await showToast({ title: "Jot text cannot be empty", style: Toast.Style.Failure });
+              return;
+            }
+            const toast = await showToast({ title: "Saving jot…", style: Toast.Style.Animated });
+            try {
+              const res = await fetch("http://127.0.0.1:3031/archive/jot", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text }),
+              });
+              if (!res.ok) throw new Error("Failed");
+              toast.style = Toast.Style.Success;
+              toast.title = "Jot saved";
+              toast.message = "Auto-tagged by archive engine";
+              pop();
+            } catch (e: any) {
+              toast.style = Toast.Style.Failure;
+              toast.title = "Failed to save";
+              toast.message = String(e?.message || "Archive Offline");
+            }
+          }
+
+          return (
+            <Form
+              actions={
+                <ActionPanel>
+                  <Action.SubmitForm title="Save Jot" icon={Icon.Text} onSubmit={handleSubmit} />
+                </ActionPanel>
+              }
+            >
+              <Form.Description text="Quick text capture. The archive engine auto-labels your jot with source, type, and labels." />
+              <Form.TextArea
+                id="text"
+                title="Jot"
+                placeholder="The next big idea, a thought, a code snippet, anything"
+                value={text}
+                onChange={setText}
+                info="This goes to your gravity-archive vault with auto-tagging"
+              />
+            </Form>
           );
         }
 
