@@ -336,6 +336,26 @@ export default function MoodPresets() {
   const categories = ["all", "comfort", "focus", "social", "wellness", "ambient"];
   const visible = filter === "all" ? MOODS : MOODS.filter((m) => m.category === filter);
 
+  async function fireRandom() {
+    const safeMoods = MOODS.filter((m) => !m.id.includes("panic"));
+    const pick = safeMoods[Math.floor(Math.random() * safeMoods.length)];
+    const toast = await showToast({
+      style: Toast.Style.Animated,
+      title: `🎲 Rolling the dice…`,
+      message: pick.name,
+    });
+    try {
+      await fireSteps(pick);
+      toast.style = Toast.Style.Success;
+      toast.title = `Surprise mood: ${pick.name}`;
+      toast.message = pick.description;
+    } catch (e) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Random fire failed";
+      toast.message = "Hub Offline";
+    }
+  }
+
   return (
     <List
       searchBarPlaceholder="Find a mood preset..."
@@ -359,6 +379,23 @@ export default function MoodPresets() {
         </List.Dropdown>
       }
     >
+      <List.Section title="Surprise">
+        <List.Item
+          title="🎲 Roll a Random Mood"
+          subtitle="Pick and fire a random mood from the 15 safe presets"
+          icon={{ source: Icon.BullsEye, tintColor: Color.Magenta as any }}
+          actions={
+            <ActionPanel>
+              <Action
+                title="Roll a Random Mood"
+                icon={Icon.BullsEye}
+                shortcut={{ modifiers: [], key: "return" }}
+                onAction={fireRandom}
+              />
+            </ActionPanel>
+          }
+        />
+      </List.Section>
       {(["comfort", "focus", "social", "wellness", "ambient"] as const).map((cat) => {
         const inCat = visible.filter((m) => m.category === cat);
         if (inCat.length === 0) return null;
