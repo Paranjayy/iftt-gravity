@@ -36,6 +36,32 @@ interface HubState {
 
 const HUB_URL = "http://127.0.0.1:3030";
 
+function buildTelegramStatus(state: any, error: string | null): string {
+  if (error) return "❌ *Hub Offline* — cannot reach 127.0.0.1:3030";
+  const ac = state?.stats?.ac;
+  const light = state?.stats?.light;
+  const acOn = ac?.status === "on";
+  const lightOn = light?.status === "on";
+  const stCount = state?.smartthings?.deviceCount || 0;
+  const stOnline = state?.smartthings?.devices?.filter((d: any) => d.online).length || 0;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  return `🌌 *Gravity Hub* · ${dateStr} ${timeStr}
+
+━━━━━━
+❄️ *AC*: ${acOn ? "🟢 ON" : "⚫ OFF"}${state?.ac_duration ? ` (${state.ac_duration})` : ""}
+   Today: ${state?.stats?.acMinutes ? `${Math.floor(state.stats.acMinutes / 60)}h ${state.stats.acMinutes % 60}m` : "0m"} · Auto: ${state?.autoAc ? "🤖" : "👤"}
+💡 *Light*: ${lightOn ? "🟢 ON" : "⚫ OFF"}${state?.light_duration ? ` (${state.light_duration})` : ""}
+   Today: ${state?.stats?.lightMinutes ? `${Math.floor(state.stats.lightMinutes / 60)}h ${state.stats.lightMinutes % 60}m` : "0m"} · Aura: ${state?.mediaAura !== false ? "🌈" : "🌑"}
+🏠 *SmartThings*: ${stOnline}/${stCount} online
+☀️ *Solar*: ${state?.solis?.today || "—"} kWh today · ${state?.solis?.current || "—"} kW now
+⚡ *Energy*: ${state?.units || "0"} kWh · est ₹${state?.estimatedPgBill || 0}
+🌤 *Weather*: ${state?.weather?.temp || "—"}°C · AQI ${state?.weather?.aqi || "—"}
+🛡 *Hub*: 🟢 Up ${Math.floor((state?.uptime || 0) / 3600)}h ${Math.floor(((state?.uptime || 0) % 3600) / 60)}m
+🔋 *Mac*: ${state?.battery ? `${state.battery.level}%` : "—"}`;
+}
+
 async function runHubAction(name: string, endpoint: string) {
   const toast = await showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
   try {
@@ -104,6 +130,11 @@ export default function HubPulse() {
               <Action icon={Icon.Repeat} title="Force Refresh" shortcut={{ modifiers: ["cmd"], key: "r" }} onAction={refresh} />
               <Action icon={Icon.Power} title="Restart All Services" onAction={() => runHubAction("HUB RESET", "/control/restart")} />
               <Action icon={Icon.Cloud} title="Sync Archive Vault" onAction={() => runHubAction("Vault Sync", "/archive/sync")} />
+              <Action.CopyToClipboard
+                title="Copy Status as Telegram"
+                content={buildTelegramStatus(state, error)}
+                shortcut={{ modifiers: ["cmd"], key: "c" }}
+              />
               <Action.OpenInBrowser title="Open Dashboard" url="http://127.0.0.1:3000" />
             </ActionPanel>
           }
