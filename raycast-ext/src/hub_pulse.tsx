@@ -1,7 +1,8 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon, Color } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import QuickScene from "./quick_scene";
+import MoodPresets from "./mood_presets";
 
 interface HubState {
   online: boolean;
@@ -274,6 +275,26 @@ export default function HubPulse() {
           }
         />
         <List.Item
+          icon={Icon.Star}
+          title="Open Mood Presets…"
+          subtitle="Multi-step combos: Welcome Home, Movie, Focus, Bedtime, Gaming"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.Star} title="Open Mood Presets" target={<MoodPresets />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Pencil}
+          title="Quick Log to Today's Note…"
+          subtitle="Append a timestamped entry to today's daily note"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.Pencil} title="Open Quick Log Form" target={<QuickLogNote />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
           icon={Icon.XmarkCircle}
           title="🛑  PANIC MODE — Turn Off Everything"
           subtitle="AC off + Bulb off + Aura off (instant)"
@@ -320,7 +341,84 @@ export default function HubPulse() {
             </ActionPanel>
           }
         />
-      </List.Section>
-    </List>
-  );
-}
+              </List.Section>
+            </List>
+          );
+        }
+
+        /**
+         * Append a quick timestamped note to today's daily note.
+         * Uses the archive server on port 3031 (/archive/notes/append).
+         */
+        function QuickLogNote() {
+          const { pop } = useNavigation();
+          const [text, setText] = useState("");
+          const [heading, setHeading] = useState("");
+          const [section, setSection] = useState("");
+
+          async function handleSubmit() {
+            if (!text.trim()) {
+              await showToast({ title: "Note text cannot be empty", style: Toast.Style.Failure });
+              return;
+            }
+            const today = `Daily Note ${new Date().toISOString().split("T")[0]}.md`;
+            const fullText = heading.trim() ? `## ${heading.trim()}\n\n${text}` : text;
+            const toast = await showToast({ title: "Logging to today's note…", style: Toast.Style.Animated });
+            try {
+              const res = await fetch("http://127.0.0.1:3031/archive/notes/append", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: today,
+                  text: fullText,
+                  section: section.trim() || undefined,
+                }),
+              });
+              if (!res.ok) throw new Error("Failed");
+              toast.style = Toast.Style.Success;
+              toast.title = "Logged to today's note";
+              toast.message = today;
+              pop();
+            } catch (e: any) {
+              toast.style = Toast.Style.Failure;
+              toast.title = "Failed to log";
+              toast.message = String(e?.message || "Archive Offline");
+            }
+          }
+
+          return (
+            <Form
+              actions={
+                <ActionPanel>
+                  <Action.SubmitForm title="Append to Today's Note" icon={Icon.Pencil} onSubmit={handleSubmit} />
+                </ActionPanel>
+              }
+            >
+              <Form.Description text="Append a quick timestamped entry to today's daily note. Optional heading and section." />
+              <Form.TextArea
+                id="text"
+                title="Note text"
+                placeholder="What just happened? What are you thinking?"
+                value={text}
+                onChange={setText}
+                info="The text you want to log. Timestamps are added automatically."
+              />
+              <Form.TextField
+                id="heading"
+                title="Optional heading (## Markdown)"
+                placeholder="Workout — Lower Body"
+                value={heading}
+                onChange={setHeading}
+                info="Will be inserted as ## heading before the text"
+              />
+              <Form.TextField
+                id="section"
+                title="Optional section"
+                placeholder="Daily Log"
+                value={section}
+                onChange={setSection}
+                info="For notes with multiple sections (e.g. 'Workout', 'Meals', 'Reading')"
+              />
+            </Form>
+          );
+        }

@@ -70,6 +70,13 @@
       "description": "All-in-one dashboard: AC, Bulb, SmartThings, Solis, Energy",
       "icon": "commands/hub_pulse.png",
       "mode": "view"
+    },
+    {
+      "name": "mood_presets",
+      "title": "Mood Presets",
+      "description": "One-tap multi-step scene combos (Movie, Focus, Dinner, Bedtime…)",
+      "icon": "commands/mood_presets.png",
+      "mode": "view"
     }
   ],
   "preferences": [

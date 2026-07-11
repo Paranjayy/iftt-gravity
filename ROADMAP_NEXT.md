@@ -261,4 +261,7 @@ own pre-flight + a small README + a per-extension launch.
 | 2026-07-11 | New script commands: `Backup Everything Now`, `Backup Health Check`, `List Last Backup`, `New-Mac Bootstrap (Preview)` — all in Gravity Tools package |
 | 2026-07-11 | Added Hub Pulse command (9th) — sovereign overview of all device health at a glance |
 | 2026-07-11 | Confirmed: no 7am AC auto-on exists; documented safe 7am routine in Phase 5 section |
+| 2026-07-11 | New: Mood Presets command (10th) — 16 multi-step scene combos |
+| 2026-07-11 | New: 3 schedule HTTP endpoints (add/list/clear) in bot.ts — requires bot restart to load |
+| 2026-07-11 | Control House now has Schedules section with Add/View/Clear items (Forms-based) |
 | 2026-07-11 | Never commit `~/.config/raycast-x/extensions/` — that's the runtime, not source |

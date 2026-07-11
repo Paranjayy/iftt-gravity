@@ -199,6 +199,55 @@ export default function Command() {
         />
       </List.Section>
 
+      <List.Section title="Schedules & Routines">
+        <List.Item
+          icon={Icon.PlusCircle}
+          title="Add Schedule…"
+          subtitle="Push form to add a daily alarm (AC on/off, bulb, scene)"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.PlusCircle} title="Open Add Schedule Form" target={<AddScheduleForm />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.List}
+          title="View Active Schedules"
+          subtitle="List all current daily/weekly alarms"
+          actions={
+            <ActionPanel>
+              <Action.Push icon={Icon.List} title="View Schedules" target={<ViewSchedules />} />
+            </ActionPanel>
+          }
+        />
+        <List.Item
+          icon={Icon.Trash}
+          title="Clear All Schedules"
+          subtitle="Wipe the entire schedule (irreversible)"
+          actions={
+            <ActionPanel>
+              <Action
+                icon={Icon.Trash}
+                title="Clear All Schedules"
+                onAction={async () => {
+                  const toast = await showToast({ style: Toast.Style.Animated, title: "Clearing schedules..." });
+                  try {
+                    const res = await fetch("http://127.0.0.1:3030/control/schedule/clear");
+                    const data = await res.json();
+                    toast.style = Toast.Style.Success;
+                    toast.title = `Cleared ${data.cleared} schedule${data.cleared === 1 ? "" : "s"}`;
+                  } catch (e) {
+                    toast.style = Toast.Style.Failure;
+                    toast.title = "Failed";
+                    toast.message = "Hub Offline";
+                  }
+                }}
+              />
+            </ActionPanel>
+          }
+        />
+      </List.Section>
+
       <List.Section title="Precision Hardware Control">
         <List.Item
           icon={Icon.Wind}
@@ -566,4 +615,137 @@ Once they reply, you will see a new **API Management** option under the **Servic
 Restart the Hub once you have the keys!
   `;
   return <Detail markdown={guide} />;
+}
+
+/**
+ * Add a new schedule. Submits to /control/schedule/add.
+ * NOTE: bot must be restarted to load the new endpoint.
+ */
+function AddScheduleForm() {
+  const { pop } = useNavigation();
+  const [time, setTime] = useState("07:00");
+  const [action, setAction] = useState("ac_on");
+  const [days, setDays] = useState("daily");
+
+  async function handleSubmit() {
+    if (!/^\d{1,2}:\d{2}$/.test(time)) {
+      await showToast({ title: "Time must be HH:MM (24h)", style: Toast.Style.Failure });
+      return;
+    }
+    const toast = await showToast({ title: `Adding schedule: ${action} @ ${time} (${days})`, style: Toast.Style.Animated });
+    try {
+      const res = await fetch("http://127.0.0.1:3030/control/schedule/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ time, action, days }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      toast.style = Toast.Style.Success;
+      toast.title = `Scheduled: ${action} @ ${time}`;
+      toast.message = `Recurrence: ${days}`;
+      pop();
+    } catch (e: any) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Failed to add schedule";
+      toast.message = String(e?.message || "Hub Offline");
+    }
+  }
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Add Schedule" icon={Icon.PlusCircle} onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.Description text="Add a daily/weekly alarm. The bot will fire the action at the specified time." />
+      <Form.TextField
+        id="time"
+        title="Time (HH:MM 24h)"
+        placeholder="07:00"
+        value={time}
+        onChange={setTime}
+        info="Examples: 07:00, 23:30, 06:15"
+      />
+      <Form.Dropdown
+        id="action"
+        title="Action"
+        value={action}
+        onChange={setAction}
+        info="What should happen at the scheduled time"
+      >
+        <Form.Dropdown.Item value="ac_on" title="❄️  AC: Turn ON" />
+        <Form.Dropdown.Item value="ac_off" title="❄️  AC: Turn OFF" />
+        <Form.Dropdown.Item value="ac_set_cool_24" title="❄️  AC: Cool 24°C" />
+        <Form.Dropdown.Item value="ac_set_cool_26" title="❄️  AC: Cool 26°C (sleep)" />
+        <Form.Dropdown.Item value="bulb_on" title="💡  Bulb: Turn ON" />
+        <Form.Dropdown.Item value="bulb_off" title="💡  Bulb: Turn OFF" />
+        <Form.Dropdown.Item value="bulb_warm" title="💡  Bulb: Warm White 2700K" />
+        <Form.Dropdown.Item value="bulb_cool" title="💡  Bulb: Cool White 6500K" />
+        <Form.Dropdown.Item value="scene_tv" title="🎬  Scene: TV Time" />
+        <Form.Dropdown.Item value="scene_focus" title="🎬  Scene: Focus" />
+        <Form.Dropdown.Item value="scene_bedtime" title="🎬  Scene: Bedtime" />
+        <Form.Dropdown.Item value="scene_sunrise" title="🎬  Scene: Sunrise" />
+        <Form.Dropdown.Item value="scene_cozy" title="🎬  Scene: Cozy" />
+        <Form.Dropdown.Item value="scene_party" title="🎬  Scene: Party" />
+        <Form.Dropdown.Item value="aura_toggle" title="🌈  Aura: Toggle" />
+        <Form.Dropdown.Item value="panic" title="🛑  PANIC: Turn everything off" />
+      </Form.Dropdown>
+      <Form.Separator />
+      <Form.Dropdown
+        id="days"
+        title="Recurrence"
+        value={days}
+        onChange={setDays}
+        info="Daily = every day. Weekdays = Mon-Fri. Weekends = Sat-Sun."
+      >
+        <Form.Dropdown.Item value="daily" title="Every day" />
+        <Form.Dropdown.Item value="weekdays" title="Weekdays only (Mon-Fri)" />
+        <Form.Dropdown.Item value="weekends" title="Weekends only (Sat-Sun)" />
+      </Form.Dropdown>
+      <Form.Separator />
+      <Form.Description text="Tip: The safe 7am routine is 'AC Turn ON at 07:00 weekdays' + 'AC Turn OFF at 07:10 weekdays' — that gives you a hard 10-min cap." />
+    </Form>
+  );
+}
+
+/**
+ * View active schedules. Fetches /control/schedule/list.
+ */
+function ViewSchedules() {
+  const [jobs, setJobs] = useState<any[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:3030/control/schedule/list")
+      .then((r) => r.json())
+      .then((data) => setJobs(data.jobs || []))
+      .catch(() => setError("Hub Offline"));
+  }, []);
+
+  if (error) {
+    return <Detail markdown={`# ❌ Hub Offline\n\nCannot reach the schedule list. Is the Gravity Hub running?\n\n${error}`} />;
+  }
+  if (!jobs) {
+    return <Detail isLoading={true} markdown="Loading schedules..." />;
+  }
+  if (jobs.length === 0) {
+    const emptyMsg = "# 📅 No Active Schedules\n\nYou have no scheduled routines. Add one from **Control House > Schedules > Add Schedule**.";
+    return <Detail markdown={emptyMsg} />;
+  }
+  const table = `| # | Time | Action | Days | Last Run |
+|---|------|--------|------|----------|
+${jobs.map((j, i) => `| ${i + 1} | \`${j.time}\` | \`${j.action}\` | ${j.days || 'daily'} | ${j.lastRun || '—'}`).join("\n")}`;
+  return (
+    <Detail
+      markdown={`# 📅 Active Schedules (${jobs.length})\n\n${table}\n\n---\n\n*Refresh: ⌘R · Use "Clear All Schedules" in Control House to wipe.*`}
+      actions={
+        <ActionPanel>
+          <Action.CopyToClipboard title="Copy as Markdown" content={table} />
+        </ActionPanel>
+      }
+    />
+  );
 }
