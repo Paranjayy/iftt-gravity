@@ -151,6 +151,103 @@ Gravity should be the only thing you have to think about. Everything else — Ra
 
 ---
 
+## 🚨 Safety: AC Auto-On & 7am Cap (Asked 2026-07-11)
+
+> *“is there any automation that ac turns on at 7 am if yes then please turn it off within 10 mins else i would get frozen lol my ac is too strong”*
+
+**Answer: NO 7am AC auto-on exists today.** The bot has zero scheduled jobs:
+`config.json` → `"scheduler": []`. The only AC schedule helper is the
+**Sleep Curve** (manual `/sleep_curve` start) which steps 18→25→26→27°C
+over 6 hours. There is no clock-triggered AC-on.
+
+**If you want a 7am auto-on WITH a 10-minute safety cap**, the bot's
+`/schedule_add 07:00 ac_on` is the right tool — but it does **not**
+auto-shut-off. You would need a paired `/schedule_add 07:10 ac_off` job.
+
+### Safe 7am routine (copy-paste to the bot or save as a snippet)
+
+```
+/schedule_add 07:00 ac_on
+/schedule_add 07:10 ac_off
+```
+
+This turns the AC on at 07:00 daily and forces it off at 07:10 — a
+hard 10-minute safety cap that prevents the freeze scenario. You can
+also add a third job to bring the temp back to a normal comfort level:
+
+```
+/schedule_add 07:00 ac_on
+/schedule_add 07:10 ac_off
+/schedule_add 07:15 ac_set?temp=26
+```
+
+⚠️ **Caveat:** the scheduler in `bot.ts` currently has daily recurrence
+but no per-weekday filter — these would run **every day**, not just
+weekdays. If you want weekday-only, you'd need a small server-side
+patch (filter by `now.getDay() !== 0 && now.getDay() !== 6` before
+firing). Track that in Phase 3.
+
+### One-tap option via the extension
+The new "Custom AC Timer" form in the AC detail view (added 2026-07-11)
+is perfect for ad-hoc "I want AC off in 10 min" — just open it, type
+10, done. Not recurring, but no setup.
+
+---
+
+## 📣 Phase 5 — Cross-Extension Store Push (P1, discussed 2026-07-11)
+
+> *“svgl & instagram media hub & gravity hub i would like to publish soon. i already did 7tv lol and would update 7tv too soon lol”*
+
+Three extensions to ship to the public Raycast Store. Each needs its
+own pre-flight + a small README + a per-extension launch.
+
+### 5.1 SVGL Search Pro (`~/Developer/svgl-raycast/`)
+- **Status**: installed in Raycast, built and published previously
+- **Pre-flight**: same checklist as Gravity Hub (privacy scan, no
+  hardcoded tokens, README with screenshots)
+- **Action items**:
+  - [ ] Re-verify `package.json` icon path (`icon` field — relative to
+    `assets/`, not the project root; this is the bug that bit Gravity Hub)
+  - [ ] `bun run validate` clean
+  - [ ] `bunx @raycast/api@latest publish` (private → public)
+
+### 5.2 Instagram Media Hub (`~/Developer/instagram-media-hub/`)
+- **Status**: installed in Raycast
+- **Risk**: uses an Instagram scraper; ensure no API keys in source
+- **Pre-flight**:
+  - [ ] `grep -rE "token|password|api_key" src/` returns nothing
+  - [ ] README documents the unofficial nature + rate-limit risk
+  - [ ] `bun run validate` clean
+
+### 5.3 Gravity Hub (this repo)
+- **Status**: 9 commands, build clean, icons generated, version 1.2.0
+- **Pre-flight** (carried from Phase 1):
+  - [x] Build reproducible
+  - [x] Per-command icons (11 generated, 9 used)
+  - [ ] Privacy scan: grep `src/` for hardcoded IPs/ports
+  - [ ] Convert remaining `127.0.0.1` references to a `HUB_URL`
+        preference (default `http://127.0.0.1:3030`)
+  - [ ] README with screenshots of: Control House, Bulb Detail,
+        Quick Scene, Hub Pulse, Custom Timer Form
+  - [ ] CHANGELOG entry for v1.2.0
+  - [ ] LICENSE (MIT) verified
+  - [ ] Privacy policy URL (a single GitHub gist works)
+
+### 5.4 7TV Emotes Search Pro (`~/Developer/7tv-raycast/`) — update
+- **Status**: published previously; user plans to update
+- **Pre-flight**: bump version, re-validate, publish new version
+
+### Shared publishing rules (learned from 7TV)
+1. Icon path in `package.json` is `assets/<icon>.png` — NOT
+   `assets/commands/...`. Got bitten by this in Gravity Hub.
+2. Raycast caches script metadata — after a big change, remove &
+   re-add the script directory.
+3. Run `bunx @raycast/api@latest validate` BEFORE every publish.
+4. Ship a one-page README in the repo root with screenshots.
+
+---
+
+
 ## 📝 Decisions log
 
 | Date       | Decision                                                                  |
@@ -158,4 +255,10 @@ Gravity should be the only thing you have to think about. Everything else — Ra
 | 2026-07-11 | Icons: per-command tinted variants, master icon preserved in `_archive/`  |
 | 2026-07-11 | Bulb detail view: 6 sections (Power / Brightness / Color / Temp / Scene / Lifestyle) |
 | 2026-07-11 | Bootstrap script: dry-run by default, `BLAST_RADIUS=read-only` env gate  |
+| 2026-07-11 | Bulb reads `stats.light.status` for real power; brightness/scenes use optimistic local state (server doesn't expose WiZ pilot) |
+| 2026-07-11 | `package.json` icon path is `assets/<name>.png` (not `assets/.../...`) — fixed for extension entry icon |
+| 2026-07-11 | Added `/control/bulb/timer?mins=N\|at=HH:MM` endpoint + Custom Timer Forms in both AC and Bulb detail views |
+| 2026-07-11 | New script commands: `Backup Everything Now`, `Backup Health Check`, `List Last Backup`, `New-Mac Bootstrap (Preview)` — all in Gravity Tools package |
+| 2026-07-11 | Added Hub Pulse command (9th) — sovereign overview of all device health at a glance |
+| 2026-07-11 | Confirmed: no 7am AC auto-on exists; documented safe 7am routine in Phase 5 section |
 | 2026-07-11 | Never commit `~/.config/raycast-x/extensions/` — that's the runtime, not source |

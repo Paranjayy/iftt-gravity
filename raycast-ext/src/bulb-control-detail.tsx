@@ -1,4 +1,4 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon, Color } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 
@@ -339,6 +339,7 @@ export default function BulbControlDetail() {
       { id: "sleep", title: "Bedtime (Fade to Dark)",               icon: Icon.Moon,  endpoint: "/scene/bedtime", name: "Bedtime" },
       { id: "aura",  title: "Toggle Media Aura Sync",               icon: Icon.Star,  endpoint: "/control/aura/toggle", name: "Aura Toggle" },
       { id: "autolight", title: "Toggle Auto-Pilot Lights",        icon: Icon.RotateClockwise, endpoint: "/control/auto/light", name: "Auto-Light Toggle" },
+      { id: "bulb-timer", title: "Set Custom Bulb Off-Timer (Form)…", icon: Icon.Hourglass, endpoint: "__form__:bulbTimer", name: "Custom Bulb Timer" },
       { id: "statuscard", title: "Generate Status Card (PNG)",     icon: Icon.Image, endpoint: "/card",          name: "Status Card" },
     ],
   };
@@ -433,11 +434,21 @@ export default function BulbControlDetail() {
                       if (item.endpoint.startsWith("__brightness__:")) {
                         const pct = parseInt(item.endpoint.split(":")[1], 10);
                         setBrightnessTo(pct);
+                      } else if (item.endpoint === "__form__:bulbTimer") {
+                        // opened via secondary action below
+                        return;
                       } else {
                         runAction(item.name, item.endpoint);
                       }
                     }}
                   />
+                  {item.endpoint === "__form__:bulbTimer" ? (
+                    <Action.Push
+                      title="Open Custom Bulb Timer Form"
+                      icon={Icon.Pencil}
+                      target={<CustomBulbTimerForm onDone={refresh} />}
+                    />
+                  ) : null}
                   <Action
                     title="Force Refresh State"
                     icon={Icon.Repeat}
@@ -539,5 +550,75 @@ export default function BulbControlDetail() {
         </List.Section>
       ))}
     </List>
+  );
+}
+
+/**
+ * Custom off-timer for the WiZ bulb. Uses the server's new
+ * /control/bulb/timer endpoint (added 2026-07-11).
+ */
+function CustomBulbTimerForm({ onDone }: { onDone: () => void }) {
+  const { pop } = useNavigation();
+  const [minutes, setMinutes] = useState("45");
+  const [atTime, setAtTime] = useState("");
+
+  async function handleSubmit() {
+    let endpoint = "";
+    let summary = "";
+    const m = parseInt(minutes, 10);
+    if (minutes.trim() && isFinite(m) && m > 0 && m <= 1440) {
+      endpoint = `/control/bulb/timer?mins=${m}`;
+      summary = `in ${m} minutes`;
+    } else if (atTime && /^\d{1,2}:\d{2}$/.test(atTime)) {
+      endpoint = `/control/bulb/timer?at=${encodeURIComponent(atTime)}`;
+      summary = `at ${atTime}`;
+    } else {
+      await showToast({ title: "Enter minutes (1-1440) or a time (HH:MM)", style: Toast.Style.Failure });
+      return;
+    }
+    const toast = await showToast({ title: `Bulb will turn OFF ${summary}`, style: Toast.Style.Animated });
+    try {
+      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
+      if (!res.ok) throw new Error(await res.text());
+      toast.style = Toast.Style.Success;
+      toast.title = "Custom bulb timer set";
+      onDone();
+      pop();
+    } catch (e: any) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Failed to set timer";
+      toast.message = String(e?.message || "Hub Offline");
+    }
+  }
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Set Custom Bulb Timer" icon={Icon.Clock} onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.Description text="Schedule the bulb to turn OFF automatically. Either minutes from now OR a clock time (HH:MM 24h). Max 24 hours." />
+      <Form.TextField
+        id="minutes"
+        title="Minutes from now (1-1440)"
+        placeholder="45"
+        value={minutes}
+        onChange={setMinutes}
+        info="Examples: 5, 30, 90, 360. The bulb must currently be ON for this to be useful."
+      />
+      <Form.Separator />
+      <Form.TextField
+        id="at"
+        title="Or set time of day (HH:MM)"
+        placeholder="23:00"
+        value={atTime}
+        onChange={setAtTime}
+        info="24-hour format. Will fire tomorrow if already past."
+      />
+      <Form.Separator />
+      <Form.Description text="Tip: if both fields are set, minutes wins. The timer fires once and doesn't repeat." />
+    </Form>
   );
 }

@@ -4,7 +4,7 @@
   "version": "1.2.0",
   "title": "Gravity Hub",
   "description": "Native Mission Control for the Gravity IoT Hub.",
-  "icon": "assets/icon.png",
+  "icon": "icon.png",
   "author": "paranjay",
   "license": "MIT",
   "commands": [
@@ -12,63 +12,63 @@
       "name": "smartthings",
       "title": "SmartThings",
       "description": "Browse devices, scenes, and location modes",
-      "icon": "assets/commands/smartthings.png",
+      "icon": "commands/smartthings.png",
       "mode": "view"
     },
     {
       "name": "control",
       "title": "Control House",
       "description": "Manage AC, Lights, and Scenes",
-      "icon": "assets/commands/control.png",
+      "icon": "commands/control.png",
       "mode": "view"
     },
     {
       "name": "logs",
       "title": "View Logs",
       "description": "See the latest house activity",
-      "icon": "assets/commands/logs.png",
+      "icon": "commands/logs.png",
       "mode": "view"
     },
     {
       "name": "archive",
       "title": "Search Clipboard Archive",
       "description": "Infinite history of your copies and cuts",
-      "icon": "assets/commands/archive.png",
+      "icon": "commands/archive.png",
       "mode": "view"
     },
     {
       "name": "stats",
       "title": "Hub Dashboard",
       "description": "Real-time energy and system health",
-      "icon": "assets/commands/stats.png",
+      "icon": "commands/stats.png",
       "mode": "view"
     },
     {
       "name": "notes",
       "title": "Gravity Notes",
       "description": "Mission Control for Notes and Universal File Probe",
-      "icon": "assets/commands/notes.png",
+      "icon": "commands/notes.png",
       "mode": "view"
     },
     {
       "name": "aura_toggle",
       "title": "Toggle Media Aura",
       "description": "Toggle automatic music-light sync",
-      "icon": "assets/commands/aura_toggle.png",
+      "icon": "commands/aura_toggle.png",
       "mode": "no-view"
     },
     {
       "name": "quick_scene",
       "title": "Quick Scene",
       "description": "Activate any Gravity scene with one search",
-      "icon": "assets/commands/quick_scene.png",
+      "icon": "commands/quick_scene.png",
       "mode": "view"
     },
     {
       "name": "hub_pulse",
       "title": "Hub Pulse",
       "description": "All-in-one dashboard: AC, Bulb, SmartThings, Solis, Energy",
-      "icon": "assets/commands/stats.png",
+      "icon": "commands/hub_pulse.png",
       "mode": "view"
     }
   ],

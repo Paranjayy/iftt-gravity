@@ -1,4 +1,4 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon, Color } from "@raycast/api";
+import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 
@@ -256,6 +256,7 @@ export default function ACControlDetail() {
         { id: "timer-1h", title: "Turn Off in 1 Hour", icon: Icon.Clock, endpoint: "/control/ac/timer?mins=60", name: "Off Timer 1h" },
         { id: "timer-2h", title: "Turn Off in 2 Hours", icon: Icon.Clock, endpoint: "/control/ac/timer?mins=120", name: "Off Timer 2h" },
         { id: "timer-3h", title: "Turn Off in 3 Hours", icon: Icon.Clock, endpoint: "/control/ac/timer?mins=180", name: "Off Timer 3h" },
+        { id: "timer-custom", title: "Set Custom Timer (Form)…", icon: Icon.Hourglass, endpoint: "__form__:customTimer", name: "Custom Off Timer" },
         { id: "timer-clear", title: "Clear Active Timer", icon: Icon.Xmark, endpoint: "/control/ac/timer?mins=0", name: "Clear Timer" }
       ]
     }
@@ -279,8 +280,21 @@ export default function ACControlDetail() {
                   <Action
                     title={item.title}
                     icon={item.icon}
-                    onAction={() => runAction(item.name, item.endpoint)}
+                    onAction={() => {
+                      if (item.endpoint === "__form__:customTimer") {
+                        // The form will be shown via the secondary action below
+                        return;
+                      }
+                      runAction(item.name, item.endpoint);
+                    }}
                   />
+                  {item.endpoint === "__form__:customTimer" ? (
+                    <Action.Push
+                      title="Open Custom Timer Form"
+                      icon={Icon.Pencil}
+                      target={<CustomACTimerForm onDone={refresh} />}
+                    />
+                  ) : null}
                   <Action
                     title="Force Refresh State"
                     icon={Icon.Repeat}
@@ -391,5 +405,87 @@ export default function ACControlDetail() {
         </List.Section>
       ))}
     </List>
+  );
+}
+
+/**
+ * Custom off-timer for the AC. Accepts either:
+ *   - minutes (positive integer 1-1440)
+ *   - at-time (HH:MM 24h, e.g. "23:30")
+ *   - or both — minutes takes precedence
+ */
+function CustomACTimerForm({ onDone }: { onDone: () => void }) {
+  const { pop } = useNavigation();
+  const [minutes, setMinutes] = useState("60");
+  const [atTime, setAtTime] = useState("");
+
+  async function handleSubmit() {
+    let endpoint = "";
+    const m = parseInt(minutes, 10);
+    if (minutes.trim() && isFinite(m) && m > 0 && m <= 1440) {
+      endpoint = `/control/ac/timer?mins=${m}`;
+    } else if (atTime && /^\d{1,2}:\d{2}$/.test(atTime)) {
+      // Convert HH:MM to minutes-from-now, server stores minutes
+      const [h, mi] = atTime.split(':').map((n) => parseInt(n, 10));
+      const target = new Date();
+      target.setHours(h, mi, 0, 0);
+      if (target.getTime() < Date.now()) target.setDate(target.getDate() + 1);
+      const delayMin = Math.ceil((target.getTime() - Date.now()) / 60000);
+      if (delayMin <= 0 || delayMin > 1440) {
+        await showToast({ title: "Time must be within next 24 hours", style: Toast.Style.Failure });
+        return;
+      }
+      endpoint = `/control/ac/timer?mins=${delayMin}`;
+    } else {
+      await showToast({ title: "Enter minutes (1-1440) or a time (HH:MM)", style: Toast.Style.Failure });
+      return;
+    }
+    const toast = await showToast({ title: "Setting custom AC timer...", style: Toast.Style.Animated });
+    try {
+      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
+      if (!res.ok) throw new Error("Failed");
+      toast.style = Toast.Style.Success;
+      toast.title = "Custom AC timer set";
+      toast.message = atTime
+        ? `Will turn off at ${atTime}`
+        : `Will turn off in ${m} minutes`;
+      onDone();
+      pop();
+    } catch (e) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Failed to set timer";
+      toast.message = "Hub Offline";
+    }
+  }
+
+  return (
+    <Form
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm title="Set Custom AC Timer" icon={Icon.Clock} onSubmit={handleSubmit} />
+        </ActionPanel>
+      }
+    >
+      <Form.Description text="Set a custom AC off-timer. Either pick minutes from now OR a specific clock time (HH:MM 24h). Max 24 hours." />
+      <Form.TextField
+        id="minutes"
+        title="Minutes from now (1-1440)"
+        placeholder="60"
+        value={minutes}
+        onChange={setMinutes}
+        info="Examples: 30, 45, 90, 120"
+      />
+      <Form.Separator />
+      <Form.TextField
+        id="at"
+        title="Or set time of day (HH:MM)"
+        placeholder="23:30"
+        value={atTime}
+        onChange={setAtTime}
+        info="24-hour format, e.g. 23:30, 06:00. Will fire tomorrow if already past."
+      />
+      <Form.Separator />
+      <Form.Description text="Tip: leave minutes empty if using clock time. Both fields together — minutes wins." />
+    </Form>
   );
 }
