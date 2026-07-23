@@ -35,3 +35,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .next/
 config.json
 gravity-archive/
+
+# Per-extension secrets (WiZ link keys, etc.) — never commit
+raycast-ext/.secrets/
