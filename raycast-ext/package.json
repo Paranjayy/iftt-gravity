@@ -157,6 +157,7 @@
     "dev": "bunx @raycast/api@latest dev",
     "fix-lint": "./node_modules/.bin/eslint src --ext .ts,.tsx --fix",
     "lint": "./node_modules/.bin/eslint src --ext .ts,.tsx",
-    "publish": "bunx @raycast/api@latest publish"
+    "publish": "bunx @raycast/api@latest publish",
+    "test:url-converter": "bun run src/__test__/convert-link.spec.ts"
   }
 }

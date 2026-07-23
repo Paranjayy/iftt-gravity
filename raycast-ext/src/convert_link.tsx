@@ -46,6 +46,7 @@ interface Conversion {
   count: number; // how many in the batch
   timestamp: string;
   durationMs: number;
+  sources?: { url: string; source: TitleResult["source"]; sourceSite?: string }[]; // per-URL provenance (added later; older conversions may not have it)
 }
 
 async function loadHistory(): Promise<Conversion[]> {
@@ -94,12 +95,19 @@ const UA_HEADERS = {
 interface TitleResult {
   url: string;
   title: string;
-  source: "og" | "twitter" | "title" | "domain" | "url";
+  source: "oembed" | "og" | "twitter" | "title" | "domain" | "url";
+  sourceSite?: string; // "YouTube", "Twitter/X", "Vimeo", etc.
   ms: number;
 }
 
 async function fetchTitle(url: string, timeoutMs = 8000): Promise<TitleResult> {
   const t0 = Date.now();
+  // 0. Try oEmbed first for known providers (YouTube, Twitter/X, Vimeo, etc.)
+  //    These are the sites where scraping fails most often.
+  const oembed = await tryOembed(url, Math.min(timeoutMs, 6000));
+  if (oembed) {
+    return { url, title: oembed.title, source: "oembed", sourceSite: oembed.site, ms: Date.now() - t0 };
+  }
   try {
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), timeoutMs);
@@ -147,6 +155,95 @@ function isBotBlock(title: string): boolean {
   return blocked.some((b) => t.includes(b));
 }
 
+// --- oEmbed providers (no API key required) ---
+// These return real titles for sites that bot-block scraping.
+
+interface OembedProvider {
+  name: string;
+  match: (host: string, path: string) => boolean;
+  build: (url: string) => string;
+  parse: (json: any) => string | null;
+}
+
+const OEMBED_PROVIDERS: OembedProvider[] = [
+  {
+    name: "YouTube",
+    match: (host) => /(^|\.)youtube\.com$/.test(host) || /^youtu\.be$/.test(host),
+    build: (url) => `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
+    parse: (json) => (json && typeof json.title === "string" ? json.title : null),
+  },
+  {
+    name: "Twitter/X",
+    match: (host) => /(^|\.)twitter\.com$/.test(host) || /(^|\.)x\.com$/.test(host),
+    build: (url) => `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}`,
+    parse: (json) => {
+      if (!json || typeof json.author_name !== "string") return null;
+      // HTML is the tweet embed; parse a snippet of the text if present
+      const html: string = json.html || "";
+      const stripped = html
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&[a-z]+;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      const tweet = stripped.length > 200 ? stripped.slice(0, 197) + "..." : stripped;
+      return tweet ? `${json.author_name}: ${tweet}` : json.author_name;
+    },
+  },
+  {
+    name: "Vimeo",
+    match: (host) => /(^|\.)vimeo\.com$/.test(host),
+    build: (url) => `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`,
+    parse: (json) => (json && typeof json.title === "string" ? json.title : null),
+  },
+  {
+    name: "SoundCloud",
+    match: (host) => /(^|\.)soundcloud\.com$/.test(host),
+    build: (url) => `https://soundcloud.com/oembed?format=json&url=${encodeURIComponent(url)}`,
+    parse: (json) => (json && typeof json.title === "string" ? json.title : null),
+  },
+  {
+    name: "Spotify",
+    match: (host) => /(^|\.)spotify\.com$/.test(host) || /(^|\.)spotify\.link$/.test(host),
+    build: (url) => `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`,
+    parse: (json) => (json && typeof json.title === "string" ? json.title : null),
+  },
+];
+
+function findOembedProvider(url: string): OembedProvider | null {
+  try {
+    const u = new URL(url);
+    for (const p of OEMBED_PROVIDERS) {
+      if (p.match(u.hostname, u.pathname)) return p;
+    }
+  } catch {}
+  return null;
+}
+
+async function tryOembed(url: string, timeoutMs = 6000): Promise<{ title: string; site: string } | null> {
+  const provider = findOembedProvider(url);
+  if (!provider) return null;
+  const t0 = Date.now();
+  try {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    const res = await fetch(provider.build(url), {
+      signal: ac.signal,
+      headers: { "User-Agent": UA_HEADERS["User-Agent"] },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const json = (await res.json()) as any;
+    const title = provider.parse(json);
+    if (title && !isBotBlock(title)) {
+      return { title: cleanTitle(title), site: provider.name };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function cleanTitle(raw: string): string {
   return raw
     .replace(/&amp;/g, "&")
@@ -168,8 +265,21 @@ function fallbackTitle(url: string): string {
     // Use path segments as title hint, joining the meaningful ones
     const parts = u.pathname.split("/").filter(Boolean);
     const meaningful = parts
-      .filter((p) => p.length > 3 && !/^[a-f0-9]{6,}$/i.test(p) && !/^\d+$/.test(p))
-      .map((p) => p.replace(/\.\w+$/, "").replace(/[-_]/g, " "))
+      .filter(
+        (p) =>
+          // Skip pure-numeric and pure-hex/alnum IDs
+          !/^\d+$/.test(p) &&
+          !/^[a-f0-9]{6,}$/i.test(p) &&
+          // Skip if starts with a digit (post IDs like "1re8r5w")
+          !/^\d/.test(p) &&
+          // Has at least one vowel OR looks like a Proper Noun
+          (p.length >= 4 && /[aeiouy ]/i.test(p)),
+      )
+      // Strip file extension
+      .map((p) => p.replace(/\.\w+$/, ""))
+      // Snake/dash → space
+      .map((p) => p.replace(/[-_]/g, " "))
+      // Title-case
       .map((p) => p.charAt(0).toUpperCase() + p.slice(1));
     if (meaningful.length === 0) return host;
     return meaningful.slice(0, 3).join(" · ");
@@ -242,6 +352,27 @@ export default function Command() {
       )
     : history;
 
+  // --- Domain grouping (for the stats dashboard) ---
+  const allUrls: { url: string; conv: Conversion }[] = history.flatMap((c) =>
+    c.urls.map((u) => ({ url: u, conv: c })),
+  );
+  const domainCounts: Record<string, number> = {};
+  for (const { url } of allUrls) {
+    try {
+      const host = new URL(url).hostname.replace(/^www\./, "");
+      domainCounts[host] = (domainCounts[host] || 0) + 1;
+    } catch {}
+  }
+  const topDomains = Object.entries(domainCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10);
+  const totalUrls = allUrls.length;
+  const totalConversions = history.length;
+  const totalDuplicates = totalUrls - totalConversions; // rough: extra URLs in multi-URL conversions
+
+  // --- Source breakdown (would need to re-derive from output text, so just count conversions) ---
+  // Per-URL source tracking isn't persisted in Conversion; that's fine, we have aggregate stats
+
   // --- Handlers ---
 
   async function handleNewConversion(input: string, format: OutputFormat) {
@@ -288,6 +419,7 @@ export default function Command() {
       count: fresh.length,
       timestamp: nowIso(),
       durationMs: Date.now() - t0,
+      sources: results.map((r) => ({ url: r.url, source: r.source, sourceSite: r.sourceSite })),
     };
     await persist([newConv, ...history]);
     await Clipboard.copy(output);
@@ -365,6 +497,36 @@ export default function Command() {
       searchBarPlaceholder="Search history or paste URLs to convert…"
       throttle
     >
+      {/* Stats dashboard at the very top */}
+      {totalConversions > 0 && (
+        <List.Section title="Stats">
+          <List.Item
+            title={`${totalConversions} conversion${totalConversions === 1 ? "" : "s"} · ${totalUrls} URL${totalUrls === 1 ? "" : "s"}`}
+            subtitle={`${Object.keys(domainCounts).length} unique domain${Object.keys(domainCounts).length === 1 ? "" : "s"} · top: ${topDomains[0]?.[0] ?? "—"}`}
+            icon={{ source: Icon.BarChart, tintColor: Color.Blue }}
+            accessories={[
+              { tag: { value: `${topDomains[0]?.[1] ?? 0}`, color: Color.Purple } },
+            ]}
+            actions={
+              <ActionPanel>
+                <Action.Push
+                  title="Open Stats Dashboard"
+                  icon={Icon.BarChart}
+                  target={
+                    <StatsDashboard
+                      totalConversions={totalConversions}
+                      totalUrls={totalUrls}
+                      topDomains={topDomains}
+                      history={history}
+                    />
+                  }
+                />
+              </ActionPanel>
+            }
+          />
+        </List.Section>
+      )}
+
       {/* Quick actions at the top so Cmd-R works on them */}
       <List.Section title="Quick Actions">
         <List.Item
@@ -584,6 +746,23 @@ function formatColor(f: OutputFormat): Color {
   }
 }
 
+function sourceColor(s: TitleResult["source"]): Color {
+  switch (s) {
+    case "oembed":
+      return Color.Green;
+    case "og":
+      return Color.Blue;
+    case "twitter":
+      return Color.Magenta;
+    case "title":
+      return Color.Yellow;
+    case "domain":
+      return Color.Orange;
+    case "url":
+      return Color.Red;
+  }
+}
+
 function ConvertForm({
   defaultFormat,
   onSubmit,
@@ -634,5 +813,147 @@ function ConvertForm({
         <Form.Dropdown.Item value="timestamped" title="- 2026-07-23 22:00 [Title](url)" />
       </Form.Dropdown>
     </Form>
+  );
+}
+
+// --- Stats Dashboard ---
+
+function StatsDashboard({
+  totalConversions,
+  totalUrls,
+  topDomains,
+  history,
+}: {
+  totalConversions: number;
+  totalUrls: number;
+  topDomains: [string, number][];
+  history: Conversion[];
+}) {
+  // Format breakdown
+  const fmtCount: Record<OutputFormat, number> = {
+    numbered: 0, bullet: 0, bare: 0, timestamped: 0,
+  };
+  for (const c of history) fmtCount[c.format]++;
+  const fmtRows = (Object.entries(fmtCount) as [OutputFormat, number][])
+    .filter(([, n]) => n > 0)
+    .sort(([, a], [, b]) => b - a);
+
+  // Source breakdown (only for conversions that have per-URL source data)
+  const sourceCount: Record<TitleResult["source"], number> = {
+    oembed: 0, og: 0, twitter: 0, title: 0, domain: 0, url: 0,
+  };
+  let totalSourcedUrls = 0;
+  for (const c of history) {
+    if (!c.sources) continue;
+    for (const s of c.sources) {
+      sourceCount[s.source]++;
+      totalSourcedUrls++;
+    }
+  }
+  const sourceRows = (Object.entries(sourceCount) as [TitleResult["source"], number][])
+    .filter(([, n]) => n > 0)
+    .sort(([, a], [, b]) => b - a);
+  const sourceShare = totalSourcedUrls > 0
+    ? (s: TitleResult["source"]) => ` (${((sourceCount[s] / totalSourcedUrls) * 100).toFixed(0)}%)`
+    : (_s: TitleResult["source"]) => "";
+
+  // Site breakdown (for oembed hits, e.g. YouTube, Twitter)
+  const siteCount: Record<string, number> = {};
+  for (const c of history) {
+    if (!c.sources) continue;
+    for (const s of c.sources) {
+      if (s.source === "oembed" && s.sourceSite) {
+        siteCount[s.sourceSite] = (siteCount[s.sourceSite] || 0) + 1;
+      }
+    }
+  }
+  const siteRows = Object.entries(siteCount).sort(([, a], [, b]) => b - a);
+
+  // Time breakdown (last 7 days, last 30 days, all time)
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const last7 = history.filter((c) => now - new Date(c.timestamp).getTime() < 7 * day).length;
+  const last30 = history.filter((c) => now - new Date(c.timestamp).getTime() < 30 * day).length;
+
+  // Average fetch time
+  const avgMs = history.length
+    ? Math.round(history.reduce((s, c) => s + c.durationMs, 0) / history.length)
+    : 0;
+  const totalUrlsAcrossConversions = history.reduce((s, c) => s + c.count, 0);
+  const avgBatchSize = history.length
+    ? (totalUrlsAcrossConversions / history.length).toFixed(1)
+    : "0";
+
+  // Unique domains
+  const uniqueDomains = new Set<string>();
+  for (const c of history) {
+    for (const u of c.urls) {
+      try {
+        uniqueDomains.add(new URL(u).hostname.replace(/^www\./, ""));
+      } catch {}
+    }
+  }
+
+  // Most recent conversion
+  const mostRecent = history[0];
+
+  const md = `# 📊 URL Conversion Stats
+
+## Headlines
+
+| Metric | Value |
+|---|---|
+| Total conversions | **${totalConversions}** |
+| Total URLs converted | **${totalUrls}** |
+| Unique domains | **${uniqueDomains.size}** |
+| Avg fetch time | **${avgMs}ms** per URL |
+| Avg batch size | **${avgBatchSize}** URLs per conversion |
+| Last 7 days | **${last7}** conversion${last7 === 1 ? "" : "s"} |
+| Last 30 days | **${last30}** conversion${last30 === 1 ? "" : "s"} |
+
+## Top Domains
+
+${topDomains.length === 0 ? "_No data yet_" : topDomains.map(([domain, count], i) => `${i + 1}. **${domain}** — ${count} URL${count === 1 ? "" : "s"}`).join("\n")}
+
+## Output Format Mix
+
+${fmtRows.length === 0 ? "_No data yet_" : `| Format | Count | Share |\n|---|---|---|\n${fmtRows.map(([f, n]) => `| \`${f}\` | ${n} | ${((n / totalConversions) * 100).toFixed(0)}% |`).join("\n")}`}
+
+## Title Source Breakdown${totalSourcedUrls > 0 ? ` · ${totalSourcedUrls} URLs sampled` : ""}
+
+${sourceRows.length === 0
+  ? "_Run a new conversion to see this (added in v1.3.0)_"
+  : `| Source | Count | Share |\n|---|---|---|\n${sourceRows
+      .map(([s, n]) => `| \`${s}\`${sourceShare(s)} | ${n} | ${totalSourcedUrls > 0 ? ((n / totalSourcedUrls) * 100).toFixed(0) : 0}% |`)
+      .join("\n")}`}
+
+${siteRows.length > 0
+  ? `\n### oEmbed Hits by Site\n\n${siteRows
+      .map(([site, n], i) => `${i + 1}. **${site}** — ${n} URL${n === 1 ? "" : "s"}`)
+      .join("\n")}`
+  : ""}
+
+## Most Recent
+
+${mostRecent ? `**${new Date(mostRecent.timestamp).toLocaleString()}**\n\n\`${mostRecent.format}\` · ${mostRecent.count} URL${mostRecent.count === 1 ? "" : "s"} · ${mostRecent.durationMs}ms\n\n\`\`\`\n${mostRecent.output.slice(0, 400)}${mostRecent.output.length > 400 ? "..." : ""}\n\`\`\`` : "_No data yet_"}
+
+---
+
+_Storage: LocalStorage \`homepulse-url-history\` · Max ${MAX_HISTORY} entries (LRU) · Per-URL source tracking since v1.3.0_
+`;
+
+  return (
+    <Detail
+      markdown={md}
+      actions={
+        <ActionPanel>
+          <Action.CopyToClipboard
+            title="Copy as Markdown"
+            content={md}
+            shortcut={{ modifiers: ["cmd"], key: "c" }}
+          />
+        </ActionPanel>
+      }
+    />
   );
 }
