@@ -112,6 +112,13 @@
       "description": "Store, search, and quickly use reusable AI prompts with variable substitution",
       "icon": "commands/prompts.png",
       "mode": "view"
+    },
+    {
+      "name": "convert_link",
+      "title": "URL → Markdown",
+      "description": "Convert URLs to markdown links with smart title extraction, bulk paste, and history",
+      "icon": "commands/convert_link.png",
+      "mode": "view"
     }
   ],
   "preferences": [
