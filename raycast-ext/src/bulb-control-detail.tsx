@@ -11,6 +11,7 @@ interface HubState {
     lightMinutes?: number;
   };
   wiz?: {
+    /** Legacy single-bulb shape */
     ip?: string;
     reachable?: boolean;
     pilot?: {
@@ -25,6 +26,23 @@ interface HubState {
     };
     lastSeen?: string;
     lastError?: string;
+    /** New multi-bulb registry shape (wiz-registry) */
+    source?: "registry" | "single" | null;
+    summary?: string | null;
+    bulbs?: Array<{
+      mac: string;
+      name: string;
+      ip: string | null;
+      online: boolean;
+      state: boolean | null;
+      sceneId: number | null;
+      dimming: number | null;
+      temp: number | null;
+      rssi: number | null;
+      lastSeen?: number;
+      last_seen?: number;
+      traits?: any;
+    }>;
   } | null;
 }
 
@@ -74,6 +92,11 @@ export default function BulbControlDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Selected bulb (MAC). Defaults to the first known bulb from the registry
+  // (or "first" if the registry isn't loaded). Persisted in LocalStorage.
+  type BulbTarget = { mac: string; name: string } | { name: "first" };
+  const [target, setTarget] = useState<BulbTarget>({ name: "first" });
+
   // Optimistic local state — the server doesn't expose WiZ pilot over HTTP,
   // so we track brightness, temp, RGB, and active scene locally. This state
   // gets updated immediately when the user fires an action, so the UI feels
@@ -99,6 +122,9 @@ export default function BulbControlDetail() {
           }
         } catch {}
       }
+      // Restore the last-selected bulb
+      const lastMac = await LocalStorage.getItem<string>("gravity-bulb-mac");
+      if (lastMac) setTarget({ mac: lastMac, name: lastMac });
     })();
   }, []);
 
@@ -106,6 +132,49 @@ export default function BulbControlDetail() {
   useEffect(() => {
     LocalStorage.setItem("gravity-bulb-state", JSON.stringify(optimistic));
   }, [optimistic]);
+
+  // Persist selected bulb
+  useEffect(() => {
+    if ("mac" in target) LocalStorage.setItem("gravity-bulb-mac", target.mac);
+  }, [target]);
+
+  // Discover available bulbs from the registry endpoint
+  const [registryBulbs, setRegistryBulbs] = useState<Array<{ mac: string; name: string; online: boolean; ip: string | null }>>([]);
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBulbs() {
+      try {
+        const r = await fetch("http://127.0.0.1:3030/control/wiz/devices");
+        if (!r.ok) return;
+        const data = (await r.json()) as { bulbs?: Array<any> };
+        if (cancelled) return;
+        const list = (data.bulbs || []).map((b: any) => ({
+          mac: b.mac,
+          name: b.name,
+          online: !!b.online,
+          ip: b.ip,
+        }));
+        setRegistryBulbs(list);
+        // If no specific bulb selected yet, default to the first online one
+        if ("name" in target && target.name === "first" && list.length > 0) {
+          const online = list.find((b) => b.online) || list[0];
+          setTarget({ mac: online.mac, name: online.name });
+        }
+      } catch {}
+    }
+    loadBulbs();
+    const timer = setInterval(loadBulbs, 15000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
+  // Resolve current target's pilot from /status
+  const currentPilot = (() => {
+    if (!state?.wiz?.bulbs) return null;
+    if ("mac" in target) {
+      return state.wiz.bulbs.find((b: any) => b.mac === target.mac) || null;
+    }
+    return state.wiz.bulbs.find((b: any) => b.online) || state.wiz.bulbs[0] || null;
+  })();
 
   // Debounce ref to prevent stale /status responses from overwriting optimistic state
   const fetchSeq = { current: 0 };
@@ -140,8 +209,50 @@ export default function BulbControlDetail() {
   async function runAction(name: string, endpoint: string) {
     const toast = await showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
-      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
-      if (!res.ok) throw new Error("Failed");
+      // Map legacy GET endpoints to the new /control/wiz/control POST endpoint
+      // so the action targets the selected bulb (registry path).
+      const mac = "mac" in target ? target.mac : null;
+      const useNewApi = mac !== null;
+      let url: string;
+      const params: Record<string, any> = {};
+      if (useNewApi) {
+        params.mac = mac;
+        if (endpoint === "/control/bulb/on" || endpoint === "/control/bulb_on") params.state = true;
+        else if (endpoint === "/control/bulb/off" || endpoint === "/control/bulb_off") params.state = false;
+        else if (endpoint === "/control/bulb_tv") { params.sceneId = 18; params.dimming = 10; params.state = true; }
+        else if (endpoint.startsWith("/control/brightness?dir=up")) params.dimming = Math.min(100, (optimistic.dimming || 50) + 20);
+        else if (endpoint.startsWith("/control/brightness?dir=down")) params.dimming = Math.max(10, (optimistic.dimming || 50) - 20);
+        else if (endpoint.startsWith("/control/bulb/color")) {
+          const u = new URL("http://x" + endpoint);
+          if (u.searchParams.has("r")) {
+            params.r = parseInt(u.searchParams.get("r") || "0", 10);
+            params.g = parseInt(u.searchParams.get("g") || "0", 10);
+            params.b = parseInt(u.searchParams.get("b") || "0", 10);
+            params.state = true;
+          } else {
+            params.temp = parseInt(u.searchParams.get("temp") || "4500", 10);
+            params.state = true;
+          }
+        } else {
+          // Unknown endpoint — fall back to legacy
+          url = `http://127.0.0.1:3030${endpoint}`;
+        }
+        if (!url) {
+          const res = await fetch("http://127.0.0.1:3030/control/wiz/control", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(params),
+          });
+          if (!res.ok) throw new Error("Failed");
+        } else {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error("Failed");
+        }
+      } else {
+        // No registry — use legacy GET endpoint
+        const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
+        if (!res.ok) throw new Error("Failed");
+      }
       toast.style = Toast.Style.Success;
       toast.title = `Confirmed: ${name}`;
       // Don't wait for /status — apply optimistic updates immediately
@@ -407,6 +518,24 @@ export default function BulbControlDetail() {
                 shortcut={{ modifiers: ["cmd"], key: "r" }}
                 onAction={refresh}
               />
+              {registryBulbs.length > 1 ? (
+                <ActionPanel.Submenu
+                  title={`Switch Bulb (${registryBulbs.length} known)`}
+                  icon={Icon.Switch}
+                >
+                  {registryBulbs.map((b) => {
+                    const isCurrent = "mac" in target && b.mac === target.mac;
+                    return (
+                      <Action
+                        key={b.mac}
+                        title={`${isCurrent ? "✓ " : ""}${b.name}${b.online ? "" : " (offline)"}`}
+                        icon={b.online ? Icon.LightBulb : Icon.Circle}
+                        onAction={() => setTarget({ mac: b.mac, name: b.name })}
+                      />
+                    );
+                  })}
+                </ActionPanel.Submenu>
+              ) : null}
             </ActionPanel>
           }
           detail={

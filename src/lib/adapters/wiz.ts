@@ -1,5 +1,16 @@
 import dgram from 'dgram';
 import { Adapter, Device, Action } from '../types';
+import {
+  loadWizLink,
+  findDeviceByMac,
+  findDeviceByName,
+  findRoomById,
+  deviceLabel,
+  discoverBulbs,
+  findBulbIp,
+  WizLinkDevice,
+  DiscoveredBulb,
+} from './wiz-link';
 
 const WIZ_PORT = 38899;
 const UDP_TIMEOUT = 3000;
@@ -49,14 +60,46 @@ function sendUDP(ip: string, message: object, expectResponse = false): Promise<a
 export class WizAdapter extends Adapter {
   name = 'Philips WiZ';
   private bulbIp: string;
+  private bulbMac: string | null = null;
+  private deviceLabel: string = 'WiZ Bulb';
 
-  constructor(bulbIp: string) {
+  constructor(bulbIp: string, bulbMac?: string) {
     super();
     this.bulbIp = bulbIp;
+    if (bulbMac) {
+      this.bulbMac = bulbMac.toLowerCase().replace(/:/g, '');
+      const dev = findDeviceByMac(this.bulbMac);
+      if (dev) this.deviceLabel = deviceLabel(this.bulbMac);
+    }
+  }
+
+  /**
+   * Try to refresh the bulb's IP via LAN discovery. Returns the new IP
+   * if found, or null if the bulb is unreachable.
+   */
+  async refreshIp(): Promise<string | null> {
+    if (!this.bulbMac) return null;
+    const ip = await findBulbIp(this.bulbMac);
+    if (ip) this.bulbIp = ip;
+    return ip;
   }
 
   async initialize(): Promise<void> {
-    await this.getPilot(); // will throw if unreachable
+    // Try the configured IP first; on failure, try discovery (if we have a MAC)
+    try {
+      await this.getPilot();
+      return;
+    } catch (e) {
+      if (this.bulbMac) {
+        const newIp = await this.refreshIp();
+        if (newIp && newIp !== this.bulbIp) {
+          console.log(`💡 Wiz: ${this.deviceLabel} moved ${this.bulbIp} → ${newIp}`);
+          await this.getPilot(); // retry on new IP
+          return;
+        }
+      }
+      throw e;
+    }
   }
 
   /** Read current bulb state */

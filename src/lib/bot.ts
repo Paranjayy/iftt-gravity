@@ -13,6 +13,8 @@
 import { TelegramAdapter } from './adapters/telegram';
 import { MiraieAdapter } from './adapters/miraie';
 import { WizAdapter } from './adapters/wiz';
+import { WizRegistry } from './adapters/wiz-registry';
+import { loadWizLink, getWizLinkPath } from './adapters/wiz-link';
 import { PCAdapter } from './adapters/pc';
 import { getFrequentedStats } from './stats';
 import { WeatherEngine } from './weather';
@@ -475,9 +477,15 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       const d = miraie?.devices[0]?.deviceId;
       if (d) await miraie?.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'off' });
     },
-    bulb_on: async () => wiz?.executeAction({ type: 'control', payload: { state: true } }),
-    bulb_off: async () => wiz?.executeAction({ type: 'control', payload: { state: false } }),
-    bulb_dim: async (params: any) => wiz?.executeAction({ type: 'control', payload: { state: true, dimming: params.dim || 50 } }),
+    bulb_on: async () => wizRegistry
+      ? wizRegistry.turnOn(wizRegistry.getAll().find(b => b.online)?.mac || wizRegistry.getAll()[0]?.mac || '')
+      : wiz?.executeAction({ type: 'control', payload: { state: true } }),
+    bulb_off: async () => wizRegistry
+      ? wizRegistry.turnOff(wizRegistry.getAll().find(b => b.online)?.mac || wizRegistry.getAll()[0]?.mac || '')
+      : wiz?.executeAction({ type: 'control', payload: { state: false } }),
+    bulb_dim: async (params: any) => wizRegistry
+      ? wizRegistry.setBrightness(wizRegistry.getAll().find(b => b.online)?.mac || wizRegistry.getAll()[0]?.mac || '', params.dim || 50)
+      : wiz?.executeAction({ type: 'control', payload: { state: true, dimming: params.dim || 50 } }),
     scene: async (params: any) => triggerScene(params.name),
     speak: async (params: any) => speak(params.text),
     // 💤 Adaptive Sleep Curve (ACS)
@@ -594,12 +602,32 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   }
 
   let wiz: WizAdapter | null = null;
-  if (!CLIPBOARD_ONLY && config.wiz?.ip) {
-    try {
-      wiz = new WizAdapter(config.wiz?.ip);
-      console.log('💡 Lights: Adapter ready');
-    } catch (e) {
-      console.warn('⚠️ Wiz Setup failed');
+  let wizRegistry: WizRegistry | null = null;
+  if (!CLIPBOARD_ONLY) {
+    // Prefer the new multi-bulb registry (uses link catalog + LAN discovery)
+    const linkPath = getWizLinkPath();
+    if (loadWizLink()) {
+      try {
+        wizRegistry = new WizRegistry();
+        await wizRegistry.initialize();
+        // Use the registry as `wiz` for the legacy single-bulb code paths
+        // (posture, hydration, scene actions). The registry's
+        // getPilot/setPilot operate on the first known bulb by default.
+        wiz = wizRegistry as unknown as WizAdapter;
+        console.log(`💡 Lights: Registry ready (${linkPath})`);
+      } catch (e: any) {
+        console.warn(`⚠️ Wiz Registry setup failed: ${e?.message || e}`);
+      }
+    }
+    // Fallback: single-bulb adapter (preserves the old static-IP path)
+    if (!wiz && config.wiz?.ip) {
+      try {
+        wiz = new WizAdapter(config.wiz.ip, config.wiz.mac);
+        await wiz.initialize();
+        console.log('💡 Lights: Adapter ready (static IP)');
+      } catch (e) {
+        console.warn('⚠️ Wiz Setup failed');
+      }
     }
   }
 
@@ -728,16 +756,52 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       if (original) await (wiz as any).setPilot(original);
     } catch (e) { }
   }
-   async function pulseLight(dimTo = 70, duration = 400, colorOverride?: { r: number, g: number, b: number }) {
-     if (!wiz) return;
+  // ──────────────────────────────────────────────────────
+  // 💡 Helper: pick a target bulb (online first, else first known)
+  //    Routes to the registry if available, else the legacy adapter.
+  // ──────────────────────────────────────────────────────
+  function pickBulb(): { mac: string; name: string } | null {
+    if (wizRegistry && wizRegistry.getAll().length > 0) {
+      const all = wizRegistry.getAll();
+      const online = all.find((b) => b.online) || all[0];
+      return { mac: online.mac, name: online.name };
+    }
+    return null;
+  }
+
+  async function wizSetPilot(target: string, params: any): Promise<void> {
+    if (wizRegistry) {
+      await wizRegistry.setPilot(target, params);
+      return;
+    }
+    if (wiz) {
+      await (wiz as any).setPilot(params);
+    }
+  }
+
+  async function wizGetPilot(target: string): Promise<any> {
+    if (wizRegistry) {
+      const bulb = wizRegistry.find(target);
+      if (!bulb || !bulb.ip) return null;
+      return { state: bulb.state, dimming: bulb.dimming, r: bulb.r, g: bulb.g, b: bulb.b, temp: bulb.temp, sceneId: bulb.sceneId };
+    }
+    if (wiz) return await (wiz as any).getPilot();
+    return null;
+  }
+
+  async function pulseLight(dimTo = 70, duration = 400, colorOverride?: { r: number, g: number, b: number }) {
+     // Prefer the registry (multi-bulb, auto-discovery). Fall back to legacy single-bulb.
+     const target = pickBulb();
+     if (!target && !wiz) return;
      try {
-       const originalPilot = await (wiz as any).getPilot();
+       const originalPilot = target ? await wizGetPilot(target.mac) : await (wiz as any).getPilot();
        const payload: any = { state: true, dimming: dimTo };
        if (colorOverride) { payload.r = colorOverride.r; payload.g = colorOverride.g; payload.b = colorOverride.b; }
-       await (wiz as any).setPilot(payload);
+       if (target) await wizSetPilot(target.mac, payload);
+       else await (wiz as any).setPilot(payload);
        await new Promise(r => setTimeout(r, duration));
        if (originalPilot) {
-         await (wiz as any).setPilot({
+         await wizSetPilot(target?.mac || '', {
            state: originalPilot.state,
            dimming: originalPilot.dimming,
            r: originalPilot.r,
@@ -4004,15 +4068,37 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           const spotify = await getSpotifyStatus();
           const jitter = await getNetworkJitter();
           const batt = await getBatteryStatus();
-          
+
           // Calculate current live units and durations
           const liveUnits = (config.stats.acMinutes / 60 * 1.65) + (config.stats.lightMinutes / 60 * 0.012);
           const acDur = getDurationString(config.stats.ac?.lastChanged);
           const lightDur = getDurationString(config.stats.light?.lastChanged);
-          
+
+          // WiZ: per-bulb state from the registry, when available
+          const wizBulbs = wizRegistry ? wizRegistry.getAll().map((b) => ({
+            mac: b.mac,
+            name: b.name,
+            ip: b.ip,
+            online: b.online,
+            state: b.state,
+            sceneId: b.sceneId,
+            dimming: b.dimming,
+            temp: b.temp,
+            rssi: b.rssi,
+            lastSeen: b.lastSeen,
+          })) : [];
+          const wizSummary = wizRegistry
+            ? `${wizBulbs.filter((b) => b.online).length}/${wizBulbs.length} online`
+            : (wiz ? "1 (static)" : null);
+
           const body = JSON.stringify({
             online: isPhoneOnline,
             stats: config.stats,
+            wiz: {
+              source: wizRegistry ? "registry" : (wiz ? "single" : null),
+              summary: wizSummary,
+              bulbs: wizBulbs,
+            },
             units: liveUnits.toFixed(1),
             estimatedPgBill: Math.round(Number(calculatePgvclBill(liveUnits))),
             ac_duration: acDur,
@@ -4289,17 +4375,23 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           return new Response('Dimmed', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/bulb/on' || url.pathname === '/control/bulb_on') {
-          await wiz?.executeAction({ type: 'control', payload: { state: true } });
+          const target = pickBulb();
+          if (target) await wizRegistry!.turnOn(target.mac);
+          else await wiz?.executeAction({ type: 'control', payload: { state: true } });
           updateDeviceState('light', 'on', true);
           return new Response('Bulb On', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/bulb/off' || url.pathname === '/control/bulb_off') {
-          if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: false } });
+          const target = pickBulb();
+          if (target) await wizRegistry!.turnOff(target.mac);
+          else if (wiz) await (wiz as any).executeAction({ type: 'control', payload: { state: false } });
           updateDeviceState('light', 'off', true);
           return new Response('Bulb Off', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/bulb_tv') {
-          if (wiz) await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
+          const target = pickBulb();
+          if (target) await wizRegistry!.setPilot(target.mac, { state: true, sceneId: 18, dimming: 10 });
+          else if (wiz) await wiz?.executeAction({ type: 'control', payload: { state: true, scene: 'TV time', dimming: 10 } });
           return new Response('Bulb TV Mode Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/bulb/timer') {
@@ -4334,6 +4426,139 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             return new Response(`Bulb will turn OFF at ${atParam}`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
           return new Response('Use ?mins=N (0-1440) or ?at=HH:MM', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+
+        // WiZ Registry endpoints (multi-bulb) — added 2026-07-23
+        // Driven by the wiz-link JSON captured from the WiZ mobile app.
+        // Falls back to the single-bulb adapter (WizAdapter) if the link
+        // is not present. All endpoints are additive; the existing
+        // /control/bulb/* endpoints still work.
+
+        if (url.pathname === '/control/wiz/devices') {
+          // Returns the full device list with current state.
+          if (wizRegistry) {
+            const bulbs = wizRegistry.getAll();
+            return new Response(JSON.stringify({
+              source: 'wiz-registry',
+              home_id: loadWizLink()?.home_id,
+              region: loadWizLink()?.region,
+              last_discovery: wizRegistry.getLastDiscoveryTime() || null,
+              bulbs: bulbs.map((b) => ({
+                mac: b.mac,
+                name: b.name,
+                ip: b.ip,
+                online: b.online,
+                state: b.state,
+                sceneId: b.sceneId,
+                dimming: b.dimming,
+                temp: b.temp,
+                rssi: b.rssi,
+                last_seen: b.lastSeen,
+                traits: b.traits,
+              })),
+            }, null, 2), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+          // Fallback: return the single known bulb if any
+          if (wiz) {
+            return new Response(JSON.stringify({
+              source: 'wiz-single',
+              bulbs: [{ id: `wiz-${(wiz as any).bulbIp || '?'}`, name: 'WiZ Bulb (static)', online: true }],
+            }, null, 2), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          }
+          return new Response(JSON.stringify({ source: 'none', bulbs: [] }, null, 2), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+
+        if (url.pathname === '/control/wiz/state' && req.method === 'GET') {
+          // Per-bulb state query. ?mac=... or ?name=...
+          if (!wizRegistry) {
+            return new Response('No wiz registry (link not loaded)', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          const mac = url.searchParams.get('mac');
+          const name = url.searchParams.get('name');
+          const query = mac || name || '';
+          const bulb = wizRegistry.find(query);
+          if (!bulb) {
+            return new Response(`No bulb matching "${query}"`, { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          return new Response(JSON.stringify(bulb, null, 2), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+
+        if (url.pathname === '/control/wiz/control' && req.method === 'POST') {
+          // Control a specific bulb. Body: { mac| name, state?, dimming?, r?, g?, b?, temp?, sceneId?, scene? }
+          if (!wizRegistry) {
+            return new Response('No wiz registry', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          let body: any = {};
+          try { body = await req.json(); } catch {}
+          const query = body.mac || body.name || body.query || '';
+          if (!query) {
+            return new Response('Provide mac or name', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          const params: any = {};
+          if (body.state !== undefined) params.state = body.state;
+          if (body.dimming !== undefined) params.dimming = body.dimming;
+          if (body.brightness !== undefined) params.dimming = body.brightness;
+          if (body.r !== undefined) { params.r = body.r; params.g = body.g; params.b = body.b; }
+          if (body.temp !== undefined) params.temp = body.temp;
+          if (body.sceneId !== undefined) params.sceneId = body.sceneId;
+          if (body.scene) {
+            const SCENES: Record<string, number> = {
+              'Ocean': 1, 'Romance': 2, 'Sunset': 3, 'Party': 4, 'Fireplace': 5,
+              'Cozy': 6, 'Forest': 7, 'Pastel': 8, 'Wake Up': 9, 'Bedtime': 10,
+              'Warm White': 11, 'Cool White': 12, 'Night Light': 13, 'Focus': 14,
+              'Relax': 15, 'True colors': 17, 'TV time': 18, 'Plantgrowth': 19, 'Spring': 20,
+            };
+            const id = SCENES[body.scene];
+            if (id) params.sceneId = id;
+          }
+          if (Object.keys(params).length === 0) {
+            return new Response('No params to set', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          try {
+            await wizRegistry.setPilot(query, params);
+            const bulb = wizRegistry.find(query);
+            return new Response(JSON.stringify({ status: 'ok', bulb }, null, 2), {
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
+          } catch (e: any) {
+            return new Response(`Control failed: ${e?.message || e}`, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+
+        if (url.pathname === '/control/wiz/discover' && req.method === 'POST') {
+          // Force a fresh LAN discovery (normally runs on a 30s timer).
+          if (!wizRegistry) {
+            return new Response('No wiz registry', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          await wizRegistry.refresh();
+          return new Response(JSON.stringify({ status: 'refreshed', bulbs: wizRegistry.getAll() }, null, 2), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+
+        if (url.pathname === '/control/wiz/pulse-all' && req.method === 'POST') {
+          // Pulse every online bulb. Body: { dimming, durationMs, color? }
+          if (!wizRegistry) {
+            return new Response('No wiz registry', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
+          }
+          let body: any = {};
+          try { body = await req.json(); } catch {}
+          const count = await wizRegistry.pulseAll(
+            body.dimming ?? 100,
+            body.durationMs ?? 2000,
+            body.color,
+          );
+          return new Response(JSON.stringify({ status: 'ok', bulbs_pulsed: count }), {
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
         }
         if (url.pathname === '/control/smartthings') {
           try {
@@ -4784,13 +5009,15 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           const r = parseInt(url.searchParams.get('r') || '0');
           const g = parseInt(url.searchParams.get('g') || '0');
           const b = parseInt(url.searchParams.get('b') || '0');
-          if (wiz) {
-            if (url.searchParams.has('r')) {
-              await (wiz as any).executeAction({ type: 'control', payload: { state: true, r, g, b } });
-            } else {
-              await (wiz as any).executeAction({ type: 'control', payload: { state: true, temp } });
-            }
+          const target = pickBulb();
+          const params: any = { state: true };
+          if (url.searchParams.has('r')) {
+            params.r = r; params.g = g; params.b = b;
+          } else {
+            params.temp = temp;
           }
+          if (target) await wizRegistry!.setPilot(target.mac, params);
+          else if (wiz) await (wiz as any).executeAction({ type: 'control', payload: params });
           return new Response('Bulb Color Set', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/ac/powerful') {
@@ -4991,6 +5218,56 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
 
   setInterval(runPgvclScraper, 21600000);
   setInterval(checkGhostPresence, 5 * 60 * 1000);
+
+  // ──────────────────────────────────────────────────────
+  // ❄️ AC MAX-RUNTIME WATCHDOG (added 2026-07-23)
+  // The AC is too strong — if left on for 45+ min it freezes the
+  // user. This watchdog force-turns-off the AC if it has been on too
+  // long, with a tighter cap (30 min) during bedtime hours.
+  // The cap is per "on" session — we track when AC was last turned on
+  // by watching config.stats.ac.lastChanged (set by updateDeviceState).
+  // ──────────────────────────────────────────────────────
+  const AC_MAX_RUNTIME_MS = 45 * 60 * 1000;        // 45 min normal
+  const AC_MAX_RUNTIME_BEDTIME_MS = 30 * 60 * 1000; // 30 min bedtime
+  const AC_ALERT_COOLDOWN_MS = 10 * 60 * 1000;     // 10 min between alerts
+  let acLastAlertAt = 0;
+  function isBedtimeHour(d = new Date()): boolean {
+    const h = d.getHours();
+    return h >= 23 || h < 6; // 11pm – 6am
+  }
+
+  setInterval(async () => {
+    if (!config.stats.ac) return;
+    const acOn = config.stats.ac.status === 'on';
+    if (!acOn) return;
+    const lastChanged = config.stats.ac.lastChanged;
+    if (!lastChanged) return;
+    const lastChangedMs = typeof lastChanged === 'number'
+      ? lastChanged
+      : new Date(lastChanged).getTime();
+    if (isNaN(lastChangedMs)) return;
+    const runtime = Date.now() - lastChangedMs;
+    const cap = isBedtimeHour() ? AC_MAX_RUNTIME_BEDTIME_MS : AC_MAX_RUNTIME_MS;
+    if (runtime < cap) return;
+    // Cap exceeded — force off
+    if (miraie && (miraie as any).devices.length > 0) {
+      try {
+        for (const device of (miraie as any).devices) {
+          await (miraie as any).controlDevice(device.deviceId, { ki: 1, cnt: "an", sid: "1", ps: 'off' });
+        }
+        _origUpdate('ac', 'off', true);
+        const mins = Math.floor(runtime / 60000);
+        const reason = isBedtimeHour() ? 'BEDTIME 30-MIN CAP' : '45-MIN CAP';
+        if (Date.now() - acLastAlertAt > AC_ALERT_COOLDOWN_MS) {
+          acLastAlertAt = Date.now();
+          await send(`🛑 *AC AUTO-OFF*\nReason: *${reason}* reached (ran ${mins} min)\nThis prevents the "freeze" scenario. Re-arm manually if needed.`);
+          logActivity(`🛑 AC auto-off after ${mins} min (${reason})`);
+        }
+      } catch (e: any) {
+        console.warn(`❄️ AC watchdog failed: ${e?.message || e}`);
+      }
+    }
+  }, 60 * 1000); // check every minute
 
   let awayAcMinutes = 0;
 
