@@ -5093,6 +5093,26 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           }
           return new Response('AC Swing Toggled', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
+        if (url.pathname === '/control/ac/maxruntime') {
+          const mins = parseInt(url.searchParams.get('mins') || '0', 10);
+          (config as any).acMaxRuntime = mins > 0 ? mins : 0;
+          saveConfig(config);
+          if (mins > 0) {
+            const bedHrs = (config as any).bedtimeHours || [23, 6];
+            return new Response(JSON.stringify({ status: 'set', acMaxRuntime: mins, bedtimeHours: bedHrs }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          }
+          return new Response(JSON.stringify({ status: 'disabled', acMaxRuntime: 0 }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/ac/bedtime') {
+          const start = parseInt(url.searchParams.get('start') || '23', 10);
+          const end = parseInt(url.searchParams.get('end') || '6', 10);
+          (config as any).bedtimeHours = [
+            Math.max(0, Math.min(23, start)),
+            Math.max(0, Math.min(23, end)),
+          ];
+          saveConfig(config);
+          return new Response(JSON.stringify({ status: 'set', bedtimeHours: (config as any).bedtimeHours }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
         if (url.pathname === '/control/restart') {
           exec(`scripts/iftt-clone.sh`);
           return new Response('Restarting Hub...', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -5220,23 +5240,27 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   setInterval(checkGhostPresence, 5 * 60 * 1000);
 
   // ──────────────────────────────────────────────────────
-  // ❄️ AC MAX-RUNTIME WATCHDOG (added 2026-07-23)
-  // The AC is too strong — if left on for 45+ min it freezes the
-  // user. This watchdog force-turns-off the AC if it has been on too
-  // long, with a tighter cap (30 min) during bedtime hours.
-  // The cap is per "on" session — we track when AC was last turned on
-  // by watching config.stats.ac.lastChanged (set by updateDeviceState).
+  // ❄️ AC MAX-RUNTIME WATCHDOG (added 2026-07-23, opt-in)
+  // Force-turns off the AC if it's been on longer than the cap.
+  // Opt-IN: only runs when config.acMaxRuntime > 0 (minutes).
+  // Configurable bedtime cap via config.bedtimeHours: [start, end] (24h)
+  // Default: OFF (no cap) — user must explicitly enable.
   // ──────────────────────────────────────────────────────
-  const AC_MAX_RUNTIME_MS = 45 * 60 * 1000;        // 45 min normal
-  const AC_MAX_RUNTIME_BEDTIME_MS = 30 * 60 * 1000; // 30 min bedtime
-  const AC_ALERT_COOLDOWN_MS = 10 * 60 * 1000;     // 10 min between alerts
+  const AC_ALERT_COOLDOWN_MS = 10 * 60 * 1000;
   let acLastAlertAt = 0;
   function isBedtimeHour(d = new Date()): boolean {
     const h = d.getHours();
-    return h >= 23 || h < 6; // 11pm – 6am
+    const [start, end] = (config as any).bedtimeHours || [23, 6];
+    if (start < end) return h >= start && h < end;
+    return h >= start || h < end; // wraps past midnight
   }
 
   setInterval(async () => {
+    const maxRuntimeMin = (config as any).acMaxRuntime || 0;
+    if (maxRuntimeMin <= 0) return; // opt-in: only runs when set
+    const capMs = isBedtimeHour()
+      ? Math.max(10, Math.floor(maxRuntimeMin * 0.6)) * 60 * 1000
+      : maxRuntimeMin * 60 * 1000;
     if (!config.stats.ac) return;
     const acOn = config.stats.ac.status === 'on';
     if (!acOn) return;
@@ -5247,9 +5271,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       : new Date(lastChanged).getTime();
     if (isNaN(lastChangedMs)) return;
     const runtime = Date.now() - lastChangedMs;
-    const cap = isBedtimeHour() ? AC_MAX_RUNTIME_BEDTIME_MS : AC_MAX_RUNTIME_MS;
-    if (runtime < cap) return;
-    // Cap exceeded — force off
+    if (runtime < capMs) return;
     if (miraie && (miraie as any).devices.length > 0) {
       try {
         for (const device of (miraie as any).devices) {
@@ -5257,10 +5279,10 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         }
         _origUpdate('ac', 'off', true);
         const mins = Math.floor(runtime / 60000);
-        const reason = isBedtimeHour() ? 'BEDTIME 30-MIN CAP' : '45-MIN CAP';
+        const reason = isBedtimeHour() ? 'BEDTIME CAP' : 'MAX-RUNTIME CAP';
         if (Date.now() - acLastAlertAt > AC_ALERT_COOLDOWN_MS) {
           acLastAlertAt = Date.now();
-          await send(`🛑 *AC AUTO-OFF*\nReason: *${reason}* reached (ran ${mins} min)\nThis prevents the "freeze" scenario. Re-arm manually if needed.`);
+          await send(`🛑 *AC AUTO-OFF*\nReason: *${reason}* reached (${mins} min / ${maxRuntimeMin} min cap)\nCap: *${isBedtimeHour() ? 'night mode' : 'normal mode'}*. Re-arm manually or adjust acMaxRuntime.`);
           logActivity(`🛑 AC auto-off after ${mins} min (${reason})`);
         }
       } catch (e: any) {
