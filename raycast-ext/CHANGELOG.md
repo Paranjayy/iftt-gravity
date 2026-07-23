@@ -243,6 +243,62 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 - **YouTube is no longer "Watch"** — tested with 3 real YouTube URLs,
   all returned the real video title via oEmbed
 
+### Round 13 (this PR): Social Stats command + portable providers + domain grouping
+
+**NEW 17th command: `Social Stats`** (registered as `social_stats`):
+Fetch rich metadata (views, likes, score, comments, stars, forks, etc.)
+for any URL. Pure stats dashboard with platform-aware formatting.
+
+**Portable provider architecture** (`src/social/providers/`):
+- `types.ts` — `Provider`, `RichResult`, `Stats`, `Platform` types
+- 5 working providers (no API keys required):
+  * **YouTube** — views, likes, comments, duration, live status, thumbnail
+    (via `ytInitialPlayerResponse` JSON in the page source)
+  * **GitHub** — stars, forks, open issues, language, description, topics
+    (via public REST API at api.github.com)
+  * **Hacker News** — points, comments, author (via Firebase API)
+  * **StackOverflow** — score, answers, views, tags, accepted answer
+    (via api.stackexchange.com)
+  * **Reddit** — attempts the .json API; returns no-stats if blocked
+- Recognized platforms with no public stats (Twitter/X, Instagram,
+  TikTok, Facebook, LinkedIn) — return a friendly "requires login"
+  message instead of generic "unknown"
+- `fetchStatsForUrls()` does parallel fetch (10 URLs in ~800ms in tests)
+- `formatStatsMarkdown()` produces a clean shareable snippet
+
+**Domain-grouped history view** (convert_link):
+- New dropdown in the list toolbar: "By time (newest first)" / "By domain"
+- When grouped by domain, sections are sorted by total URL count
+  (most active domain first); each section header shows the domain
+  and the count of conversions + URLs
+- Time view remains the default
+
+**Portable**: providers are pure functions, zero Raycast deps. Same
+code can be imported by a CLI, web app, or another extension. The
+Raycast command is a thin UI layer over the provider registry.
+
+**Test harness** at `src/social/providers/__test__/providers.spec.ts`:
+- Run with `bun run test:social-providers`
+- Tests provider matching, single fetch, batch fetch, markdown formatting
+- Uses real URLs from the user's chat (YouTube, GitHub, HN, etc.)
+- ALL PASSES — verified YouTube views=33,223, GitHub stars=7,631,
+  HN points=57, etc.
+
+**Tested against the user's chat URLs:**
+- https://m.youtube.com/watch?v=aGNhUcu54PA
+  -> views=33,223 · likes=36 · duration=2:05 · Paramount Business Jets
+  -> 1,057ms (via ytInitialPlayerResponse)
+- https://www.youtube.com/watch?v=zaiMSQiaZp4
+  -> views=11,180 · likes=95 · LIVE · Sadhguru Darshan · 703ms
+- https://github.com/raycast/extensions
+  -> stars=7,631 · forks=6,499 · issues=1,487 · TypeScript · 163ms
+- https://news.ycombinator.com/item?id=1
+  -> score=57 · comments=3 · by=pg · 794ms
+- https://x.com/SwiftJetNextDay/...
+  -> "no-stats" with honest "Twitter/X requires login" message
+
+Bot untouched. No regression. Dev mode picks up changes automatically.
+
 ### Round 10 (this PR): UX improvements + rename
 - **Archive**: day-grouped sections (Today / Yesterday / This week / Older),
   stats header (top app + total tokens), "Copy with Timestamp Prefix" action

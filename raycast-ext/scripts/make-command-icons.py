@@ -34,6 +34,7 @@ COMMANDS = [
     ("mood_presets","M", (255, 130, 200, 120),  "Mood presets - pink"),
     ("prompts",     "P", (200, 255, 100, 120),  "Prompts - lime green"),
     ("convert_link","L", (90, 180, 240, 130),  "Convert link - sky blue"),
+    ("social_stats","S", (255, 150, 50, 130),  "Social stats - warm orange"),
 ]
 
 

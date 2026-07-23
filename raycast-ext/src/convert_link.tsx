@@ -326,6 +326,7 @@ export default function Command() {
   const [history, setHistory] = useState<Conversion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [groupMode, setGroupMode] = useState<"time" | "domain">("time");
 
   useEffect(() => {
     loadHistory().then((h) => {
@@ -351,6 +352,11 @@ export default function Command() {
           c.output.toLowerCase().includes(q),
       )
     : history;
+
+  // --- Grouped view (time or domain) ---
+  const grouped = groupMode === "time"
+    ? [{ key: "Recent", items: filtered }]
+    : groupByDomain(filtered);
 
   // --- Domain grouping (for the stats dashboard) ---
   const allUrls: { url: string; conv: Conversion }[] = history.flatMap((c) =>
@@ -496,6 +502,16 @@ export default function Command() {
       onSearchTextChange={setSearch}
       searchBarPlaceholder="Search history or paste URLs to convert…"
       throttle
+      searchBarAccessory={
+        <List.Dropdown
+          tooltip="Group history by"
+          value={groupMode}
+          onChange={(v) => setGroupMode(v as "time" | "domain")}
+        >
+          <List.Dropdown.Item value="time" title="By time (newest first)" />
+          <List.Dropdown.Item value="domain" title="By domain" />
+        </List.Dropdown>
+      }
     >
       {/* Stats dashboard at the very top */}
       {totalConversions > 0 && (
@@ -613,11 +629,12 @@ export default function Command() {
         </List.Section>
       ) : null}
 
-      {filtered.length > 0 && (
+      {filtered.length > 0 && grouped.map((group) => (
         <List.Section
-          title={q ? `History (${filtered.length} match)` : `History (${filtered.length})`}
+          key={group.key}
+          title={q ? `${group.key} (${group.items.length} match)` : `${group.key} (${group.items.length})`}
         >
-          {filtered.map((c) => (
+          {group.items.map((c) => (
             <HistoryItem
               key={c.id}
               conversion={c}
@@ -628,13 +645,41 @@ export default function Command() {
             />
           ))}
         </List.Section>
-      )}
+      ))}
     </List>
   );
 }
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function groupByDomain(items: Conversion[]): { key: string; items: Conversion[] }[] {
+  const byDomain: Record<string, Conversion[]> = {};
+  for (const c of items) {
+    // Pick the first URL's domain as the conversion's domain.
+    // If multiple domains, the conversion is "tagged" with all of them.
+    let primary: string | null = null;
+    for (const u of c.urls) {
+      try {
+        const host = new URL(u).hostname.replace(/^www\./, "");
+        primary = primary || host;
+      } catch {}
+    }
+    const key = primary || "(unknown)";
+    (byDomain[key] = byDomain[key] || []).push(c);
+  }
+  // Sort domains by total URL count (most active first)
+  return Object.entries(byDomain)
+    .map(([key, items]) => {
+      const totalUrls = items.reduce((s, c) => s + c.urls.length, 0);
+      return { key: `${key} (${items.length} conversion${items.length === 1 ? "" : "s"}, ${totalUrls} URL${totalUrls === 1 ? "" : "s"})`, items };
+    })
+    .sort((a, b) => {
+      const aUrls = a.items.reduce((s, c) => s + c.urls.length, 0);
+      const bUrls = b.items.reduce((s, c) => s + c.urls.length, 0);
+      return bUrls - aUrls;
+    });
 }
 
 function HistoryItem({

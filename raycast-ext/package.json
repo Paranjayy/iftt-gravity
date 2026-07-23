@@ -119,6 +119,13 @@
       "description": "Convert URLs to markdown links with smart title extraction, bulk paste, and history",
       "icon": "commands/convert_link.png",
       "mode": "view"
+    },
+    {
+      "name": "social_stats",
+      "title": "Social Stats",
+      "description": "Fetch rich metadata for any URL — YouTube views/likes, GitHub stars/forks, Reddit score, Hacker News points, StackOverflow answers, and more",
+      "icon": "commands/social_stats.png",
+      "mode": "view"
     }
   ],
   "preferences": [
@@ -158,6 +165,7 @@
     "fix-lint": "./node_modules/.bin/eslint src --ext .ts,.tsx --fix",
     "lint": "./node_modules/.bin/eslint src --ext .ts,.tsx",
     "publish": "bunx @raycast/api@latest publish",
-    "test:url-converter": "bun run src/__test__/convert-link.spec.ts"
+    "test:url-converter": "bun run src/__test__/convert-link.spec.ts",
+    "test:social-providers": "bun run src/social/providers/__test__/providers.spec.ts"
   }
 }
