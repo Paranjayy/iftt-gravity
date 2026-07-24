@@ -1,6 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color, open } from "@raycast/api";
 import { useState } from "react";
 import fetch from "node-fetch";
+import { hubUrl } from "./config";
 
 interface SchedulePreset {
   id: string;
@@ -76,7 +77,7 @@ const PRESETS: SchedulePreset[] = [
 
 async function addSchedule(time: string, action: string, days: string): Promise<{ ok: boolean; error?: string }> {
   try {
-    const res = await fetch("http://127.0.0.1:3030/control/schedule/add", {
+    const res = await fetch(hubUrl("control/schedule/add"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ time, action, days }),

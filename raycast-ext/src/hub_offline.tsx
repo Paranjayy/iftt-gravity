@@ -1,4 +1,5 @@
 import { Detail, ActionPanel, Action, Icon, Color } from "@raycast/api";
+import { getHubUrl } from "./config";
 
 /**
  * Shared "Hub Offline" Detail component.
@@ -24,7 +25,7 @@ export default function HubOfflineDetail({ context, onRetry }: { context?: strin
   const heading = context ? `❌ Hub Offline — ${context}` : "❌ Hub Offline";
   const markdown = `# ${heading}
 
-The Gravity Hub is not responding on \`http://127.0.0.1:3030\`.
+The Gravity Hub is not responding on \`${getHubUrl()}\`.
 
 **Quick fix:** Use the **Restart Full Hub Stack** action below to relaunch the bot in a new Terminal window. \`iftt-clone.sh\` already loads the preload shim so the bot won't crash on startup.
 

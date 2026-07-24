@@ -1,6 +1,7 @@
 import { Detail, Icon, Color, ActionPanel, Action, showToast, Toast, Clipboard } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import { hubUrl, dashboardUrl } from "./config";
 
 interface HubState {
   online: boolean;
@@ -45,7 +46,7 @@ export default function Command() {
     const ac = new AbortController();
     const t = setTimeout(() => ac.abort(), 4000);
     try {
-      const res = await fetch("http://127.0.0.1:3030/status", { signal: ac.signal });
+      const res = await fetch(hubUrl("status"), { signal: ac.signal });
       clearTimeout(t);
       const json = await res.json();
       setData(json);
@@ -180,7 +181,7 @@ ${data?.smartthings?.lastError ? `  ⚠️ ${data.smartthings.lastError}\n` : ""
           />
           <Action.OpenInBrowser
             title="Open Web Dashboard"
-            url="http://127.0.0.1:3000"
+            url={dashboardUrl()}
             shortcut={{ modifiers: ["cmd"], key: "o" }}
           />
         </ActionPanel>

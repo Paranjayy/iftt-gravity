@@ -15,6 +15,7 @@ import {
 } from "@raycast/api";
 import { useEffect, useMemo, useState } from "react";
 import fetch from "node-fetch";
+import { hubUrl, dashboardUrl } from "./config";
 
 interface Preferences {
   smartThingsPat?: string;
@@ -105,17 +106,17 @@ export default function SmartThingsCommand() {
   async function refresh() {
     try {
       const [status, scenesResponse, locationsResponse, roomsResponse, modesResponse] = await Promise.all([
-        fetchJson<HubState>("http://127.0.0.1:3030/status"),
-        fetchJson<{ scenes: SmartThingsScene[] }>("http://127.0.0.1:3030/control/smartthings/scenes").catch(() => ({ scenes: [] })),
-        fetchJson<{ locations: SmartThingsLocation[] }>("http://127.0.0.1:3030/control/smartthings/locations").catch(() => ({ locations: [] })),
+        fetchJson<HubState>(hubUrl("status")),
+        fetchJson<{ scenes: SmartThingsScene[] }>(hubUrl("control/smartthings/scenes")).catch(() => ({ scenes: [] })),
+        fetchJson<{ locations: SmartThingsLocation[] }>(hubUrl("control/smartthings/locations")).catch(() => ({ locations: [] })),
         locationId
           ? fetchJson<{ rooms: SmartThingsRoom[] }>(
-              `http://127.0.0.1:3030/control/smartthings/rooms?locationId=${encodeURIComponent(locationId)}`
+              hubUrl(`control/smartthings/rooms?locationId=${encodeURIComponent(locationId)}`)
             ).catch(() => ({ rooms: [] }))
           : Promise.resolve({ rooms: [] }),
         locationId
           ? fetchJson<{ modes: SmartThingsMode[]; currentMode?: SmartThingsMode }>(
-              `http://127.0.0.1:3030/control/smartthings/modes?locationId=${encodeURIComponent(locationId)}`
+              hubUrl(`control/smartthings/modes?locationId=${encodeURIComponent(locationId)}`)
             ).catch(() => ({ modes: [], currentMode: null as any }))
           : Promise.resolve({ modes: [], currentMode: null as any }),
       ]);
@@ -143,7 +144,7 @@ export default function SmartThingsCommand() {
   async function runAction(name: string, endpoint: string, init?: any) {
     const toast = await showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
-      const res = await fetch(`http://127.0.0.1:3030${endpoint}`, init);
+      const res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint), init);
       const data: any = await res.json().catch(() => ({}));
       if (!res.ok || data?.success === false) {
         throw new Error(data?.error || "Failed");
@@ -192,7 +193,7 @@ export default function SmartThingsCommand() {
                 icon={Icon.Repeat}
                 onAction={() => runAction("SmartThings Sync", "/control/smartthings/sync")}
               />
-              <Action.OpenInBrowser title="Open Device Sync" url="http://127.0.0.1:3000/device-sync" />
+              <Action.OpenInBrowser title="Open Device Sync" url={dashboardUrl("device-sync")} />
             </ActionPanel>
           }
         />
@@ -207,7 +208,7 @@ export default function SmartThingsCommand() {
                 icon={Icon.Download}
                 onAction={() => runAction("Load SmartThings Locations", "/control/smartthings/locations")}
               />
-              <Action.OpenInBrowser title="Open Device Sync" url="http://127.0.0.1:3000/device-sync" />
+              <Action.OpenInBrowser title="Open Device Sync" url={dashboardUrl("device-sync")} />
             </ActionPanel>
           }
         />
@@ -496,7 +497,7 @@ function SmartThingsDiagnosticsDetail({ locationId }: { locationId: string }) {
     setIsLoading(true);
     try {
       const query = locationId ? `?locationId=${encodeURIComponent(locationId)}` : "";
-      const res = await fetch(`http://127.0.0.1:3030/control/smartthings/diagnostics${query}`);
+      const res = await fetch(hubUrl(`control/smartthings/diagnostics${query}`));
       const data: any = await res.json().catch(() => ({}));
       setMarkdown(renderSmartThingsDiagnostics(data, res.status));
     } catch (e: any) {
@@ -589,7 +590,7 @@ function SmartThingsRoomDetail({
 
   async function loadRoomDevices() {
     try {
-      const res = await fetch(`http://127.0.0.1:3030/control/smartthings/room-devices?locationId=${encodeURIComponent(locationId)}&roomId=${encodeURIComponent(room.id)}`);
+      const res = await fetch(hubUrl(`control/smartthings/room-devices?locationId=${encodeURIComponent(locationId)}&roomId=${encodeURIComponent(room.id)}`));
       const data: any = await res.json().catch(() => ({}));
       if (!res.ok || data?.success === false) {
         throw new Error(data?.error || "Failed to load room devices");
@@ -615,7 +616,7 @@ function SmartThingsRoomDetail({
         query.set("args", JSON.stringify(action.args));
       }
 
-      const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
+      const res = await fetch(hubUrl(`control/smartthings?${query.toString()}`));
       const data: any = await res.json().catch(() => ({}));
       if (!res.ok || data?.success === false) {
         throw new Error(data?.error || "Failed");
@@ -715,7 +716,7 @@ function SmartThingsLinkForm({
   async function handleSubmit(values: { token: string; locationId?: string }) {
     const toast = await showToast({ style: Toast.Style.Animated, title: "Linking SmartThings..." });
     try {
-      const res = await fetch("http://127.0.0.1:3030/control/smartthings/link", {
+      const res = await fetch(hubUrl("control/smartthings/link"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -785,7 +786,7 @@ function SmartThingsRawCommandForm({
       if (normalizedArgs.length) {
         query.set("args", JSON.stringify(normalizedArgs));
       }
-      const res = await fetch(`http://127.0.0.1:3030/control/smartthings?${query.toString()}`);
+      const res = await fetch(hubUrl(`control/smartthings?${query.toString()}`));
       const data: any = await res.json();
       if (!res.ok || data?.success === false) {
         throw new Error(data?.error || "SmartThings command failed");

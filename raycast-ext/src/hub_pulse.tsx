@@ -1,6 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import { getHubUrl, hubUrl, archiveUrl, dashboardUrl } from "./config";
 import QuickScene from "./quick_scene";
 import MoodPresets from "./mood_presets";
 import SunPosition from "./sun_position";
@@ -36,10 +37,10 @@ interface HubState {
   battery?: { level: number; charging: boolean };
 }
 
-const HUB_URL = "http://127.0.0.1:3030";
+const HUB_URL = getHubUrl();
 
 function buildTelegramStatus(state: any, error: string | null): string {
-  if (error) return "❌ *Hub Offline* — cannot reach 127.0.0.1:3030";
+  if (error) return "❌ *Hub Offline* — cannot reach hub";
   const ac = state?.stats?.ac;
   const light = state?.stats?.light;
   const acOn = ac?.status === "on";
@@ -121,7 +122,7 @@ export default function HubPulse() {
         <List.Item
           icon={error ? { source: Icon.ExclamationMark, tintColor: Color.Red } : { source: Icon.Heartbeat, tintColor: Color.Green }}
           title={error ? "Hub Offline" : "Hub Online"}
-          subtitle={error ? "Cannot reach 127.0.0.1:3030" : `Uptime: ${Math.floor((state?.uptime || 0) / 3600)}h ${Math.floor(((state?.uptime || 0) % 3600) / 60)}m · Last refresh: ${lastRefresh.toLocaleTimeString()}`}
+          subtitle={error ? "Cannot reach hub" : `Uptime: ${Math.floor((state?.uptime || 0) / 3600)}h ${Math.floor(((state?.uptime || 0) % 3600) / 60)}m · Last refresh: ${lastRefresh.toLocaleTimeString()}`}
           accessories={[
             { text: state?.autoAc ? "Auto-AC ✓" : "Auto-AC ✗" },
             { text: state?.autoLight ? "Auto-Light ✓" : "Auto-Light ✗" },
@@ -137,7 +138,7 @@ export default function HubPulse() {
                 content={buildTelegramStatus(state, error)}
                 shortcut={{ modifiers: ["cmd"], key: "c" }}
               />
-              <Action.OpenInBrowser title="Open Dashboard" url="http://127.0.0.1:3000" />
+              <Action.OpenInBrowser title="Open Dashboard" url={dashboardUrl()} />
             </ActionPanel>
           }
           detail={
@@ -400,7 +401,7 @@ export default function HubPulse() {
                 title="Restart Hub"
                 onAction={() => runHubAction("HUB RESTART", "/control/restart")}
               />
-              <Action.OpenInBrowser title="Open Web Dashboard" url="http://127.0.0.1:3000" />
+              <Action.OpenInBrowser title="Open Web Dashboard" url={dashboardUrl()} />
             </ActionPanel>
           }
         />
@@ -450,7 +451,7 @@ export default function HubPulse() {
             }
             const toast = await showToast({ title: "Saving jot…", style: Toast.Style.Animated });
             try {
-              const res = await fetch("http://127.0.0.1:3031/archive/jot", {
+              await fetch(archiveUrl("archive/jot"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ text }),
@@ -510,7 +511,7 @@ export default function HubPulse() {
             const finalSection = section.trim() || category || undefined;
             const toast = await showToast({ title: "Logging to today's note…", style: Toast.Style.Animated });
             try {
-              const res = await fetch("http://127.0.0.1:3031/archive/notes/append", {
+              await fetch(archiveUrl("archive/notes/append"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

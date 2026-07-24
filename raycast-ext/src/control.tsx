@@ -1,6 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard, Detail, Form, useNavigation, getPreferenceValues } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import { hubUrl, dashboardUrl } from "./config";
 import ACControlDetail from "./ac-control-detail";
 import BulbControlDetail from "./bulb-control-detail";
 import HubPulse from "./hub_pulse";
@@ -51,7 +52,7 @@ export default function Command() {
 
   async function refresh() {
     try {
-      const res = await fetch("http://127.0.0.1:3030/status");
+      const res = await fetch(hubUrl("status"));
       const data = await res.json();
       setState(data as HubState);
       setError(null);
@@ -71,7 +72,7 @@ export default function Command() {
     const pat = preferences.smartThingsPat?.trim();
     const locId = preferences.smartThingsLocationId?.trim() || "";
     if (pat && state && (!state.smartthings?.hasToken || state.smartthings?.locationId !== locId)) {
-      fetch("http://127.0.0.1:3030/control/smartthings/link", {
+      fetch(hubUrl("control/smartthings/link"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: pat, locationId: locId }),
@@ -89,7 +90,7 @@ export default function Command() {
   async function runAction(name: string, endpoint: string) {
     showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
-      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
+      const res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint));
       if (!res.ok) throw new Error("Failed");
       showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
       setTimeout(refresh, 500);
@@ -244,7 +245,7 @@ export default function Command() {
                 onAction={async () => {
                   const toast = await showToast({ style: Toast.Style.Animated, title: "Clearing schedules..." });
                   try {
-                    const res = await fetch("http://127.0.0.1:3030/control/schedule/clear");
+                    const res = await fetch(hubUrl("control/schedule/clear"));
                     const data = await res.json();
                     toast.style = Toast.Style.Success;
                     toast.title = `Cleared ${data.cleared} schedule${data.cleared === 1 ? "" : "s"}`;
@@ -385,7 +386,7 @@ export default function Command() {
           subtitle="Use the web setup page if you prefer"
           actions={
             <ActionPanel>
-              <Action.OpenInBrowser title="Open Device Sync" url="http://127.0.0.1:3000/device-sync" />
+              <Action.OpenInBrowser title="Open Device Sync" url={dashboardUrl("device-sync")} />
             </ActionPanel>
           }
         />
@@ -458,7 +459,7 @@ export default function Command() {
             <ActionPanel>
               <Action.Push icon={Icon.BarChart} title="Open Hub Pulse" target={<HubPulse />} />
               <Action icon={Icon.Repeat} title="Re-Pulse All Services" onAction={() => runAction("REBUILD", "/control/restart")} />
-              <Action.OpenInBrowser title="Open Web Dashboard" url="http://127.0.0.1:3000" />
+              <Action.OpenInBrowser title="Open Web Dashboard" url={dashboardUrl()} />
             </ActionPanel>
           }
         />
@@ -483,7 +484,7 @@ function SmartThingsLinkForm({
   async function handleSubmit(values: { token: string; locationId?: string }) {
     const toast = await showToast({ style: Toast.Style.Animated, title: "Linking SmartThings..." });
     try {
-      const res = await fetch("http://127.0.0.1:3030/control/smartthings/link", {
+      const res = await fetch(hubUrl("control/smartthings/link"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -678,7 +679,7 @@ function AddScheduleForm() {
     const days = computeDays();
     const toast = await showToast({ title: `Adding schedule: ${action} @ ${time} (${days})`, style: Toast.Style.Animated });
     try {
-      const res = await fetch("http://127.0.0.1:3030/control/schedule/add", {
+      const res = await fetch(hubUrl("control/schedule/add"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ time, action, days }),
@@ -787,7 +788,7 @@ function ViewSchedules() {
   function refresh() {
     setError(null);
     setJobs(null);
-    fetch("http://127.0.0.1:3030/control/schedule/list")
+    fetch(hubUrl("control/schedule/list"))
       .then((r) => r.json())
       .then((data) => setJobs(data.jobs || []))
       .catch(() => setError("Hub Offline"));
@@ -801,7 +802,7 @@ function ViewSchedules() {
     setBusyId(id);
     const toast = await showToast({ style: Toast.Style.Animated, title: `Removing: ${label}…` });
     try {
-      const res = await fetch("http://127.0.0.1:3030/control/schedule/remove", {
+      const res = await fetch(hubUrl("control/schedule/remove"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),

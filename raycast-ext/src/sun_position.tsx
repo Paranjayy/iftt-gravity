@@ -1,6 +1,7 @@
 import { Detail, ActionPanel, Action, Icon, Color, Clipboard } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import { hubUrl } from "./config";
 
 interface SunInfo {
   sunrise: string;  // HH:MM (24h) in local time
@@ -56,7 +57,7 @@ export default function Command() {
     try {
       const ac = new AbortController();
       const t = setTimeout(() => ac.abort(), 4000);
-      const res = await fetch("http://127.0.0.1:3030/status", { signal: ac.signal });
+      const res = await fetch(hubUrl("status"), { signal: ac.signal });
       clearTimeout(t);
       const json = await res.json();
       setData(json);

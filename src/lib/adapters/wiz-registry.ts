@@ -321,15 +321,7 @@ export class WizRegistry {
     }, durationMs);
   }
 
-  /**
-   * Pulse every online bulb in parallel. Returns the count of bulbs
-   * that were pulsed. Used by the /control/wiz/pulse-all endpoint.
-   */
-  async pulseAll(dimming = 100, durationMs = 2000, color?: { r: number; g: number; b: number }): Promise<number> {
-    const online = this.getAll().filter((b) => b.online);
-    await Promise.all(online.map((b) => this.pulseLight(b.mac, dimming, durationMs, color).catch(() => {})));
-    return online.length;
-  }
+
 
   /** Execute a generic Action (compatibility with Adapter interface). */
   async executeAction(action: Action): Promise<void> {
@@ -343,11 +335,17 @@ export class WizRegistry {
     if (p.sceneId !== undefined) params.sceneId = p.sceneId;
     if (p.scene) {
       // map scene name to id
+      // Import from wiz.ts for consistency
       const SCENES: Record<string, number> = {
+        'Cozy': 6, 'Warm White': 11, 'Daylight': 12, 'Cool White': 13,
+        'Night Light': 13, 'Focus': 14, 'Relax': 15, 'True colors': 17,
+        'TV time': 18, 'Plantgrowth': 19,
         'Ocean': 1, 'Romance': 2, 'Sunset': 3, 'Party': 4, 'Fireplace': 5,
-        'Cozy': 6, 'Forest': 7, 'Pastel': 8, 'Wake Up': 9, 'Bedtime': 10,
-        'Warm White': 11, 'Cool White': 12, 'Night Light': 13, 'Focus': 14,
-        'Relax': 15, 'True colors': 17, 'TV time': 18, 'Plantgrowth': 19, 'Spring': 20,
+        'Forest': 7, 'Pastel': 8, 'Spring': 20, 'Summer': 21, 'Fall': 22,
+        'Deepdive': 23, 'Jungle': 24, 'Mojito': 25, 'Club': 26,
+        'Christmas': 27, 'Halloween': 28, 'Candlelight': 29,
+        'Golden white': 30, 'Pulse': 31, 'Steampunk': 32,
+        'Wake Up': 9, 'Bedtime': 10,
       };
       const id = SCENES[p.scene];
       if (id) params.sceneId = id;

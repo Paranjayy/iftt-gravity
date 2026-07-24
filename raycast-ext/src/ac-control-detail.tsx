@@ -1,6 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import { hubUrl } from "./config";
 
 interface DeviceStatus {
   ts?: string;
@@ -28,6 +29,9 @@ interface MiraieDevice {
 interface HubState {
   online: boolean;
   uptime: number;
+  autoAc?: boolean;
+  acMaxRuntime?: number;
+  bedtimeHours?: [number, number];
   stats?: {
     acMinutes?: number;
     ac?: {
@@ -42,16 +46,35 @@ interface HubState {
   } | null;
 }
 
+interface WatchdogState {
+  enabled: boolean;
+  acMaxRuntime: number;
+  bedtimeHours: [number, number];
+  isBedtime: boolean;
+  effectiveCap: number;
+  acOn: boolean;
+  runtimeMin: number;
+  remainingMin: number | null;
+}
+
 export default function ACControlDetail() {
   const [state, setState] = useState<HubState | null>(null);
+  const [watchdog, setWatchdog] = useState<WatchdogState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
     try {
-      const res = await fetch("http://127.0.0.1:3030/status");
-      const data = await res.json();
+      const [statusRes, wdRes] = await Promise.all([
+        fetch(hubUrl("status")),
+        fetch(hubUrl("control/ac/watchdog")),
+      ]);
+      const data = await statusRes.json();
       setState(data as HubState);
+      try {
+        const wd = await wdRes.json();
+        setWatchdog(wd as WatchdogState);
+      } catch {}
       setError(null);
     } catch (e) {
       setError("Hub Offline");
@@ -66,20 +89,30 @@ export default function ACControlDetail() {
     return () => clearInterval(timer);
   }, []);
 
-  async function runAction(name: string, endpoint: string) {
+  async function runAction(name: string, endpoint: string, body?: Record<string, any>) {
     const toast = await showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
       // Special: Powerful + Freeze Guard fires two endpoints sequentially
       if (endpoint === "__powerful_safe__") {
-        await fetch("http://127.0.0.1:3030/control/ac/powerful?ps=on");
-        await fetch("http://127.0.0.1:3030/control/ac/timer?mins=10");
+        await fetch(hubUrl("control/ac/powerful?ps=on"));
+        await fetch(hubUrl("control/ac/timer?mins=10"));
         toast.style = Toast.Style.Success;
         toast.title = `Confirmed: ${name}`;
         toast.message = "AC at 18°C with 10-min safety cap";
         await refresh();
         return;
       }
-      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
+      // POST with JSON body (used by watchdog config)
+      let res: any;
+      if (body && (endpoint.includes("watchdog") || endpoint.includes("auto"))) {
+        res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      } else {
+        res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint));
+      }
       if (!res.ok) throw new Error("Failed");
       toast.style = Toast.Style.Success;
       toast.title = `Confirmed: ${name}`;
@@ -271,6 +304,91 @@ export default function ACControlDetail() {
         { id: "timer-custom", title: "Set Custom Timer (Form)…", icon: Icon.Hourglass, endpoint: "__form__:customTimer", name: "Custom Off Timer" },
         { id: "timer-clear", title: "Clear Active Timer", icon: Icon.Xmark, endpoint: "/control/ac/timer?mins=0", name: "Clear Timer" }
       ]
+    },
+    {
+      section: "Freeze Guard (Auto-Off Watchdog)",
+      items: [
+        {
+          id: "wd-15m",
+          title: `🛡️ Set Max Runtime: 15 min${watchdog?.isBedtime ? " (bedtime → 9m cap)" : ""}`,
+          subtitle: watchdog?.enabled ? `Current: ${watchdog.acMaxRuntime}m, remaining: ${watchdog.remainingMin ?? "--"}m` : "Watchdog OFF",
+          icon: Icon.Shield,
+          endpoint: "/control/ac/watchdog",
+          name: "Watchdog 15m",
+          body: { maxRuntime: 15 },
+        },
+        {
+          id: "wd-30m",
+          title: `🛡️ Set Max Runtime: 30 min${watchdog?.isBedtime ? " (bedtime → 18m cap)" : ""}`,
+          icon: Icon.Shield,
+          endpoint: "/control/ac/watchdog",
+          name: "Watchdog 30m",
+          body: { maxRuntime: 30 },
+        },
+        {
+          id: "wd-45m",
+          title: `🛡️ Set Max Runtime: 45 min${watchdog?.isBedtime ? " (bedtime → 27m cap)" : ""}`,
+          subtitle: "Recommended: prevents frozen sleep",
+          icon: Icon.Shield,
+          endpoint: "/control/ac/watchdog",
+          name: "Watchdog 45m",
+          body: { maxRuntime: 45 },
+        },
+        {
+          id: "wd-60m",
+          title: `🛡️ Set Max Runtime: 60 min${watchdog?.isBedtime ? " (bedtime → 36m cap)" : ""}`,
+          icon: Icon.Shield,
+          endpoint: "/control/ac/watchdog",
+          name: "Watchdog 60m",
+          body: { maxRuntime: 60 },
+        },
+        {
+          id: "wd-off",
+          title: "❌ Disable Freeze Guard",
+          subtitle: watchdog?.enabled ? `Currently: ${watchdog.acMaxRuntime}m cap` : "Already OFF",
+          icon: Icon.Xmark,
+          endpoint: "/control/ac/watchdog",
+          name: "Watchdog Off",
+          body: { enabled: false },
+        },
+        {
+          id: "wd-bedtime-22-6",
+          title: "🌙 Bedtime Hours: 22:00 → 06:00",
+          icon: Icon.Moon,
+          endpoint: "/control/ac/watchdog",
+          name: "Bedtime 22-6",
+          body: { bedtimeStart: 22, bedtimeEnd: 6 },
+        },
+        {
+          id: "wd-bedtime-23-7",
+          title: "🌙 Bedtime Hours: 23:00 → 07:00",
+          icon: Icon.Moon,
+          endpoint: "/control/ac/watchdog",
+          name: "Bedtime 23-7",
+          body: { bedtimeStart: 23, bedtimeEnd: 7 },
+        },
+        {
+          id: "wd-bedtime-0-8",
+          title: "🌙 Bedtime Hours: 00:00 → 08:00 (Night Owl)",
+          icon: Icon.Moon,
+          endpoint: "/control/ac/watchdog",
+          name: "Bedtime 0-8",
+          body: { bedtimeStart: 0, bedtimeEnd: 8 },
+        },
+      ]
+    },
+    {
+      section: "Auto-Pilot (Weather AC)",
+      items: [
+        {
+          id: "autoac-toggle",
+          title: state?.autoAc ? "🤖 Auto-AC: ON (weather-driven)" : "🤖 Auto-AC: OFF",
+          subtitle: state?.autoAc ? "AC follows weather + thermal — may turn on automatically" : "Enable to let weather control AC",
+          icon: state?.autoAc ? Icon.Check : Icon.Xmark,
+          endpoint: "/control/auto/ac",
+          name: state?.autoAc ? "Auto-AC Off" : "Auto-AC On",
+        },
+      ]
     }
   ];
 
@@ -300,7 +418,7 @@ export default function ACControlDetail() {
                     <Action
                       title={item.title}
                       icon={item.icon}
-                      onAction={() => runAction(item.name, item.endpoint)}
+                      onAction={() => runAction(item.name, item.endpoint, (item as any).body)}
                     />
                   )}
                   <Action
@@ -379,6 +497,46 @@ export default function ACControlDetail() {
 
                       <List.Item.Detail.Metadata.Separator />
 
+                      {watchdog ? (
+                        <>
+                          <List.Item.Detail.Metadata.Label title="Freeze Guard (Auto-Off Watchdog)" />
+                          <List.Item.Detail.Metadata.TagList title="Status">
+                            <List.Item.Detail.Metadata.TagList.Item
+                              text={watchdog.enabled ? "ACTIVE" : "OFF"}
+                              color={watchdog.enabled ? Color.Green : Color.SecondaryText}
+                            />
+                            {watchdog.isBedtime ? (
+                              <List.Item.Detail.Metadata.TagList.Item text="NIGHT MODE" color={Color.Purple} />
+                            ) : null}
+                          </List.Item.Detail.Metadata.TagList>
+                          {watchdog.enabled ? (
+                            <>
+                              <List.Item.Detail.Metadata.Label
+                                title="Max Runtime"
+                                text={`${watchdog.acMaxRuntime} min (bedtime → ${watchdog.effectiveCap} min)`}
+                              />
+                              {watchdog.acOn ? (
+                                <List.Item.Detail.Metadata.Label
+                                  title="Runtime"
+                                  text={`${watchdog.runtimeMin} min / ${watchdog.effectiveCap} min`}  
+                                />
+                              ) : null}
+                              {watchdog.acOn && watchdog.remainingMin !== null ? (
+                                <List.Item.Detail.Metadata.Label
+                                  title="Remaining"
+                                  text={`${watchdog.remainingMin} min until auto-off`}
+                                />
+                              ) : null}
+                            </>
+                          ) : null}
+                          <List.Item.Detail.Metadata.Label
+                            title="Bedtime Hours"
+                            text={`${String(watchdog.bedtimeHours[0]).padStart(2, "0")}:00 → ${String(watchdog.bedtimeHours[1]).padStart(2, "0")}:00`}
+                          />
+                          <List.Item.Detail.Metadata.Separator />
+                        </>
+                      ) : null}
+
                       <List.Item.Detail.Metadata.Label title="GERC Slab Energy Billing" />
                       <List.Item.Detail.Metadata.Label
                         title="Uptime Today"
@@ -391,6 +549,20 @@ export default function ACControlDetail() {
                       <List.Item.Detail.Metadata.Label
                         title="Incremental Cost"
                         text={`₹${acCost.toFixed(2)}`}
+                      />
+
+                      <List.Item.Detail.Metadata.Separator />
+
+                      <List.Item.Detail.Metadata.Label title="Auto-Pilot (Weather AC)" />
+                      <List.Item.Detail.Metadata.TagList title="Auto-AC">
+                        <List.Item.Detail.Metadata.TagList.Item
+                          text={state?.autoAc ? "WEATHER-DRIVEN" : "MANUAL ONLY"}
+                          color={state?.autoAc ? Color.Blue : Color.SecondaryText}
+                        />
+                      </List.Item.Detail.Metadata.TagList>
+                      <List.Item.Detail.Metadata.Label
+                        title="Info"
+                        text={state?.autoAc ? "AC may turn on/off based on weather + thermal" : "You control AC manually"}
                       />
 
                       <List.Item.Detail.Metadata.Separator />
@@ -450,7 +622,7 @@ function CustomACTimerForm({ onDone }: { onDone: () => void }) {
     }
     const toast = await showToast({ title: "Setting custom AC timer...", style: Toast.Style.Animated });
     try {
-      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
+      const res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint));
       if (!res.ok) throw new Error("Failed");
       toast.style = Toast.Style.Success;
       toast.title = "Custom AC timer set";

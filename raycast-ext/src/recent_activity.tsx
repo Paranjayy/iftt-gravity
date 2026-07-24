@@ -1,6 +1,7 @@
 import { Detail, ActionPanel, Action, Icon } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import { dashboardUrl } from "./config";
 import HubOfflineDetail from "./hub_offline";
 
 interface LogLine {
@@ -23,7 +24,7 @@ export default function Command() {
     setIsLoading(true);
     try {
       // Read the Next.js status endpoint which already includes logs
-      const res = await fetch("http://127.0.0.1:3000/api/gravity/status", { cache: "no-store" });
+      const res = await fetch(dashboardUrl("api/gravity/status"), { cache: "no-store" });
       const data = await res.json();
       if (data.error) {
         setError(data.error);
@@ -59,7 +60,7 @@ export default function Command() {
         <ActionPanel title="Activity">
           <Action icon={Icon.Repeat} title="Force Refresh" shortcut={{ modifiers: ["cmd"], key: "r" }} onAction={refresh} />
           <Action.CopyToClipboard title="Copy Log" content={log} shortcut={{ modifiers: ["cmd"], key: "c" }} />
-          <Action.OpenInBrowser title="Open Web Dashboard" url="http://127.0.0.1:3000" />
+          <Action.OpenInBrowser title="Open Web Dashboard" url={dashboardUrl()} />
         </ActionPanel>
       }
     />

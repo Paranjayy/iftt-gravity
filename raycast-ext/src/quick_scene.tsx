@@ -1,6 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color } from "@raycast/api";
 import { useState } from "react";
 import fetch from "node-fetch";
+import { hubUrl } from "./config";
 
 interface Scene {
   name: string;
@@ -37,7 +38,7 @@ export default function Command() {
       title: `Activating: ${scene.name}`,
     });
     try {
-      const res = await fetch(`http://127.0.0.1:3030/scene/${scene.key}`);
+      const res = await fetch(hubUrl(`scene/${scene.key}`));
       if (!res.ok) throw new Error("Failed");
       toast.style = Toast.Style.Success;
       toast.title = `Scene Active: ${scene.name}`;

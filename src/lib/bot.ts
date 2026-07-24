@@ -1168,7 +1168,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            config.mediaAura = !config.mediaAura;
            saveConfig(config);
            recordHabit(subCommand);
-        } else if (subCommand === 'auto_ac') {
+        } else if (subCommand === 'auto_ac' || subCommand === 'auto_ac_toggle') {
            config.autoAc = !config.autoAc;
            saveConfig(config);
            recordHabit(subCommand);
@@ -1645,7 +1645,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         ],
         [
           { text: config.smartClimate ? '🌦️ Smart Climate: ✅ ON' : '🌦️ Smart Climate: ❌ OFF', callback_data: 'control:climate_smart:level:ac' },
-          { text: config.autoAc ? '🤖 Auto-AC: ✅ ON' : '🤖 Auto-AC: ❌ OFF', callback_data: 'control:auto_ac_toggle:level:ac' }
+          { text: config.autoAc ? '🤖 Auto-AC: ✅ ON' : '🤖 Auto-AC: ❌ OFF', callback_data: 'control:auto_ac:level:ac' }
         ],
         [
           { text: config.autoAc ? '🤖 Auto Pilot: ✅ ON' : '🤖 Auto Pilot: ❌ OFF', callback_data: 'control:auto_ac:level:ac' },
@@ -2712,7 +2712,13 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       if (!wiz) return await send('❌ WiZ not configured.');
       const arg = args[0]?.toLowerCase();
       if (!arg || arg === 'list') {
-        const sceneList = ['*🎨 WiZ Scenes:*', '/scene tv', '/scene cozy', '/scene party', '/scene relax', '/scene focus', '/scene warm', '/scene cool', '/scene bedtime', '/scene fireplace', '/scene ocean', '/scene sunrise'].join('\n');
+        const sceneList = ['*🎨 WiZ Scenes:*',
+          '*Static:* Cozy, Warm, Cool, Focus, Relax, True Colors, TV, Plantgrowth, Daylight, Night Light',
+          '*Dynamic:* Ocean, Romance, Sunset, Party, Fireplace, Forest, Pastel, Spring, Summer, Fall',
+          '    Deepdive, Jungle, Mojito, Club, Christmas, Halloween, Candlelight, Golden White, Pulse, Steampunk',
+          '*Misc:* Wake Up, Bedtime',
+          '\n`/scene <name>` — e.g. `/scene ocean`',
+        ].join('\n');
         return await send(sceneList);
       }
       const sceneMap: Record<string, string> = {
@@ -2720,6 +2726,14 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         focus: 'Focus', warm: 'Warm White', cool: 'Cool White',
         bedtime: 'Bedtime', fireplace: 'Fireplace', ocean: 'Ocean',
         sunrise: 'Wake Up', romance: 'Romance', pastel: 'Pastel',
+        summer: 'Summer', fall: 'Fall', deepdive: 'Deepdive',
+        jungle: 'Jungle', mojito: 'Mojito', club: 'Club',
+        christmas: 'Christmas', halloween: 'Halloween',
+        candlelight: 'Candlelight', golden: 'Golden white',
+        pulse: 'Pulse', steampunk: 'Steampunk', plantgrowth: 'Plantgrowth',
+        sunset: 'Sunset', forest: 'Forest', spring: 'Spring',
+        daylight: 'Daylight', nightlight: 'Night Light',
+        truecolors: 'True colors', wake: 'Wake Up',
       };
       const sceneName = sceneMap[arg];
       if (!sceneName) return await send(`❌ Unknown scene. Try */scene list*`);
@@ -4111,6 +4125,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             jitter,
             battery: batt,
             autoAc: config.autoAc,
+            acMaxRuntime: (config as any).acMaxRuntime || 0,
+            bedtimeHours: (config as any).bedtimeHours || [23, 6],
             autoLight: config.autoLight,
             mediaAura: config.mediaAura !== false,
             smartthings: config.smartthings ? {
@@ -4511,14 +4527,20 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           if (body.sceneId !== undefined) params.sceneId = body.sceneId;
           if (body.scene) {
             const SCENES: Record<string, number> = {
+              'Cozy': 6, 'Warm White': 11, 'Daylight': 12, 'Cool White': 13,
+              'Night Light': 13, 'Focus': 14, 'Relax': 15, 'True colors': 17,
+              'TV time': 18, 'Plantgrowth': 19,
               'Ocean': 1, 'Romance': 2, 'Sunset': 3, 'Party': 4, 'Fireplace': 5,
-              'Cozy': 6, 'Forest': 7, 'Pastel': 8, 'Wake Up': 9, 'Bedtime': 10,
-              'Warm White': 11, 'Cool White': 12, 'Night Light': 13, 'Focus': 14,
-              'Relax': 15, 'True colors': 17, 'TV time': 18, 'Plantgrowth': 19, 'Spring': 20,
+              'Forest': 7, 'Pastel': 8, 'Spring': 20, 'Summer': 21, 'Fall': 22,
+              'Deepdive': 23, 'Jungle': 24, 'Mojito': 25, 'Club': 26,
+              'Christmas': 27, 'Halloween': 28, 'Candlelight': 29,
+              'Golden white': 30, 'Pulse': 31, 'Steampunk': 32,
+              'Wake Up': 9, 'Bedtime': 10,
             };
             const id = SCENES[body.scene];
             if (id) params.sceneId = id;
           }
+          if (body.speed !== undefined) params.speed = body.speed;
           if (Object.keys(params).length === 0) {
             return new Response('No params to set', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
@@ -5112,6 +5134,51 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           ];
           saveConfig(config);
           return new Response(JSON.stringify({ status: 'set', bedtimeHours: (config as any).bedtimeHours }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        // /control/ac/watchdog — GET status, POST to configure
+        if (url.pathname === '/control/ac/watchdog') {
+          if (req.method === 'GET') {
+            const maxMin = (config as any).acMaxRuntime || 0;
+            const bedHrs = (config as any).bedtimeHours || [23, 6];
+            const acOn = config.stats.ac?.status === 'on';
+            let runtimeMin = 0;
+            if (acOn && config.stats.ac?.lastChanged) {
+              const lc = typeof config.stats.ac.lastChanged === 'number' ? config.stats.ac.lastChanged : new Date(config.stats.ac.lastChanged).getTime();
+              runtimeMin = Math.floor((Date.now() - lc) / 60000);
+            }
+            const h = new Date().getHours();
+            const isBedtime = bedHrs[0] < bedHrs[1] ? h >= bedHrs[0] && h < bedHrs[1] : h >= bedHrs[0] || h < bedHrs[1];
+            const effectiveCap = maxMin > 0 ? Math.floor(isBedtime ? Math.max(10, maxMin * 0.6) : maxMin) : 0;
+            return new Response(JSON.stringify({
+              enabled: maxMin > 0,
+              acMaxRuntime: maxMin,
+              bedtimeHours: bedHrs,
+              isBedtime,
+              effectiveCap,
+              acOn,
+              runtimeMin,
+              remainingMin: effectiveCap > 0 ? Math.max(0, effectiveCap - runtimeMin) : null,
+            }, null, 2), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          }
+          // POST: { enabled?, maxRuntime?, bedtimeStart?, bedtimeEnd? }
+          let body: any = {};
+          try { body = await req.json(); } catch {}
+          if (body.enabled === false) {
+            (config as any).acMaxRuntime = 0;
+          } else if (body.maxRuntime !== undefined) {
+            (config as any).acMaxRuntime = Math.max(0, parseInt(body.maxRuntime) || 0);
+          }
+          if (body.bedtimeStart !== undefined || body.bedtimeEnd !== undefined) {
+            const cur = (config as any).bedtimeHours || [23, 6];
+            (config as any).bedtimeHours = [
+              Math.max(0, Math.min(23, body.bedtimeStart !== undefined ? parseInt(body.bedtimeStart) : cur[0])),
+              Math.max(0, Math.min(23, body.bedtimeEnd !== undefined ? parseInt(body.bedtimeEnd) : cur[1])),
+            ];
+          }
+          saveConfig(config);
+          return new Response(JSON.stringify({ status: 'ok', acMaxRuntime: (config as any).acMaxRuntime, bedtimeHours: (config as any).bedtimeHours }), {
+            status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
         }
         if (url.pathname === '/control/restart') {
           exec(`scripts/iftt-clone.sh`);

@@ -1,6 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import { hubUrl, archiveUrl, dashboardUrl } from "./config";
 
 interface Probe {
   name: string;
@@ -10,11 +11,11 @@ interface Probe {
 }
 
 const PROBES: Probe[] = [
-  { name: "Gravity Hub API (port 3030)",        url: "http://127.0.0.1:3030/status",         category: "hub" },
-  { name: "Schedule List endpoint",              url: "http://127.0.0.1:3030/control/schedule/list", category: "hub" },
-  { name: "Archive API (port 3031)",            url: "http://127.0.0.1:3031/archive/notes/list", category: "archive" },
-  { name: "Web Dashboard (port 3000)",          url: "http://127.0.0.1:3000",               category: "dashboard" },
-  { name: "WiZ Scene orchestration",             url: "http://127.0.0.1:3030/scene/cozy",     category: "device" },
+  { name: "Gravity Hub API (port 3030)",        url: hubUrl("status"),         category: "hub" },
+  { name: "Schedule List endpoint",              url: hubUrl("control/schedule/list"), category: "hub" },
+  { name: "Archive API (port 3031)",            url: archiveUrl("archive/notes/list"), category: "archive" },
+  { name: "Web Dashboard (port 3000)",          url: dashboardUrl(),               category: "dashboard" },
+  { name: "WiZ Scene orchestration",             url: hubUrl("scene/cozy"),     category: "device" },
 ];
 
 // Some endpoints cause side effects (turn on AC, change scene).

@@ -28,11 +28,28 @@ export interface WizState {
 
 // Built-in WiZ scenes
 export const WIZ_SCENES: Record<string, number> = {
+  // Static
+  'Cozy': 6, 'Warm White': 11, 'Daylight': 12, 'Cool White': 13,
+  'Night Light': 13, 'Focus': 14, 'Relax': 15, 'True colors': 17,
+  'TV time': 18, 'Plantgrowth': 19,
+  // Dynamic
   'Ocean': 1, 'Romance': 2, 'Sunset': 3, 'Party': 4, 'Fireplace': 5,
-  'Cozy': 6, 'Forest': 7, 'Pastel': 8, 'Wake Up': 9, 'Bedtime': 10,
-  'Warm White': 11, 'Cool White': 12, 'Night Light': 13, 'Focus': 14,
-  'Relax': 15, 'True colors': 17, 'TV time': 18, 'Plantgrowth': 19, 'Spring': 20,
+  'Forest': 7, 'Pastel': 8, 'Spring': 20, 'Summer': 21, 'Fall': 22,
+  'Deepdive': 23, 'Jungle': 24, 'Mojito': 25, 'Club': 26,
+  'Christmas': 27, 'Halloween': 28, 'Candlelight': 29,
+  'Golden white': 30, 'Pulse': 31, 'Steampunk': 32,
+  // Miscellaneous
+  'Wake Up': 9, 'Bedtime': 10,
 };
+
+export const WIZ_SCENE_META: Record<number, { name: string; category: 'static' | 'dynamic' | 'misc' }> = Object.fromEntries(
+  Object.entries(WIZ_SCENES).map(([name, id]) => {
+    const staticScenes = [6, 11, 12, 13, 14, 15, 17, 18, 19];
+    const miscScenes = [9, 10];
+    const category = staticScenes.includes(id) ? 'static' : miscScenes.includes(id) ? 'misc' : 'dynamic';
+    return [id, { name, category }];
+  })
+);
 
 function sendUDP(ip: string, message: object, expectResponse = false): Promise<any> {
   return new Promise((resolve, reject) => {

@@ -1,8 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
-
-const HUB_URL = "http://127.0.0.1:3030";
+import { hubUrl } from "./config";
 
 interface MoodPreset {
   id: string;
@@ -268,10 +267,10 @@ async function fireSteps(preset: MoodPreset): Promise<void> {
         const clamped = Math.max(10, Math.min(100, target));
         // Probe current — but skip if can't, just step 5x
         for (let n = 0; n < 5; n++) {
-          await fetch(`${HUB_URL}/control/brightness?dir=up`);
+          await fetch(hubUrl("control/brightness?dir=up"));
         }
       } else {
-        await fetch(`${HUB_URL}${step.endpoint}`);
+        await fetch(hubUrl(step.endpoint.startsWith("/") ? step.endpoint.slice(1) : step.endpoint));
       }
     } catch (e) {
       console.error(`Step ${i + 1} failed:`, step.endpoint, e);

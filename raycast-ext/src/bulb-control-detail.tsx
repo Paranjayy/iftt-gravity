@@ -1,6 +1,7 @@
 import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavigation, LocalStorage } from "@raycast/api";
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
+import { getHubUrl, hubUrl } from "./config";
 
 interface HubState {
   online: boolean;
@@ -61,19 +62,42 @@ const PRESET_COLORS: Array<{ name: string; r: number; g: number; b: number; hex:
   { name: "Hot Pink",   r: 255, g: 90,  b: 170, hex: "#FF5AAA", icon: Icon.Heart,  description: "Playful" },
 ];
 
-const WIZ_SCENES: Array<{ name: string; key: string; description: string; icon: Icon }> = [
-  { name: "Ocean",       key: "ocean",     description: "Calm blue waves",     icon: Icon.BarChart },
-  { name: "Romance",     key: "romance",   description: "Dim warm red",        icon: Icon.Heart },
-  { name: "Sunrise",     key: "sunrise",   description: "Gradual warm-up (maps to Wake Up)", icon: Icon.Sun },
-  { name: "Party",       key: "party",     description: "Energetic RGB cycle", icon: Icon.Star },
-  { name: "Fireplace",   key: "fireplace", description: "Flickering orange",   icon: Icon.LightBulb },
-  { name: "Cozy",        key: "cozy",      description: "Soft warm white",     icon: Icon.Circle },
-  { name: "Pastel",      key: "pastel",    description: "Multi-color soft",    icon: Icon.Circle },
-  { name: "Bedtime",     key: "bedtime",   description: "Fading to dark",      icon: Icon.Moon },
-  { name: "Focus",       key: "focus",     description: "Crisp daylight",      icon: Icon.Eye },
-  { name: "Relax",       key: "relax",     description: "Dimmed warm",         icon: Icon.Circle },
-  { name: "Warm White",  key: "warm",      description: "Cozy incandescent",   icon: Icon.Sun },
-  { name: "Cool White",  key: "cool",      description: "Crisp daylight white",icon: Icon.Snowflake },
+const WIZ_SCENES: Array<{ name: string; key: string; description: string; icon: Icon; category: "static" | "dynamic" | "misc" }> = [
+  // Static
+  { name: "Cozy", key: "cozy", description: "Soft warm white", icon: Icon.Circle, category: "static" },
+  { name: "Warm White", key: "warm", description: "Cozy incandescent", icon: Icon.Sun, category: "static" },
+  { name: "Daylight", key: "daylight", description: "Bright daylight white", icon: Icon.Sun, category: "static" },
+  { name: "Cool White", key: "cool", description: "Crisp daylight white", icon: Icon.Snowflake, category: "static" },
+  { name: "Night Light", key: "nightlight", description: "Dim warm glow", icon: Icon.Moon, category: "static" },
+  { name: "Focus", key: "focus", description: "Crisp daylight", icon: Icon.Eye, category: "static" },
+  { name: "Relax", key: "relax", description: "Dimmed warm", icon: Icon.Circle, category: "static" },
+  { name: "True Colors", key: "truecolors", description: "Accurate color rendering", icon: Icon.Circle, category: "static" },
+  { name: "TV Time", key: "tv", description: "Bias lighting for screens", icon: Icon.Video, category: "static" },
+  { name: "Plantgrowth", key: "plantgrowth", description: "Growth-spectrum light", icon: Icon.Leaf, category: "static" },
+  // Dynamic
+  { name: "Ocean", key: "ocean", description: "Calm blue waves", icon: Icon.BarChart, category: "dynamic" },
+  { name: "Romance", key: "romance", description: "Dim warm red", icon: Icon.Heart, category: "dynamic" },
+  { name: "Sunset", key: "sunset", description: "Warm evening fade", icon: Icon.Sun, category: "dynamic" },
+  { name: "Party", key: "party", description: "Energetic RGB cycle", icon: Icon.Star, category: "dynamic" },
+  { name: "Fireplace", key: "fireplace", description: "Flickering orange", icon: Icon.LightBulb, category: "dynamic" },
+  { name: "Forest", key: "forest", description: "Green woodland", icon: Icon.Leaf, category: "dynamic" },
+  { name: "Pastel", key: "pastel", description: "Multi-color soft", icon: Icon.Circle, category: "dynamic" },
+  { name: "Spring", key: "spring", description: "Fresh bloom colors", icon: Icon.Leaf, category: "dynamic" },
+  { name: "Summer", key: "summer", description: "Warm vibrant tones", icon: Icon.Sun, category: "dynamic" },
+  { name: "Fall", key: "fall", description: "Autumn warmth", icon: Icon.Leaf, category: "dynamic" },
+  { name: "Deepdive", key: "deepdive", description: "Deep ocean blue", icon: Icon.BarChart, category: "dynamic" },
+  { name: "Jungle", key: "jungle", description: "Tropical green", icon: Icon.Leaf, category: "dynamic" },
+  { name: "Mojito", key: "mojito", description: "Minty fresh", icon: Icon.Circle, category: "dynamic" },
+  { name: "Club", key: "club", description: "Nightclub vibe", icon: Icon.Star, category: "dynamic" },
+  { name: "Christmas", key: "christmas", description: "Holiday red & green", icon: Icon.Star, category: "dynamic" },
+  { name: "Halloween", key: "halloween", description: "Spooky orange & purple", icon: Icon.Star, category: "dynamic" },
+  { name: "Candlelight", key: "candlelight", description: "Flickering warm glow", icon: Icon.LightBulb, category: "dynamic" },
+  { name: "Golden White", key: "golden", description: "Rich golden hue", icon: Icon.Sun, category: "dynamic" },
+  { name: "Pulse", key: "pulse", description: "Rhythmic brightness pulse", icon: Icon.Circle, category: "dynamic" },
+  { name: "Steampunk", key: "steampunk", description: "Copper & bronze tones", icon: Icon.Star, category: "dynamic" },
+  // Misc
+  { name: "Wake Up", key: "sunrise", description: "Gradual warm-up", icon: Icon.Sun, category: "misc" },
+  { name: "Bedtime", key: "bedtime", description: "Fading to dark", icon: Icon.Moon, category: "misc" },
 ];
 
 const BRIGHTNESS_PRESETS = [5, 25, 50, 75, 100];
@@ -144,7 +168,7 @@ export default function BulbControlDetail() {
     let cancelled = false;
     async function loadBulbs() {
       try {
-        const r = await fetch("http://127.0.0.1:3030/control/wiz/devices");
+        const r = await fetch(hubUrl("control/wiz/devices"));
         if (!r.ok) return;
         const data = (await r.json()) as { bulbs?: Array<any> };
         if (cancelled) return;
@@ -185,7 +209,7 @@ export default function BulbControlDetail() {
       // /status times out when AC adapter is offline — use AbortController
       const ac = new AbortController();
       const t = setTimeout(() => ac.abort(), 4000);
-      const res = await fetch("http://127.0.0.1:3030/status", { signal: ac.signal });
+      const res = await fetch(hubUrl("status"), { signal: ac.signal });
       clearTimeout(t);
       if (seq !== fetchSeq.current) return; // stale response
       const data = await res.json();
@@ -235,10 +259,10 @@ export default function BulbControlDetail() {
           }
         } else {
           // Unknown endpoint — fall back to legacy
-          url = `http://127.0.0.1:3030${endpoint}`;
+          url = hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint);
         }
         if (!url) {
-          const res = await fetch("http://127.0.0.1:3030/control/wiz/control", {
+          const res = await fetch(hubUrl("control/wiz/control"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(params),
@@ -250,7 +274,7 @@ export default function BulbControlDetail() {
         }
       } else {
         // No registry — use legacy GET endpoint
-        const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
+        const res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint));
         if (!res.ok) throw new Error("Failed");
       }
       toast.style = Toast.Style.Success;
@@ -330,7 +354,7 @@ export default function BulbControlDetail() {
     });
     try {
       for (let i = 0; i < steps; i++) {
-        await fetch(`http://127.0.0.1:3030/control/brightness?dir=${dir}`);
+        await fetch(hubUrl(`control/brightness?dir=${dir}`));
       }
       // Optimistic immediate update
       setOptimistic((o) => ({ ...o, dimming: clamped }));
@@ -451,16 +475,38 @@ export default function BulbControlDetail() {
     })),
   };
 
+  const dynamicScenes = WIZ_SCENES.filter((s) => s.category === 'dynamic');
+  const staticScenes = WIZ_SCENES.filter((s) => s.category === 'static');
+  const miscScenes = WIZ_SCENES.filter((s) => s.category === 'misc');
+
   const sceneSection = {
     section: "Built-in WiZ Scenes",
-    items: WIZ_SCENES.map((s) => ({
-      id: `scene-${s.key}`,
-      title: s.name,
-      subtitle: s.description,
-      icon: s.icon,
-      endpoint: `/scene/${s.key}`,
-      name: `Scene: ${s.name}`,
-    })),
+    items: [
+      ...staticScenes.map((s) => ({
+        id: `scene-${s.key}`,
+        title: `◻️ ${s.name}`,
+        subtitle: s.description,
+        icon: s.icon,
+        endpoint: `/scene/${s.key}`,
+        name: `Scene: ${s.name}`,
+      })),
+      ...dynamicScenes.map((s) => ({
+        id: `scene-${s.key}`,
+        title: `🔁 ${s.name}`,
+        subtitle: `${s.description} (speed adjustable)`,
+        icon: s.icon,
+        endpoint: `/scene/${s.key}`,
+        name: `Scene: ${s.name}`,
+      })),
+      ...miscScenes.map((s) => ({
+        id: `scene-${s.key}`,
+        title: `✦ ${s.name}`,
+        subtitle: s.description,
+        icon: s.icon,
+        endpoint: `/scene/${s.key}`,
+        name: `Scene: ${s.name}`,
+      })),
+    ],
   };
 
   const presetSection = {
@@ -728,7 +774,7 @@ function CustomBulbTimerForm({ onDone }: { onDone: () => void }) {
     }
     const toast = await showToast({ title: `Bulb will turn OFF ${summary}`, style: Toast.Style.Animated });
     try {
-      const res = await fetch(`http://127.0.0.1:3030${endpoint}`);
+      const res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint));
       if (!res.ok) throw new Error(await res.text());
       toast.style = Toast.Style.Success;
       toast.title = "Custom bulb timer set";
