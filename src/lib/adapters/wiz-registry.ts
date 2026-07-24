@@ -69,6 +69,12 @@ export interface BulbState {
   sceneId: number | null;
   dimming: number | null;
   temp: number | null;
+  r: number | null;
+  g: number | null;
+  b: number | null;
+  c: number | null;
+  w: number | null;
+  speed: number | null;
   rssi: number | null;
   lastSeen: number; // ms epoch
   traits: WizLinkDevice['traits'] | null;
@@ -100,6 +106,12 @@ export class WizRegistry {
         sceneId: null,
         dimming: null,
         temp: null,
+        r: null,
+        g: null,
+        b: null,
+        c: null,
+        w: null,
+        speed: null,
         rssi: null,
         lastSeen: 0,
         traits: d.traits,
@@ -131,6 +143,12 @@ export class WizRegistry {
         bulb.sceneId = found.sceneId;
         bulb.dimming = found.dimming ?? null;
         bulb.temp = found.temp ?? null;
+        bulb.r = found.r ?? null;
+        bulb.g = found.g ?? null;
+        bulb.b = found.b ?? null;
+        bulb.c = found.c ?? null;
+        bulb.w = found.w ?? null;
+        bulb.speed = found.speed ?? null;
         bulb.rssi = found.rssi;
         bulb.lastSeen = found.respondedAt;
       } else {
@@ -145,6 +163,12 @@ export class WizRegistry {
               bulb.sceneId = r.sceneId;
               bulb.dimming = r.dimming ?? null;
               bulb.temp = r.temp ?? null;
+              bulb.r = r.r ?? null;
+              bulb.g = r.g ?? null;
+              bulb.b = r.b ?? null;
+              bulb.c = r.c ?? null;
+              bulb.w = r.w ?? null;
+              bulb.speed = r.speed ?? null;
               bulb.rssi = r.rssi ?? null;
               bulb.lastSeen = Date.now();
             } else {
@@ -206,8 +230,20 @@ export class WizRegistry {
     if (params.r !== undefined) { payload.params.r = params.r; payload.params.g = params.g; payload.params.b = params.b; }
     if (params.temp !== undefined) payload.params.temp = Math.min(6500, Math.max(2200, params.temp));
     if (params.sceneId !== undefined) payload.params.sceneId = params.sceneId;
+    if (params.speed !== undefined) payload.params.speed = params.speed;
+    if (params.c !== undefined) payload.params.c = params.c;
+    if (params.w !== undefined) payload.params.w = params.w;
     await sendUDP(bulb.ip, payload, false);
     bulb.lastSeen = Date.now();
+    // Optimistic update: assume the command succeeded
+    if (params.state !== undefined) bulb.state = params.state;
+    if (params.dimming !== undefined) bulb.dimming = params.dimming;
+    if (params.r !== undefined) { bulb.r = params.r; bulb.g = params.g; bulb.b = params.b; }
+    if (params.temp !== undefined) bulb.temp = params.temp;
+    if (params.sceneId !== undefined) bulb.sceneId = params.sceneId;
+    if (params.speed !== undefined) bulb.speed = params.speed;
+    if (params.c !== undefined) bulb.c = params.c;
+    if (params.w !== undefined) bulb.w = params.w;
   }
 
   async turnOn(query: string) { return this.setPilot(query, { state: true }); }

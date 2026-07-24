@@ -19,8 +19,11 @@ export interface WizState {
   state?: boolean;
   dimming?: number;   // 0–100 (0 = dim to minimum, use state:false for off)
   r?: number; g?: number; b?: number;
+  c?: number;         // cold white
+  w?: number;         // warm white
   temp?: number;      // color temp 2200–6500K
   sceneId?: number;
+  speed?: number;     // scene animation speed
 }
 
 // Built-in WiZ scenes
@@ -125,6 +128,9 @@ export class WizAdapter extends Adapter {
     }
     
     if (params.sceneId !== undefined) payload.params.sceneId = params.sceneId;
+    if (params.c !== undefined) payload.params.c = params.c;
+    if (params.w !== undefined) payload.params.w = params.w;
+    if (params.speed !== undefined) payload.params.speed = params.speed;
     await sendUDP(this.bulbIp, payload, false);
   }
 

@@ -191,6 +191,9 @@ interface DiscoveredBulb {
   temp?: number;
   dimming?: number;
   r?: number; g?: number; b?: number;
+  c?: number;  // cold white
+  w?: number;  // warm white
+  speed?: number; // scene animation speed
   respondedAt: number;
 }
 
@@ -234,6 +237,9 @@ export async function discoverBulbs(timeoutMs = DISCOVERY_TIMEOUT): Promise<Disc
             r: m.result.r,
             g: m.result.g,
             b: m.result.b,
+            c: m.result.c,
+            w: m.result.w,
+            speed: m.result.speed,
             respondedAt: Date.now(),
           });
         }
