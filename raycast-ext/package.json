@@ -126,6 +126,13 @@
       "description": "Fetch rich metadata for any URL — YouTube views/likes, GitHub stars/forks, Reddit score, Hacker News points, StackOverflow answers, and more",
       "icon": "commands/social_stats.png",
       "mode": "view"
+    },
+    {
+      "name": "clipboard_vault",
+      "title": "Clipboard Vault",
+      "description": "Sync, search, and inspect locally curated Raycast clipboard transcripts and URLs",
+      "icon": "commands/archive.png",
+      "mode": "view"
     }
   ],
   "preferences": [
