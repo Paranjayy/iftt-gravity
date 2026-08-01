@@ -10,7 +10,7 @@ const vaultPath = "/Users/paranjay/Developer/personal-wiki-vault";
 const syncScript = "/Users/paranjay/Developer/iftt/raycast-ext/scripts/clipboard-vault-sync.ts";
 const backupScript = "/Users/paranjay/Developer/iftt/raycast-ext/scripts/clipboard-vault-backup.sh";
 
-type Transcript = { category: string; channel: string; file: string; modified: string; sourceType: "raycast-clipboard" | "social-companion-download"; title: string; url: string | null };
+type Transcript = { category: string; channel: string; file: string; modified: string; sourceType: "raycast-clipboard" | "raycast-legacy-export" | "social-companion-download"; title: string; url: string | null };
 type VaultStats = { generatedAt: string; sourceFileCount: number; transcriptCount: number; uniqueUrlCount: number; categoryCounts: Record<string, number>; transcripts: Transcript[] };
 
 export default function ClipboardVault() {
@@ -99,7 +99,7 @@ export default function ClipboardVault() {
           icon={{ source: Icon.Document, tintColor: Color.Green }}
           title={item.title}
           subtitle={item.channel}
-          accessories={[{ tag: item.category }, { tag: item.sourceType === "social-companion-download" ? "Social Companion" : "Raycast" }, { date: new Date(item.modified) }]}
+          accessories={[{ tag: item.category }, { tag: item.sourceType === "social-companion-download" ? "Social Companion" : item.sourceType === "raycast-legacy-export" ? "Raycast legacy" : "Raycast" }, { date: new Date(item.modified) }]}
           actions={<ActionPanel>
             <Action.Open title="Open Markdown" target={path.join(vaultPath, item.file)} />
             <Action.ShowInFinder path={path.join(vaultPath, item.file)} />
