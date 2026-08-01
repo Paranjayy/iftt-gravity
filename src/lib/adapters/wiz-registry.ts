@@ -18,19 +18,56 @@ import {
   deviceLabel,
   discoverBulbs,
   findBulbIp,
-  DiscoveredBulb,
   WizLinkDevice,
 } from './wiz-link';
 import dgram from 'dgram';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { networkInterfaces } from 'os';
 
 const WIZ_PORT = 38899;
 const DEFAULT_DISCOVERY_INTERVAL = 30_000; // 30s
 const COMMAND_TIMEOUT = 3000; // 3s
+const execFileAsync = promisify(execFile);
+
+/**
+ * WiZ commands are unicast LAN UDP. On macOS an unspecified UDP bind may use
+ * a stale/default interface, while binding to the Wi-Fi address works
+ * reliably. Prefer an IPv4 address in the bulb's subnet, then any active LAN
+ * IPv4 address as a reasonable fallback.
+ */
+function localAddressFor(ip: string): string | undefined {
+  const subnet = ip.split('.').slice(0, 3).join('.');
+  const addresses = Object.values(networkInterfaces())
+    .flat()
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry && entry.family === 'IPv4' && !entry.internal))
+    .map((entry) => entry.address);
+  return addresses.find((address) => address.startsWith(`${subnet}.`)) || addresses[0];
+}
+
+/**
+ * macOS occasionally leaves a long-running LaunchAgent's UDP socket on a
+ * stale route even though a fresh process can immediately reach the bulb.
+ * This is a last-resort transport fallback, not the normal control path.
+ */
+async function sendFromFreshProcess(ip: string, message: object): Promise<void> {
+  const encoded = Buffer.from(JSON.stringify(message)).toString('base64');
+  const localAddress = localAddressFor(ip) || '';
+  const program = [
+    "const d=require('dgram');",
+    "const [ip,payload,address]=process.argv.slice(-3);",
+    "const s=d.createSocket('udp4');",
+    "const done=(e)=>{try{s.close()}catch{};if(e){console.error(e.message);process.exit(1)}process.exit(0)};",
+    "s.bind(0,address||undefined,()=>s.send(Buffer.from(payload,'base64'),38899,ip,done));",
+  ].join('');
+  await execFileAsync(process.execPath, ['-e', program, '--', ip, encoded, localAddress], { timeout: COMMAND_TIMEOUT });
+}
 
 function sendUDP(ip: string, message: object, expectResponse = false, timeoutMs = COMMAND_TIMEOUT): Promise<any> {
   return new Promise((resolve, reject) => {
     const socket = dgram.createSocket('udp4');
     const buf = Buffer.from(JSON.stringify(message));
+    let sent = false;
     const timer = setTimeout(() => {
       try { socket.close(); } catch {}
       if (expectResponse) reject(new Error(`WiZ UDP timeout — is ${ip} on the same network?`));
@@ -44,18 +81,25 @@ function sendUDP(ip: string, message: object, expectResponse = false, timeoutMs 
         catch { resolve(msg.toString()); }
       });
     }
-    socket.send(buf, 0, buf.length, WIZ_PORT, ip, (err) => {
-      if (err) {
-        clearTimeout(timer);
-        try { socket.close(); } catch {}
-        reject(err);
-        return;
-      }
-      if (!expectResponse) {
-        clearTimeout(timer);
-        try { socket.close(); } catch {}
-        resolve(null);
-      }
+    // On macOS/Bun, an unbound UDP command socket can intermittently select
+    // a stale route and throw EHOSTUNREACH while discovery still works. Bind
+    // an ephemeral local port first, like the working discovery socket does.
+    socket.bind(0, localAddressFor(ip), () => {
+      if (sent) return;
+      sent = true;
+      socket.send(buf, 0, buf.length, WIZ_PORT, ip, (err) => {
+        if (err) {
+          clearTimeout(timer);
+          try { socket.close(); } catch {}
+          reject(err);
+          return;
+        }
+        if (!expectResponse) {
+          clearTimeout(timer);
+          try { socket.close(); } catch {}
+          resolve(null);
+        }
+      });
     });
   });
 }
@@ -80,11 +124,22 @@ export interface BulbState {
   traits: WizLinkDevice['traits'] | null;
 }
 
+/** A locally configured bulb. This keeps WiZ usable even when the temporary
+ * mobile-app link export has expired or was never captured. */
+export interface ManualWizBulb {
+  ip: string;
+  mac?: string;
+  name?: string;
+}
+
 export class WizRegistry {
   name = 'Philips WiZ (multi-bulb)';
   private bulbs = new Map<string, BulbState>(); // keyed by lower-case mac
   private lastDiscoveryAt = 0;
   private discoveryTimer: NodeJS.Timeout | null = null;
+  private commandQueues = new Map<string, Promise<unknown>>();
+
+  constructor(private readonly manualBulbs: ManualWizBulb[] = []) {}
 
   /** Expose last-discovery timestamp (read-only) for status endpoints. */
   getLastDiscoveryTime(): number { return this.lastDiscoveryAt; }
@@ -92,15 +147,33 @@ export class WizRegistry {
   /** Initialize by loading the link + doing first discovery. */
   async initialize(): Promise<void> {
     const link = loadWizLink();
-    if (!link) {
-      console.warn('💡 Wiz: no link file found, registry will be empty');
+    if (!link && this.manualBulbs.length === 0) {
+      console.warn('💡 Wiz: no link file or manually configured bulbs found');
       return;
     }
-    for (const d of link.devices) {
-      this.bulbs.set(d.mac_address.toLowerCase(), {
-        mac: d.mac_address.toLowerCase(),
-        name: deviceLabel(d.mac_address),
-        ip: null,
+
+    const seeds = link
+      ? link.devices.map((d) => ({
+          mac: d.mac_address,
+          name: deviceLabel(d.mac_address),
+          ip: null as string | null,
+          traits: d.traits,
+        }))
+      : this.manualBulbs.map((d, index) => ({
+          // A MAC is strongly preferred for discovery. The deterministic
+          // fallback still gives a static-IP bulb a stable identity.
+          mac: (d.mac || `manual-${index}-${d.ip}`).toLowerCase().replace(/:/g, ''),
+          name: d.name || `WiZ bulb ${index + 1}`,
+          ip: d.ip,
+          traits: null,
+        }));
+
+    for (const d of seeds) {
+      const mac = d.mac.toLowerCase().replace(/:/g, '');
+      this.bulbs.set(mac, {
+        mac,
+        name: d.name,
+        ip: d.ip,
         online: false,
         state: null,
         sceneId: null,
@@ -117,7 +190,7 @@ export class WizRegistry {
         traits: d.traits,
       });
     }
-    console.log(`💡 Wiz: ${this.bulbs.size} bulb(s) registered from link`);
+    console.log(`💡 Wiz: ${this.bulbs.size} bulb(s) registered from ${link ? 'link catalog' : 'local config'}`);
     await this.refresh();
     // Start background discovery
     if (this.discoveryTimer) clearInterval(this.discoveryTimer);
@@ -128,13 +201,9 @@ export class WizRegistry {
 
   /** Refresh state via discovery + unicast to each known bulb. */
   async refresh(): Promise<void> {
-    const link = loadWizLink();
-    if (!link) return;
     const discovered = await discoverBulbs();
-    for (const d of link.devices) {
-      const mac = d.mac_address.toLowerCase();
-      const bulb = this.bulbs.get(mac);
-      if (!bulb) continue;
+    for (const bulb of this.bulbs.values()) {
+      const mac = bulb.mac;
       const found = discovered.find((x) => x.mac === mac);
       if (found) {
         bulb.ip = found.ip;
@@ -216,6 +285,19 @@ export class WizRegistry {
 
   /** Send a pilot command to a specific bulb by MAC or name. */
   async setPilot(query: string, params: any): Promise<void> {
+    const key = this.find(query)?.mac || query.toLowerCase();
+    const previous = this.commandQueues.get(key) || Promise.resolve();
+    const current = previous.catch(() => undefined).then(() => this.setPilotNow(query, params));
+    this.commandQueues.set(key, current);
+    try {
+      await current;
+    } finally {
+      if (this.commandQueues.get(key) === current) this.commandQueues.delete(key);
+    }
+  }
+
+  /** The non-concurrent command path. Use setPilot() to serialize callers. */
+  private async setPilotNow(query: string, params: any): Promise<void> {
     const bulb = this.find(query);
     if (!bulb) throw new Error(`No WiZ bulb matching "${query}"`);
     if (!bulb.ip) {
@@ -233,7 +315,22 @@ export class WizRegistry {
     if (params.speed !== undefined) payload.params.speed = params.speed;
     if (params.c !== undefined) payload.params.c = params.c;
     if (params.w !== undefined) payload.params.w = params.w;
-    await sendUDP(bulb.ip, payload, false);
+    try {
+      await sendUDP(bulb.ip, payload, false);
+    } catch (error: any) {
+      // A fresh discovery repairs DHCP/route churn. Retry exactly once so a
+      // scene remains responsive and a persistent failure is still surfaced.
+      if (error?.code !== 'EHOSTUNREACH') throw error;
+      await this.refresh();
+      const refreshed = this.find(query);
+      if (!refreshed?.ip) throw error;
+      try {
+        await sendUDP(refreshed.ip, payload, false);
+      } catch (retryError: any) {
+        if (retryError?.code !== 'EHOSTUNREACH') throw retryError;
+        await sendFromFreshProcess(refreshed.ip, payload);
+      }
+    }
     bulb.lastSeen = Date.now();
     // Optimistic update: assume the command succeeded
     if (params.state !== undefined) bulb.state = params.state;
@@ -326,7 +423,11 @@ export class WizRegistry {
   /** Execute a generic Action (compatibility with Adapter interface). */
   async executeAction(action: Action): Promise<void> {
     const p = action.payload;
-    const target = action.deviceId || 'first';
+    // Older scene code did not provide a device ID and used the conceptual
+    // “first bulb”. Resolve that intent here instead of passing the literal
+    // string to find(), which made TV mode and other scenes fail.
+    const target = action.deviceId || this.getAll().find((bulb) => bulb.online)?.mac || this.getAll()[0]?.mac;
+    if (!target) throw new Error('No WiZ bulbs are configured');
     const params: any = {};
     if (p.state !== undefined) params.state = p.state;
     if (p.dimming !== undefined || p.brightness !== undefined) params.dimming = p.dimming ?? p.brightness;

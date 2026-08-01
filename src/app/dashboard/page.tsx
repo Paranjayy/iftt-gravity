@@ -69,8 +69,8 @@ interface DashboardData {
 }
 
 export default function GravityDashboard() {
-  const [data, setData] = useState<GravityStatus | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [metricHistory, setMetricHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
@@ -82,7 +82,7 @@ export default function GravityDashboard() {
       
       // Process historical data for BarChart
       if (json.stats?.dailyLog) {
-        setHistory(json.stats.dailyLog.map((log: any) => ({
+        setMetricHistory(json.stats.dailyLog.map((log: any) => ({
           ...log,
           // Convert hours to units
           acUnits: (parseFloat(log.ac) * 1.65).toFixed(1),
@@ -92,7 +92,7 @@ export default function GravityDashboard() {
       } else {
         // Fallback or seed history
         const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
-        setHistory(prev => {
+        setMetricHistory(prev => {
           const next = [...prev, { date: now, acUnits: json.stats.acMinutes, lightUnits: json.stats.lightMinutes, totalUnits: json.stats.acMinutes + json.stats.lightMinutes }];
           return next.slice(-24);
         });
@@ -139,13 +139,6 @@ export default function GravityDashboard() {
 
   const uptimeHrs = Math.floor((data?.uptime || 0) / 3600);
   const uptimeMins = Math.floor(((data?.uptime || 0) % 3600) / 60);
-
-  const history = (data?.stats.dailyLog || []).map(d => ({
-    date: d.date,
-    ac: parseFloat(d.ac),
-    light: parseFloat(d.light),
-    totalUnits: parseFloat(d.ac) + parseFloat(d.light)
-  }));
 
   return (
     <div className="min-h-screen bg-[#050508] text-slate-200 selection:bg-purple-500/30 overflow-x-hidden">
@@ -235,7 +228,7 @@ export default function GravityDashboard() {
 
               <div className="flex-1 min-h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={history}>
+                  <AreaChart data={metricHistory}>
                     <defs>
                       <linearGradient id="colorUnits" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>

@@ -2,6 +2,7 @@ import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard, Det
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import { hubUrl, dashboardUrl } from "./config";
+import { sendWizPilot, WizDevice } from "./wiz-direct";
 import ACControlDetail from "./ac-control-detail";
 import BulbControlDetail from "./bulb-control-detail";
 import HubPulse from "./hub_pulse";
@@ -44,15 +45,21 @@ interface Preferences {
   smartThingsLocationId?: string;
 }
 
+
 export default function Command() {
   const preferences = getPreferenceValues<Preferences>();
   const [state, setState] = useState<HubState | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Never block Raycast's command surface on a slow cloud-backed hub probe.
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
     try {
-      const res = await fetch(hubUrl("status"));
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1_500);
+      const res = await fetch(hubUrl("status"), { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error("Hub status failed");
       const data = await res.json();
       setState(data as HubState);
       setError(null);
@@ -64,7 +71,7 @@ export default function Command() {
 
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, 10000);
+    const timer = setInterval(refresh, 15000);
     return () => clearInterval(timer);
   }, []);
 
@@ -96,6 +103,45 @@ export default function Command() {
       setTimeout(refresh, 500);
     } catch (e) {
       showToast({ style: Toast.Style.Failure, title: "Action Failed", message: "Hub Offline" });
+    }
+  }
+
+  async function runDirectScene(name: string, ac: Record<string, string>, light: Record<string, unknown>) {
+    showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
+    try {
+      const [acResponse, bulbsResponse] = await Promise.all([
+        fetch(hubUrl(`control/ac/set?${new URLSearchParams(ac).toString()}`)),
+        fetch(hubUrl("control/wiz/devices")),
+      ]);
+      if (!acResponse.ok || !bulbsResponse.ok) throw new Error("Hub request failed");
+      const devices = (await bulbsResponse.json()) as { bulbs?: WizDevice[] };
+      const bulb = devices.bulbs?.find((candidate) => candidate.online && candidate.ip) || devices.bulbs?.find((candidate) => candidate.ip);
+      if (!bulb?.ip) throw new Error("No reachable WiZ bulb found");
+      await sendWizPilot(bulb.ip, light);
+      showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
+      setTimeout(refresh, 500);
+    } catch (error) {
+      showToast({ style: Toast.Style.Failure, title: `${name} failed`, message: error instanceof Error ? error.message : "Could not reach the hub or lamp" });
+    }
+  }
+
+  const runTvTime = () => runDirectScene("TV Time", { ps: "on", actmp: "24", acmd: "cool", acfs: "low" }, { state: true, sceneId: 18, dimming: 10 });
+  const runWorkMode = () => runDirectScene("Work Mode", { ps: "on", actmp: "25", acmd: "cool" }, { state: true, temp: 6500, dimming: 100 });
+  const runBackHome = () => runDirectScene("Back Home", { ps: "on", actmp: "25", acmd: "cool" }, { state: true, temp: 4500, dimming: 80 });
+
+  async function runWizAction(name: string, params: Record<string, unknown>) {
+    showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
+    try {
+      const response = await fetch(hubUrl("control/wiz/devices"));
+      if (!response.ok) throw new Error("Hub could not list WiZ bulbs");
+      const devices = (await response.json()) as { bulbs?: WizDevice[] };
+      const bulb = devices.bulbs?.find((candidate) => candidate.online && candidate.ip) || devices.bulbs?.find((candidate) => candidate.ip);
+      if (!bulb?.ip) throw new Error("No reachable WiZ bulb found");
+      await sendWizPilot(bulb.ip, params);
+      showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
+      setTimeout(refresh, 500);
+    } catch (error) {
+      showToast({ style: Toast.Style.Failure, title: `${name} failed`, message: error instanceof Error ? error.message : "Could not reach the bulb" });
     }
   }
 
@@ -186,78 +232,19 @@ export default function Command() {
           icon={Icon.Video}
           title="TV TIME"
           subtitle="Dim Purple & AC Cool"
-          actions={<ActionPanel><Action title="Activate" icon={Icon.Video} onAction={() => runAction("TV", "/scene/tv")} /></ActionPanel>}
+          actions={<ActionPanel><Action title="Activate" icon={Icon.Video} onAction={runTvTime} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.ComputerSpeaker}
           title="WORK MODE"
           subtitle="Bright White & AC Fan"
-          actions={<ActionPanel><Action title="Activate" icon={Icon.ComputerSpeaker} onAction={() => runAction("Work", "/scene/work")} /></ActionPanel>}
+          actions={<ActionPanel><Action title="Activate" icon={Icon.ComputerSpeaker} onAction={runWorkMode} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.House}
           title="BACK HOME"
           subtitle="Warm Welcome"
-          actions={<ActionPanel><Action title="Activate" icon={Icon.House} onAction={() => runAction("HOME", "/scene/home")} /></ActionPanel>}
-        />
-      </List.Section>
-
-      <List.Section title="Schedules & Routines">
-        <List.Item
-          icon={Icon.PlusCircle}
-          title="Add Schedule…"
-          subtitle="Push form to add a daily alarm (AC on/off, bulb, scene)"
-          actions={
-            <ActionPanel>
-              <Action.Push icon={Icon.PlusCircle} title="Open Add Schedule Form" target={<AddScheduleForm />} />
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={Icon.Bolt}
-          title="Schedule Presets (one-tap add)..."
-          subtitle="7am safety, 11pm sleep, sunset, wake, panic-net"
-          actions={
-            <ActionPanel>
-              <Action.Push icon={Icon.Bolt} title="Open Schedule Presets" target={<SchedulePresetsList />} />
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={Icon.List}
-          title="View Active Schedules"
-          subtitle="List all current daily/weekly alarms"
-          actions={
-            <ActionPanel>
-              <Action.Push icon={Icon.List} title="View Schedules" target={<ViewSchedules />} />
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={Icon.Trash}
-          title="Clear All Schedules"
-          subtitle="Wipe the entire schedule (irreversible)"
-          actions={
-            <ActionPanel>
-              <Action
-                icon={Icon.Trash}
-                title="Clear All Schedules"
-                onAction={async () => {
-                  const toast = await showToast({ style: Toast.Style.Animated, title: "Clearing schedules..." });
-                  try {
-                    const res = await fetch(hubUrl("control/schedule/clear"));
-                    const data = await res.json();
-                    toast.style = Toast.Style.Success;
-                    toast.title = `Cleared ${data.cleared} schedule${data.cleared === 1 ? "" : "s"}`;
-                  } catch (e) {
-                    toast.style = Toast.Style.Failure;
-                    toast.title = "Failed";
-                    toast.message = "Hub Offline";
-                  }
-                }}
-              />
-            </ActionPanel>
-          }
+          actions={<ActionPanel><Action title="Activate" icon={Icon.House} onAction={runBackHome} /></ActionPanel>}
         />
       </List.Section>
 
@@ -274,7 +261,7 @@ export default function Command() {
                 <Action icon={Icon.ChevronDown} title="Temperature DOWN" shortcut={{ modifiers: ["cmd"], key: "j" }} onAction={() => runAction("Temp Down", "/control/temp?dir=down")} />
                 <Action icon={Icon.ChevronUp} title="Temperature UP" shortcut={{ modifiers: ["cmd"], key: "k" }} onAction={() => runAction("Temp Up", "/control/temp?dir=up")} />
                 <Action icon={Icon.Video} title="TV Mode (Cool & Quiet)" onAction={() => runAction("TV AC", "/control/ac_tv")} />
-                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "t" }} onAction={() => runAction("AC", acStatus === 'ON' ? "/control/ac/off" : "/control/ac/on")} />
+                <Action icon={Icon.Power} title="Toggle AC Power" shortcut={{ modifiers: ["cmd"], key: "t" }} onAction={() => runAction("AC", "/control/ac/toggle")} />
                 <Action icon={Icon.Snowflake} title="Cool Mode" onAction={() => runAction("Cool", "/control/ac/mode?mode=cool")} />
                 <Action icon={Icon.Repeat} title="Vertical Swing" onAction={() => runAction("Swing", "/control/ac/swing")} />
                 <Action icon={Icon.Bolt} title="Powerful Mode" onAction={() => runAction("Powerful", "/control/ac/powerful?ps=on")} />
@@ -290,14 +277,14 @@ export default function Command() {
           actions={
             <ActionPanel title="Light Tactical Pulse">
               <Action.Push icon={Icon.LightBulb} title="Detailed Control Panel" target={<BulbControlDetail />} />
-              <Action icon={Icon.Minus} title="Brightness DOWN" onAction={() => runAction("Bright Down", "/control/brightness?dir=down")} />
-              <Action icon={Icon.Plus} title="Brightness UP" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runAction("Bright Up", "/control/brightness?dir=up")} />
+              <Action icon={Icon.Minus} title="Brightness DOWN (20%)" onAction={() => runWizAction("Brightness down", { state: true, dimming: 30 })} />
+              <Action icon={Icon.Plus} title="Brightness UP (70%)" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runWizAction("Brightness up", { state: true, dimming: 70 })} />
               <ActionPanel.Section title="Atmospheric Controls">
-                <Action icon={Icon.Video} title="TV Mode (Dim to 10%)" onAction={() => runAction("TV Lights", "/control/bulb_tv")} />
-                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={() => runAction("Lights", ltStatus === 'ON' ? "/control/bulb_off" : "/control/bulb_on")} />
+                <Action icon={Icon.Video} title="TV Mode (Dim to 10%)" onAction={() => runWizAction("TV Lights", { state: true, sceneId: 18, dimming: 10 })} />
+                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={() => runWizAction("Lights", { state: ltStatus !== "ON" })} />
                 <Action icon={Icon.Star} title="Aura Sync (Media)" onAction={() => runAction("Aura", "/control/aura/toggle")} />
-                <Action icon={Icon.Circle} title="White Bulb Mode" onAction={() => runAction("White", "/control/bulb/color?temp=4500")} />
-                <Action icon={Icon.Circle} title="Warm White" onAction={() => runAction("Warm", "/control/bulb/color?temp=2700")} />
+                <Action icon={Icon.Circle} title="White Bulb Mode" onAction={() => runWizAction("White", { state: true, temp: 4500 })} />
+                <Action icon={Icon.Circle} title="Warm White" onAction={() => runWizAction("Warm", { state: true, temp: 2700 })} />
               </ActionPanel.Section>
             </ActionPanel>
           }
@@ -463,6 +450,37 @@ export default function Command() {
             </ActionPanel>
           }
         />
+        <List.Item
+          icon={Icon.Network}
+          title="Gravity Hub HTTP"
+          subtitle={error ? "No response from localhost:3030" : `Responding · uptime ${getUptimeStr(state?.uptime || 0)}`}
+          accessories={[{ text: error ? "DOWN" : "UP", color: error ? Color.Red : Color.Green }]}
+        />
+        <List.Item
+          icon={Icon.LightBulb}
+          title="WiZ Light Transport"
+          subtitle="Direct Raycast LAN UDP · bypasses background-agent WiZ failures"
+          accessories={[{ text: "DIRECT", color: Color.Green }]}
+        />
+        <List.Item
+          icon={Icon.Wind}
+          title="Panasonic AC Adapter"
+          subtitle={acStatus === "ON" ? `Connected · running ${state?.ac_duration || "now"}` : "Connected · standby"}
+          accessories={[{ text: acStatus, color: acColor }]}
+        />
+        <List.Item
+          icon={Icon.Globe}
+          title="SmartThings"
+          subtitle={state?.smartthings?.lastError || (state?.smartthings?.deviceCount ? `${state.smartthings.deviceCount} device(s) synced` : "Not linked")}
+          accessories={[{ text: state?.smartthings?.lastError ? "ERROR" : state?.smartthings?.deviceCount ? "READY" : "SETUP", color: state?.smartthings?.lastError ? Color.Red : state?.smartthings?.deviceCount ? Color.Green : Color.SecondaryText }]}
+        />
+      </List.Section>
+
+      <List.Section title="Schedules & Routines">
+        <List.Item icon={Icon.PlusCircle} title="Add Schedule…" subtitle="Daily alarm for AC, bulb, or scene" actions={<ActionPanel><Action.Push icon={Icon.PlusCircle} title="Open Add Schedule Form" target={<AddScheduleForm />} /></ActionPanel>} />
+        <List.Item icon={Icon.Bolt} title="Schedule Presets" subtitle="7am safety, 11pm sleep, sunset, wake, panic-net" actions={<ActionPanel><Action.Push icon={Icon.Bolt} title="Open Schedule Presets" target={<SchedulePresetsList />} /></ActionPanel>} />
+        <List.Item icon={Icon.List} title="View Active Schedules" subtitle="List current daily/weekly alarms" actions={<ActionPanel><Action.Push icon={Icon.List} title="View Schedules" target={<ViewSchedules />} /></ActionPanel>} />
+        <List.Item icon={Icon.Trash} title="Clear All Schedules" subtitle="Wipe the entire schedule (irreversible)" actions={<ActionPanel><Action icon={Icon.Trash} title="Clear All Schedules" onAction={async () => { const toast = await showToast({ style: Toast.Style.Animated, title: "Clearing schedules..." }); try { const res = await fetch(hubUrl("control/schedule/clear")); const data = await res.json(); toast.style = Toast.Style.Success; toast.title = `Cleared ${data.cleared} schedule${data.cleared === 1 ? "" : "s"}`; } catch { toast.style = Toast.Style.Failure; toast.title = "Failed"; toast.message = "Hub Offline"; } }} /></ActionPanel>} />
       </List.Section>
     </List>
   );

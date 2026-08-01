@@ -45,11 +45,34 @@ const initialEdges = [
 export default function FlowEditor() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes as any);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges as any);
+  const [flowName, setFlowName] = useState('Movie Mode');
+  const [trigger, setTrigger] = useState('movie-mode');
+  const [action, setAction] = useState<'scene' | 'speak' | 'ac_off'>('scene');
+  const [actionValue, setActionValue] = useState('TV');
+  const [deployState, setDeployState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
+
+  const deploy = async () => {
+    setDeployState('saving');
+    const params = action === 'scene' ? { scene: actionValue.toUpperCase() }
+      : action === 'speak' ? { text: actionValue }
+      : {};
+    try {
+      const response = await fetch('/api/gravity/flows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: flowName, trigger, action, params, enabled: true }),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setDeployState('saved');
+    } catch {
+      setDeployState('error');
+    }
+  };
 
   return (
     <div className="h-screen w-full bg-[#0a0a0c] relative">
@@ -59,12 +82,12 @@ export default function FlowEditor() {
         >
           Back
         </button>
-        <span className="text-xl font-bold text-white tracking-tight">Ecosystem Flow: Movie Mode</span>
+        <span className="text-xl font-bold text-white tracking-tight">Ecosystem Flow: {flowName}</span>
       </div>
 
       <div className="absolute top-6 right-6 z-10">
-        <button className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-xl shadow-lg transition-all font-medium">
-          Deploy Automation
+        <button onClick={deploy} disabled={deployState === 'saving'} className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white px-6 py-2 rounded-xl shadow-lg transition-all font-medium">
+          {deployState === 'saving' ? 'Deploying…' : deployState === 'saved' ? 'Deployed ✓' : 'Deploy Automation'}
         </button>
       </div>
 
@@ -99,6 +122,21 @@ export default function FlowEditor() {
             { name: 'Send TG Message', provider: 'Telegram', color: 'bg-sky-500' },
             { name: 'Push Notification', provider: 'App', color: 'bg-indigo-500' }
           ]} />
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-white/10 space-y-3">
+          <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Deployment</div>
+          <input value={flowName} onChange={(event) => setFlowName(event.target.value)} placeholder="Flow name" className="w-full bg-black/20 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-indigo-400" />
+          <input value={trigger} onChange={(event) => setTrigger(event.target.value.toLowerCase().replace(/\s+/g, '-'))} placeholder="Webhook trigger" className="w-full bg-black/20 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-indigo-400" />
+          <select value={action} onChange={(event) => setAction(event.target.value as typeof action)} className="w-full bg-[#17171f] border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-indigo-400">
+            <option value="scene">Run a Gravity scene</option>
+            <option value="speak">Speak a message</option>
+            <option value="ac_off">Turn AC off</option>
+          </select>
+          {action !== 'ac_off' && <input value={actionValue} onChange={(event) => setActionValue(event.target.value)} placeholder={action === 'scene' ? 'Scene, e.g. TV' : 'Message to speak'} className="w-full bg-black/20 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-indigo-400" />}
+          <p className={`text-[10px] ${deployState === 'error' ? 'text-rose-400' : 'text-slate-500'}`}>
+            {deployState === 'error' ? 'Could not save. The web server needs write access to config.json.' : `Trigger it at /zapit/${trigger || 'your-trigger'}`}
+          </p>
         </div>
       </div>
     </div>

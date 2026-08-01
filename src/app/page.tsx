@@ -242,7 +242,10 @@ function DashboardView({ miraieLinked, linkedDevices, ac, sending, usageData, on
   useEffect(() => {
     const checkHub = async () => {
       try {
-        const res = await fetch('http://localhost:3030/status');
+        // Keep browser clients same-origin. The route below is the trusted
+        // server-side bridge to the local hub, so this works in the desktop
+        // shell and does not depend on a browser being allowed to reach :3030.
+        const res = await fetch('/api/gravity/status', { cache: 'no-store' });
         setHubOnline(res.ok);
       } catch {
         setHubOnline(false);

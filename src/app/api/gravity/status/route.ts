@@ -5,7 +5,15 @@ import path from 'path';
 export async function GET() {
   try {
     // 1. Fetch status from local bot API
-    const botRes = await fetch('http://localhost:3030/status', { cache: 'no-store' });
+    const botRes = await fetch('http://127.0.0.1:3030/status', {
+      cache: 'no-store',
+      // /status can include a live-data refresh. Four seconds produced false
+      // “Hub Offline” states while the local bot was healthy.
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!botRes.ok) {
+      throw new Error(`Hub status returned ${botRes.status}`);
+    }
     const statusData = await botRes.json();
 
     // 2. Read house log for the latest activity

@@ -167,6 +167,7 @@ async function archiveClipboard(text: string) {
 async function main() {
   console.log('📦 Gravity Archive: Sentry online.');
   let lastClip = "";
+  let clipboardPollInFlight = false;
 
   try {
     if (typeof (globalThis as any).Bun !== 'undefined') {
@@ -438,6 +439,7 @@ async function main() {
           const { name, text, section, parseHeadings, timestamp = true } = await req.json();
           const fileName = name || `Daily Note ${new Date().toISOString().split('T')[0]}.md`;
           const filePath = path.join(NOTES_DIR, fileName);
+          const entry = `\n${timestamp ? `[${new Date().toLocaleString('en-IN')}] ` : ''}${text}`;
           
           let entriesToAdd: string[] = [];
           
@@ -630,7 +632,7 @@ async function main() {
               moves.push({ from: destPath, to: fullPath });
            });
 
-           saveUndo(moves);
+           fs.writeFileSync(path.join(ARCHIVE_DIR, 'path_undo_history.json'), JSON.stringify(moves));
            return new Response(JSON.stringify({ moved: moves.length }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 
@@ -978,6 +980,9 @@ async function main() {
   } catch(e) { console.warn('API 3031 error'); }
 
   setInterval(async () => {
+    // Do not queue another AppleScript invocation while the previous poll is still running.
+    if (clipboardPollInFlight) return;
+    clipboardPollInFlight = true;
     try {
       const { stdout } = await execAsync('pbpaste', { timeout: 2000 });
       const text = stdout.trim();
@@ -999,7 +1004,7 @@ async function main() {
               return appName & "|" & siteUrl
             end tell
           `;
-          const { stdout: context } = await execAsync(`osascript -e '${script}'`);
+          const { stdout: context } = await execAsync(`osascript -e '${script}'`, { timeout: 3000 });
           const [appName, siteUrl] = context.trim().split('|');
           CLIPSTACK_SOURCE = appName;
           CLIPSTACK_URL = siteUrl;
@@ -1011,7 +1016,11 @@ async function main() {
         lastClip = text;
         await archiveClipboard(text);
       }
-    } catch (e) {}
+    } catch (e) {
+      // Clipboard access is best-effort; the next interval will retry.
+    } finally {
+      clipboardPollInFlight = false;
+    }
   }, 1000);
 }
 

@@ -9,6 +9,7 @@ PLIST_PATH="$HOME/Library/LaunchAgents/$PLIST_NAME.plist"
 BOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUN_PATH="$(which bun)"
 LOG_DIR="$HOME/Library/Logs/Gravity"
+PRELOAD_PATH="$BOT_DIR/scripts/bot-preload.cjs"
 
 mkdir -p "$LOG_DIR"
 
@@ -23,6 +24,7 @@ cat > "$PLIST_PATH" <<EOF
     <key>ProgramArguments</key>
     <array>
         <string>$BUN_PATH</string>
+        <string>--preload=$PRELOAD_PATH</string>
         <string>src/lib/bot.ts</string>
     </array>
 
@@ -43,6 +45,14 @@ cat > "$PLIST_PATH" <<EOF
 
     <key>ThrottleInterval</key>
     <integer>10</integer>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>$(dirname "$BUN_PATH"):/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>PUPPETEER_SKIP_DOWNLOAD</key>
+        <string>1</string>
+    </dict>
 </dict>
 </plist>
 EOF

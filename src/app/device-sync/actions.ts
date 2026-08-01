@@ -235,10 +235,24 @@ export async function linkWiz(ip: string, name?: string, mac?: string) {
       return { success: false, error: "Enter a valid local IP address (e.g. 192.168.1.105)" };
 
     const config = await readConfig();
+    const normalizedMac = mac?.trim().toUpperCase();
+    const nextBulb = { ip: cleanIp, mac: normalizedMac, name: name || "WiZ Light" };
+    const existingBulbs = Array.isArray(config.wiz?.bulbs)
+      ? config.wiz.bulbs
+      : (config.wiz?.ip ? [{ ip: config.wiz.ip, mac: config.wiz.mac, name: config.wiz.name }] : []);
+    const matchingIndex = existingBulbs.findIndex((bulb: any) =>
+      (normalizedMac && bulb.mac && String(bulb.mac).replace(/:/g, '').toUpperCase() === normalizedMac.replace(/:/g, '')) ||
+      bulb.ip === cleanIp,
+    );
+    if (matchingIndex >= 0) existingBulbs[matchingIndex] = nextBulb;
+    else existingBulbs.push(nextBulb);
+    // Keep the first bulb as a legacy primary until every older client is gone.
     config.wiz = {
-      ip: cleanIp,
-      mac: mac?.trim().toUpperCase(),
-      name: name || "Bedroom Light",
+      ...nextBulb,
+      ip: existingBulbs[0].ip,
+      mac: existingBulbs[0].mac,
+      name: existingBulbs[0].name,
+      bulbs: existingBulbs,
       linkedAt: new Date().toISOString(),
     };
     await writeConfig(config);

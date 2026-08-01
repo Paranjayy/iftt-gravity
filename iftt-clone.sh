@@ -40,21 +40,40 @@ launch_detached() {
   nohup "$@" > "$log_file" 2>&1 < /dev/null &
 }
 
+# A fresh clone should be able to boot the hub without Puppeteer attempting
+# to download a second browser at install time. Browser-powered features can
+# still opt in to a local Chrome later; the core hub does not need it.
+ensure_dependencies() {
+  if [ ! -d "$ROOT/node_modules" ]; then
+    echo "  ↳ Installing hub dependencies…"
+    (cd "$ROOT" && PUPPETEER_SKIP_DOWNLOAD=1 "$BUN" install --frozen-lockfile) || return 1
+  fi
+}
+
 # Argument Handling for Standalone Boot
 if [ "$1" == "archive" ]; then
   echo "📦 Gravity: Launching Archive Sentry alone..."
   ps aux | grep "src/lib/archive.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
   launch_detached "$ARCHIVE_LOG" "$BUN" src/lib/archive.ts
-  echo "✅ Archive Sentry is now live (Port 3031)."
-  exit 0
+  if wait_for_port 3031; then
+    echo "✅ Archive Sentry is now live (Port 3031)."
+    exit 0
+  fi
+  echo "❌ Archive failed to start: $(tail -n 1 "$ARCHIVE_LOG")"
+  exit 1
 fi
 
 if [ "$1" == "bot" ]; then
   echo "🤖 Gravity: Launching Hub Bot alone..."
+  ensure_dependencies || exit 1
   ps aux | grep "src/lib/bot.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
-  launch_detached "$BOT_LOG" "$BUN" --preload "$PRELOAD" src/lib/bot.ts
-  echo "✅ Hub Bot is now live (Port 3030)."
-  exit 0
+  launch_detached "$BOT_LOG" "$BUN" "--preload=$PRELOAD" src/lib/bot.ts
+  if wait_for_port 3030; then
+    echo "✅ Hub Bot is now live (Port 3030)."
+    exit 0
+  fi
+  echo "❌ Hub bot failed to start: $(tail -n 1 "$BOT_LOG")"
+  exit 1
 fi
 
 # Rebuild the extension to bake in latest logic/UI
@@ -76,6 +95,7 @@ sleep 1
 # Launch the Full Gravity Stack
 echo "🟢 Gravity: Launching Web, Heart & Archive..."
 cd "$ROOT"
+ensure_dependencies || exit 1
 
 # Spawn the Next.js app
 echo "  ↳ 🌐 Gravity Web shell engaged."
@@ -87,7 +107,7 @@ launch_detached "$ARCHIVE_LOG" "$BUN" src/lib/archive.ts
 
 echo "  ↳ 📂 Gravity Hub ambassador live."
 # Preload shim fixes Bun CJS interop bug with debug@4.x (otherwise bot crashes on startup)
-launch_detached "$BOT_LOG" "$BUN" --preload "$PRELOAD" src/lib/bot.ts
+launch_detached "$BOT_LOG" "$BUN" "--preload=$PRELOAD" src/lib/bot.ts
 
 sleep 4
 # Final Pulse Check

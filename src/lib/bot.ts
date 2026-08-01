@@ -343,6 +343,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   if (config.commentaryMode === undefined) config.commentaryMode = false;
   if (!config.rejectedHabits) config.rejectedHabits = [];
   if (!config.deliveryWatch) config.deliveryWatch = { enabled: false };
+  if (!config.githubPulse) config.githubPulse = {};
   if (config.githubPulse.silent === undefined) config.githubPulse.silent = false;
   if (config.bootGreet === undefined) config.bootGreet = true;
   if (config.postureGuardian === undefined) config.postureGuardian = false;
@@ -604,17 +605,22 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   let wiz: WizAdapter | null = null;
   let wizRegistry: WizRegistry | null = null;
   if (!CLIPBOARD_ONLY) {
-    // Prefer the new multi-bulb registry (uses link catalog + LAN discovery)
+    // Prefer the multi-bulb registry. It can be seeded by either the WiZ link
+    // catalog or the local config, so a second manually linked bulb does not
+    // silently fall back to the old one-bulb code path.
     const linkPath = getWizLinkPath();
-    if (loadWizLink()) {
+    const manualWizBulbs = Array.isArray(config.wiz?.bulbs) && config.wiz.bulbs.length
+      ? config.wiz.bulbs
+      : (config.wiz?.ip ? [config.wiz] : []);
+    if (loadWizLink() || manualWizBulbs.length) {
       try {
-        wizRegistry = new WizRegistry();
+        wizRegistry = new WizRegistry(manualWizBulbs);
         await wizRegistry.initialize();
         // Use the registry as `wiz` for the legacy single-bulb code paths
         // (posture, hydration, scene actions). The registry's
         // getPilot/setPilot operate on the first known bulb by default.
         wiz = wizRegistry as unknown as WizAdapter;
-        console.log(`💡 Lights: Registry ready (${linkPath})`);
+        console.log(`💡 Lights: Registry ready (${linkPath || 'local config'})`);
       } catch (e: any) {
         console.warn(`⚠️ Wiz Registry setup failed: ${e?.message || e}`);
       }
@@ -4156,7 +4162,9 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
            console.log(`⚡ ZAPIT: Incoming trigger [${triggerKey}]`);
            
            // 1. Search for custom flows in config
-           const flows = config.zapit_flows || [];
+           // Flow edits come from the web editor as well as Telegram. Reload
+           // here so a new deployment is usable immediately—no hub restart.
+           const flows = loadConfig().zapit_flows || [];
            const matchedFlow = flows.find((f: any) => f.trigger.toLowerCase() === triggerKey);
            
            if (matchedFlow) {
@@ -5010,6 +5018,13 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: 'on' });
           updateDeviceState('ac', 'on', true);
           return new Response('AC On', { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/ac/toggle') {
+          const nextState = config.stats?.ac?.status === 'on' ? 'off' : 'on';
+          const deviceId = miraie?.devices[0]?.deviceId;
+          if (deviceId) await miraie?.controlDevice(deviceId as string, { ps: nextState });
+          updateDeviceState('ac', nextState, true);
+          return new Response(`AC ${nextState}`, { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
         }
         if (url.pathname === '/control/ac/off' || url.pathname === '/control/ac_off') {
           const deviceId = miraie?.devices[0]?.deviceId;

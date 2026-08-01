@@ -9,7 +9,6 @@ import {
   discoverBulbs,
   findBulbIp,
   WizLinkDevice,
-  DiscoveredBulb,
 } from './wiz-link';
 
 const WIZ_PORT = 38899;
@@ -70,10 +69,10 @@ function sendUDP(ip: string, message: object, expectResponse = false): Promise<a
       });
     }
 
-    socket.send(buf, 0, buf.length, WIZ_PORT, ip, (err) => {
+    socket.bind(0, () => socket.send(buf, 0, buf.length, WIZ_PORT, ip, (err) => {
       if (err) { clearTimeout(timer); socket.close(); reject(err); return; }
       if (!expectResponse) { clearTimeout(timer); socket.close(); resolve(null); }
-    });
+    }));
   });
 }
 

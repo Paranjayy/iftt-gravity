@@ -37,6 +37,9 @@
   ],
   "exclude": [
     "node_modules",
-    "raycast-ext"
+    "raycast-ext",
+    "scratch",
+    "src/lib/bot.ts",
+    "src/lib/archive.ts"
   ]
 }

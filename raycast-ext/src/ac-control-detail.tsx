@@ -60,15 +60,19 @@ interface WatchdogState {
 export default function ACControlDetail() {
   const [state, setState] = useState<HubState | null>(null);
   const [watchdog, setWatchdog] = useState<WatchdogState | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2_000);
       const [statusRes, wdRes] = await Promise.all([
-        fetch(hubUrl("status")),
-        fetch(hubUrl("control/ac/watchdog")),
+        fetch(hubUrl("status"), { signal: controller.signal }),
+        fetch(hubUrl("control/ac/watchdog"), { signal: controller.signal }),
       ]);
+      clearTimeout(timeout);
+      if (!statusRes.ok || !wdRes.ok) throw new Error("Hub status failed");
       const data = await statusRes.json();
       setState(data as HubState);
       try {
@@ -85,7 +89,7 @@ export default function ACControlDetail() {
 
   useEffect(() => {
     refresh();
-    const timer = setInterval(refresh, 5000);
+    const timer = setInterval(refresh, 15000);
     return () => clearInterval(timer);
   }, []);
 
@@ -234,8 +238,8 @@ export default function ACControlDetail() {
           id: "power",
           title: acStatus?.ps === "on" ? "Turn Power OFF" : "Turn Power ON",
           icon: Icon.Power,
-          endpoint: acStatus?.ps === "on" ? "/control/ac/off" : "/control/ac/on",
-          name: acStatus?.ps === "on" ? "AC Off" : "AC On"
+          endpoint: "/control/ac/toggle",
+          name: "Toggle AC Power"
         },
         {
           id: "temp-up",

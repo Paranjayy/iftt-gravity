@@ -2,6 +2,7 @@ import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavi
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import { getHubUrl, hubUrl } from "./config";
+import { sendWizPilot } from "./wiz-direct";
 
 interface HubState {
   online: boolean;
@@ -113,7 +114,7 @@ const COLOR_TEMPS = [
 
 export default function BulbControlDetail() {
   const [state, setState] = useState<HubState | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Selected bulb (MAC). Defaults to the first known bulb from the registry
@@ -187,7 +188,7 @@ export default function BulbControlDetail() {
       } catch {}
     }
     loadBulbs();
-    const timer = setInterval(loadBulbs, 15000);
+    const timer = setInterval(loadBulbs, 60000);
     return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
@@ -208,7 +209,7 @@ export default function BulbControlDetail() {
     try {
       // /status times out when AC adapter is offline — use AbortController
       const ac = new AbortController();
-      const t = setTimeout(() => ac.abort(), 4000);
+      const t = setTimeout(() => ac.abort(), 1_500);
       const res = await fetch(hubUrl("status"), { signal: ac.signal });
       clearTimeout(t);
       if (seq !== fetchSeq.current) return; // stale response
@@ -225,22 +226,16 @@ export default function BulbControlDetail() {
 
   useEffect(() => {
     refresh();
-    // 2s polling is snappier without being wasteful; 5s felt laggy
-    const timer = setInterval(refresh, 2000);
+    const timer = setInterval(refresh, 15000);
     return () => clearInterval(timer);
   }, []);
 
   async function runAction(name: string, endpoint: string) {
     const toast = await showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
-      // Map legacy GET endpoints to the new /control/wiz/control POST endpoint
-      // so the action targets the selected bulb (registry path).
       const mac = "mac" in target ? target.mac : null;
-      const useNewApi = mac !== null;
-      let url: string;
       const params: Record<string, any> = {};
-      if (useNewApi) {
-        params.mac = mac;
+      if (mac !== null) {
         if (endpoint === "/control/bulb/on" || endpoint === "/control/bulb_on") params.state = true;
         else if (endpoint === "/control/bulb/off" || endpoint === "/control/bulb_off") params.state = false;
         else if (endpoint === "/control/bulb_tv") { params.sceneId = 18; params.dimming = 10; params.state = true; }
@@ -257,19 +252,15 @@ export default function BulbControlDetail() {
             params.temp = parseInt(u.searchParams.get("temp") || "4500", 10);
             params.state = true;
           }
-        } else {
-          // Unknown endpoint — fall back to legacy
-          url = hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint);
+        } else if (endpoint.startsWith("/scene/")) {
+          const sceneIds: Record<string, number> = { cozy: 6, warm: 11, daylight: 12, cool: 13, nightlight: 13, focus: 14, relax: 15, truecolors: 17, tv: 18, plantgrowth: 19, ocean: 1, romance: 2, sunset: 3, party: 4, fireplace: 5, forest: 7, pastel: 8, sunrise: 9, bedtime: 10, spring: 20, summer: 21, fall: 22, deepdive: 23, jungle: 24, mojito: 25, club: 26, christmas: 27, halloween: 28, candlelight: 29, golden: 30, pulse: 31, steampunk: 32 };
+          const key = endpoint.split("/").pop() || "";
+          if (sceneIds[key]) { params.sceneId = sceneIds[key]; params.state = true; if (key === "tv") params.dimming = 10; }
         }
-        if (!url) {
-          const res = await fetch(hubUrl("control/wiz/control"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(params),
-          });
-          if (!res.ok) throw new Error("Failed");
-        } else {
-          const res = await fetch(url);
+        const ip = registryBulbs.find((bulb) => bulb.mac === mac)?.ip;
+        if (Object.keys(params).length && ip) await sendWizPilot(ip, params);
+        else {
+          const res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint));
           if (!res.ok) throw new Error("Failed");
         }
       } else {
@@ -344,18 +335,15 @@ export default function BulbControlDetail() {
    */
   async function setBrightnessTo(target: number) {
     const clamped = Math.max(10, Math.min(100, target));
-    const current = optimistic.dimming || 50;
-    const diff = clamped - current;
-    const steps = Math.min(5, Math.max(1, Math.ceil(Math.abs(diff) / 20)));
-    const dir = diff > 0 ? "up" : "down";
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: `Pulsing: Brightness → ${clamped}%`,
     });
     try {
-      for (let i = 0; i < steps; i++) {
-        await fetch(hubUrl(`control/brightness?dir=${dir}`));
-      }
+      const mac = "mac" in target ? target.mac : null;
+      const ip = mac ? registryBulbs.find((bulb) => bulb.mac === mac)?.ip : null;
+      if (!ip) throw new Error("Selected WiZ bulb is unavailable");
+      await sendWizPilot(ip, { state: true, dimming: clamped });
       // Optimistic immediate update
       setOptimistic((o) => ({ ...o, dimming: clamped }));
       toast.style = Toast.Style.Success;
