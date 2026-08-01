@@ -88,7 +88,7 @@ export default function ClipboardVault() {
         <List.Item
           icon={Icon.BarChart}
           title={`${stats.transcriptCount} transcripts · ${stats.uniqueUrlCount} unique URLs`}
-          subtitle={`${stats.sourceFileCount} cache files scanned · ${new Date(stats.generatedAt).toLocaleString()}`}
+          subtitle={`${stats.sourceFileCount} cache files scanned · latest capture ${new Date(stats.generatedAt).toLocaleString()}`}
           actions={<ActionPanel><Action title="Sync Clipboard Vault" icon={Icon.Repeat} onAction={sync} /><Action title="Sync, Commit & Push Vault" icon={Icon.Upload} onAction={backup} /><Action.ShowInFinder title="Open Vault Folder" path={vaultPath} /></ActionPanel>}
         />
       </List.Section>}
