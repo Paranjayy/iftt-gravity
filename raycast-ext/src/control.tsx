@@ -2,7 +2,7 @@ import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard, Det
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import { hubUrl, dashboardUrl } from "./config";
-import { sendWizPilot, WizDevice } from "./wiz-direct";
+import { getWizPilot, sendWizPilot, WizDevice } from "./wiz-direct";
 import ACControlDetail from "./ac-control-detail";
 import BulbControlDetail from "./bulb-control-detail";
 import HubPulse from "./hub_pulse";
@@ -145,6 +145,24 @@ export default function Command() {
     }
   }
 
+  async function toggleWizPower() {
+    showToast({ style: Toast.Style.Animated, title: "Pulsing: Toggle light..." });
+    try {
+      const response = await fetch(hubUrl("control/wiz/devices"));
+      if (!response.ok) throw new Error("Hub could not list WiZ bulbs");
+      const devices = (await response.json()) as { bulbs?: WizDevice[] };
+      const bulb = devices.bulbs?.find((candidate) => candidate.online && candidate.ip) || devices.bulbs?.find((candidate) => candidate.ip);
+      if (!bulb?.ip) throw new Error("No reachable WiZ bulb found");
+      const pilot = await getWizPilot(bulb.ip);
+      const nextState = pilot.state !== true;
+      await sendWizPilot(bulb.ip, { state: nextState });
+      showToast({ style: Toast.Style.Success, title: `Light ${nextState ? "on" : "off"}` });
+      setTimeout(refresh, 500);
+    } catch (error) {
+      showToast({ style: Toast.Style.Failure, title: "Light toggle failed", message: error instanceof Error ? error.message : "Could not reach the bulb" });
+    }
+  }
+
   const acStatus = (state?.stats?.ac?.status || 'off').toUpperCase();
   const ltStatus = (state?.stats?.light?.status || 'off').toUpperCase();
   const acColor = acStatus === 'ON' ? Color.Green : Color.Red;
@@ -281,7 +299,7 @@ export default function Command() {
               <Action icon={Icon.Plus} title="Brightness UP (70%)" shortcut={{ modifiers: ["cmd"], key: "enter" }} onAction={() => runWizAction("Brightness up", { state: true, dimming: 70 })} />
               <ActionPanel.Section title="Atmospheric Controls">
                 <Action icon={Icon.Video} title="TV Mode (Dim to 10%)" onAction={() => runWizAction("TV Lights", { state: true, sceneId: 18, dimming: 10 })} />
-                <Action icon={Icon.Power} title="Toggle Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={() => runWizAction("Lights", { state: ltStatus !== "ON" })} />
+                <Action icon={Icon.Power} title="Toggle Light Power" shortcut={{ modifiers: ["cmd"], key: "l" }} onAction={toggleWizPower} />
                 <Action icon={Icon.Star} title="Aura Sync (Media)" onAction={() => runAction("Aura", "/control/aura/toggle")} />
                 <Action icon={Icon.Circle} title="White Bulb Mode" onAction={() => runWizAction("White", { state: true, temp: 4500 })} />
                 <Action icon={Icon.Circle} title="Warm White" onAction={() => runWizAction("Warm", { state: true, temp: 2700 })} />

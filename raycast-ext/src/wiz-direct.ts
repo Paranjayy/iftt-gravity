@@ -30,3 +30,32 @@ export async function sendWizPilot(ip: string, params: Record<string, unknown>):
     });
   });
 }
+
+/** Read the live pilot state so shortcuts never rely on stale hub telemetry. */
+export async function getWizPilot(ip: string): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const socket = dgram.createSocket("udp4");
+    const timer = setTimeout(() => {
+      socket.close();
+      reject(new Error("WiZ status timed out"));
+    }, 2_000);
+    socket.on("message", (message) => {
+      clearTimeout(timer);
+      socket.close();
+      try {
+        resolve((JSON.parse(message.toString())?.result || {}) as Record<string, unknown>);
+      } catch {
+        reject(new Error("WiZ returned invalid status"));
+      }
+    });
+    socket.bind(0, localAddressFor(ip), () => {
+      socket.send(Buffer.from(JSON.stringify({ method: "getPilot", params: {} })), 38899, ip, (error) => {
+        if (error) {
+          clearTimeout(timer);
+          socket.close();
+          reject(error);
+        }
+      });
+    });
+  });
+}
