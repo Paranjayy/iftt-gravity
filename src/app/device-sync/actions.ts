@@ -5,6 +5,7 @@ import path from "path";
 import { MiraieAdapter } from "../../lib/adapters/miraie";
 import { HomeyAdapter } from "../../lib/adapters/homey";
 import { WizAdapter } from "../../lib/adapters/wiz";
+import { discoverBulbs } from "../../lib/adapters/wiz-link";
 import { discoverWizBulbs } from "../../lib/discovery/wiz";
 import { scrapeJioRouterClients } from "../../lib/discovery/router";
 import { fetchSmartThingsDevices, fetchSmartThingsLocations, looksLikeUuid, sendSmartThingsCommand } from "../../lib/house-automation";
@@ -285,12 +286,88 @@ export async function linkHomey(token: string, homeyId: string) {
   }
 }
 
+// ─── WiZ self-heal ───────────────────────────────────
+// Jio DHCP loves reassigning the bulb's IP. If a command dies with
+// EHOSTUNREACH/timeout, rediscover the bulb on the LAN, persist the
+// fresh IP, and retry once — instead of failing the scene.
+function isUnreachableError(err: any): boolean {
+  const msg = String(err?.message || err || "");
+  return err?.code === "EHOSTUNREACH" || err?.code === "ENETUNREACH" ||
+    msg.includes("EHOSTUNREACH") || msg.includes("ENETUNREACH") ||
+    msg.includes("timeout");
+}
+
+async function persistWizIp(config: any, ip: string, mac?: string) {
+  config.wiz = config.wiz || {};
+  config.wiz.ip = ip;
+  config.wiz.syncedAt = new Date().toISOString();
+  if (mac) {
+    config.wiz.mac = mac.toUpperCase();
+    const norm = mac.replace(/:/g, "").toLowerCase();
+    if (Array.isArray(config.wiz.bulbs)) {
+      for (const bulb of config.wiz.bulbs) {
+        if (String(bulb.mac || "").replace(/:/g, "").toLowerCase() === norm) bulb.ip = ip;
+      }
+    }
+  }
+  await writeConfig(config);
+}
+
+async function healWizIp(config: any): Promise<string | null> {
+  const normMac = config.wiz?.mac?.replace(/:/g, "").toLowerCase();
+  // 1. UDP broadcast discovery — no router login needed
+  try {
+    const bulbs = await discoverBulbs();
+    const match = (normMac && bulbs.find(b => b.mac === normMac)) || bulbs[0];
+    if (match) {
+      await persistWizIp(config, match.ip, match.mac);
+      return match.ip;
+    }
+  } catch (e: any) {
+    console.warn("[WiZ heal] broadcast discovery failed:", e?.message || e);
+  }
+  // 2. Router scrape fallback (Jio admin panel DHCP client list)
+  if (normMac && config.router?.adminPass) {
+    try {
+      const clients = await scrapeJioRouterClients(config.router.adminPass);
+      const match = clients.find(c => c.mac.replace(/[:-]/g, "").toLowerCase() === normMac);
+      if (match) {
+        await persistWizIp(config, match.ip, normMac);
+        return match.ip;
+      }
+    } catch (e: any) {
+      console.warn("[WiZ heal] router scrape failed:", e?.message || e);
+    }
+  }
+  return null;
+}
+
+async function runWizWithHeal(config: any, run: (wiz: WizAdapter) => Promise<void>, opts?: { verify?: boolean }) {
+  if (!config.wiz?.ip) throw new Error("WiZ not configured");
+  const attempt = async (ip: string) => {
+    const wiz = new WizAdapter(ip, config.wiz.mac);
+    await run(wiz);
+    // setPilot is fire-and-forget: if the bulb moved, the send can "succeed"
+    // into the void. Verify liveness so we heal instead of silently no-oping.
+    if (opts?.verify) await wiz.getPilot();
+  };
+  try {
+    await attempt(config.wiz.ip);
+  } catch (err: any) {
+    if (!isUnreachableError(err)) throw err;
+    const oldIp = config.wiz.ip;
+    const newIp = await healWizIp(config);
+    if (!newIp) throw err;
+    console.log(`💡 [WiZ heal] bulb ${oldIp === newIp ? "flaked" : "moved"} ${oldIp} → ${newIp}, retrying`);
+    await attempt(newIp);
+  }
+}
+
 export async function controlWizLight(params: any) {
   try {
     const config = await readConfig();
     if (!config.wiz?.ip) return { success: false, error: "WiZ not configured" };
-    const adapter = new WizAdapter(config.wiz.ip);
-    await adapter.setPilot(params);
+    await runWizWithHeal(config, (wiz) => wiz.setPilot(params));
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message };
@@ -330,8 +407,9 @@ export async function triggerScene(name: string) {
       }
       // 2. Switch WiZ to the official "TV time" scene
       if (config.wiz?.ip) {
-        const wiz = new WizAdapter(config.wiz.ip);
-        await wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time' } });
+        await runWizWithHeal(config, (wiz) =>
+          wiz.executeAction({ type: 'control', payload: { state: true, scene: 'TV time' } }),
+        { verify: true });
       }
       return { success: true, message: "TV Mode: Cinema lighting & 24°C cooling active." };
     }
@@ -342,8 +420,9 @@ export async function triggerScene(name: string) {
       }
       // 2. Restore WiZ to standard Daylight
       if (config.wiz?.ip) {
-        const wiz = new WizAdapter(config.wiz.ip);
-        await wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500 } });
+        await runWizWithHeal(config, (wiz) =>
+          wiz.executeAction({ type: 'control', payload: { state: true, temp: 4500 } }),
+        { verify: true });
       }
       return { success: true, message: "End TV: AC Off, Daylight restored." };
     }
@@ -365,11 +444,10 @@ export async function linkRouter(adminPass: string) {
     if (config.wiz?.mac) {
       const match = clients.find(c => c.mac.replace(/[:-]/g, '') === config.wiz.mac.replace(/[:-]/g, ''));
       if (match && match.ip !== config.wiz.ip) {
-        config.wiz.ip = match.ip;
-        config.wiz.syncedAt = new Date().toISOString();
+        await persistWizIp(config, match.ip, config.wiz.mac);
       }
     }
-    
+
     await writeConfig(config);
     return { success: true, clientCount: clients.length };
   } catch (err: any) {

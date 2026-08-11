@@ -201,6 +201,26 @@ let _discovered: DiscoveredBulb[] = [];
 let _lastDiscovery: number = 0;
 const DISCOVERY_CACHE_TTL = 30_000; // 30 sec
 
+/**
+ * Broadcast targets for discovery: the directed broadcast of every local
+ * IPv4 interface (e.g. 192.168.29.255) plus the global 255.255.255.255.
+ * Directed broadcasts follow the routing table, so they still work when a
+ * VPN/tunnel would otherwise swallow the global broadcast.
+ */
+function broadcastTargets(): string[] {
+  const targets = new Set<string>(["255.255.255.255"]);
+  for (const nets of Object.values(os.networkInterfaces())) {
+    for (const net of nets || []) {
+      if (net.family !== "IPv4" || net.internal) continue;
+      const ip = net.address.split(".").map(Number);
+      const mask = net.netmask.split(".").map(Number);
+      if (ip.length !== 4 || mask.length !== 4) continue;
+      targets.add(ip.map((octet, i) => (octet | (~mask[i] & 0xff))).join("."));
+    }
+  }
+  return [...targets];
+}
+
 export async function discoverBulbs(timeoutMs = DISCOVERY_TIMEOUT): Promise<DiscoveredBulb[]> {
   if (Date.now() - _lastDiscovery < DISCOVERY_CACHE_TTL && _discovered.length > 0) {
     return _discovered;
@@ -251,7 +271,9 @@ export async function discoverBulbs(timeoutMs = DISCOVERY_TIMEOUT): Promise<Disc
       try {
         socket.setBroadcast(true);
         const msg = Buffer.from(JSON.stringify({ method: "getPilot", params: {} }));
-        socket.send(msg, 0, msg.length, WIZ_DISCOVERY_PORT, "255.255.255.255");
+        for (const target of broadcastTargets()) {
+          socket.send(msg, 0, msg.length, WIZ_DISCOVERY_PORT, target);
+        }
         // Also try the link's known devices directly (unicast)
         const link = loadWizLink();
         if (link) {
