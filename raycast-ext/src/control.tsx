@@ -2,7 +2,7 @@ import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Keyboard, Det
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import { hubUrl, dashboardUrl } from "./config";
-import { getWizPilot, sendWizPilot, WizDevice } from "./wiz-direct";
+import { getWizPilotResilient, sendWizPilotResilient, WizDevice } from "./wiz-direct";
 import ACControlDetail from "./ac-control-detail";
 import BulbControlDetail from "./bulb-control-detail";
 import HubPulse from "./hub_pulse";
@@ -106,6 +106,16 @@ export default function Command() {
     }
   }
 
+  /** Last resort: route the command through the hub, which has its own heal chain. */
+  async function hubWizControl(mac: string | null | undefined, params: Record<string, unknown>) {
+    const res = await fetch(hubUrl("control/wiz/control"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mac: mac || "", ...params }),
+    });
+    if (!res.ok) throw new Error((await res.text()) || "Hub WiZ control failed");
+  }
+
   async function runDirectScene(name: string, ac: Record<string, string>, light: Record<string, unknown>) {
     showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
@@ -117,7 +127,10 @@ export default function Command() {
       const devices = (await bulbsResponse.json()) as { bulbs?: WizDevice[] };
       const bulb = devices.bulbs?.find((candidate) => candidate.online && candidate.ip) || devices.bulbs?.find((candidate) => candidate.ip);
       if (!bulb?.ip) throw new Error("No reachable WiZ bulb found");
-      await sendWizPilot(bulb.ip, light);
+      await sendWizPilotResilient(bulb.ip, light, {
+        mac: bulb.mac,
+        hubFallback: (params) => hubWizControl(bulb.mac, params),
+      });
       showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
       setTimeout(refresh, 500);
     } catch (error) {
@@ -137,7 +150,10 @@ export default function Command() {
       const devices = (await response.json()) as { bulbs?: WizDevice[] };
       const bulb = devices.bulbs?.find((candidate) => candidate.online && candidate.ip) || devices.bulbs?.find((candidate) => candidate.ip);
       if (!bulb?.ip) throw new Error("No reachable WiZ bulb found");
-      await sendWizPilot(bulb.ip, params);
+      await sendWizPilotResilient(bulb.ip, params, {
+        mac: bulb.mac,
+        hubFallback: (p) => hubWizControl(bulb.mac, p),
+      });
       showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
       setTimeout(refresh, 500);
     } catch (error) {
@@ -153,9 +169,12 @@ export default function Command() {
       const devices = (await response.json()) as { bulbs?: WizDevice[] };
       const bulb = devices.bulbs?.find((candidate) => candidate.online && candidate.ip) || devices.bulbs?.find((candidate) => candidate.ip);
       if (!bulb?.ip) throw new Error("No reachable WiZ bulb found");
-      const pilot = await getWizPilot(bulb.ip);
+      const { pilot, ip } = await getWizPilotResilient(bulb.ip, { mac: bulb.mac });
       const nextState = pilot.state !== true;
-      await sendWizPilot(bulb.ip, { state: nextState });
+      await sendWizPilotResilient(ip, { state: nextState }, {
+        mac: bulb.mac,
+        hubFallback: (p) => hubWizControl(bulb.mac, p),
+      });
       showToast({ style: Toast.Style.Success, title: `Light ${nextState ? "on" : "off"}` });
       setTimeout(refresh, 500);
     } catch (error) {

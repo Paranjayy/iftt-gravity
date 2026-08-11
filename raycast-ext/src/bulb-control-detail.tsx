@@ -2,7 +2,7 @@ import { List, ActionPanel, Action, showToast, Toast, Icon, Color, Form, useNavi
 import { useState, useEffect } from "react";
 import fetch from "node-fetch";
 import { getHubUrl, hubUrl } from "./config";
-import { sendWizPilot } from "./wiz-direct";
+import { sendWizPilotResilient } from "./wiz-direct";
 
 interface HubState {
   online: boolean;
@@ -258,7 +258,19 @@ export default function BulbControlDetail() {
           if (sceneIds[key]) { params.sceneId = sceneIds[key]; params.state = true; if (key === "tv") params.dimming = 10; }
         }
         const ip = registryBulbs.find((bulb) => bulb.mac === mac)?.ip;
-        if (Object.keys(params).length && ip) await sendWizPilot(ip, params);
+        if (Object.keys(params).length && ip) {
+          await sendWizPilotResilient(ip, params, {
+            mac,
+            hubFallback: async (p) => {
+              const res = await fetch(hubUrl("control/wiz/control"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ mac, ...p }),
+              });
+              if (!res.ok) throw new Error((await res.text()) || "Hub WiZ control failed");
+            },
+          });
+        }
         else {
           const res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint));
           if (!res.ok) throw new Error("Failed");
@@ -333,17 +345,27 @@ export default function BulbControlDetail() {
    * Set brightness to a target % by stepping the existing ±20% endpoint.
    * Loops at most 5 times to avoid infinite recursion. Clamps to [10, 100].
    */
-  async function setBrightnessTo(target: number) {
-    const clamped = Math.max(10, Math.min(100, target));
+  async function setBrightnessTo(brightnessTarget: number) {
+    const clamped = Math.max(10, Math.min(100, brightnessTarget));
     const toast = await showToast({
       style: Toast.Style.Animated,
       title: `Pulsing: Brightness → ${clamped}%`,
     });
     try {
       const mac = "mac" in target ? target.mac : null;
-      const ip = mac ? registryBulbs.find((bulb) => bulb.mac === mac)?.ip : null;
+      const ip = (mac ? registryBulbs.find((bulb) => bulb.mac === mac)?.ip : null) ?? registryBulbs.find((bulb) => bulb.ip)?.ip ?? null;
       if (!ip) throw new Error("Selected WiZ bulb is unavailable");
-      await sendWizPilot(ip, { state: true, dimming: clamped });
+      await sendWizPilotResilient(ip, { state: true, dimming: clamped }, {
+        mac,
+        hubFallback: async (p) => {
+          const res = await fetch(hubUrl("control/wiz/control"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mac, ...p }),
+          });
+          if (!res.ok) throw new Error((await res.text()) || "Hub WiZ control failed");
+        },
+      });
       // Optimistic immediate update
       setOptimistic((o) => ({ ...o, dimming: clamped }));
       toast.style = Toast.Style.Success;
