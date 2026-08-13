@@ -4786,7 +4786,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         }
 
         if (url.pathname === '/control/wiz/state' && req.method === 'GET') {
-          // Per-bulb state query. ?mac=... or ?name=...
+          // Get specific bulb current state from memory
           if (!wizRegistry) {
             return new Response('No wiz registry (link not loaded)', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } });
           }
@@ -4800,6 +4800,49 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
           return new Response(JSON.stringify(bulb, null, 2), {
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
           });
+        }
+
+        const ruleStore = new RuleStore(config);
+
+        if (url.pathname === '/control/rules' && req.method === 'GET') {
+          return new Response(JSON.stringify({ rules: ruleStore.list() }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/rules' && req.method === 'POST') {
+          try {
+            const body = await req.json();
+            const rule = ruleStore.save(body);
+            logActivity(`📜 API Rule created: ${rule.name}`);
+            return new Response(JSON.stringify({ rule }), { status: 201, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          } catch (e: any) {
+            return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          }
+        }
+        const ruleMatch = url.pathname.match(/^\/control\/rules\/([^/]+)$/);
+        if (ruleMatch && req.method === 'PATCH') {
+          const rule = ruleStore.list().find((r: any) => r.id === ruleMatch[1]);
+          if (!rule) return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          const body = await req.json();
+          Object.assign(rule, body);
+          const saved = ruleStore.save(rule);
+          return new Response(JSON.stringify({ rule: saved }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (ruleMatch && req.method === 'DELETE') {
+          ruleStore.remove(ruleMatch[1]);
+          return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        const ruleRunMatch = url.pathname.match(/^\/control\/rules\/([^/]+)\/run$/);
+        if (ruleRunMatch && req.method === 'POST') {
+          const rule = ruleStore.list().find((r: any) => r.id === ruleRunMatch[1]);
+          if (!rule) return new Response(JSON.stringify({ error: 'not found' }), { status: 404, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+          await rulesEngine.fire(rule, new Date());
+          return new Response(JSON.stringify({ ok: true, lastStatus: rule.lastStatus }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+        }
+        if (url.pathname === '/control/energy/scene' && req.method === 'GET') {
+          const name = url.searchParams.get('name') || 'TV_TIME';
+          const rule = ruleStore.list().find((r: any) => r.name.toUpperCase() === name.toUpperCase());
+          const actions = rule ? rule.actions : [{ kind: 'scene', scene: name.toUpperCase() }];
+          const { kw, rupeesPerHour } = estimateSceneCostPerHour(actions);
+          return new Response(JSON.stringify({ name, kw, rupeesPerHour }), { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
         }
 
         if (url.pathname === '/control/wiz/control' && req.method === 'POST') {
