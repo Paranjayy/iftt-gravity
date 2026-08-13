@@ -347,6 +347,7 @@ let lastLevelActions: Record<string, { text: string, time: number }> = {};
 let rulesEngine: RulesEngine;
 let ruleSentry: RuleSentry;
 let gravityCue: CueLayer;
+let pomodoro: Pomodoro;
 
 async function main() {
   config = loadConfig();
@@ -609,6 +610,35 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     },
   };
   (global as any).gravityChime = chime;
+
+  pomodoro = new Pomodoro({
+    onPhase: async (phase, remainingSec) => {
+      if (phase === 'focus') {
+        await triggerScene('FOCUS');
+        await notifier.notify(`🍅 *Focus ${Math.round(remainingSec / 60)}min* — deep work.`);
+      } else {
+        await triggerScene('CHILL');
+        if (miraie && miraie.devices[0]) {
+          await miraie.controlDevice(miraie.devices[0].deviceId, { ps: 'on', actmp: '26', acmd: 'cool' });
+        }
+        await gravityCue.cueAndRestore({ times: 2, onMs: 300, offMs: 200, color: { r: 0, g: 255, b: 0 } });
+        await notifier.notify(`🍅 *Break ${Math.round(remainingSec / 60)}min* — stretch.`);
+      }
+    },
+    onTick: async (phase, remainingSec) => {
+      if (remainingSec <= 10 && remainingSec > 9) {
+        if (config.cues?.enabled !== false) {
+          await gravityCue.cueAndRestore({ times: 5, onMs: 200, offMs: 150, color: { r: 255, g: 150, b: 0 } });
+        }
+      }
+    },
+    onComplete: async (completed) => {
+      if (config.cues?.enabled !== false) {
+        await gravityCue.cueAndRestore({ times: 3, onMs: 300, offMs: 200, color: { r: 255, g: 220, b: 0 } });
+      }
+      await notifier.notify(`🏆 *Long break earned!* ${completed} focus sessions done.`);
+    },
+  });
 
   // 🧱 RESILIENT STARTUP: Background all network tasks
   console.log('🧱 Gravity Hub: Waking up...');
@@ -4051,6 +4081,29 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       saveConfig(config);
       await send(`🌙 Wind-down on (starts ${config.windDown.start}). AC must already be on — steps bump temp only.`);
       logActivity('🌙 Wind-down enabled');
+    }
+  });
+
+  bot.registerCommand({
+    command: 'pomodoro',
+    description: 'Pomodoro: /pomodoro start [focus=25] [break=5] | stop | status',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const action = (args[0] || 'status').toLowerCase();
+      if (action === 'start') {
+        const focus = Number(args[1]) || 25;
+        const brk = Number(args[2]) || 5;
+        pomodoro.start(focus, brk);
+        await send(`🍅 *Pomodoro started* — ${focus}min focus / ${brk}min break. Countdown cues armed.`);
+      } else if (action === 'stop') {
+        pomodoro.stop();
+        await send('⏹️ *Pomodoro stopped.*');
+      } else {
+        const s = pomodoro.status();
+        await send(s.running
+          ? `🍅 *Focusing* — ${s.phase} • ${Math.ceil(s.remainingSec / 60)}:${String(s.remainingSec % 60).padStart(2, '0')} left`
+          : '🍅 No active session.');
+      }
     }
   });
 
