@@ -524,6 +524,17 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       : wiz?.executeAction({ type: 'control', payload: { state: true, dimming: params.dim || 50 } }),
     scene: async (params: any) => triggerScene(params.name),
     speak: async (params: any) => speak(params.text),
+    winddown_step: async () => {
+      const wd = config.windDown;
+      if (!wd?.enabled) return;
+      const startH = Number(wd.start.split(':')[0]), startM = Number(wd.start.split(':')[1]);
+      const now = new Date();
+      const minsElapsed = (now.getHours() - startH) * 60 + (now.getMinutes() - startM);
+      const step = [...wd.steps].reverse().find((s: any) => minsElapsed >= s.at);
+      if (!step) return;
+      const d = miraie?.devices[0]?.deviceId;
+      if (d) await miraie?.controlDevice(d, { ki: 1, cnt: "an", sid: "1", ps: 'on', actmp: String(step.temp), acmd: 'cool' });
+    },
     // 💤 Adaptive Sleep Curve (ACS)
     // Automated temp stepping: 11PM (24) -> 2AM (25) -> 5AM (26)
     sleep_curve: async () => {
@@ -3910,6 +3921,136 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       scheduler.refresh();
       await send(`🗑️ *Removed Schedule*: \`${removed.action}\` at ${removed.time}`);
       logActivity(`🕰 Scheduler: Routine removed - ${removed.action} @ ${removed.time}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'rules',
+    description: 'List all automation rules',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const store = new RuleStore(config);
+      const rules = store.list();
+      if (rules.length === 0) return await send('📭 No rules yet. Add one: `/rule_add "AC off" 23:00 ac_off`');
+      const lines = rules.map((r) => {
+        const status = r.enabled ? (r.lastStatus === 'error' ? '❌' : '✅') : '⏸️';
+        return `${status} \`${r.name}\` [${r.mode}] ${r.time || ''} — ${r.actions.length} action(s)`;
+      });
+      await send(`📜 *Gravity Rules (${rules.length})*\n\n${lines.join('\n')}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'rule_add',
+    description: 'Add a rule: /rule_add "name" HH:MM action [days]',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const store = new RuleStore(config);
+      try {
+        const name = args[0]?.replace(/^"|"$/g, '') || 'Unnamed';
+        const time = args[1];
+        const action = args[2];
+        const days = args[3] || 'daily';
+        if (!time || !action) return await send('Usage: `/rule_add \"name\" HH:MM action [days]`');
+        const rule = store.save({ name, mode: 'time', time, days, actions: [{ kind: 'named', name: action }] });
+        await send(`✅ *Rule added*: \`${rule.name}\` at ${time} ${days !== 'daily' ? `(${days})` : ''}`);
+        logActivity(`📜 Rule added: ${rule.name} @ ${time}`);
+      } catch (e: any) {
+        await send(`❌ ${e.message}`);
+      }
+    }
+  });
+
+  bot.registerCommand({
+    command: 'rule_toggle',
+    description: 'Enable/disable a rule: /rule_toggle <id|name>',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const store = new RuleStore(config);
+      const q = (args[0] || '').toLowerCase();
+      const rule = store.list().find((r) => r.id === q || r.name.toLowerCase() === q);
+      if (!rule) return await send('❌ Rule not found. Use `/rules` to list.');
+      rule.enabled = !rule.enabled;
+      store.save(rule);
+      await send(`🔀 *${rule.name}* is now ${rule.enabled ? 'enabled' : 'disabled'}.`);
+      logActivity(`📜 Rule toggled: ${rule.name} -> ${rule.enabled}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'rule_rm',
+    description: 'Delete a rule: /rule_rm <id|name>',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const store = new RuleStore(config);
+      const q = (args[0] || '').toLowerCase();
+      const rule = store.list().find((r) => r.id === q || r.name.toLowerCase() === q);
+      if (!rule) return await send('❌ Rule not found. Use `/rules` to list.');
+      store.remove(rule.id);
+      await send(`🗑️ Removed rule *${rule.name}*.`);
+      logActivity(`📜 Rule removed: ${rule.name}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'scene_cost',
+    description: 'Cost estimate: /scene_cost \"TV_TIME\" or scene name',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const name = (args[0] || 'TV_TIME').replace(/^"|"$/g, '').toUpperCase();
+      const store = new RuleStore(config);
+      const rule = store.list().find((r) => r.name.toUpperCase() === name || r.scene?.toUpperCase() === name);
+      const actions = rule ? rule.actions : [{ kind: 'scene', scene: name }];
+      const { kw, rupeesPerHour } = estimateSceneCostPerHour(actions as any);
+      await send(`💰 *Scene Cost: ${name}*\nLoad: *${kw.toFixed(3)} kW*\n≈ *₹${rupeesPerHour.toFixed(2)}/hr*${rule ? `\nLast run: ${rule.lastStatus || 'never'}` : ''}`);
+    }
+  });
+
+  bot.registerCommand({
+    command: 'chime',
+    description: 'Hourly/30min light cue: /chime on|off|hourly|half|15',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const arg = (args[0] || 'on').toLowerCase();
+      config.cues = config.cues || {};
+      config.cues.chime = config.cues.chime || {};
+      const c = config.cues.chime;
+      if (arg === 'off') {
+        c.enabled = false;
+        saveConfig(config);
+        return await send('🔕 Chime off.');
+      }
+      if (arg === 'hourly' || arg === 'half' || arg === '15' || arg === 'on') {
+        config.cues.enabled = true;
+        c.enabled = true;
+        c.interval = arg === 'on' ? 'hourly' : arg;
+        saveConfig(config);
+        return await send(`🔔 Chime on (${c.interval}).`);
+      }
+      await send('Usage: `/chime on|off|hourly|half|15`');
+    }
+  });
+
+  bot.registerCommand({
+    command: 'winddown',
+    description: 'Opt-in evening cooldown: /winddown on|off [start=22:00]',
+    handler: async (chatId: number, args: string[], msg: any, send: any) => {
+      if (!isAuthorized(msg)) return await send('⛔ *Access Denied.*');
+      const arg = (args[0] || 'on').toLowerCase();
+      config.windDown = config.windDown || { enabled: false, start: '22:00', steps: [{ at: 30, temp: 24 }, { at: 90, temp: 25 }, { at: 150, temp: 26 }] };
+      const store = new RuleStore(config);
+      if (arg === 'off') {
+        config.windDown.enabled = false;
+        store.remove('__winddown');
+        saveConfig(config);
+        return await send('🌙 Wind-down off.');
+      }
+      if (args[1]) config.windDown.start = args[1];
+      config.windDown.enabled = true;
+      store.save({ id: '__winddown', name: '__winddown', enabled: true, mode: 'time', time: config.windDown.start, actions: [{ kind: 'named', name: 'winddown_step' }] });
+      saveConfig(config);
+      await send(`🌙 Wind-down on (starts ${config.windDown.start}). AC must already be on — steps bump temp only.`);
+      logActivity('🌙 Wind-down enabled');
     }
   });
 
