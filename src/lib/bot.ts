@@ -21,7 +21,7 @@ import { WeatherEngine } from './weather';
 import { CodexSDK } from './codex';
 import { entityStore } from './entities';
 import { RuleStore } from './rules/store';
-import { RulesEngine } from './rules/engine';
+import { RulesEngine, istNow } from './rules/engine';
 import { RuleSentry } from './rules/sentry';
 import { CueLayer } from './cues';
 import { Pomodoro } from './pomodoro';
@@ -346,6 +346,7 @@ let lastGlobalSignal: { text: string, time: number } | null = null;
 let lastLevelActions: Record<string, { text: string, time: number }> = {};
 let rulesEngine: RulesEngine;
 let ruleSentry: RuleSentry;
+let gravityCue: CueLayer;
 
 async function main() {
   config = loadConfig();
@@ -557,8 +558,46 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     }
   }, entityStore, config);
 
-  const dummyRedFlash = async () => {};
-  ruleSentry = new RuleSentry(config, { redFlash: dummyRedFlash }, async (text) => notifier.notify(text, 'high'));
+  gravityCue = new CueLayer(
+    async () => {
+      if (wizRegistry) return wizRegistry.getPilot();
+      if (wiz && typeof (wiz as any).getPilot === 'function') return (wiz as any).getPilot();
+      return null;
+    },
+    async (params) => {
+      const bulbs = wizRegistry ? wizRegistry.getAll() : [];
+      const b = bulbs.find((x: any) => x.online) || bulbs[0];
+      if (!b) throw new Error('no WiZ bulb available for cue');
+      await wizRegistry!.setPilot(b.mac, params);
+    },
+  );
+
+  const redFlash = async () => {
+    if (wizRegistry) await wizRegistry.pulseAll(100, 600, { r: 255, g: 0, b: 0 });
+  };
+
+  ruleSentry = new RuleSentry(config, { redFlash }, async (text) => notifier.notify(text, 'high'));
+
+  const chime = {
+    async check(now: Date) {
+      const t = istNow(now);
+      const cfg = config.cues?.chime;
+      if (!cfg?.enabled) return;
+      const interval = cfg.interval || 'hourly';
+      const minute = Number(t.hhmm.split(':')[1]);
+      const isBoundary = interval === 'hourly' ? minute === 0
+        : interval === 'half' ? minute % 30 === 0
+        : interval === '15' ? minute % 15 === 0
+        : minute === 0;
+      if (!isBoundary) return;
+      if (cfg.lastCue === t.hhmm) return;
+      cfg.lastCue = t.hhmm;
+      if (config.cues.enabled === false) return;
+      await gravityCue.cueAndRestore({ times: 1, onMs: 500, offMs: 0, color: { r: 255, g: 255, b: 255 } });
+      console.log(`🔔 Chime at ${t.hhmm}`);
+    },
+  };
+  (global as any).gravityChime = chime;
 
   // 🧱 RESILIENT STARTUP: Background all network tasks
   console.log('🧱 Gravity Hub: Waking up...');
@@ -1840,6 +1879,10 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             // Gravity Core: rules engine + sentry on the same tick
             await rulesEngine.check(new Date());
             await ruleSentry.check(new RuleStore(config).list(), new Date());
+            if (config.cues?.chime?.enabled && !config.shadowMode) {
+              const chime = (global as any).gravityChime;
+              if (chime) await chime.check(new Date());
+            }
 
             // 🛡️ Ghost Sentry Check
             if (config.sentryActive !== false && !isPhoneOnline) {
