@@ -16,7 +16,9 @@ This spec builds the core + four user-facing features in one pass:
 - #4 **Scene cost meter** (₹/hr per scene)
 - #5 **Missed-automation sentry** (flash + ping when a scheduled rule silently fails)
 - #8 **Wind-down ramp** (opt-in evening cooldown curve)
-- 🍅 **Pomodoro × AC+bulb** (opt-in focus/break driver)
+- 🍅 **Pomodoro × AC+bulb** (opt-in focus/break driver with countdown + milestone cues)
+- ⏱️ **Cue & Restore layer** (snapshot bulb → blink → restore exactly) — powers chime, pomodoro, and future cues
+- 🔔 **Time Chime** (opt-in hourly / 30-min gentle blink cue, then restore)
 
 ## 2. Current architecture (what we're building on)
 
@@ -132,13 +134,36 @@ type RuleAction =
 - **Opt-in only**: `/winddown on|off`; default OFF. Does not self-enable. When enabled it uses *the AC you already have on* — never powers AC on by itself.
 - If AC is off at a step time, skip silently (no nag).
 
-### 3.6 Pomodoro × AC+bulb (`src/lib/pomodoro.ts`)
+### 3.6 Cue & Restore layer (`src/lib/cues.ts`) — the shared primitive
+
+Every "blink/cue then put it back exactly" feature (pomodoro countdown, hourly chime, milestone blinks, scene timers) needs the same two operations. Build once, use everywhere.
+
+- `snapshotBulb()` — read the bulb's full pilot state (on/off, dimming, sceneId, temp, rgb) via `wizRegistry.getPilot`/`getPilotState`. Store as `{ on, dimming, sceneId, temp, r, g, b }`.
+- `restoreBulb(snapshot)` — push the exact pilot back via `setPilot`. No "close enough" — the user's scene, brightness, and color return byte-for-byte.
+- `cue(blinkSpec)` — blink/dwell helper: `{ times, onMs, offMs, color?, dim? }`. Default `{ times: 2, onMs: 400, offMs: 200 }`.
+- `cueAndRestore(blinkSpec)` — snapshot → cue → restore. Single call for all "attention" cues. Never leaves the room dark or the wrong color.
+- Safety: if snapshot fails (bulb offline), skip the restore silently and log — don't stack a broken restore on a broken read.
+- All cue features are **opt-in** toggles (`config.cues.enabled`, default OFF) so blinking never happens without the user asking.
+
+### 3.7 Time Chime — hourly / half-hourly cue
+
+- `/chime on|off [interval]` — interval `hourly` (default) | `half` (every 30m) | `15` | `off`.
+- At the top of each interval (09:00, 09:30, 10:00…), runs `cueAndRestore({ times: 1, onMs: 500, offMs: 0, color: white })` — a gentle single blip that says "it's 9:30" without wrecking the mood.
+- Stored in `config.cues.chime = { enabled, interval, lastCue }` (lastCue guards against double-firing on restarts).
+- Works even in stealth/shadow mode? No — chime respects `config.shadowMode` (if shadow on, chime is muted). Keeps the "disappear" promise.
+- Distinguishable from sentry flash (red, multi-pulse) by color/single-blink.
+
+### 3.8 Pomodoro × AC+bulb (`src/lib/pomodoro.ts`)
 
 - Opt-in sessions, configurable focus/break lengths (defaults 25/5).
 - `/pomodoro start [focus=25] [break=5]` | `/pomodoro stop` | `/pomodoro status`.
 - Focus: AC on 24°C cool, bulb 6500K/100 (reuses FOCUS scene actions).
 - Break: AC 26°C / bulb warm 2700K/40 (reuses CHILL-ish actions).
 - Ticker via `setInterval` in-bot; on phase transitions, applies actions + Telegram card with phase, remaining time.
+- **Countdown cues (via the cue layer):**
+  - Last **10 seconds** of a phase: `cueAndRestore({ times: 5, onMs: 200, offMs: 150 })` — rapid flicker, then restore, so the focus/break scene is untouched.
+  - Phase **milestone** (focus→break, break→focus): one green/amber blip (`times: 2, color: green`) then the new scene applies. The blink is the "switch now" cue; the scene change follows.
+  - **Pomodoro-complete** (a multiple of 4 focus phases, "long break time"): triple warm blip + Telegram "Long break earned" card.
 - Store session state in memory (`config.pomodoro`), not part of rules engine (it's a timer, not a rule). Won't survive restart — acceptable; `/pomodoro status` shows "no active session" after boot.
 
 ## 4. Data flow
@@ -153,6 +178,10 @@ Rules Engine (config.rules) ────────────┼── evalua
    adapters.executeAction          Cost meter (₹/hr)
         │                              │
    sentry (missed/error → flash+ping) ─┘
+Cue & Restore layer (snapshot → blink → restore)
+   ├── Time Chime (hourly/30min blip)
+   ├── Pomodoro countdowns (10s flicker, milestone blip)
+   └── sentry red-flash (via same layer, distinct color)
 Surfaces: Telegram commands, HTTP :3030, Raycast extension
 ```
 
@@ -169,6 +198,10 @@ Surfaces: Telegram commands, HTTP :3030, Raycast extension
   - state-trigger condition eval (eq/ne/gt/lt on entity values).
   - sentry detection (due-but-not-run, error status) with fake clock.
   - cost estimate math (given the AC/bulb constants).
+- `src/lib/cues/cues.test.ts`:
+  - snapshot/restore round-trip (given a mock pilot read, restore sends the same payload).
+  - chime scheduling (top-of-hour / 30-min / 15-min boundary detection with fake clock, `lastCue` dedupe).
+  - pomodoro countdown cue timing (flicker only in the last 10s; milestone blip on phase change).
 - Pure logic only (no network); adapters mocked. Existing pattern: no test infra yet, but `bun test` is configured per AGENTS.md.
 
 ## 7. Out of scope (later sub-projects)
