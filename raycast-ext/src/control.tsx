@@ -49,9 +49,32 @@ interface Preferences {
 export default function Command() {
   const preferences = getPreferenceValues<Preferences>();
   const [state, setState] = useState<HubState | null>(null);
+  const [costs, setCosts] = useState<Record<string, string>>({});
   // Never block Raycast's command surface on a slow cloud-backed hub probe.
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadCosts() {
+      const scenes = ["TV_TIME", "FOCUS", "HOME"];
+      const newCosts: Record<string, string> = {};
+      for (const scene of scenes) {
+        try {
+          const res = await fetch(hubUrl(`control/energy/scene?name=${scene}`));
+          if (res.ok) {
+            const data = (await res.json()) as any;
+            if (data.rupeesPerHour !== undefined) {
+              newCosts[scene] = `₹${data.rupeesPerHour.toFixed(2)}/hr`;
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      setCosts(newCosts);
+    }
+    loadCosts();
+  }, []);
 
   async function refresh() {
     try {
@@ -268,19 +291,19 @@ export default function Command() {
         <List.Item
           icon={Icon.Video}
           title="TV TIME"
-          subtitle="Dim Purple & AC Cool"
+          subtitle={costs["TV_TIME"] ? `Dim Purple & AC Cool (${costs["TV_TIME"]})` : "Dim Purple & AC Cool"}
           actions={<ActionPanel><Action title="Activate" icon={Icon.Video} onAction={runTvTime} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.ComputerSpeaker}
           title="WORK MODE"
-          subtitle="Bright White & AC Fan"
+          subtitle={costs["FOCUS"] ? `Bright White & AC Fan (${costs["FOCUS"]})` : "Bright White & AC Fan"}
           actions={<ActionPanel><Action title="Activate" icon={Icon.ComputerSpeaker} onAction={runWorkMode} /></ActionPanel>}
         />
         <List.Item
           icon={Icon.House}
           title="BACK HOME"
-          subtitle="Warm Welcome"
+          subtitle={costs["HOME"] ? `Warm Welcome (${costs["HOME"]})` : "Warm Welcome"}
           actions={<ActionPanel><Action title="Activate" icon={Icon.House} onAction={runBackHome} /></ActionPanel>}
         />
       </List.Section>
