@@ -19,6 +19,13 @@ import { PCAdapter } from './adapters/pc';
 import { getFrequentedStats } from './stats';
 import { WeatherEngine } from './weather';
 import { CodexSDK } from './codex';
+import { entityStore } from './entities';
+import { RuleStore } from './rules/store';
+import { RulesEngine } from './rules/engine';
+import { RuleSentry } from './rules/sentry';
+import { CueLayer } from './cues';
+import { Pomodoro } from './pomodoro';
+import { estimateSceneCostPerHour, calculatePgvclBill as energyBill } from './energy';
 import {
   evaluateCoolingDecision,
   getMacThermalLevel,
@@ -274,8 +281,10 @@ class NotificationManager {
 // 🕰️ Gravity Scheduler (Cron / Solar / One-time)
 class GravityScheduler {
   private jobs: any[] = [];
+  public actions: Record<string, Function>;
   
-  constructor(private config: any, private actions: Record<string, Function>) {
+  constructor(private config: any, actions: Record<string, Function>) {
+    this.actions = actions;
     this.refresh();
   }
 
@@ -335,9 +344,34 @@ let bot: any;
 let pc: PCAdapter | null = null;
 let lastGlobalSignal: { text: string, time: number } | null = null;
 let lastLevelActions: Record<string, { text: string, time: number }> = {};
+let rulesEngine: RulesEngine;
+let ruleSentry: RuleSentry;
 
 async function main() {
   config = loadConfig();
+
+  if (Array.isArray(config.scheduler) && config.scheduler.length > 0) {
+    config.rules = config.rules || [];
+    const existing = new Set(config.rules.map((r: any) => r.id));
+    for (const job of config.scheduler) {
+      const id = `mig-${job.id || (job.action + '-' + job.time)}`;
+      if (existing.has(id)) continue;
+      config.rules.push({
+        id,
+        name: job.name || job.action,
+        enabled: true,
+        mode: 'time',
+        time: job.time,
+        days: job.days || 'daily',
+        actions: [{ kind: 'named', name: job.action }],
+        lastRun: job.lastRun ? new Date(job.lastRun).getTime() : undefined,
+      });
+      existing.add(id);
+    }
+    config.scheduler = [];
+    saveConfig(config);
+    console.log(`🕰️ Gravity Core: migrated ${config.rules.length} legacy scheduler jobs into config.rules`);
+  }
 async function getCpuTemp() { try { const { stdout } = await execAsync("sysctl -n machdep.xcpm.cpu_thermal_level"); return parseInt(stdout.trim()) > 50 ? 80 : 45; } catch { return 40; } }
 async function getBattery() { try { const { stdout } = await execAsync(`pmset -g batt | grep -o "[0-9]\\{1,3\\}%" | tr -d "%"`); return parseInt(stdout.trim()); } catch { return 100; } }
   if (config.commentaryMode === undefined) config.commentaryMode = false;
@@ -502,6 +536,29 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       logActivity(`💤 ACS: Sleep curve pivot. Room set to ${temp}°C.`);
     }
   });
+
+  rulesEngine = new RulesEngine(async (action: any) => {
+    if (action.kind === 'named') {
+      const fn = scheduler.actions?.[action.name];
+      if (!fn) throw new Error(`Unknown named action: ${action.name}`);
+      await fn(action.params || {});
+    } else if (action.kind === 'scene') {
+      await triggerScene(action.scene);
+    } else if (action.kind === 'device') {
+      const [adapterId, nodeId] = action.deviceId.split(':');
+      if (adapterId === 'wiz' || adapterId === 'light') {
+        if (wizRegistry) await wizRegistry.setPilot(nodeId || '', action.payload);
+        else if (wiz) await wiz.executeAction({ type: action.type, deviceId: action.deviceId, payload: action.payload });
+      } else if (adapterId === 'mir' || adapterId === 'ac') {
+        if (miraie) await miraie.controlDevice(nodeId || '', action.payload);
+      }
+    } else {
+      throw new Error('Unknown rule action kind: ' + action.kind);
+    }
+  }, entityStore, config);
+
+  const dummyRedFlash = async () => {};
+  ruleSentry = new RuleSentry(config, { redFlash: dummyRedFlash }, async (text) => notifier.notify(text, 'high'));
 
   // 🧱 RESILIENT STARTUP: Background all network tasks
   console.log('🧱 Gravity Hub: Waking up...');
@@ -1780,6 +1837,10 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             // 🕰️ Run Scheduler Check
             await scheduler.check();
 
+            // Gravity Core: rules engine + sentry on the same tick
+            await rulesEngine.check(new Date());
+            await ruleSentry.check(new RuleStore(config).list(), new Date());
+
             // 🛡️ Ghost Sentry Check
             if (config.sentryActive !== false && !isPhoneOnline) {
                const now = Date.now();
@@ -1895,18 +1956,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
 
   // PGVCL Tariff Estimator (GERC 2024-25 RGP)
   const calculatePgvclBill = (units: number, includeFixed = true) => {
-    let energyCharge = 0;
-    // Updated slabs per GERC June 2024 Order
-    if (units <= 50) energyCharge = units * 3.05;
-    else if (units <= 100) energyCharge = (50 * 3.05) + (units - 50) * 3.50;
-    else if (units <= 250) energyCharge = (50 * 3.05) + (50 * 3.50) + (units - 100) * 4.10;
-    else energyCharge = (50 * 3.05) + (50 * 3.50) + (150 * 4.10) + (units - 250) * 4.60;
-    
-    const fpppa = units * 2.85; // Latest FPPPA Approx
-    const fixed = includeFixed ? 35 : 0; // Avg monthly fixed charge for 2-4kW load
-    const subtotal = energyCharge + fpppa + fixed;
-    const duty = subtotal * 0.15; // 15% Electricity Duty
-    return (subtotal + duty).toFixed(2);
+    return energyBill(units, includeFixed);
   };
 
   // ──────────────────────────────────────────────────────
