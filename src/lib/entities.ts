@@ -1,7 +1,7 @@
 export interface Entity {
   id: string;
   name: string;
-  domain: 'light' | 'ac' | 'tv' | 'switch' | 'sensor';
+  domain: 'light' | 'ac' | 'tv' | 'switch' | 'sensor' | 'cover' | 'media_player';
   state: string;
   attributes: Record<string, any>;
   lastUpdated: number;

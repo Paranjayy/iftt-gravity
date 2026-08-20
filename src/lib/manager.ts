@@ -3,6 +3,7 @@ import { MiraieAdapter } from './adapters/miraie';
 import { SmartThingsAdapter } from './adapters/smartthings';
 import { WizAdapter } from './adapters/wiz';
 import { PCAdapter } from './adapters/pc';
+import { HomeAssistantAdapter } from './adapters/homeassistant';
 import { Adapter } from './types';
 
 class AdapterManager {

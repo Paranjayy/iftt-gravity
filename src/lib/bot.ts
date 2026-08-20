@@ -16,6 +16,8 @@ import { WizAdapter } from './adapters/wiz';
 import { WizRegistry } from './adapters/wiz-registry';
 import { loadWizLink, getWizLinkPath } from './adapters/wiz-link';
 import { PCAdapter } from './adapters/pc';
+import { HomeAssistantAdapter, HAConfig } from './adapters/homeassistant';
+import { haCommands } from './ha-commands';
 import { getFrequentedStats } from './stats';
 import { WeatherEngine } from './weather';
 import { CodexSDK } from './codex';
@@ -663,6 +665,14 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         { command: 'health', description: '🧬 Hub System Health' },
         { command: 'shadow', description: '🌑 Stealth Mode' },
         { command: 'ping', description: 'Check Gravity health' },
+        { command: 'ha', description: '🏠 Home Assistant overview' },
+        { command: 'ha_lights', description: '💡 HA lights' },
+        { command: 'ha_ac', description: '❄️ HA climate' },
+        { command: 'ha_switch', description: '🔘 HA switches' },
+        { command: 'ha_cover', description: '🪟 HA covers' },
+        { command: 'ha_media', description: '📺 HA media players' },
+        { command: 'ha_sensors', description: '📊 HA sensors' },
+        { command: 'ha_status', description: '📡 HA connection status' },
       ]).catch(() => {});
     } catch (e) {
       console.warn('⚠️ Telegram handshake delayed...');
@@ -771,6 +781,27 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       } catch (e) {
         console.warn('⚠️ Wiz Setup failed');
       }
+    }
+  }
+
+  // ── Home Assistant Adapter ────────────────────────────────
+  let haAdapter: HomeAssistantAdapter | null = null;
+  if (!CLIPBOARD_ONLY && config.homeAssistant?.enabled && config.homeAssistant?.url && config.homeAssistant?.token) {
+    try {
+      haAdapter = new HomeAssistantAdapter(config.homeAssistant as HAConfig);
+      (global as any).haAdapter = haAdapter;
+      haAdapter.initialize()
+        .then(() => console.log(`🏠 HA: Connected (${haAdapter!.getEntityCount()} entities)`))
+        .catch((e: any) => console.warn(`⚠️ HA: Offline — ${e?.message || e}`));
+    } catch (e) {
+      console.warn('⚠️ HA Adapter setup failed');
+    }
+  }
+
+  // Register HA commands with Telegram bot
+  if (bot) {
+    for (const cmd of haCommands) {
+      bot.registerCommand(cmd);
     }
   }
 
