@@ -186,3 +186,42 @@ bun src/lib/bot.ts &
 docker start homeassistant mosquitto
 cd /Users/paranjay/Developer/iftt && bun src/lib/bot.ts &
 ```
+
+---
+
+## Portfolio Audit Notes (2026-08-22)
+
+### Stats
+- 237 total projects (161 GitHub + 76 local-only)
+- TypeScript 53%, JavaScript 23%, Swift 6%
+- Standout: saptak, OmniWM, iftt-gravity, ipl-2026-engine, COD-Fable, sift, limn
+
+### Docker Assessment
+**Only Gravity Hub needs Docker.** Everything else runs fine with `bun run dev`.
+
+| Project | Docker needed? | Why |
+|---------|---------------|-----|
+| iftt-gravity | ✅ Yes | HA + MQTT containers |
+| saptak | ❌ No | Static browser app |
+| OmniWM | ❌ No | Native Swift app |
+| ipl-2026-engine | ❌ No | Bun server |
+| COD-Fable | ❌ No | Static browser game |
+| All other web apps | ❌ No | `bun run dev` is fine |
+
+### Local Repos Worth Pushing
+- iftt (Gravity Hub) — already pushed
+- stats, writing stats, mythology
+- COD Fable, chess
+- Image-Search
+
+### Local Repos Safe to Delete
+- temp_policy, temp_migrations, temp_corruption* (temp files)
+- new folder, src (empty/scratch)
+- chatgpt json convert (data dump)
+- media hub variants (consolidate into one)
+
+### Recommendations
+1. Add 1-liner descriptions to repos without them (~60% have none)
+2. Consolidate media hub variants (cc, sol, terra, website) into one
+3. Push the good local experiments before they rot
+4. Write "Building tools I actually use" blog post — strong pattern
