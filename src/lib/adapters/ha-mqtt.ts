@@ -19,6 +19,7 @@ export class HaMqttPublisher {
   private config: HaMqttConfig;
   private wizHandler?: (ip: string, cmd: string, value?: any) => Promise<void>;
   private miraieHandler?: (deviceId: string, cmd: Record<string, any>) => Promise<void>;
+  private sceneHandler?: (sceneName: string) => Promise<void>;
 
   constructor(config: HaMqttConfig) {
     this.config = config;
@@ -235,6 +236,47 @@ export class HaMqttPublisher {
     if (state.temp !== undefined) {
       this.client.publish(`${baseTopic}/color_temp`, String(state.temp), { retain: true });
     }
+  }
+
+  /** Register callback to trigger Gravity Hub scenes from HA */
+  onSceneCommand(handler: (sceneName: string) => Promise<void>) {
+    this.sceneHandler = handler;
+  }
+
+  /** Publish Gravity Hub scene as an HA button entity */
+  publishSceneButton(sceneName: string) {
+    if (!this.client?.connected) return;
+    const slug = `scene_${sceneName.toLowerCase()}`;
+    const baseTopic = `gravity/${slug}`;
+
+    const label = sceneName.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+    const config = {
+      name: `${label} (Gravity)`,
+      unique_id: `gravity_${slug}`,
+      command_topic: `${baseTopic}/set`,
+      payload_press: 'ON',
+      availability_topic: 'gravity/availability',
+      device: {
+        identifiers: ['gravity_hub'],
+        name: 'Gravity Hub',
+        via_device: 'gravity_hub',
+      },
+    };
+
+    this.client.publish(
+      `${this.prefix}/button/${NODE_ID}_${slug}/config`,
+      JSON.stringify(config),
+      { retain: true }
+    );
+    this.client.subscribe(`${baseTopic}/set`);
+
+    this.client.on('message', (topic, message) => {
+      if (topic !== `${baseTopic}/set` || !this.sceneHandler) return;
+      if (message.toString() === 'ON') {
+        this.sceneHandler!(sceneName).catch(() => {});
+      }
+    });
   }
 
   // ── Generic Entity ─────────────────────────────────────────

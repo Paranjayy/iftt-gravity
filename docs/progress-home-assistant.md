@@ -69,6 +69,17 @@ docker ps
 | `climate.panasonic_ac_panasonic_ac` | Climate | Panasonic AC | auto |
 | `climate.panasonic_ac_panasonic_ac_2` | Climate | Panasonic AC (2nd) | unknown |
 | `light.bedroom_light_bedroom_light` | Light | Bedroom Light | off |
+| `button.gravity_hub_movie_mode_gravity` | Button | Movie Mode | press to trigger |
+| `button.gravity_hub_sleep_mode_gravity` | Button | Sleep Mode | press to trigger |
+| `button.gravity_hub_tv_gravity` | Button | TV | press to trigger |
+| `button.gravity_hub_focus_gravity` | Button | Focus | press to trigger |
+| `button.gravity_hub_chill_gravity` | Button | Chill | press to trigger |
+| `button.gravity_hub_home_gravity` | Button | Home | press to trigger |
+| `button.gravity_hub_morning_brief_gravity` | Button | Morning Brief | press to trigger |
+
+### Verified Working (end-to-end)
+- ✅ WiZ bulb ON via MQTT command path (HA-side publish → UDP → bulb state confirmed)
+- ✅ Scene trigger from HA button (`button.press` → MQTT → bot logs confirm execution)
 
 ### How They Get There
 1. Bot starts → `HaMqttPublisher.connect()` connects to Mosquitto
@@ -124,11 +135,11 @@ docker ps
 
 ## Next Steps
 
+- [x] ~~Fix Telegram command menu (reduce to <100 commands)~~ — fixed 2026-08-22 (priority list + dedupe + cap at 100)
+- [x] ~~Add Gravity Hub scenes as HA scene entities~~ — done as buttons (HA MQTT has no scene domain)
 - [ ] Configure Raycast HA extension with URL + token
 - [ ] Set up HA Companion App on phone
 - [ ] Add HA HomeKit bridge for Apple Home
-- [ ] Fix Telegram command menu (reduce to <100 commands)
-- [ ] Add Gravity Hub scenes as HA scene entities
 - [ ] Add Pomodoro/Hydration/Posture states as HA sensors
 - [ ] Set up remote access (Cloudflare Tunnel or Tailscale)
 - [ ] Add automations: HA triggers → Gravity Hub actions

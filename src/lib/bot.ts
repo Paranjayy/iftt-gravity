@@ -19,6 +19,7 @@ import { PCAdapter } from './adapters/pc';
 import { HomeAssistantAdapter, HAConfig } from './adapters/homeassistant';
 import { HaMqttPublisher } from './adapters/ha-mqtt';
 import { haCommands } from './ha-commands';
+import { SCENES } from './scenes';
 import { getFrequentedStats } from './stats';
 import { WeatherEngine } from './weather';
 import { CodexSDK } from './codex';
@@ -841,6 +842,28 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
                 console.error(`📡 HA MQTT: MirAie command failed: ${e.message}`);
               }
             });
+
+            // Register scene command handler — HA button → Gravity Hub scene
+            haMqtt!.onSceneCommand(async (sceneName) => {
+              try {
+                await triggerScene(sceneName);
+                console.log(`📡 HA MQTT: Scene ${sceneName} triggered from HA`);
+              } catch (e: any) {
+                console.error(`📡 HA MQTT: Scene trigger failed: ${e.message}`);
+              }
+            });
+
+            // Publish Gravity Hub scenes as HA buttons
+            for (const sceneName of Object.keys(SCENES)) {
+              haMqtt!.publishSceneButton(sceneName);
+              console.log(`  → Published Scene: ${sceneName}`);
+            }
+
+            // Also publish the bot's built-in scenes (TV, FOCUS, etc.)
+            for (const s of ['TV', 'FOCUS', 'CHILL', 'HOME', 'MORNING_BRIEF']) {
+              haMqtt!.publishSceneButton(s);
+            }
+            console.log('  → Published Bot Scenes: TV, FOCUS, CHILL, HOME, MORNING_BRIEF');
 
             // Publish MirAie AC units as climate entities
             if (miraie && miraie.devices.length > 0) {
