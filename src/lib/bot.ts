@@ -6746,7 +6746,27 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   };
   process.on('uncaughtException', (err) => sos(err, 'Uncaught Exception'));
   process.on('unhandledRejection', (reason: any) => sos(reason instanceof Error ? reason : new Error(String(reason)), 'Unhandled Rejection'));
-  const allCommands = bot.getHandlers().map((h: any) => ({ command: h.command, description: h.description }));
+  // Telegram limits: max 100 commands, descriptions ≤256 chars.
+  // Prioritize the daily-driver commands; everything else still works in chat.
+  const PRIORITY = ['status', 'ac', 'lights', 'scene', 'tv', 'media', 'flows', 'auto_ac', 'auto_light',
+    'ha', 'ha_lights', 'ha_ac', 'ha_switch', 'ha_cover', 'ha_media', 'ha_sensors', 'ha_status',
+    'live', 'health', 'ping', 'shadow'];
+  const seen = new Set<string>();
+  const allCommands = bot.getHandlers()
+    .filter((h: any) => {
+      if (seen.has(h.command)) return false;
+      seen.add(h.command);
+      return true;
+    })
+    .sort((a: any, b: any) => {
+      const ai = PRIORITY.indexOf(a.command), bi = PRIORITY.indexOf(b.command);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return 0;
+    })
+    .slice(0, 100)
+    .map((h: any) => ({ command: h.command, description: (h.description || h.command).substring(0, 256) }));
   await bot.setMyCommands(allCommands).catch((e: Error) => console.error('Failed to sync TG commands:', e));
   setInterval(() => { 
     config = loadConfig(); 
