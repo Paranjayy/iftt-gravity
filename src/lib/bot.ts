@@ -865,6 +865,18 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             }
             console.log('  → Published Bot Scenes: TV, FOCUS, CHILL, HOME, MORNING_BRIEF');
 
+            // Publish Gravity Hub state sensors (work mode, auto-pilot, usage)
+            haMqtt!.publishStateSensors();
+            const pushState = () => haMqtt!.updateStateSensors({
+              workMode: !!config.workMode,
+              autoAc: !!(config as any).autoAc,
+              acMinutes: config.stats?.acMinutes ?? 0,
+              lightMinutes: config.stats?.lightMinutes ?? 0,
+            });
+            pushState();
+            setInterval(pushState, 60000); // refresh every minute
+            console.log('  → Published State Sensors: work_mode, auto_ac, ac_minutes, light_minutes');
+
             // Publish MirAie AC units as climate entities
             if (miraie && miraie.devices.length > 0) {
               for (const device of miraie.devices) {

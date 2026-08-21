@@ -279,6 +279,68 @@ export class HaMqttPublisher {
     });
   }
 
+  // ── Gravity Hub State Sensors ──────────────────────────────
+
+  /** Publish Gravity Hub internal-state sensors (call once after connect) */
+  publishStateSensors() {
+    this.publishBinarySensor('gravity_work_mode', 'Work Mode', 'work_mode');
+    this.publishBinarySensor('gravity_auto_ac', 'Auto-Pilot AC', 'auto_ac');
+    this.publishValueSensor('gravity_ac_minutes', 'AC Usage Today', 'ac_minutes', 'min');
+    this.publishValueSensor('gravity_light_minutes', 'Light Usage Today', 'light_minutes', 'min');
+  }
+
+  /** Push fresh values for the state sensors */
+  updateStateSensors(state: { workMode?: boolean; autoAc?: boolean; acMinutes?: number; lightMinutes?: number }) {
+    if (!this.client?.connected) return;
+    if (state.workMode !== undefined) {
+      this.client.publish('gravity/work_mode/state', state.workMode ? 'ON' : 'OFF', { retain: true });
+    }
+    if (state.autoAc !== undefined) {
+      this.client.publish('gravity/auto_ac/state', state.autoAc ? 'ON' : 'OFF', { retain: true });
+    }
+    if (state.acMinutes !== undefined) {
+      this.client.publish('gravity/ac_minutes/state', String(state.acMinutes), { retain: true });
+    }
+    if (state.lightMinutes !== undefined) {
+      this.client.publish('gravity/light_minutes/state', String(state.lightMinutes), { retain: true });
+    }
+  }
+
+  private publishBinarySensor(slug: string, name: string, key: string) {
+    if (!this.client?.connected) return;
+    const config = {
+      name,
+      unique_id: `gravity_${slug}`,
+      state_topic: `gravity/${key}/state`,
+      payload_on: 'ON',
+      payload_off: 'OFF',
+      availability_topic: 'gravity/availability',
+      device: {
+        identifiers: ['gravity_hub'],
+        name: 'Gravity Hub',
+        via_device: 'gravity_hub',
+      },
+    };
+    this.client.publish(`${this.prefix}/binary_sensor/${NODE_ID}_${slug}/config`, JSON.stringify(config), { retain: true });
+  }
+
+  private publishValueSensor(slug: string, name: string, key: string, unit: string) {
+    if (!this.client?.connected) return;
+    const config = {
+      name,
+      unique_id: `gravity_${slug}`,
+      state_topic: `gravity/${key}/state`,
+      unit_of_measurement: unit,
+      availability_topic: 'gravity/availability',
+      device: {
+        identifiers: ['gravity_hub'],
+        name: 'Gravity Hub',
+        via_device: 'gravity_hub',
+      },
+    };
+    this.client.publish(`${this.prefix}/sensor/${NODE_ID}_${slug}/config`, JSON.stringify(config), { retain: true });
+  }
+
   // ── Generic Entity ─────────────────────────────────────────
 
   publishSensor(entityId: string, name: string, value: string, unit?: string) {
