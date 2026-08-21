@@ -136,6 +136,23 @@ docker ps
 
 ---
 
+## Raycast Scripts
+
+Three scripts in `~/.raycast/scripts/`:
+
+| Script | What it does |
+|--------|-------------|
+| `gravity-hub.sh` | Start everything (Docker + HA + MQTT + Bot) |
+| `gravity-status.sh` | Quick status check (compact output) |
+| `gravity-restart.sh` | Restart all services |
+
+Search in Raycast: "Start Gravity Hub", "Gravity Hub Status", "Restart Gravity Hub"
+
+### Docker Auto-Start
+Docker Desktop is set to start on login (`defaults write com.docker.docker LaunchAtLogin -bool true`). Containers have `--restart unless-stopped` so they auto-start when Docker is ready.
+
+---
+
 ## Git History
 
 ```
@@ -148,12 +165,24 @@ cc52d10  docs: Home Assistant setup guide
 
 ## How to Restart Everything
 
+**Option 1: Raycast (easiest)**
+Open Raycast → search:
+- `Start Gravity Hub` — starts Docker + HA + MQTT + Bot
+- `Gravity Hub Status` — quick status check
+- `Restart Gravity Hub` — restart everything
+
+**Option 2: Terminal**
 ```bash
-# Docker
+# Start Docker (auto-starts on login now)
 docker start homeassistant mosquitto
 
-# Gravity Bot
+# Start Gravity Bot
 cd /Users/paranjay/Developer/iftt
-pkill -f "bun.*bot.ts"
 bun src/lib/bot.ts &
+```
+
+**Option 3: Full rebuild**
+```bash
+docker start homeassistant mosquitto
+cd /Users/paranjay/Developer/iftt && bun src/lib/bot.ts &
 ```
