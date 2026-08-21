@@ -17,6 +17,7 @@ import { WizRegistry } from './adapters/wiz-registry';
 import { loadWizLink, getWizLinkPath } from './adapters/wiz-link';
 import { PCAdapter } from './adapters/pc';
 import { HomeAssistantAdapter, HAConfig } from './adapters/homeassistant';
+import { HaMqttPublisher } from './adapters/ha-mqtt';
 import { haCommands } from './ha-commands';
 import { getFrequentedStats } from './stats';
 import { WeatherEngine } from './weather';
@@ -786,6 +787,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
 
   // ── Home Assistant Adapter ────────────────────────────────
   let haAdapter: HomeAssistantAdapter | null = null;
+  let haMqtt: HaMqttPublisher | null = null;
   if (!CLIPBOARD_ONLY && config.homeAssistant?.enabled && config.homeAssistant?.url && config.homeAssistant?.token) {
     try {
       haAdapter = new HomeAssistantAdapter(config.homeAssistant as HAConfig);
@@ -795,6 +797,74 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         .catch((e: any) => console.warn(`⚠️ HA: Offline — ${e?.message || e}`));
     } catch (e) {
       console.warn('⚠️ HA Adapter setup failed');
+    }
+
+    // MQTT Publisher: Expose Gravity Hub devices to HA via auto-discovery
+    if (config.homeAssistant?.mqtt) {
+      try {
+        haMqtt = new HaMqttPublisher({
+          host: config.homeAssistant.mqtt.host || 'localhost',
+          port: config.homeAssistant.mqtt.port || 1883,
+          username: config.homeAssistant.mqtt.username || undefined,
+          password: config.homeAssistant.mqtt.password || undefined,
+          discoveryPrefix: config.homeAssistant.discoveryPrefix || 'homeassistant',
+        });
+        haMqtt.connect()
+          .then(() => {
+            console.log('📡 HA MQTT: Publishing Gravity Hub devices...');
+
+            // Register WiZ command handler — HA MQTT → actual WiZ bulb via UDP
+            haMqtt!.onWizCommand(async (ip, cmd, value) => {
+              try {
+                if (cmd === 'on') await wiz?.turnOn();
+                else if (cmd === 'off') await wiz?.turnOff();
+                else if (cmd === 'toggle') {
+                  const state = await (wiz as any)?.getPilot?.();
+                  if (state?.state) await wiz?.turnOff();
+                  else await wiz?.turnOn();
+                }
+                else if (cmd === 'brightness' && wiz) await wiz.setBrightness(value);
+                else if (cmd === 'color' && wiz) await wiz.setColor(value.r, value.g, value.b);
+                else if (cmd === 'temp' && wiz) await wiz.setWhite(value);
+                console.log(`📡 HA MQTT: WiZ ${ip} ← ${cmd}`);
+              } catch (e: any) {
+                console.error(`📡 HA MQTT: WiZ command failed: ${e.message}`);
+              }
+            });
+
+            // Register MirAie command handler — HA MQTT → actual AC via MirAie MQTT
+            haMqtt!.onMiraieCommand(async (deviceId, cmd) => {
+              try {
+                await miraie?.controlDevice(deviceId, cmd);
+                console.log(`📡 HA MQTT: MirAie ${deviceId} ← ${JSON.stringify(cmd)}`);
+              } catch (e: any) {
+                console.error(`📡 HA MQTT: MirAie command failed: ${e.message}`);
+              }
+            });
+
+            // Publish MirAie AC units as climate entities
+            if (miraie && miraie.devices.length > 0) {
+              for (const device of miraie.devices) {
+                haMqtt!.publishMiraieClimate(miraie, device.deviceId);
+                console.log(`  → Published AC: ${device.deviceName} (${device.deviceId})`);
+              }
+            }
+            // Publish WiZ bulbs as light entities
+            if (wiz) {
+              const wizConfig = config.wiz?.bulbs || [config.wiz];
+              for (const bulb of wizConfig) {
+                if (bulb?.ip) {
+                  haMqtt!.publishWizLight(bulb.ip, bulb.name || 'WiZ Bulb');
+                  console.log(`  → Published WiZ: ${bulb.name || 'WiZ Bulb'} (${bulb.ip})`);
+                }
+              }
+            }
+            console.log('📡 HA MQTT: Gravity Hub devices published to HA');
+          })
+          .catch((e: any) => console.warn(`⚠️ HA MQTT: Offline — ${e?.message || e}`));
+      } catch (e) {
+        console.warn('⚠️ HA MQTT setup failed');
+      }
     }
   }
 

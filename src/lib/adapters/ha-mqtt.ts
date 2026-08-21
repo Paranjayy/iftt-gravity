@@ -17,10 +17,22 @@ export class HaMqttPublisher {
   private client: mqtt.MqttClient | null = null;
   private prefix: string;
   private config: HaMqttConfig;
+  private wizHandler?: (ip: string, cmd: string, value?: any) => Promise<void>;
+  private miraieHandler?: (deviceId: string, cmd: Record<string, any>) => Promise<void>;
 
   constructor(config: HaMqttConfig) {
     this.config = config;
     this.prefix = config.discoveryPrefix || DEFAULT_PREFIX;
+  }
+
+  /** Register callback to control WiZ bulbs via UDP */
+  onWizCommand(handler: (ip: string, cmd: string, value?: any) => Promise<void>) {
+    this.wizHandler = handler;
+  }
+
+  /** Register callback to control MirAie AC via MQTT */
+  onMiraieCommand(handler: (deviceId: string, cmd: Record<string, any>) => Promise<void>) {
+    this.miraieHandler = handler;
   }
 
   connect(): Promise<void> {
@@ -187,6 +199,27 @@ export class HaMqttPublisher {
     this.client.subscribe(`${baseTopic}/brightness/set`);
     this.client.subscribe(`${baseTopic}/rgb/set`);
     this.client.subscribe(`${baseTopic}/color_temp/set`);
+
+    // Handle commands from HA
+    this.client.on('message', (topic, message) => {
+      const msg = message.toString();
+      if (!topic.startsWith(baseTopic)) return;
+      if (!this.wizHandler) return;
+
+      if (topic === `${baseTopic}/set`) {
+        this.wizHandler(bulbIp, msg === 'ON' ? 'on' : msg === 'OFF' ? 'off' : 'toggle');
+      } else if (topic === `${baseTopic}/brightness/set`) {
+        const brightness = Math.round((parseInt(msg) / 255) * 100);
+        this.wizHandler(bulbIp, 'brightness', brightness);
+      } else if (topic === `${baseTopic}/rgb/set`) {
+        try {
+          const rgb = JSON.parse(msg);
+          this.wizHandler(bulbIp, 'color', rgb);
+        } catch {}
+      } else if (topic === `${baseTopic}/color_temp/set`) {
+        this.wizHandler(bulbIp, 'temp', parseInt(msg));
+      }
+    });
   }
 
   publishWizState(bulbIp: string, state: { on: boolean; brightness: number; r?: number; g?: number; b?: number; temp?: number }) {

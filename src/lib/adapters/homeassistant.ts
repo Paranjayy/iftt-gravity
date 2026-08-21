@@ -205,7 +205,8 @@ export class HomeAssistantAdapter extends Adapter {
 
   private handleWSMessage(msg: WSMessage) {
     if (msg.type === 'auth_required') {
-      this.wsSend({ type: 'auth', access_token: this.config.token });
+      // Auth message must NOT have an id — send directly
+      this.ws?.send(JSON.stringify({ type: 'auth', access_token: this.config.token }));
     } else if (msg.type === 'auth_ok') {
       this.connected = true;
       console.log('🏠 HA WebSocket: authenticated');
