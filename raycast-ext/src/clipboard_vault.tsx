@@ -6,9 +6,9 @@ import { promisify } from "node:util";
 import { useEffect, useMemo, useState } from "react";
 
 const execFileAsync = promisify(execFile);
-const vaultPath = "/Users/paranjay/Developer/developer/personal-wiki-vault";
-const syncScript = "/Users/paranjay/Developer/developer/iftt/raycast-ext/scripts/clipboard-vault-sync.ts";
-const backupScript = "/Users/paranjay/Developer/developer/iftt/raycast-ext/scripts/clipboard-vault-backup.sh";
+const vaultPath = "/Users/paranjay/Developer/personal-wiki-vault";
+const syncScript = "/Users/paranjay/Developer/iftt/raycast-ext/scripts/clipboard-vault-sync.ts";
+const backupScript = "/Users/paranjay/Developer/iftt/raycast-ext/scripts/clipboard-vault-backup.sh";
 
 type Transcript = { category: string; channel: string; file: string; modified: string; sourceType: "raycast-clipboard" | "raycast-legacy-export" | "social-companion-download"; title: string; url: string | null };
 type VaultStats = { generatedAt: string; sourceFileCount: number; transcriptCount: number; uniqueUrlCount: number; categoryCounts: Record<string, number>; transcripts: Transcript[] };

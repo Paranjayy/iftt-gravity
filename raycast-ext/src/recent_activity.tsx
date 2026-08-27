@@ -9,7 +9,7 @@ interface LogLine {
   line: string;
 }
 
-const REPO = "/Users/paranjay/Developer/developer/iftt";
+const REPO = "/Users/paranjay/Developer/iftt";
 const LOG_PATHS = [
   `${REPO}/house_log.md`,
   `${REPO}/gravity-archive/clips.json`,

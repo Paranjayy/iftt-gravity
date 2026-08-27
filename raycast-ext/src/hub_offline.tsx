@@ -20,7 +20,7 @@ import { getHubUrl } from "./config";
  * @param onRetry Optional callback for a "Try Again" action
  */
 export default function HubOfflineDetail({ context, onRetry }: { context?: string; onRetry?: () => void }) {
-  const LAUNCHER = "/Users/paranjay/Developer/developer/iftt/iftt-clone.sh";
+  const LAUNCHER = "/Users/paranjay/Developer/iftt/iftt-clone.sh";
 
   const heading = context ? `❌ Hub Offline — ${context}` : "❌ Hub Offline";
   const markdown = `# ${heading}
@@ -40,7 +40,7 @@ If the bot dies again right after starting, check \`/tmp/gravity-bot.log\` for t
 
 ### Manual restart
 \`\`\`bash
-cd /Users/paranjay/Developer/developer/iftt && ./iftt-clone.sh
+cd /Users/paranjay/Developer/iftt && ./iftt-clone.sh
 \`\`\`
 `;
 
@@ -74,12 +74,12 @@ cd /Users/paranjay/Developer/developer/iftt && ./iftt-clone.sh
           <Action.Open
             icon={{ source: Icon.Terminal, tintColor: Color.Blue }}
             title="Open Repo in Finder"
-            target="/Users/paranjay/Developer/developer/iftt"
+            target="/Users/paranjay/Developer/iftt"
             application="Finder"
           />
           <Action.CopyToClipboard
             title="Copy Restart Command"
-            content="cd /Users/paranjay/Developer/developer/iftt && ./iftt-clone.sh"
+            content="cd /Users/paranjay/Developer/iftt && ./iftt-clone.sh"
             shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
           />
         </ActionPanel>

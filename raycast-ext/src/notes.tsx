@@ -927,7 +927,7 @@ function EntryList({ name, onUpdate }: { name: string; onUpdate: () => void }) {
           />
           <Action.Open
             title="Open in Default Editor"
-            target={`/Users/paranjay/Developer/developer/iftt/gravity-notes/${name}`}
+            target={`/Users/paranjay/Developer/iftt/gravity-notes/${name}`}
             shortcut={{ modifiers: ["cmd", "shift"], key: "o" }}
           />
         </ActionPanel>

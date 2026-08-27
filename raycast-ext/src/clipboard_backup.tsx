@@ -4,7 +4,7 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 const CLIPBOARD_DIR = "/Users/paranjay/Library/Application Support/com.raycast.macos/clipboard";
-const BACKUP_DIR = "/Users/paranjay/Developer/developer/clipboard-backup";
+const BACKUP_DIR = "/Users/paranjay/Developer/clipboard-backup";
 
 type ClipboardEntry = {
   filename: string;
