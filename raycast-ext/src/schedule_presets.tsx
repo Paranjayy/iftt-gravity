@@ -124,7 +124,7 @@ function PresetItem({ preset }: { preset: SchedulePreset }) {
         toast.primaryAction = {
           title: "Restart Bot",
           onAction: () => {
-            void open("/Users/paranjay/Developer/iftt/iftt-clone.sh", "Terminal");
+            void open("/Users/paranjay/Developer/developer/iftt/iftt-clone.sh", "Terminal");
           },
         };
       }

@@ -54,10 +54,22 @@ declare namespace Preferences {
   export type SocialStats = ExtensionPreferences & {}
   /** Preferences accessible in the `clipboard_vault` command */
   export type ClipboardVault = ExtensionPreferences & {}
-  /** Preferences accessible in the `clipboard_text_archive` command */
-  export type ClipboardTextArchive = ExtensionPreferences & {}
-  /** Preferences accessible in the `backup_status` command */
-  export type BackupStatus = ExtensionPreferences & {}
+  /** Preferences accessible in the `png_to_jpg` command */
+  export type PngToJpg = ExtensionPreferences & {}
+  /** Preferences accessible in the `flatten` command */
+  export type Flatten = ExtensionPreferences & {}
+  /** Preferences accessible in the `dev_purge` command */
+  export type DevPurge = ExtensionPreferences & {}
+  /** Preferences accessible in the `dedup` command */
+  export type Dedup = ExtensionPreferences & {}
+  /** Preferences accessible in the `repo_backup` command */
+  export type RepoBackup = ExtensionPreferences & {}
+  /** Preferences accessible in the `desktop_week` command */
+  export type DesktopWeek = ExtensionPreferences & {}
+  /** Preferences accessible in the `screenshot_fix` command */
+  export type ScreenshotFix = ExtensionPreferences & {}
+  /** Preferences accessible in the `file_curator` command */
+  export type FileCurator = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -97,9 +109,21 @@ declare namespace Arguments {
   export type SocialStats = {}
   /** Arguments passed to the `clipboard_vault` command */
   export type ClipboardVault = {}
-  /** Arguments passed to the `clipboard_text_archive` command */
-  export type ClipboardTextArchive = {}
-  /** Arguments passed to the `backup_status` command */
-  export type BackupStatus = {}
+  /** Arguments passed to the `png_to_jpg` command */
+  export type PngToJpg = {}
+  /** Arguments passed to the `flatten` command */
+  export type Flatten = {}
+  /** Arguments passed to the `dev_purge` command */
+  export type DevPurge = {}
+  /** Arguments passed to the `dedup` command */
+  export type Dedup = {}
+  /** Arguments passed to the `repo_backup` command */
+  export type RepoBackup = {}
+  /** Arguments passed to the `desktop_week` command */
+  export type DesktopWeek = {}
+  /** Arguments passed to the `screenshot_fix` command */
+  export type ScreenshotFix = {}
+  /** Arguments passed to the `file_curator` command */
+  export type FileCurator = {}
 }
 
