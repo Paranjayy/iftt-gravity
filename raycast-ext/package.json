@@ -133,6 +133,62 @@
       "description": "Sync, search, and inspect locally curated Raycast clipboard transcripts and URLs",
       "icon": "commands/archive.png",
       "mode": "view"
+    },
+    {
+      "name": "clipboard_text_archive",
+      "title": "Clipboard Text Archive",
+      "description": "Browse, search, and copy every text clipboard capture — not just transcripts",
+      "icon": "commands/archive.png",
+      "mode": "view"
+    },
+    {
+      "name": "backup_status",
+      "title": "Backup Status",
+      "description": "Check cloud backup status, space, logs, and trigger uploads",
+      "icon": "commands/archive.png",
+      "mode": "view"
+    },
+    {
+      "name": "png_to_jpg",
+      "title": "PNG → JPG",
+      "description": "Convert PNGs to JPG in place (keeps folder structure, deletes originals only on success)",
+      "icon": "commands/convert_link.png",
+      "mode": "view"
+    },
+    {
+      "name": "flatten",
+      "title": "Flatten / Categorize",
+      "description": "Reorganize files into folders by ext, type, date, day, or week",
+      "icon": "commands/notes.png",
+      "mode": "view"
+    },
+    {
+      "name": "dev_purge",
+      "title": "Dev Purge",
+      "description": "Trash-safe cleanup of dev junk (node_modules, dist, .next, build…)",
+      "icon": "commands/archive.png",
+      "mode": "view"
+    },
+    {
+      "name": "dedup",
+      "title": "Dedupe Files",
+      "description": "Find duplicate files and trash redundant copies (one kept per set)",
+      "icon": "commands/stats.png",
+      "mode": "view"
+    },
+    {
+      "name": "gh_sync",
+      "title": "GitHub Sync",
+      "description": "Create missing GitHub repos via gh and push all branches + tags",
+      "icon": "commands/hub_pulse.png",
+      "mode": "view"
+    },
+    {
+      "name": "desktop_week",
+      "title": "Desktop Week Sort",
+      "description": "Sort top-level files into YYYY-Www week folders",
+      "icon": "commands/control.png",
+      "mode": "view"
     }
   ],
   "preferences": [

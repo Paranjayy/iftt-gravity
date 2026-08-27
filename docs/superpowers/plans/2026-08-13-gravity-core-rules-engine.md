@@ -1210,7 +1210,7 @@ import { CueLayer } from './cues';
 import { Pomodoro } from './pomodoro';
 import { estimateSceneCostPerHour, calculatePgvclBill as energyBill } from './energy';
 ```
-(Keep the existing local `calculatePgvclBill` closure at `bot.ts:1897` — do not remove it in this task; Task 9 replaces its body to delegate to the module so behavior is identical and there's one source of truth.)
+(Keep the existing local `calculatePgvclBill` closure at `bot.ts:1897`, but change its body to delegate to the module so behavior is identical and there is exactly one source of truth: replace the body with `return energyBill(units, includeFixed);`. All existing call sites keep working.)
 
 - [ ] **Step 2: Boot migration — convert legacy `config.scheduler` into `config.rules`**
 
