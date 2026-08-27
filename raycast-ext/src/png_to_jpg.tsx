@@ -1,9 +1,11 @@
-import { ActionPanel, Action, Icon, Detail, confirmAlert, showToast, Toast, useNavigation, List } from "@raycast/api";
+import { ActionPanel, Action, Icon, Detail, confirmAlert, showToast, Toast, useNavigation, List, getPreferenceValues } from "@raycast/api";
 import { useState, useEffect } from "react";
 import { listPngs, convertPngToJpg, convertMarkdown, estimatePngJpg, formatSize, FileInfo, resolveScope } from "./fileops";
 import { ScopePicker } from "./scope-picker";
 import { useSelection, selAccessory } from "./selector";
 import { LiveProgress } from "./live-progress";
+
+const prefs = getPreferenceValues<{ pngToJpgQuality: string; pngToJpgKeepOriginals: boolean }>();
 
 function ConvertView({ root }: { root: string }) {
   const [pngs, setPngs] = useState<FileInfo[]>([]);
@@ -12,8 +14,8 @@ function ConvertView({ root }: { root: string }) {
   const [estProgress, setEstProgress] = useState({ done: 0, total: 0 });
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [quality, setQuality] = useState("80");
-  const [keep, setKeep] = useState("delete");
+  const [quality, setQuality] = useState(prefs.pngToJpgQuality || "80");
+  const [keep, setKeep] = useState(prefs.pngToJpgKeepOriginals ? "keep" : "delete");
   const { selected, toggle, count } = useSelection();
   const { push } = useNavigation();
 
@@ -93,7 +95,7 @@ function ConvertView({ root }: { root: string }) {
           `Estimated JPG size: **~${formatSize(totalPngBytes() - estSaved())}**`,
           `Estimated savings: **~${formatSize(estSaved())}** (~${Math.round((estSaved() / Math.max(1, totalPngBytes())) * 100)}%)`,
           ``,
-          keepOriginals ? "✅ Originals KEPT (you get both PNG + JPG)." : "🗑 Originals deleted only on success; errors keep their PNG.",
+          keepOriginals ? "✅ Originals KEPT (you get both PNG + JPG)." : "🗑 Originals TRASHED (recoverable from ~/.Trash) on success; errors keep their PNG.",
           ``,
           `⚡ ETA: ~${Math.round(list.length * 0.15)}s (estimate)`,
         ].join("\n"),

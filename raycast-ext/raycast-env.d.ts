@@ -11,7 +11,13 @@ type ExtensionPreferences = {
   /** SmartThings PAT - Personal access token for SmartThings linking */
   "smartThingsPat"?: string,
   /** SmartThings Location ID - Optional location ID UUID for SmartThings */
-  "smartThingsLocationId"?: string
+  "smartThingsLocationId"?: string,
+  /** PNG → JPG Default Quality - Default JPG quality (40-90). Lower = smaller files. */
+  "pngToJpgQuality": string,
+  /** PNG → JPG Keep Originals - Keep original PNGs after conversion (both files kept). Uncheck to trash PNGs. */
+  "pngToJpgKeepOriginals": boolean,
+  /** Dev Purge Default Scope - Default folder to scan for dev junk (node_modules, dist, etc.) */
+  "devPurgeScope": string
 }
 
 /** Preferences accessible in all the extension's commands */

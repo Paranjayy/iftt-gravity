@@ -212,6 +212,30 @@
       "description": "Optional location ID UUID for SmartThings",
       "type": "textfield",
       "required": false
+    },
+    {
+      "name": "pngToJpgQuality",
+      "title": "PNG → JPG Default Quality",
+      "description": "Default JPG quality (40-90). Lower = smaller files.",
+      "type": "textfield",
+      "default": "80",
+      "required": false
+    },
+    {
+      "name": "pngToJpgKeepOriginals",
+      "title": "PNG → JPG Keep Originals",
+      "description": "Keep original PNGs after conversion (both files kept). Uncheck to trash PNGs.",
+      "type": "checkbox",
+      "default": false,
+      "required": false
+    },
+    {
+      "name": "devPurgeScope",
+      "title": "Dev Purge Default Scope",
+      "description": "Default folder to scan for dev junk (node_modules, dist, etc.)",
+      "type": "textfield",
+      "default": "~/Developer",
+      "required": false
     }
   ],
   "dependencies": {

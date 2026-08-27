@@ -133,7 +133,7 @@ export async function convertPngToJpg(
       if (keep) {
         report.savedBytes += 0;
       } else {
-        await fs.promises.rm(png);
+        await trashPath(png);
         report.savedBytes += pngStat ? pngStat.size - jpgStat.size : 0;
       }
     } catch (err) {
