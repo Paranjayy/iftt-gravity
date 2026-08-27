@@ -6,6 +6,7 @@ import Dedup from "./dedup";
 import RepoBackup from "./repo_backup";
 import ScreenshotFix from "./screenshot_fix";
 import DesktopWeek from "./desktop_week";
+import ClipboardBackup from "./clipboard_backup";
 
 const TOOLS: { title: string; subtitle: string; icon: any; C: () => JSX.Element }[] = [
   { title: "PNG → JPG", subtitle: "Shrink screenshots & images, keep folder structure", icon: Icon.Image, C: PngToJpg },
@@ -15,6 +16,7 @@ const TOOLS: { title: string; subtitle: string; icon: any; C: () => JSX.Element 
   { title: "Repo Backup", subtitle: "Back up every local git repo to GitHub", icon: Icon.Cloud, C: RepoBackup },
   { title: "Desktop Week Sort", subtitle: "Sort Desktop files into YYYY-Www folders", icon: Icon.Calendar, C: DesktopWeek },
   { title: "Screenshot Fixer", subtitle: "JPG captures, no shadows, shrink PNGs", icon: Icon.Wand, C: ScreenshotFix },
+  { title: "Clipboard Backup", subtitle: "Export clipboard history as text with sequence & paths", icon: Icon.SaveDocument, C: ClipboardBackup },
 ];
 
 export default function Command() {

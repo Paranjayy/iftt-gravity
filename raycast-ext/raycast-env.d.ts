@@ -70,6 +70,8 @@ declare namespace Preferences {
   export type ScreenshotFix = ExtensionPreferences & {}
   /** Preferences accessible in the `file_curator` command */
   export type FileCurator = ExtensionPreferences & {}
+  /** Preferences accessible in the `clipboard_backup` command */
+  export type ClipboardBackup = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -125,5 +127,7 @@ declare namespace Arguments {
   export type ScreenshotFix = {}
   /** Arguments passed to the `file_curator` command */
   export type FileCurator = {}
+  /** Arguments passed to the `clipboard_backup` command */
+  export type ClipboardBackup = {}
 }
 

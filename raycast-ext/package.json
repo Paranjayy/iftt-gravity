@@ -189,6 +189,13 @@
       "description": "Hub for all file tools: convert, flatten, purge, dedupe, backup, sort screenshots",
       "icon": "commands/stats.png",
       "mode": "view"
+    },
+    {
+      "name": "clipboard_backup",
+      "title": "Clipboard Backup",
+      "description": "Export Raycast clipboard history (text with sequence, image/file paths) to local markdown",
+      "icon": "commands/archive.png",
+      "mode": "view"
     }
   ],
   "preferences": [
