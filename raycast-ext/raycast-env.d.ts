@@ -78,6 +78,8 @@ declare namespace Preferences {
   export type FileCurator = ExtensionPreferences & {}
   /** Preferences accessible in the `clipboard_backup` command */
   export type ClipboardBackup = ExtensionPreferences & {}
+  /** Preferences accessible in the `organize_repos` command */
+  export type OrganizeRepos = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -135,5 +137,7 @@ declare namespace Arguments {
   export type FileCurator = {}
   /** Arguments passed to the `clipboard_backup` command */
   export type ClipboardBackup = {}
+  /** Arguments passed to the `organize_repos` command */
+  export type OrganizeRepos = {}
 }
 

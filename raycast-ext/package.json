@@ -196,6 +196,13 @@
       "description": "Export Raycast clipboard history (text with sequence, image/file paths) to local markdown",
       "icon": "commands/archive.png",
       "mode": "view"
+    },
+    {
+      "name": "organize_repos",
+      "title": "Organize Repos",
+      "description": "Scan ~/Developer, categorize repos by GitHub/activity, move to _active/_learning/_clients/_archive",
+      "icon": "commands/control.png",
+      "mode": "view"
     }
   ],
   "preferences": [
