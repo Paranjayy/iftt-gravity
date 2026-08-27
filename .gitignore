@@ -38,3 +38,8 @@ gravity-archive/
 
 # Per-extension secrets (WiZ link keys, etc.) — never commit
 raycast-ext/.secrets/
+
+# Clipboard vault (private, not pushed)
+raycast-ext/scripts/clipboard-vault-sync.ts
+raycast-ext/scripts/clipboard-vault-schedule.sh
+raycast-ext/scripts/clipboard-vault-backup.sh
