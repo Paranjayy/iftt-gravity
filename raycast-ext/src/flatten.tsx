@@ -1,7 +1,9 @@
 import { ActionPanel, Action, Icon, Detail, confirmAlert, showToast, Toast, useNavigation, List } from "@raycast/api";
-import { useState } from "react";
-import { flattenDir, flattenMarkdown, FlattenBy, resolveScope } from "./fileops";
+import { useState, useEffect } from "react";
+import { planFlatten, flattenDir, flattenMarkdown, formatSize, FlattenBy, resolveScope } from "./fileops";
 import { ScopePicker } from "./scope-picker";
+import { useSelection, selAccessory } from "./selector";
+import { LiveProgress } from "./live-progress";
 
 const MODES: { value: FlattenBy; title: string; hint: string }[] = [
   { value: "ext", title: "By Extension", hint: "*.png, *.pdf, *.zip…" },
@@ -13,25 +15,46 @@ const MODES: { value: FlattenBy; title: string; hint: string }[] = [
 
 function FlattenView({ root }: { root: string }) {
   const [by, setBy] = useState<FlattenBy>("type");
+  const [plan, setPlan] = useState<{ file: string; target: string }[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { selected, toggle, count } = useSelection();
   const { push } = useNavigation();
 
-  async function run() {
+  useEffect(() => {
+    setLoaded(false);
+    planFlatten(root, by, true).then((r) => {
+      setPlan(r);
+      setLoaded(true);
+    });
+  }, [root, by]);
+
+  const targets = () => (count > 0 ? plan.filter((p) => selected.has(p.file)) : plan);
+
+  async function apply() {
+    const list = targets();
+    if (list.length === 0) return;
     if (
       !(await confirmAlert({
-        title: `Flatten by ${by}?`,
-        message: `${root}\nFiles are moved into category folders (recursive). Nothing is deleted.`,
+        title: `Flatten ${list.length} file${list.length > 1 ? "s" : ""} by ${by}?`,
+        message: `${root}\nMoved into category folders (recursive). Nothing deleted.`,
         primaryAction: { title: "Flatten" },
       }))
     )
       return;
     setBusy(true);
     try {
-      const report = await flattenDir(root, by, { recursive: true });
-      showToast({ title: `Moved ${report.moved.length} files`, style: Toast.Style.Success });
-      push(<Detail markdown={flattenMarkdown(by, report)} />);
-    } catch (e) {
-      showToast({ title: "Failed", style: Toast.Style.Failure, message: (e as Error).message });
+      push(
+        <LiveProgress
+          title={`Flattening by ${by}`}
+          icon="📂"
+          task={async (onP) => {
+            const r = await flattenDir(root, by, { files: list.map((p) => p.file), onProgress: onP });
+            showToast({ title: `Moved ${r.moved.length}`, style: Toast.Style.Success });
+            return flattenMarkdown(by, r);
+          }}
+        />
+      );
     } finally {
       setBusy(false);
     }
@@ -39,7 +62,7 @@ function FlattenView({ root }: { root: string }) {
 
   return (
     <List
-      isLoading={busy}
+      isLoading={!loaded || busy}
       searchBarAccessory={
         <List.Dropdown tooltip="Categorize by" value={by} onChange={(v) => setBy(v as FlattenBy)} storeValue>
           {MODES.map((m) => (
@@ -49,16 +72,28 @@ function FlattenView({ root }: { root: string }) {
       }
     >
       <List.Item
-        title="Flatten / Categorize Files"
-        subtitle={root}
+        title={count > 0 ? `▶ Flatten ${count} selected` : `▶ Flatten all ${plan.length}`}
         icon={Icon.Folder}
-        accessories={[{ text: MODES.find((m) => m.value === by)?.hint ?? "" }]}
-        actions={
-          <ActionPanel>
-            <Action title={`Flatten by ${by}`} icon={Icon.Folder} onAction={run} />
-          </ActionPanel>
-        }
+        actions={<ActionPanel><Action title={`Flatten by ${by}`} icon={Icon.Folder} onAction={apply} /></ActionPanel>}
       />
+      {plan.map((p) => (
+        <List.Item
+          key={p.file}
+          title={p.target.replace(root, ".").replace(/^\//, "")}
+          subtitle={p.file.replace(root, ".")}
+          icon={Icon.Dot}
+          accessories={[selAccessory(selected.has(p.file))]}
+          actions={
+            <ActionPanel>
+              <Action
+                title={selected.has(p.file) ? "Deselect" : "Select"}
+                icon={Icon.Checkmark}
+                onAction={() => toggle(p.file)}
+              />
+            </ActionPanel>
+          }
+        />
+      ))}
     </List>
   );
 }

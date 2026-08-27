@@ -1,4 +1,5 @@
 import { ActionPanel, Action, Icon, Detail, confirmAlert, showToast, Toast, useNavigation, List } from "@raycast/api";
+import { useState } from "react";
 import { resolveScope, flattenDir, flattenMarkdown } from "./fileops";
 import { ScopePicker } from "./scope-picker";
 

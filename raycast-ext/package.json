@@ -135,20 +135,6 @@
       "mode": "view"
     },
     {
-      "name": "clipboard_text_archive",
-      "title": "Clipboard Text Archive",
-      "description": "Browse, search, and copy every text clipboard capture — not just transcripts",
-      "icon": "commands/archive.png",
-      "mode": "view"
-    },
-    {
-      "name": "backup_status",
-      "title": "Backup Status",
-      "description": "Check cloud backup status, space, logs, and trigger uploads",
-      "icon": "commands/archive.png",
-      "mode": "view"
-    },
-    {
       "name": "png_to_jpg",
       "title": "PNG → JPG",
       "description": "Convert PNGs to JPG in place (keeps folder structure, deletes originals only on success)",
@@ -177,9 +163,9 @@
       "mode": "view"
     },
     {
-      "name": "gh_sync",
-      "title": "GitHub Sync",
-      "description": "Create missing GitHub repos via gh and push all branches + tags",
+      "name": "repo_backup",
+      "title": "Repo Backup",
+      "description": "Find every local git repo, capture uncommitted/unpushed state, and back up to (private) GitHub",
       "icon": "commands/hub_pulse.png",
       "mode": "view"
     },
@@ -188,6 +174,20 @@
       "title": "Desktop Week Sort",
       "description": "Sort top-level files into YYYY-Www week folders",
       "icon": "commands/control.png",
+      "mode": "view"
+    },
+    {
+      "name": "screenshot_fix",
+      "title": "Screenshot Fixer",
+      "description": "Switch macOS captures to JPG, drop window shadows, shrink existing Desktop PNGs",
+      "icon": "commands/convert_link.png",
+      "mode": "view"
+    },
+    {
+      "name": "file_curator",
+      "title": "File Curator",
+      "description": "Hub for all file tools: convert, flatten, purge, dedupe, backup, sort screenshots",
+      "icon": "commands/stats.png",
       "mode": "view"
     }
   ],
