@@ -8,6 +8,15 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const HOME = process.env.HOME || "/Users/paranjay";
 const DEVELOPER_DIR = path.join(HOME, "Developer");
+const OUTSIDE_DIRS = [
+  path.join(HOME, "Desktop"),
+  path.join(HOME, "Documents"),
+  path.join(HOME, "Downloads"),
+  path.join(HOME, "Projects"),
+  path.join(HOME, "Code"),
+  path.join(HOME, "repos"),
+  path.join(HOME, "work"),
+];
 
 type RepoInfo = {
   name: string;
@@ -18,6 +27,7 @@ type RepoInfo = {
   isOnGitHub: boolean;
   lastCommitDate: Date | null;
   detectedType: string;
+  isOutside: boolean;
 };
 
 const TYPE_DIRS: Record<string, string> = {
@@ -89,9 +99,10 @@ function typeColor(t: string): Color {
   return colors[t] || Color.SecondaryText;
 }
 
-async function scanDir(dir: string, depth = 0): Promise<RepoInfo[]> {
+async function scanDir(dir: string, depth = 0, baseDir = DEVELOPER_DIR): Promise<RepoInfo[]> {
   if (depth > 2) return [];
   const repos: RepoInfo[] = [];
+  const isOutside = !dir.startsWith(DEVELOPER_DIR);
 
   try {
     const entries = await readdir(dir, { withFileTypes: true });
@@ -126,9 +137,10 @@ async function scanDir(dir: string, depth = 0): Promise<RepoInfo[]> {
           isOnGitHub: remoteUrl?.includes("github.com") ?? false,
           lastCommitDate,
           detectedType,
+          isOutside,
         });
       } else {
-        repos.push(...await scanDir(repoPath, depth + 1));
+        repos.push(...await scanDir(repoPath, depth + 1, baseDir));
       }
     }
   } catch {}
@@ -178,10 +190,15 @@ function OrganizeView() {
   const { push } = useNavigation();
 
   useEffect(() => {
-    scanDir(DEVELOPER_DIR).then((r) => {
-      setRepos(r);
+    (async () => {
+      const inside = await scanDir(DEVELOPER_DIR);
+      const outside: RepoInfo[] = [];
+      for (const dir of OUTSIDE_DIRS) {
+        outside.push(...await scanDir(dir));
+      }
+      setRepos([...inside, ...outside]);
       setLoaded(true);
-    });
+    })();
   }, []);
 
   const grouped = repos.reduce<Record<string, RepoInfo[]>>((acc, r) => {
@@ -302,6 +319,67 @@ function OrganizeView() {
           }
         />
       </List.Section>
+      {repos.filter((r) => r.isOutside).length > 0 && (
+        <List.Section title={`Outside ~/Developer (${repos.filter((r) => r.isOutside).length})`}>
+          <List.Item
+            title="▶ Bring all outside repos to Developer"
+            subtitle={`${repos.filter((r) => r.isOutside).length} repos scattered outside ~/Developer/`}
+            icon={Icon.ArrowRight}
+            actions={
+              <ActionPanel>
+                <Action
+                  title="Bring all outside repos"
+                  icon={Icon.ArrowRight}
+                  onAction={async () => {
+                    const outside = repos.filter((r) => r.isOutside);
+                    if (
+                      !(await confirmAlert({
+                        title: `Bring ${outside.length} repos to ~/Developer/?`,
+                        message: outside.map((r) => `• ${r.name} (${r.path})`).join("\n"),
+                        primaryAction: { title: "Bring All" },
+                      }))
+                    )
+                      return;
+                    let moved = 0;
+                    for (const repo of outside) {
+                      const dest = TYPE_DIRS[repo.detectedType] || path.join(DEVELOPER_DIR, repo.detectedType);
+                      await mkdir(dest, { recursive: true });
+                      try {
+                        await rename(repo.path, path.join(dest, repo.name));
+                        moved++;
+                      } catch {}
+                    }
+                    showToast({ title: `Brought ${moved}/${outside.length} repos`, style: Toast.Style.Success });
+                    (async () => {
+                      const inside = await scanDir(DEVELOPER_DIR);
+                      const outsideAfter: RepoInfo[] = [];
+                      for (const dir of OUTSIDE_DIRS) outsideAfter.push(...await scanDir(dir));
+                      setRepos([...inside, ...outsideAfter]);
+                    })();
+                  }}
+                />
+              </ActionPanel>
+            }
+          />
+          {repos.filter((r) => r.isOutside).map((repo) => (
+            <List.Item
+              key={repo.path}
+              title={repo.name}
+              subtitle={repo.path}
+              icon={{ source: Icon.Folder, tintColor: Color.Yellow }}
+              accessories={[
+                { text: repo.detectedType, color: typeColor(repo.detectedType) },
+                { text: "outside", color: Color.Yellow },
+              ]}
+              actions={
+                <ActionPanel>
+                  <Action title="Bring to Developer" icon={Icon.ArrowRight} onAction={() => moveRepos(repo.detectedType, [repo])} />
+                </ActionPanel>
+              }
+            />
+          ))}
+        </List.Section>
+      )}
       {groupCounts.map(([cat, list]) => (
         <List.Section key={cat} title={`${cat} (${list.length})`}>
           {list.map((repo) => {
@@ -319,6 +397,9 @@ function OrganizeView() {
                 ]}
                 actions={
                   <ActionPanel>
+                    {repo.isOutside && (
+                      <Action title="Bring to Developer" icon={Icon.ArrowRight} onAction={() => moveRepos(repo.detectedType, [repo])} />
+                    )}
                     {Object.keys(view === "type" ? TYPE_DIRS : STATUS_DIRS).filter((c) => c !== cat).map((c) => (
                       <Action key={c} title={`Move to ${c}`} icon={Icon.Folder} onAction={() => moveRepos(c, [repo])} />
                     ))}
