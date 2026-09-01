@@ -1,6 +1,6 @@
 import { ActionPanel, Action, Icon, Detail, confirmAlert, showToast, Toast, useNavigation, List, Color } from "@raycast/api";
 import { useState, useEffect } from "react";
-import { readdir, stat, rename, mkdir } from "node:fs/promises";
+import { readdir, stat, rename, mkdir, appendFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const HOME = process.env.HOME || "/Users/paranjay";
 const DEVELOPER_DIR = path.join(HOME, "Developer");
+const MOVE_LOG = path.join(DEVELOPER_DIR, "iftt/raycast-ext/ORGANIZE_LOG.md");
 const OUTSIDE_DIRS = [
   path.join(HOME, "Desktop"),
   path.join(HOME, "Documents"),
@@ -50,6 +51,20 @@ const TYPE_DIRS: Record<string, string> = {
   archive: path.join(DEVELOPER_DIR, "_archive"),
   other: path.join(DEVELOPER_DIR, "other"),
 };
+
+async function logMove(name: string, from: string, to: string) {
+  const timestamp = new Date().toISOString().slice(0, 19);
+  const entry = `| ${timestamp} | ${name} | \`${from}\` | \`${to}\` |`;
+  try {
+    let content = "";
+    try {
+      content = await readFile(MOVE_LOG, "utf8");
+    } catch {
+      content = "# Organize Log\n\n| Time | Repo | From | To |\n|------|------|------|----|\n";
+    }
+    await appendFile(MOVE_LOG, entry + "\n");
+  } catch {}
+}
 
 function detectType(name: string, files: string[]): string {
   const lower = name.toLowerCase();
@@ -230,6 +245,7 @@ function OrganizeView() {
     for (const repo of toMove) {
       try {
         await rename(repo.path, path.join(dest, repo.name));
+        await logMove(repo.name, repo.path, path.join(dest, repo.name));
         moved++;
       } catch (err) {
         showToast({ title: `Failed: ${repo.name}`, message: (err as Error).message, style: Toast.Style.Failure });
