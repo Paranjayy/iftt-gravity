@@ -55,6 +55,12 @@ describe("calendar grains", () => {
     expect(calendarRelPath(d, "verbose")).toBe("2026/09-september/wednesday/09");
   });
 
+  test("ymsepwd uses Title-case short month", () => {
+    const week = isoWeekKey(d).split("-")[1];
+    expect(calendarRelPath(d, "ymsepwd")).toBe(`2026/09-Sep/${week}/09`);
+    expect(calendarRelPath(new Date(2026, 8, 12), "ymsepwd")).toBe("2026/09-Sep/W37/12");
+  });
+
   test("day is a flat ISO date", () => {
     expect(calendarRelPath(d, "day")).toBe("2026-09-09");
   });

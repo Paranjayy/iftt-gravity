@@ -135,15 +135,30 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
-### Round 14: `ymsepwd` grain — 2026/09-sep/W37/12 (v1.4.0)
+### Round 14: `ymsepwd` grain — 2026/09-Sep/W37/12 (v1.4.0)
 - **NEW grain `ymsepwd`** in `desktop-organize.calendarRelPath`:
-  `YYYY/MM-mon/Www/DD` (e.g. Sep 12 2026 → `2026/09-sep/W37/12`)
+  `YYYY/MM-Mon/Www/DD` (e.g. Sep 12 2026 → `2026/09-Sep/W37/12`,
+  Title-case short month)
 - **Curate Desktop**: new dropdown entry first + new default
-  (`Year / Month-sep / Week / Day`). Old grains unchanged.
+  (`Year / Month-Sep / Week / Day`). Old grains unchanged.
 - Note: Sep 12 2026 is ISO **W37**, not W36 — week part comes from
   `isoWeekKey()`, same source as `ymwd`/`ymw`.
 - Etiquette: `bun test organize-desktop` + `bun run build` in
   `raycast-ext/` before commit; version bumped 1.3.0 → 1.4.0.
+
+### Round 15: Title-case Sep, reshape logs, bulb timer presets (v1.5.0)
+- **Fix**: `ymsepwd` month short is Title-case (`09-Sep`, not `09-sep`).
+- **Reshape**: screenshot-names-only (non-screenshots counted as skipped,
+  left in place); appends one general-stats line
+  (`Reshape library (grain): N moved, M skipped`) to `OPERATIONS_LOG.md`.
+  Sweep already logged general stats; both never log per-file paths.
+  Desktop sweep stays top-level-only, never descends into subfolders.
+- **Bulb**: one-tap off-timer presets (15m / 30m / 1h / clear) via existing
+  `/control/bulb/timer`, mirroring AC presets. Purely additive, no
+  existing behavior changed.
+- **Docs**: surface etiquette written into `AGENTS.md` + `DESIGN.md`
+  (version bump + changelog + build touched surface + test + commit only
+  intended files).
 
 ### Round 1-3: Foundation
 - 14-command structure

@@ -38,3 +38,19 @@ bun test src/__test__/organize-desktop.spec.ts
 ```
 
 Then `bun run build` in `raycast-ext` before asking the human to use a new command.
+
+## Surface etiquette (every change)
+
+- Version: bump `raycast-ext/package.json` (feat = minor, fix = patch).
+- Changelog: add a Round entry at top of `raycast-ext/CHANGELOG.md` under "What's been built".
+- Build the surface you touched: `bun run build` in `raycast-ext` for any ext change.
+- Test: `bun test src/__test__/organize-desktop.spec.ts` for file-tool changes.
+- Commit + push only intended files. Never commit `config.json`, tokens,
+  `house_log.md`, `gravity-archive/`, `OPERATIONS_LOG.md`, `desktop_undo_history.json`,
+  `next-env.d.ts`.
+- Logs are general stats only (moved / skipped / failed counts). Never log full
+  from→to paths. Sweep logs `Desktop organize (grain)`, reshape logs
+  `Reshape library (grain)` to `OPERATIONS_LOG.md`.
+- Top-level Desktop files only. Never descend into Desktop subfolders.
+  Screenshot names only (`Screenshot`, `Screen Shot`, `scr_`, `SCR-`).
+  Everything else: leave + warn, don't relocate.

@@ -65,6 +65,11 @@ function titleMonth(i: number): string {
   return n.charAt(0).toUpperCase() + n.slice(1);
 }
 
+function shortTitleMonth(i: number): string {
+  const n = MONTHS[i];
+  return n.charAt(0).toUpperCase() + n.slice(1, 3);
+}
+
 export function calendarRelPath(date: Date, grain: CalendarGrain): string {
   const year = String(date.getFullYear());
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -84,7 +89,7 @@ export function calendarRelPath(date: Date, grain: CalendarGrain): string {
     case "ymwd":
       return `${year}/${month}/${weekPart}/${day}`;
     case "ymsepwd":
-      return `${year}/${month}-${monthName.slice(0, 3)}/${weekPart}/${day}`;
+      return `${year}/${month}-${shortTitleMonth(date.getMonth())}/${weekPart}/${day}`;
     case "named":
       return `${year}/${month}-${titleMonth(date.getMonth())}/${weekday}/${day}`;
     case "verbose":
@@ -388,17 +393,20 @@ async function pruneEmptyDirs(root: string): Promise<void> {
   await walk(root);
 }
 
-/** Re-bucket files already inside Organised Screenshots. Does not touch the live Desktop. */
+/** Re-bucket screenshots already inside Organised Screenshots. Does not touch the live Desktop. */
 export async function reshapeOrganisedScreenshots(
   libraryRoot: string,
   grain: CalendarGrain,
   opts: { skipLog?: boolean; onProgress?: (done: number, total: number, name: string) => void } = {},
-): Promise<OrganizeReport> {
+): Promise<OrganizeReport & { skipped: number }> {
   await fs.promises.mkdir(libraryRoot, { recursive: true });
-  const report: OrganizeReport = { moved: [], failed: [] };
+  const report: OrganizeReport & { skipped: number } = { moved: [], failed: [], skipped: 0 };
   const files = await collectFilesRecursive(libraryRoot);
+  // Screenshot names only — never relocate other drops; just count them as skipped.
+  const shots = files.filter((f) => isScreenshotName(path.basename(f)));
+  report.skipped = files.length - shots.length;
   let done = 0;
-  for (const file of files) {
+  for (const file of shots) {
     const name = path.basename(file);
     try {
       const destDir = path.join(libraryRoot, calendarRelPath(fileDate(file, name), grain));
@@ -412,19 +420,29 @@ export async function reshapeOrganisedScreenshots(
       report.failed.push({ file, reason: (err as Error).message.slice(0, 120) });
     }
     done++;
-    if (done === 1 || done === files.length || done % DESKTOP_MOVE_BATCH === 0) {
-      opts.onProgress?.(done, files.length, name);
+    if (done === 1 || done === shots.length || done % DESKTOP_MOVE_BATCH === 0) {
+      opts.onProgress?.(done, shots.length, name);
     }
   }
   await pruneEmptyDirs(libraryRoot);
+  if (!opts.skipLog && (report.moved.length > 0 || report.skipped > 0)) {
+    try {
+      const line = `- **[${new Date().toISOString().replace("T", " ").slice(0, 19)}]** Reshape library (${grain}): **${report.moved.length}** moved, **${report.skipped}** skipped (non-screenshots left in place)\n`;
+      await fs.promises.appendFile(LOG_PATH, line);
+    } catch {
+      /* ignore */
+    }
+  }
   return report;
 }
 
-export function organizeMarkdown(grain: CalendarGrain, r: OrganizeReport): string {
+export function organizeMarkdown(grain: CalendarGrain, r: OrganizeReport & { skipped?: number }): string {
+  const skipped = r.skipped ?? 0;
   return [
     `# Desktop organize (${grain})`,
     "",
     `- Moved: **${r.moved.length}**`,
+    skipped > 0 ? `- Skipped: **${skipped}** (non-screenshots left in place)` : "",
     `- Failed: **${r.failed.length}**`,
     r.failed.length > 0 ? "\n## Failures\n" + r.failed.map((f) => `- \`${f.file}\`: ${f.reason}`).join("\n") : "",
   ]

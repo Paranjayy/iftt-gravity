@@ -25,6 +25,20 @@ Moves are sequential and chunked (32) so a 7k sweep cannot look like a parallel 
 
 A PDF, zip, or app drop on the Desktop is a decision, not a bug. We warn; we do not file it into `Organised Folders`. The warning markdown is the log. Agents must not “helpfully” relocate it.
 
+## Grains
+
+Default is `ymsepwd`: `2026/09-Sep/W37/12` (year / month-Short / week / day).
+Week part always comes from `isoWeekKey()`. Reshape re-buckets old week
+folders into the new grain — that's why dormant months (e.g. March) can
+"pop off" into view. No data loss, just refiling.
+
+## Logging
+
+Sweep and reshape both append one general-stats line to `OPERATIONS_LOG.md`:
+moved / skipped / failed counts only, no per-file paths. The on-screen
+`organizeMarkdown` shows the same counts. Reshape skips non-screenshots
+(counted, left in place).
+
 ## Later
 
 An Eagle-style library (thumbs on disk, catalog DB, tags) lives **off** the Desktop. This tool only keeps the Desktop breathable.
