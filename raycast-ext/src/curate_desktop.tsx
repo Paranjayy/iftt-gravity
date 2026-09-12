@@ -3,23 +3,27 @@ import { useState } from "react";
 import type { CalendarGrain } from "./desktop-organize";
 
 const GRAINS: { value: CalendarGrain; title: string; hint: string }[] = [
+  { value: "ymwd", title: "Year / Month / Week / Day", hint: "2026/09/W37/12" },
+  { value: "ymw", title: "Year / Month / Week", hint: "2026/09/W37" },
   { value: "ymd", title: "Year / Month / Day", hint: "2026/09/12" },
+  { value: "named", title: "Named weekday", hint: "2026/09-September/Saturday/12" },
+  { value: "verbose", title: "Verbose labels", hint: "year(2026)/month(09-september)/weekday(Saturday)/day(12)" },
+  { value: "week", title: "ISO Week (Clean & Group)", hint: "2026-W37" },
   { value: "month", title: "Year / Month", hint: "2026/09" },
-  { value: "week", title: "ISO Week", hint: "2026-W37" },
-  { value: "day", title: "Day", hint: "2026-09-12" },
+  { value: "day", title: "Flat day", hint: "2026-09-12" },
 ];
 
 export default function Command() {
-  const [grain, setGrain] = useState<CalendarGrain>("ymd");
+  const [grain, setGrain] = useState<CalendarGrain>("ymwd");
   const { push } = useNavigation();
   const selected = GRAINS.find((g) => g.value === grain)!;
 
-  async function run() {
+  async function sweepDesktop() {
     if (
       !(await confirmAlert({
-        title: `Curate Desktop by ${selected.title}?`,
-        message: `Screenshots only → Organised Screenshots/${selected.hint}/. Other files stay. Warning MD if strays.`,
-        primaryAction: { title: "Curate" },
+        title: `Sweep Desktop → ${selected.title}?`,
+        message: `Loose screenshots → Organised Screenshots/${selected.hint}/. Creates that folder if needed. Other Desktop files stay.`,
+        primaryAction: { title: "Sweep" },
       }))
     )
       return;
@@ -31,7 +35,7 @@ export default function Command() {
 
     push(
       <LiveProgress
-        title={`Curating by ${selected.title}`}
+        title={`Sweeping → ${selected.hint}`}
         icon="🗂️"
         task={async (onP) => {
           const r = await guardDesktop(DESKTOP, {
@@ -40,11 +44,9 @@ export default function Command() {
             force: true,
             onProgress: onP,
           });
-          const moved = r.swept?.moved.length ?? 0;
-          const failed = r.swept?.failed.length ?? 0;
           showToast({
-            title: `Moved ${moved} screenshots`,
-            style: failed ? Toast.Style.Failure : Toast.Style.Success,
+            title: `Moved ${r.swept?.moved.length ?? 0} from Desktop`,
+            style: Toast.Style.Success,
             message: r.strays.length ? `${r.strays.length} strays left (warning MD)` : undefined,
           });
           return organizeMarkdown(grain, r.swept ?? { moved: [], failed: [] });
@@ -53,20 +55,39 @@ export default function Command() {
     );
   }
 
-  async function undo() {
-    const { undoDesktopOrganize } = await import("./desktop-organize");
-    const data = await undoDesktopOrganize();
-    if (data.count > 0) {
-      showToast({ title: `Restored ${data.count} files`, style: Toast.Style.Success });
-    } else {
-      showToast({ title: "Nothing to undo", style: Toast.Style.Failure });
-    }
+  async function reshapeLibrary() {
+    if (
+      !(await confirmAlert({
+        title: `Reshape library → ${selected.title}?`,
+        message: `Re-folders files already in Organised Screenshots into ${selected.hint}. No undo of Desktop. Empty old buckets are removed.`,
+        primaryAction: { title: "Reshape" },
+      }))
+    )
+      return;
+
+    const [{ reshapeOrganisedScreenshots, organizeMarkdown, DESKTOP }, { LiveProgress }] = await Promise.all([
+      import("./desktop-organize"),
+      import("./live-progress"),
+    ]);
+    const library = `${DESKTOP}/Organised Screenshots`;
+
+    push(
+      <LiveProgress
+        title={`Reshaping → ${selected.hint}`}
+        icon="📁"
+        task={async (onP) => {
+          const r = await reshapeOrganisedScreenshots(library, grain, { onProgress: onP });
+          showToast({ title: `Reshaped ${r.moved.length} files`, style: Toast.Style.Success });
+          return organizeMarkdown(grain, r);
+        }}
+      />,
+    );
   }
 
   return (
     <List
       searchBarAccessory={
-        <List.Dropdown tooltip="Calendar grain" value={grain} onChange={(v) => setGrain(v as CalendarGrain)} storeValue>
+        <List.Dropdown tooltip="Folder layout" value={grain} onChange={(v) => setGrain(v as CalendarGrain)} storeValue>
           {GRAINS.map((g) => (
             <List.Dropdown.Item key={g.value} title={`${g.title}  (${g.hint})`} value={g.value} />
           ))}
@@ -74,13 +95,24 @@ export default function Command() {
       }
     >
       <List.Item
-        title={`Curate Desktop → ${selected.hint}`}
-        subtitle="Screenshots only · first paint is empty of Desktop I/O"
-        icon={Icon.Calendar}
+        title={`Sweep Desktop → ${selected.hint}`}
+        subtitle="Loose screenshots only · creates Organised Screenshots"
+        icon={Icon.Desktop}
         actions={
           <ActionPanel>
-            <Action title="Curate Now" icon={Icon.Checkmark} onAction={run} />
-            <Action title="Undo Last Curate" icon={Icon.RotateAntiClockwise} onAction={undo} />
+            <Action title="Sweep Desktop" icon={Icon.Checkmark} onAction={sweepDesktop} />
+            <Action title="Reshape Library" icon={Icon.Folder} onAction={reshapeLibrary} />
+          </ActionPanel>
+        }
+      />
+      <List.Item
+        title={`Reshape library → ${selected.hint}`}
+        subtitle="Already-organised shots, in place — no Desktop undo"
+        icon={Icon.Switch}
+        actions={
+          <ActionPanel>
+            <Action title="Reshape Library" icon={Icon.Folder} onAction={reshapeLibrary} />
+            <Action title="Sweep Desktop" icon={Icon.Desktop} onAction={sweepDesktop} />
           </ActionPanel>
         }
       />

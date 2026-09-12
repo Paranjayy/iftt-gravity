@@ -353,6 +353,7 @@ export {
   organizeDesktop,
   guardDesktop,
   undoDesktopOrganize,
+  reshapeOrganisedScreenshots,
   organizeMarkdown,
 } from "./desktop-organize";
 

@@ -39,8 +39,10 @@ Sort top-level Desktop files into `YYYY-Www` week folders.
 ### Curate Desktop (`curate_desktop`)
 Group loose Desktop **screenshots only** (does **not** need archive port 3031).
 - **Screenshots** → `Organised Screenshots/{grain}/` using the date in the filename
+- **Reshape** already-organised files in place (week ↔ year/month/week/day ↔ named weekdays) — no Desktop undo
+- **Creates** `Organised Screenshots` if missing
 - **Never moves** PDFs, zips, or other drops; writes `DESKTOP-STRAY-WARNING.md` to Desktop and Downloads
-- **Grains:** year/month/day, year/month, ISO week, day
+- **Grains:** year/month/week/day, year/month/week, ymd, named (`2026/09-September/Saturday/12`), verbose labels, ISO week, month, flat day
 - **Undo** restores the last batch
 
 ### Desktop Screenshot Guard (`desktop_guard`)

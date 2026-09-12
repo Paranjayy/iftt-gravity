@@ -10,6 +10,7 @@ import {
   organizeDesktop,
   undoDesktopOrganize,
   guardDesktop,
+  reshapeOrganisedScreenshots,
   DESKTOP_SCREENSHOT_BREAK,
   STRAY_WARNING_NAME,
 } from "../desktop-organize";
@@ -41,6 +42,17 @@ describe("calendar grains", () => {
 
   test("month nests year/month", () => {
     expect(calendarRelPath(d, "month")).toBe("2026/09");
+  });
+
+  test("year/month/week then optional day", () => {
+    const week = isoWeekKey(d).split("-")[1];
+    expect(calendarRelPath(d, "ymw")).toBe(`2026/09/${week}`);
+    expect(calendarRelPath(d, "ymwd")).toBe(`2026/09/${week}/09`);
+  });
+
+  test("named and verbose weekday folders", () => {
+    expect(calendarRelPath(d, "named")).toBe("2026/09-September/Wednesday/09");
+    expect(calendarRelPath(d, "verbose")).toBe("year(2026)/month(09-september)/weekday(Wednesday)/day(09)");
   });
 
   test("day is a flat ISO date", () => {
@@ -170,5 +182,36 @@ describe("guardDesktop", () => {
     });
     expect(r.swept?.moved.length).toBe(1);
     expect(fs.existsSync(path.join(root, "Screenshot 2026-09-09 at 02.01.15.jpg"))).toBe(false);
+  });
+});
+
+describe("reshapeOrganisedScreenshots", () => {
+  let library: string;
+
+  beforeEach(() => {
+    library = fs.mkdtempSync(path.join(os.tmpdir(), "gravity-lib-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(library, { recursive: true, force: true });
+  });
+
+  test("creates the library folder and reshapes week buckets into year/month/week/day without a desktop undo", async () => {
+    const week = isoWeekKey(new Date(2026, 8, 9));
+    const srcDir = path.join(library, week);
+    fs.mkdirSync(srcDir, { recursive: true });
+    const name = "Screenshot 2026-09-09 at 02.01.15.jpg";
+    fs.writeFileSync(path.join(srcDir, name), "ss");
+
+    const missing = path.join(os.tmpdir(), `gravity-lib-missing-${Date.now()}`);
+    const r = await reshapeOrganisedScreenshots(missing, "ymwd", { skipLog: true });
+    expect(fs.existsSync(missing)).toBe(true);
+    fs.rmSync(missing, { recursive: true, force: true });
+
+    const moved = await reshapeOrganisedScreenshots(library, "ymwd", { skipLog: true });
+    expect(moved.moved.length).toBe(1);
+    const weekPart = week.split("-")[1];
+    expect(fs.existsSync(path.join(library, "2026", "09", weekPart, "09", name))).toBe(true);
+    expect(fs.existsSync(path.join(library, week, name))).toBe(false);
   });
 });

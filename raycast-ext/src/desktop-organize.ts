@@ -5,7 +5,7 @@ import * as path from "path";
 export const DESKTOP = path.join(os.homedir(), "Desktop");
 export const DOWNLOADS = path.join(os.homedir(), "Downloads");
 
-export type CalendarGrain = "week" | "month" | "day" | "ymd";
+export type CalendarGrain = "week" | "month" | "day" | "ymd" | "ymw" | "ymwd" | "named" | "verbose";
 
 export const DESKTOP_SCREENSHOT_BREAK = 48;
 export const DESKTOP_MOVE_BATCH = 32;
@@ -44,10 +44,34 @@ export function isoWeekKey(date: Date): string {
   return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
+const MONTHS = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+];
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+function titleMonth(i: number): string {
+  const n = MONTHS[i];
+  return n.charAt(0).toUpperCase() + n.slice(1);
+}
+
 export function calendarRelPath(date: Date, grain: CalendarGrain): string {
   const year = String(date.getFullYear());
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
+  const weekPart = isoWeekKey(date).split("-")[1];
+  const weekday = WEEKDAYS[date.getDay()];
+  const monthName = MONTHS[date.getMonth()];
   switch (grain) {
     case "month":
       return `${year}/${month}`;
@@ -55,6 +79,14 @@ export function calendarRelPath(date: Date, grain: CalendarGrain): string {
       return `${year}-${month}-${day}`;
     case "ymd":
       return `${year}/${month}/${day}`;
+    case "ymw":
+      return `${year}/${month}/${weekPart}`;
+    case "ymwd":
+      return `${year}/${month}/${weekPart}/${day}`;
+    case "named":
+      return `${year}/${month}-${titleMonth(date.getMonth())}/${weekday}/${day}`;
+    case "verbose":
+      return `year(${year})/month(${month}-${monthName})/weekday(${weekday})/day(${day})`;
     case "week":
     default:
       return isoWeekKey(date);
@@ -115,6 +147,7 @@ export async function organizeDesktop(
   const undoPath = opts.undoPath ?? UNDO_PATH;
   const screenshotRoot = path.join(root, "Organised Screenshots");
   const report: OrganizeReport = { moved: [], failed: [] };
+  await fs.promises.mkdir(screenshotRoot, { recursive: true });
 
   let entries: fs.Dirent[];
   try {
@@ -306,6 +339,83 @@ export async function undoDesktopOrganize(
     /* ignore */
   }
   return { count, failed };
+}
+
+async function collectFilesRecursive(root: string): Promise<string[]> {
+  const out: string[] = [];
+  const walk = async (dir: string) => {
+    let entries: fs.Dirent[];
+    try {
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (e.name.startsWith(".")) continue;
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) await walk(full);
+      else if (e.isFile()) out.push(full);
+    }
+  };
+  await walk(root);
+  return out;
+}
+
+async function pruneEmptyDirs(root: string): Promise<void> {
+  const walk = async (dir: string) => {
+    let entries: fs.Dirent[];
+    try {
+      entries = await fs.promises.readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (!e.isDirectory() || e.name.startsWith(".")) continue;
+      await walk(path.join(dir, e.name));
+    }
+    if (path.resolve(dir) === path.resolve(root)) return;
+    try {
+      const left = await fs.promises.readdir(dir);
+      if (left.filter((n) => n !== ".DS_Store").length === 0) {
+        await fs.promises.rm(dir, { recursive: true, force: true });
+      }
+    } catch {
+      /* ignore */
+    }
+  };
+  await walk(root);
+}
+
+/** Re-bucket files already inside Organised Screenshots. Does not touch the live Desktop. */
+export async function reshapeOrganisedScreenshots(
+  libraryRoot: string,
+  grain: CalendarGrain,
+  opts: { skipLog?: boolean; onProgress?: (done: number, total: number, name: string) => void } = {},
+): Promise<OrganizeReport> {
+  await fs.promises.mkdir(libraryRoot, { recursive: true });
+  const report: OrganizeReport = { moved: [], failed: [] };
+  const files = await collectFilesRecursive(libraryRoot);
+  let done = 0;
+  for (const file of files) {
+    const name = path.basename(file);
+    try {
+      const destDir = path.join(libraryRoot, calendarRelPath(fileDate(file, name), grain));
+      await fs.promises.mkdir(destDir, { recursive: true });
+      const dest = uniqueDest(path.join(destDir, name));
+      if (path.resolve(dest) !== path.resolve(file)) {
+        await fs.promises.rename(file, dest);
+        report.moved.push({ from: file, to: dest });
+      }
+    } catch (err) {
+      report.failed.push({ file, reason: (err as Error).message.slice(0, 120) });
+    }
+    done++;
+    if (done === 1 || done === files.length || done % DESKTOP_MOVE_BATCH === 0) {
+      opts.onProgress?.(done, files.length, name);
+    }
+  }
+  await pruneEmptyDirs(libraryRoot);
+  return report;
 }
 
 export function organizeMarkdown(grain: CalendarGrain, r: OrganizeReport): string {
