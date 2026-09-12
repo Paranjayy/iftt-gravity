@@ -16,7 +16,7 @@ function ConvertView({ root }: { root: string }) {
   const [busy, setBusy] = useState(false);
   const [quality, setQuality] = useState(prefs.pngToJpgQuality || "80");
   const [keep, setKeep] = useState(prefs.pngToJpgKeepOriginals ? "keep" : "delete");
-  const { selected, toggle, count } = useSelection();
+  const { selected, toggle, selectAll, clear, count } = useSelection();
   const { push } = useNavigation();
 
   useEffect(() => {
@@ -116,6 +116,9 @@ function ConvertView({ root }: { root: string }) {
             onProgress: onP,
           });
           setBusy(false);
+          if (r.converted.length > 0) {
+            showToast({ title: `Logged ${r.converted.length} conversions to OPERATIONS_LOG.md`, style: Toast.Style.Success });
+          }
           return convertMarkdown(r, keepOriginals);
         }}
       />
@@ -156,6 +159,13 @@ function ConvertView({ root }: { root: string }) {
               icon={Icon.Checkmark}
               onAction={() => setKeep(keepOriginals ? "delete" : "keep")}
             />
+            <Action
+              title="Select All"
+              icon={Icon.Checkmark}
+              onAction={() => selectAll(pngs.map((p) => p.path))}
+              shortcut={{ modifiers: ["cmd"], key: "a" }}
+            />
+            <Action title="Clear Selection" icon={Icon.XMarkCircle} onAction={clear} />
           </ActionPanel>
         }
       />

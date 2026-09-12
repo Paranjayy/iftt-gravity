@@ -76,7 +76,7 @@ export default function ClipboardVault() {
     <List
       isLoading={loading || syncing}
       searchBarPlaceholder="Search transcript title, channel, or category…"
-      navigationTitle="Clipboard Vault"
+      navigationTitle="Clipboard Vault (Transcript)"
       searchBarAccessory={
         <List.Dropdown tooltip="Filter by category" onChange={setCategory} value={category}>
           <List.Dropdown.Item title="All Categories" value="all" />

@@ -1,4 +1,5 @@
 import { List, ActionPanel, Action, Icon } from "@raycast/api";
+import { DirBrowser } from "./dir-browser";
 import { SCOPES } from "./fileops";
 
 export function ScopePicker({
@@ -10,22 +11,14 @@ export function ScopePicker({
   icon: any;
   onPick: (scope: string, root: string) => void;
 }) {
-  const folders = Object.keys(SCOPES);
   return (
-    <List searchBarPlaceholder="Pick a scope…">
-      {folders.map((f) => (
-        <List.Item
-          key={f}
-          title={f[0].toUpperCase() + f.slice(1)}
-          subtitle={SCOPES[f]}
-          icon={icon}
-          actions={
-            <ActionPanel>
-              <Action title={`${title} Here`} onAction={() => onPick(f, SCOPES[f])} />
-            </ActionPanel>
-          }
-        />
-      ))}
-    </List>
+    <DirBrowser
+      title={title}
+      actionTitle={`${title} Here`}
+      onPick={(dirPath) => {
+        const scopeName = Object.entries(SCOPES).find(([, v]) => v === dirPath)?.[0];
+        onPick(scopeName || dirPath, dirPath);
+      }}
+    />
   );
 }

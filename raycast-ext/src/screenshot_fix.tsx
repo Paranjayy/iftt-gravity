@@ -1,6 +1,6 @@
 import { ActionPanel, Action, Icon, Detail, confirmAlert, showToast, Toast, useNavigation, List } from "@raycast/api";
 import { useState } from "react";
-import { setScreenshotFormat, setScreenshotNoShadow, convertPngToJpg, convertMarkdown, SCOPES } from "./fileops";
+import { setScreenshotFormat, setScreenshotNoShadow, convertPngToJpg, convertMarkdown, SCOPES, appendLog } from "./fileops";
 import { LiveProgress } from "./live-progress";
 
 export default function Command() {
@@ -58,6 +58,7 @@ export default function Command() {
               icon={Icon.Wand}
               onAction={async () => {
                 await setScreenshotFormat("jpg");
+                await appendLog("Screenshot: switched system format to **JPG**");
                 showToast({ title: "Screenshots now save as JPG", style: Toast.Style.Success });
               }}
             />
@@ -75,6 +76,7 @@ export default function Command() {
               icon={Icon.Frame}
               onAction={async () => {
                 await setScreenshotNoShadow(true);
+                await appendLog("Screenshot: disabled window drop shadows");
                 showToast({ title: "Window shadows disabled", style: Toast.Style.Success });
               }}
             />

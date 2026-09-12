@@ -1,6 +1,6 @@
 import { ActionPanel, Action, Icon, Detail, confirmAlert, showToast, Toast, useNavigation, List } from "@raycast/api";
 import { useState } from "react";
-import { resolveScope, flattenDir, flattenMarkdown } from "./fileops";
+import { resolveScope, flattenDir, flattenMarkdown, appendLog } from "./fileops";
 import { ScopePicker } from "./scope-picker";
 
 function WeekView({ root }: { root: string }) {
@@ -20,6 +20,9 @@ function WeekView({ root }: { root: string }) {
     try {
       const report = await flattenDir(root, "week", { recursive: false });
       showToast({ title: `Sorted ${report.moved.length} files`, style: Toast.Style.Success });
+      if (report.moved.length > 0) {
+        await appendLog(`Desktop Week: **${report.moved.length}** sorted into week folders in \`${root.replace(/.*\//, "~/")}\``);
+      }
       push(<Detail markdown={flattenMarkdown("week", report)} />);
     } catch (e) {
       showToast({ title: "Failed", style: Toast.Style.Failure, message: (e as Error).message });
