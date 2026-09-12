@@ -23,7 +23,6 @@ import NodeReaper from "./node-reaper";
 import Scaffolder from "./project-scaffolder";
 import ExtensionAuditor from "./extension-auditor";
 import WarpDrive from "./warp";
-import { SCOPES, undoDesktopOrganize, guardDesktop } from "./fileops";
 
 interface NoteFile {
   name: string;
@@ -127,8 +126,9 @@ export default function Command() {
       style: Toast.Style.Animated,
     });
     try {
-      const data = await guardDesktop(SCOPES.desktop, {
-        downloadsDir: SCOPES.downloads,
+      const { guardDesktop, DESKTOP, DOWNLOADS } = await import("./desktop-organize");
+      const data = await guardDesktop(DESKTOP, {
+        downloadsDir: DOWNLOADS,
         grain: "week",
         force: true,
       });
@@ -157,6 +157,7 @@ export default function Command() {
       style: Toast.Style.Animated,
     });
     try {
+      const { undoDesktopOrganize } = await import("./desktop-organize");
       const data = await undoDesktopOrganize();
       if (data.count > 0) {
         toast.style = Toast.Style.Success;

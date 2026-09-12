@@ -1,9 +1,9 @@
 import { showToast, Toast, showHUD } from "@raycast/api";
-import { SCOPES, guardDesktop, DESKTOP_SCREENSHOT_BREAK } from "./fileops";
+import { DESKTOP, DOWNLOADS, DESKTOP_SCREENSHOT_BREAK, guardDesktop } from "./desktop-organize";
 
 export default async function Command() {
-  const r = await guardDesktop(SCOPES.desktop, {
-    downloadsDir: SCOPES.downloads,
+  const r = await guardDesktop(DESKTOP, {
+    downloadsDir: DOWNLOADS,
     grain: "week",
     force: false,
   });

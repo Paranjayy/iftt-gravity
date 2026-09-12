@@ -1,13 +1,6 @@
 import { ActionPanel, Action, Icon, confirmAlert, showToast, Toast, useNavigation, List } from "@raycast/api";
 import { useState } from "react";
-import {
-  SCOPES,
-  CalendarGrain,
-  guardDesktop,
-  organizeMarkdown,
-  undoDesktopOrganize,
-} from "./fileops";
-import { LiveProgress } from "./live-progress";
+import type { CalendarGrain } from "./desktop-organize";
 
 const GRAINS: { value: CalendarGrain; title: string; hint: string }[] = [
   { value: "ymd", title: "Year / Month / Day", hint: "2026/09/12" },
@@ -19,26 +12,30 @@ const GRAINS: { value: CalendarGrain; title: string; hint: string }[] = [
 export default function Command() {
   const [grain, setGrain] = useState<CalendarGrain>("ymd");
   const { push } = useNavigation();
-  const root = SCOPES.desktop;
   const selected = GRAINS.find((g) => g.value === grain)!;
 
   async function run() {
     if (
       !(await confirmAlert({
         title: `Curate Desktop by ${selected.title}?`,
-        message: `Screenshots only → Organised Screenshots/${selected.hint}/. Other Desktop files are never moved; a warning is written to Desktop and Downloads if any remain.`,
+        message: `Screenshots only → Organised Screenshots/${selected.hint}/. Other files stay. Warning MD if strays.`,
         primaryAction: { title: "Curate" },
       }))
     )
       return;
+
+    const [{ guardDesktop, organizeMarkdown, DESKTOP, DOWNLOADS }, { LiveProgress }] = await Promise.all([
+      import("./desktop-organize"),
+      import("./live-progress"),
+    ]);
 
     push(
       <LiveProgress
         title={`Curating by ${selected.title}`}
         icon="🗂️"
         task={async (onP) => {
-          const r = await guardDesktop(root, {
-            downloadsDir: SCOPES.downloads,
+          const r = await guardDesktop(DESKTOP, {
+            downloadsDir: DOWNLOADS,
             grain,
             force: true,
             onProgress: onP,
@@ -57,6 +54,7 @@ export default function Command() {
   }
 
   async function undo() {
+    const { undoDesktopOrganize } = await import("./desktop-organize");
     const data = await undoDesktopOrganize();
     if (data.count > 0) {
       showToast({ title: `Restored ${data.count} files`, style: Toast.Style.Success });
@@ -77,7 +75,7 @@ export default function Command() {
     >
       <List.Item
         title={`Curate Desktop → ${selected.hint}`}
-        subtitle="Screenshots by capture date · never moves other files"
+        subtitle="Screenshots only · first paint is empty of Desktop I/O"
         icon={Icon.Calendar}
         actions={
           <ActionPanel>

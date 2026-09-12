@@ -12,7 +12,7 @@ import {
   guardDesktop,
   DESKTOP_SCREENSHOT_BREAK,
   STRAY_WARNING_NAME,
-} from "../fileops";
+} from "../desktop-organize";
 
 describe("screenshot naming", () => {
   test("detects macOS Screenshot prefixes including jpg conversions", () => {
