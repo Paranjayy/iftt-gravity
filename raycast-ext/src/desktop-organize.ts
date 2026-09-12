@@ -5,7 +5,7 @@ import * as path from "path";
 export const DESKTOP = path.join(os.homedir(), "Desktop");
 export const DOWNLOADS = path.join(os.homedir(), "Downloads");
 
-export type CalendarGrain = "week" | "month" | "day" | "ymd" | "ymw" | "ymwd" | "named" | "verbose";
+export type CalendarGrain = "week" | "month" | "day" | "ymd" | "ymw" | "ymwd" | "ymsepwd" | "named" | "verbose";
 
 export const DESKTOP_SCREENSHOT_BREAK = 48;
 export const DESKTOP_MOVE_BATCH = 32;
@@ -83,6 +83,8 @@ export function calendarRelPath(date: Date, grain: CalendarGrain): string {
       return `${year}/${month}/${weekPart}`;
     case "ymwd":
       return `${year}/${month}/${weekPart}/${day}`;
+    case "ymsepwd":
+      return `${year}/${month}-${monthName.slice(0, 3)}/${weekPart}/${day}`;
     case "named":
       return `${year}/${month}-${titleMonth(date.getMonth())}/${weekday}/${day}`;
     case "verbose":

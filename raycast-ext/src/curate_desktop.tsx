@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { CalendarGrain } from "./desktop-organize";
 
 const GRAINS: { value: CalendarGrain; title: string; hint: string }[] = [
+  { value: "ymsepwd", title: "Year / Month-sep / Week / Day", hint: "2026/09-sep/W37/12" },
   { value: "ymwd", title: "Year / Month / Week / Day", hint: "2026/09/W37/12" },
   { value: "ymw", title: "Year / Month / Week", hint: "2026/09/W37" },
   { value: "ymd", title: "Year / Month / Day", hint: "2026/09/12" },
@@ -14,7 +15,7 @@ const GRAINS: { value: CalendarGrain; title: string; hint: string }[] = [
 ];
 
 export default function Command() {
-  const [grain, setGrain] = useState<CalendarGrain>("ymwd");
+  const [grain, setGrain] = useState<CalendarGrain>("ymsepwd");
   const { push } = useNavigation();
   const selected = GRAINS.find((g) => g.value === grain)!;
 

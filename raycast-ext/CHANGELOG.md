@@ -135,6 +135,16 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 14: `ymsepwd` grain — 2026/09-sep/W37/12 (v1.4.0)
+- **NEW grain `ymsepwd`** in `desktop-organize.calendarRelPath`:
+  `YYYY/MM-mon/Www/DD` (e.g. Sep 12 2026 → `2026/09-sep/W37/12`)
+- **Curate Desktop**: new dropdown entry first + new default
+  (`Year / Month-sep / Week / Day`). Old grains unchanged.
+- Note: Sep 12 2026 is ISO **W37**, not W36 — week part comes from
+  `isoWeekKey()`, same source as `ymwd`/`ymw`.
+- Etiquette: `bun test organize-desktop` + `bun run build` in
+  `raycast-ext/` before commit; version bumped 1.3.0 → 1.4.0.
+
 ### Round 1-3: Foundation
 - 14-command structure
 - Tinted per-command icons (Python script)
