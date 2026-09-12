@@ -85,7 +85,7 @@ async function archiveClipboard(text: string) {
     clips.splice(existingIdx, 1);
     clips.unshift(item);
   } else {
-    try { exec(`afplay /System/Library/Sounds/Hasso.aiff &`); } catch(e){}
+    try { exec(`afplay -v 0.2 /System/Library/Sounds/Hasso.aiff &`); } catch(e){}
 
     const isPath = processedText.startsWith('/') || processedText.startsWith('~/') || processedText.match(/^[A-Z]:\\/);
     const isImage = processedText.match(/\.(png|jpg|jpeg|gif|svg|webp)$/i);

@@ -135,6 +135,20 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 16: clipboard full-JSON export + honest Auto-AC toggle (v1.6.0)
+- **Clipboard Export**: new `Export Full JSON` action — complete text
+  content + metadata (chars, words, size, timestamps) for every entry.
+  Standard JSON keeps the 500-char preview; Markdown unchanged.
+- **Auto-AC is now a real master switch** (server, `src/lib/bot.ts`):
+  presence-HOME, 1am/7am circadian shifts, and the PC-thermal 18°C blast
+  only fire when Auto-AC is ON (was: always). Default OFF, toggle in
+  Raycast `Control House → Auto-Pilot` / Telegram `/auto_ac` / Raycast
+  Store-safe (no surprise cooling for future users).
+- **Quieter sounds**: routine cues play at 25% volume, serialized
+  (one-at-a-time), repeats coalesced within 2.5s. Clipboard capture
+  chime at 20%. Explicit `/find` ringing stays loud on purpose.
+- Toggle subtitle now reads "Manual only — no automatic AC" when off.
+
 ### Round 14: `ymsepwd` grain — 2026/09-Sep/W37/12 (v1.4.0)
 - **NEW grain `ymsepwd`** in `desktop-organize.calendarRelPath`:
   `YYYY/MM-Mon/Www/DD` (e.g. Sep 12 2026 → `2026/09-Sep/W37/12`,

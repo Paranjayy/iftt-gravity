@@ -54,3 +54,19 @@ Then `bun run build` in `raycast-ext` before asking the human to use a new comma
 - Top-level Desktop files only. Never descend into Desktop subfolders.
   Screenshot names only (`Screenshot`, `Screen Shot`, `scr_`, `SCR-`).
   Everything else: leave + warn, don't relocate.
+
+## Clipboard export (how it works)
+
+- `Clipboard Export` reads Raycast's clipboard store directly from
+  `~/Library/Application Support/com.raycast.macos/clipboard` (that's the
+  reverse-engineered bit — no wiki, just the on-disk files).
+- Classifies text / html / image / file, exports Markdown or JSON with
+  metadata (chars, words, size, timestamps) to `~/Developer/clipboard-backup/`.
+  Full-JSON action keeps complete text content; standard JSON keeps a
+  500-char preview.
+
+## house_log.md
+
+- Local append-only log of smart-device life: scene triggers, presence
+  AWAY/HOME, weather polls (~15 min), AC state with source
+  (`Manual/Remote` vs `Bot`). `Recent Hub Activity` tails it. Never commit it.

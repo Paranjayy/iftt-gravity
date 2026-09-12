@@ -62,6 +62,11 @@ const IPL_ROOT = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/p
 const IPL_FEED = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/public/data/feed.json";
 let lastIplEventTs = 0;
 
+// Quiet, serialized sound cues: low volume, one-at-a-time, repeats coalesced.
+const SOUND_VOLUME = 0.25;
+const SOUND_COALESCE_MS = 2500;
+let soundChain: Promise<void> = Promise.resolve();
+const lastCueAt: Record<string, number> = {};
 async function playAudioCue(type: 'edit' | 'new' | 'wicket' | 'boundary') {
   const sounds: Record<string, string> = {
     edit: '/System/Library/Sounds/Tink.aiff',
@@ -69,7 +74,14 @@ async function playAudioCue(type: 'edit' | 'new' | 'wicket' | 'boundary') {
     wicket: '/System/Library/Sounds/Basso.aiff',
     boundary: '/System/Library/Sounds/Ping.aiff'
   };
-  try { await execAsync(`afplay ${sounds[type]}`); } catch {}
+  const now = Date.now();
+  if (now - (lastCueAt[type] || 0) < SOUND_COALESCE_MS) return;
+  lastCueAt[type] = now;
+  const run = soundChain.then(async () => {
+    try { await execAsync(`afplay -v ${SOUND_VOLUME} ${sounds[type]}`); } catch {}
+  });
+  soundChain = run.catch(() => {});
+  await run;
 }
 let lastIplBallId = "";
 let lastIplPhase = "";
@@ -2266,7 +2278,10 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       case "HOME":
         speak("Welcome back. Powering up your sanctuary.");
         if (wiz) promises.push(wiz?.executeAction({ type: 'control', payload: { state: true, temp: 4500, dimming: 80 } }));
-        if (miraie && miraie?.devices.length > 0) promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
+        // AC only follows presence when Auto-AC is toggled on — otherwise a
+        // phone WiFi/ARP flap would ghost the AC on and freeze the human.
+        if (config.autoAc && miraie && miraie?.devices.length > 0) promises.push(miraie?.controlDevice(miraie?.devices[0].deviceId, { ps: 'on', actmp: '25', acmd: 'cool' }));
+        else logActivity("🏠 HOME: AC left untouched (Auto-AC OFF)");
         break;
       case "POWER_NAP":
         logActivity("💤 Scene: POWER_NAP (25 mins)");
@@ -6104,10 +6119,14 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         if (status.temp > 85 && !thermalAcActive) {
           logActivity(`🔥 PC THERMAL ALERT: ${status.temp}°C detected!`);
           thermalAcActive = true;
-          const d = miraie?.devices[0]?.deviceId;
-          if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: '18', acmd: 'cool' });
-          await pulseLight(100, 2000, { r: 255, g: 60, b: 0 }); 
-          await (bot as any).sendMessage(config.telegram.chatId, `🔥 *PC THERMAL ALERT:* System hit *${status.temp}°C*! Overclocking protection engaged. AC set to 18°C.`);
+          if (config.autoAc) {
+            const d = miraie?.devices[0]?.deviceId;
+            if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: '18', acmd: 'cool' });
+            await pulseLight(100, 2000, { r: 255, g: 60, b: 0 });
+            await (bot as any).sendMessage(config.telegram.chatId, `🔥 *PC THERMAL ALERT:* System hit *${status.temp}°C*! Overclocking protection engaged. AC set to 18°C.`);
+          } else {
+            await (bot as any).sendMessage(config.telegram.chatId, `🔥 *PC THERMAL ALERT:* System hit *${status.temp}°C*! Auto-AC is OFF so the AC was left untouched.`);
+          }
         } else if (status.temp < 70 && thermalAcActive) {
           thermalAcActive = false;
         }
@@ -6124,15 +6143,15 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       (global as any).ghostMode = false;
     }
 
-    // 9. Circadian AC Shift (Sleep/Wake Hygiene)
+    // 9. Circadian AC Shift (Sleep/Wake Hygiene) — only when Auto-AC is on.
     const currentHr = new Date().getHours();
-    if (currentHr === 1 && !(global as any).acSleepSet) {
+    if (currentHr === 1 && !(global as any).acSleepSet && config.autoAc) {
       (global as any).acSleepSet = true;
       const d = miraie?.devices[0]?.deviceId;
       if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: '24', acmd: 'cool' });
       logActivity("🌙 Circadian Shift: AC set to 24°C for sleep hygiene.");
     }
-    if (currentHr === 7 && !(global as any).acWakeSet) {
+    if (currentHr === 7 && !(global as any).acWakeSet && config.autoAc) {
       (global as any).acWakeSet = true;
       const d = miraie?.devices[0]?.deviceId;
       if (d) await miraie?.controlDevice(d, { ps: 'on', actmp: '26', acmd: 'cool' });

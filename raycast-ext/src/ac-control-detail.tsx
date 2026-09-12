@@ -387,7 +387,7 @@ export default function ACControlDetail() {
         {
           id: "autoac-toggle",
           title: state?.autoAc ? "🤖 Auto-AC: ON (weather-driven)" : "🤖 Auto-AC: OFF",
-          subtitle: state?.autoAc ? "AC follows weather + thermal — may turn on automatically" : "Enable to let weather control AC",
+          subtitle: state?.autoAc ? "AC follows weather + presence + schedule — may turn on automatically" : "Manual only — no automatic AC",
           icon: state?.autoAc ? Icon.Check : Icon.Xmark,
           endpoint: "/control/auto/ac",
           name: state?.autoAc ? "Auto-AC Off" : "Auto-AC On",

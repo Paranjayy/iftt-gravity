@@ -153,6 +153,23 @@ function generateJsonExport(entries: ClipboardEntry[], label: string): string {
   return JSON.stringify({ exported: new Date().toISOString(), count: entries.length, entries: limited, totalEntries: entries.length }, null, 2);
 }
 
+function generateJsonFullExport(entries: ClipboardEntry[]): string {
+  // Complete content for text/html entries (no 500-char preview truncation).
+  // Images/files carry metadata only — their bytes stay in Raycast's store.
+  const all = entries.map((e) => ({
+    index: e.index,
+    type: e.type,
+    timestamp: e.modified.toISOString(),
+    filename: e.filename,
+    charCount: e.charCount,
+    wordCount: e.wordCount,
+    sizeBytes: e.size,
+    firstLine: e.firstLine,
+    content: e.content,
+  }));
+  return JSON.stringify({ exported: new Date().toISOString(), count: entries.length, entries: all }, null, 2);
+}
+
 function ExportView() {
   const [entries, setEntries] = useState<ClipboardEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -200,6 +217,15 @@ function ExportView() {
   async function exportTextOnly() { await doExport(textEntries, "text"); }
   async function exportRecent() { await doExport(textEntries.slice(0, 20), "recent-20"); }
 
+  async function exportFullJson() {
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    await mkdir(outDir, { recursive: true });
+    const json = generateJsonFullExport(entries);
+    const outPath = path.join(outDir, `clipboard-full-${Date.now()}.json`);
+    await writeFile(outPath, json);
+    showToast({ title: `Exported ${entries.length} entries (full content)`, message: outPath, style: Toast.Style.Success });
+  }
+
   return (
     <List
       isLoading={!loaded}
@@ -224,6 +250,7 @@ function ExportView() {
               <Action title="Export Text" icon={Icon.Text} onAction={exportTextOnly} />
               <Action title="Export All (incl. file refs)" icon={Icon.SaveDocument} onAction={exportAll} />
               <Action title="Export Recent 20" icon={Icon.Clock} onAction={exportRecent} />
+              <Action title="Export Full JSON (complete content + metadata)" icon={Icon.Code} onAction={exportFullJson} />
               <Action
                 title={`Format: ${exportFormat === "json" ? "Switch to Markdown" : "Switch to JSON"}`}
                 icon={Icon.Switch}
