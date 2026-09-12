@@ -6,6 +6,7 @@ import Dedup from "./dedup";
 import RepoBackup from "./repo_backup";
 import ScreenshotFix from "./screenshot_fix";
 import DesktopWeek from "./desktop_week";
+import CurateDesktop from "./curate_desktop";
 import ClipboardBackup from "./clipboard_backup";
 
 const TOOLS: { title: string; subtitle: string; icon: any; C: () => JSX.Element }[] = [
@@ -15,6 +16,7 @@ const TOOLS: { title: string; subtitle: string; icon: any; C: () => JSX.Element 
   { title: "Dedupe Files", subtitle: "Find duplicates, trash redundant copies", icon: Icon.Copy, C: Dedup },
   { title: "Repo Backup", subtitle: "Back up every local git repo to GitHub", icon: Icon.Cloud, C: RepoBackup },
   { title: "Desktop Week Sort", subtitle: "Sort Desktop files into YYYY-Www folders", icon: Icon.Calendar, C: DesktopWeek },
+  { title: "Curate Desktop", subtitle: "Screenshots by year/month/week/day — no hub required", icon: Icon.Tray, C: CurateDesktop },
   { title: "Screenshot Fixer", subtitle: "JPG captures, no shadows, shrink PNGs", icon: Icon.Wand, C: ScreenshotFix },
   { title: "Clipboard Backup", subtitle: "Export clipboard history as text with sequence & paths", icon: Icon.SaveDocument, C: ClipboardBackup },
 ];

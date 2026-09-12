@@ -36,6 +36,13 @@ Sort top-level Desktop files into `YYYY-Www` week folders.
 - **Auto-creates** week directories
 - **Trash-safe**
 
+### Curate Desktop (`curate_desktop`)
+Group loose Desktop files locally (does **not** need archive port 3031).
+- **Screenshots** → `Organised Screenshots/{grain}/` using the date in the filename
+- **Other files** → `Organised Folders/{type}/`
+- **Grains:** year/month/day, year/month, ISO week, day
+- **Undo** restores the last batch
+
 ### Screenshot Fixer (`screenshot_fix`)
 Three-in-one: switch macOS screenshots to JPG, disable window shadows, shrink existing Desktop PNGs.
 - **System-wide:** `defaults write com.apple.screencapture type jpg`

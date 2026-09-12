@@ -129,7 +129,7 @@
     },
     {
       "name": "clipboard_vault",
-      "title": "Clipboard Vault",
+      "title": "Clipboard Vault (Transcript)",
       "description": "Sync, search, and inspect locally curated Raycast clipboard transcripts and URLs",
       "icon": "commands/archive.png",
       "mode": "view"
@@ -177,6 +177,13 @@
       "mode": "view"
     },
     {
+      "name": "curate_desktop",
+      "title": "Curate Desktop",
+      "description": "Group Desktop screenshots by year/month/week/day without needing the hub",
+      "icon": "commands/notes.png",
+      "mode": "view"
+    },
+    {
       "name": "screenshot_fix",
       "title": "Screenshot Fixer",
       "description": "Switch macOS captures to JPG, drop window shadows, shrink existing Desktop PNGs",
@@ -192,8 +199,8 @@
     },
     {
       "name": "clipboard_backup",
-      "title": "Clipboard Backup",
-      "description": "Export Raycast clipboard history (text with sequence, image/file paths) to local markdown",
+      "title": "Clipboard Export",
+      "description": "Export entire clipboard history — text-only mode, metadata, Markdown or JSON",
       "icon": "commands/archive.png",
       "mode": "view"
     },
@@ -202,6 +209,20 @@
       "title": "Organize Repos",
       "description": "Scan ~/Developer, categorize repos by GitHub/activity, move to _active/_learning/_clients/_archive",
       "icon": "commands/control.png",
+      "mode": "view"
+    },
+    {
+      "name": "gravity_hub",
+      "title": "HomePulse Tools (Consolidated)",
+      "description": "Consolidated hub — every HomePulse command in one searchable place",
+      "icon": "commands/hub_pulse.png",
+      "mode": "view"
+    },
+    {
+      "name": "quick_stats",
+      "title": "Quick Stats",
+      "description": "Disk usage breakdown with folder sizes and cleanup shortcuts",
+      "icon": "commands/stats.png",
       "mode": "view"
     }
   ],
@@ -266,6 +287,7 @@
     "fix-lint": "./node_modules/.bin/eslint src --ext .ts,.tsx --fix",
     "lint": "./node_modules/.bin/eslint src --ext .ts,.tsx",
     "publish": "bunx @raycast/api@latest publish",
+    "test:organize-desktop": "bun test src/__test__/organize-desktop.spec.ts",
     "test:url-converter": "bun run src/__test__/convert-link.spec.ts",
     "test:social-providers": "bun run src/social/providers/__test__/providers.spec.ts"
   }

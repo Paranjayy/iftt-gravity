@@ -20,6 +20,19 @@ export function resolveScope(scope: string): string {
   return path.resolve(scope.replace(/^~/, os.homedir()));
 }
 
+const LOG_PATH = path.join(os.homedir(), "Developer", "iftt", "raycast-ext", "OPERATIONS_LOG.md");
+
+export async function appendLog(entry: string): Promise<void> {
+  const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+  const line = `- **[${timestamp}]** ${entry}\n`;
+  try {
+    if (!fs.existsSync(LOG_PATH)) {
+      await fs.promises.writeFile(LOG_PATH, "# Operations Log\n\n", "utf-8");
+    }
+    await fs.promises.appendFile(LOG_PATH, line, "utf-8");
+  } catch { /* best effort */ }
+}
+
 export function formatSize(bytes: number): string {
   if (bytes === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
@@ -148,6 +161,18 @@ export async function convertPngToJpg(
     done++;
     opts.onProgress?.(done, pngs.length, path.basename(png));
   }
+
+  // Log the operation
+  const convertedCount = report.converted.length;
+  const failedCount = report.failed.length;
+  const savedStr = formatSize(Math.max(0, report.savedBytes));
+  const folder = root.replace(os.homedir(), "~");
+  if (convertedCount > 0) {
+    await appendLog(
+      `PNG → JPG: **${convertedCount}** converted, **${failedCount}** errors, saved **${savedStr}** in \`${folder}\` (quality=${quality}, keep=${keep ? "yes" : "trash"})`
+    );
+  }
+
   return report;
 }
 
@@ -194,7 +219,7 @@ function smartCategory(name: string, ext: string): string {
   return "Other";
 }
 
-function isoWeekKey(date: Date): string {
+export function isoWeekKey(date: Date): string {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = (d.getUTCDay() + 6) % 7;
   d.setUTCDate(d.getUTCDate() - dayNum + 3);
@@ -304,7 +329,182 @@ export async function flattenDir(
     done++;
     opts.onProgress?.(done, files.length, path.basename(file));
   }
+
+  const movedCount = report.moved.length;
+  if (movedCount > 0) {
+    const folder = root.replace(os.homedir(), "~");
+    await appendLog(`Flatten (${by}): **${movedCount}** moved in \`${folder}\``);
+  }
+
   return report;
+}
+
+/* -------------------------- Desktop organize -------------------------- */
+
+export type CalendarGrain = "week" | "month" | "day" | "ymd";
+
+const DESKTOP_UNDO_PATH = path.join(
+  os.homedir(),
+  "Developer",
+  "iftt",
+  "raycast-ext",
+  "desktop_undo_history.json",
+);
+
+export function isScreenshotName(name: string): boolean {
+  return (
+    name.startsWith("Screenshot") ||
+    name.startsWith("Screen Shot") ||
+    name.startsWith("scr_") ||
+    name.startsWith("SCR-")
+  );
+}
+
+export function captureDateFromName(name: string): Date | null {
+  const m = name.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return new Date(year, month - 1, day);
+}
+
+export function calendarRelPath(date: Date, grain: CalendarGrain): string {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  switch (grain) {
+    case "month":
+      return `${year}/${month}`;
+    case "day":
+      return `${year}-${month}-${day}`;
+    case "ymd":
+      return `${year}/${month}/${day}`;
+    case "week":
+    default:
+      return isoWeekKey(date);
+  }
+}
+
+export interface OrganizeReport {
+  moved: { from: string; to: string }[];
+  failed: { file: string; reason: string }[];
+}
+
+function fileDate(file: string, name: string): Date {
+  return captureDateFromName(name) ?? fs.statSync(file).mtime;
+}
+
+export async function organizeDesktop(
+  root: string,
+  opts: {
+    grain?: CalendarGrain;
+    skipLog?: boolean;
+    undoPath?: string;
+    onProgress?: (done: number, total: number, name: string) => void;
+  } = {},
+): Promise<OrganizeReport> {
+  const grain = opts.grain ?? "week";
+  const undoPath = opts.undoPath ?? DESKTOP_UNDO_PATH;
+  const screenshotRoot = path.join(root, "Organised Screenshots");
+  const folderRoot = path.join(root, "Organised Folders");
+  const report: OrganizeReport = { moved: [], failed: [] };
+
+  let entries: fs.Dirent[];
+  try {
+    entries = await fs.promises.readdir(root, { withFileTypes: true });
+  } catch (err) {
+    report.failed.push({ file: root, reason: (err as Error).message.slice(0, 120) });
+    return report;
+  }
+
+  const files = entries.filter(
+    (e) =>
+      e.isFile() &&
+      !e.name.startsWith(".") &&
+      !e.name.startsWith("Organised"),
+  );
+  let done = 0;
+  for (const entry of files) {
+    const file = path.join(root, entry.name);
+    try {
+      const destDir = isScreenshotName(entry.name)
+        ? path.join(screenshotRoot, calendarRelPath(fileDate(file, entry.name), grain))
+        : path.join(folderRoot, smartCategory(entry.name, path.extname(entry.name).toLowerCase()));
+      await fs.promises.mkdir(destDir, { recursive: true });
+      const dest = uniqueDest(path.join(destDir, entry.name));
+      await fs.promises.rename(file, dest);
+      report.moved.push({ from: file, to: dest });
+    } catch (err) {
+      report.failed.push({ file, reason: (err as Error).message.slice(0, 120) });
+    }
+    done++;
+    opts.onProgress?.(done, files.length, entry.name);
+  }
+
+  try {
+    await fs.promises.mkdir(path.dirname(undoPath), { recursive: true });
+    await fs.promises.writeFile(undoPath, JSON.stringify(report.moved, null, 2));
+  } catch {
+    /* undo log is best-effort */
+  }
+
+  if (!opts.skipLog && report.moved.length > 0) {
+    const folder = root.replace(os.homedir(), "~");
+    await appendLog(
+      `Desktop organize (${grain}): **${report.moved.length}** moved, **${report.failed.length}** failed in \`${folder}\``,
+    );
+  }
+
+  return report;
+}
+
+export async function undoDesktopOrganize(
+  opts: { undoPath?: string } = {},
+): Promise<{ count: number; failed: { file: string; reason: string }[] }> {
+  const undoPath = opts.undoPath ?? DESKTOP_UNDO_PATH;
+  const failed: { file: string; reason: string }[] = [];
+  let moves: { from: string; to: string }[] = [];
+  try {
+    const raw = await fs.promises.readFile(undoPath, "utf-8");
+    moves = JSON.parse(raw);
+  } catch {
+    return { count: 0, failed };
+  }
+
+  let count = 0;
+  for (const move of [...moves].reverse()) {
+    try {
+      if (!fs.existsSync(move.from) && fs.existsSync(move.to)) {
+        await fs.promises.mkdir(path.dirname(move.from), { recursive: true });
+        await fs.promises.rename(move.to, move.from);
+        count++;
+      }
+    } catch (err) {
+      failed.push({ file: move.from, reason: (err as Error).message.slice(0, 120) });
+    }
+  }
+
+  try {
+    await fs.promises.writeFile(undoPath, "[]");
+  } catch {
+    /* ignore */
+  }
+  return { count, failed };
+}
+
+export function organizeMarkdown(grain: CalendarGrain, r: OrganizeReport): string {
+  return [
+    `# Desktop organize (${grain})`,
+    "",
+    `- Moved: **${r.moved.length}**`,
+    `- Failed: **${r.failed.length}**`,
+    "",
+    r.failed.length > 0 ? "## Failures\n" + r.failed.map((f) => `- \`${f.file}\`: ${f.reason}`).join("\n") : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /* ------------------------------ Dev Purge ----------------------------- */
@@ -416,6 +616,11 @@ export async function purgeJunk(
     done++;
     onProgress?.(done, items.length, path.basename(item.path));
   }
+
+  if (report.trashed.length > 0) {
+    await appendLog(`Dev Purge: **${report.trashed.length}** trashed, reclaimed **${formatSize(report.reclaimed)}**`);
+  }
+
   return report;
 }
 
@@ -481,6 +686,11 @@ export async function dedupFiles(
       onProgress?.(done, total, path.basename(dup));
     }
   }
+
+  if (report.trashed.length > 0) {
+    await appendLog(`Dedupe: **${report.trashed.length}** duplicates trashed, reclaimed **${formatSize(report.reclaimed)}**`);
+  }
+
   return report;
 }
 

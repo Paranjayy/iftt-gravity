@@ -23,6 +23,7 @@ import NodeReaper from "./node-reaper";
 import Scaffolder from "./project-scaffolder";
 import ExtensionAuditor from "./extension-auditor";
 import WarpDrive from "./warp";
+import { SCOPES, organizeDesktop as organizeDesktopFiles, undoDesktopOrganize } from "./fileops";
 
 interface NoteFile {
   name: string;
@@ -126,14 +127,17 @@ export default function Command() {
       style: Toast.Style.Animated,
     });
     try {
-      const res = await fetch("http://localhost:3031/archive/desktop/organize");
-      const data = (await res.json()) as { moved: number };
+      const data = await organizeDesktopFiles(SCOPES.desktop, { grain: "week" });
       toast.style = Toast.Style.Success;
       toast.title = "Desktop Purified";
-      toast.message = `${data.moved} files grouped into folders`;
+      toast.message =
+        data.failed.length > 0
+          ? `${data.moved.length} grouped, ${data.failed.length} failed`
+          : `${data.moved.length} files grouped into folders`;
     } catch (e) {
       toast.style = Toast.Style.Failure;
       toast.title = "Failed to organize desktop";
+      toast.message = (e as Error).message?.slice(0, 140);
     }
   }
 
@@ -143,8 +147,7 @@ export default function Command() {
       style: Toast.Style.Animated,
     });
     try {
-      const res = await fetch("http://localhost:3031/archive/desktop/undo");
-      const data = (await res.json()) as { count: number };
+      const data = await undoDesktopOrganize();
       if (data.count > 0) {
         toast.style = Toast.Style.Success;
         toast.title = "Organization Reversed";
@@ -156,6 +159,7 @@ export default function Command() {
     } catch (e) {
       toast.style = Toast.Style.Failure;
       toast.title = "Failed to undo";
+      toast.message = (e as Error).message?.slice(0, 140);
     }
   }
 
@@ -406,7 +410,7 @@ export default function Command() {
       <List.Section title="System Orchestration">
         <List.Item
           title="Clean & Group Desktop"
-          subtitle="Screenshots -> Folders | Purify Workspace"
+          subtitle="Local: screenshots → week folders. Hub not required."
           icon={Icon.Desktop}
           actions={
             <ActionPanel>
