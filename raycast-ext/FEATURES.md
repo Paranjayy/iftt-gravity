@@ -42,7 +42,8 @@ Group loose Desktop **screenshots only** (does **not** need archive port 3031).
 - **Reshape** already-organised files in place (week ↔ year/month/week/day ↔ named weekdays) — no Desktop undo
 - **Creates** `Organised Screenshots` if missing
 - **Never moves** PDFs, zips, or other drops; writes `DESKTOP-STRAY-WARNING.md` to Desktop and Downloads
-- **Grains:** year/month/week/day, year/month/week, ymd, named (`2026/09-September/Saturday/12`), verbose labels, ISO week, month, flat day
+- **Grains:** year/month/week/day, year/month/week, ymd, named (`2026/09-September/Saturday/12`), verbose (`2026/09-september/saturday/12`), ISO week, month, flat day
+- Folder *names* never contain `/`, `:`, or parentheses — nested directories only (git and Android-safe)
 - **Undo** restores the last batch
 
 ### Desktop Screenshot Guard (`desktop_guard`)

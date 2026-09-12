@@ -52,7 +52,7 @@ describe("calendar grains", () => {
 
   test("named and verbose weekday folders", () => {
     expect(calendarRelPath(d, "named")).toBe("2026/09-September/Wednesday/09");
-    expect(calendarRelPath(d, "verbose")).toBe("year(2026)/month(09-september)/weekday(Wednesday)/day(09)");
+    expect(calendarRelPath(d, "verbose")).toBe("2026/09-september/wednesday/09");
   });
 
   test("day is a flat ISO date", () => {

@@ -86,7 +86,7 @@ export function calendarRelPath(date: Date, grain: CalendarGrain): string {
     case "named":
       return `${year}/${month}-${titleMonth(date.getMonth())}/${weekday}/${day}`;
     case "verbose":
-      return `year(${year})/month(${month}-${monthName})/weekday(${weekday})/day(${day})`;
+      return `${year}/${month}-${monthName}/${weekday.toLowerCase()}/${day}`;
     case "week":
     default:
       return isoWeekKey(date);

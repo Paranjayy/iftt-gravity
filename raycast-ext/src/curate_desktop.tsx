@@ -7,7 +7,7 @@ const GRAINS: { value: CalendarGrain; title: string; hint: string }[] = [
   { value: "ymw", title: "Year / Month / Week", hint: "2026/09/W37" },
   { value: "ymd", title: "Year / Month / Day", hint: "2026/09/12" },
   { value: "named", title: "Named weekday", hint: "2026/09-September/Saturday/12" },
-  { value: "verbose", title: "Verbose labels", hint: "year(2026)/month(09-september)/weekday(Saturday)/day(12)" },
+  { value: "verbose", title: "Verbose lowercase", hint: "2026/09-september/saturday/12" },
   { value: "week", title: "ISO Week (Clean & Group)", hint: "2026-W37" },
   { value: "month", title: "Year / Month", hint: "2026/09" },
   { value: "day", title: "Flat day", hint: "2026-09-12" },
