@@ -148,6 +148,9 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
   (one-at-a-time), repeats coalesced within 2.5s. Clipboard capture
   chime at 20%. Explicit `/find` ringing stays loud on purpose.
 - Toggle subtitle now reads "Manual only — no automatic AC" when off.
+- **Fix (v1.6.1)**: Full-JSON export streams entry-by-entry — the live
+  store measured ~1GB / ~1000 entries, so one giant string would OOM
+  Raycast. Images/files export metadata only.
 
 ### Round 14: `ymsepwd` grain — 2026/09-Sep/W37/12 (v1.4.0)
 - **NEW grain `ymsepwd`** in `desktop-organize.calendarRelPath`:

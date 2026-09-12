@@ -153,23 +153,6 @@ function generateJsonExport(entries: ClipboardEntry[], label: string): string {
   return JSON.stringify({ exported: new Date().toISOString(), count: entries.length, entries: limited, totalEntries: entries.length }, null, 2);
 }
 
-function generateJsonFullExport(entries: ClipboardEntry[]): string {
-  // Complete content for text/html entries (no 500-char preview truncation).
-  // Images/files carry metadata only — their bytes stay in Raycast's store.
-  const all = entries.map((e) => ({
-    index: e.index,
-    type: e.type,
-    timestamp: e.modified.toISOString(),
-    filename: e.filename,
-    charCount: e.charCount,
-    wordCount: e.wordCount,
-    sizeBytes: e.size,
-    firstLine: e.firstLine,
-    content: e.content,
-  }));
-  return JSON.stringify({ exported: new Date().toISOString(), count: entries.length, entries: all }, null, 2);
-}
-
 function ExportView() {
   const [entries, setEntries] = useState<ClipboardEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -218,11 +201,39 @@ function ExportView() {
   async function exportRecent() { await doExport(textEntries.slice(0, 20), "recent-20"); }
 
   async function exportFullJson() {
-    const { mkdir, writeFile } = await import("node:fs/promises");
+    // Streams entry-by-entry: the store can be ~1GB, so building one giant
+    // string would blow Raycast's heap. Images/files export metadata only.
+    const { mkdir } = await import("node:fs/promises");
+    const { createWriteStream } = await import("node:fs");
     await mkdir(outDir, { recursive: true });
-    const json = generateJsonFullExport(entries);
     const outPath = path.join(outDir, `clipboard-full-${Date.now()}.json`);
-    await writeFile(outPath, json);
+    const stream = createWriteStream(outPath, { encoding: "utf8" });
+    const drain = () => new Promise<void>((r) => stream.once("drain", () => r()));
+    stream.write(`{"exported":"${new Date().toISOString()}","count":${entries.length},"entries":[`);
+    let first = true;
+    for (const e of entries) {
+      if (!first) stream.write(",");
+      first = false;
+      const ok = stream.write(
+        JSON.stringify({
+          index: e.index,
+          type: e.type,
+          timestamp: e.modified.toISOString(),
+          filename: e.filename,
+          charCount: e.charCount,
+          wordCount: e.wordCount,
+          sizeBytes: e.size,
+          firstLine: e.firstLine,
+          content: e.content,
+        }),
+      );
+      if (!ok) await drain();
+    }
+    stream.write("]}");
+    await new Promise<void>((resolve, reject) => {
+      stream.on("error", reject);
+      stream.end(() => resolve());
+    });
     showToast({ title: `Exported ${entries.length} entries (full content)`, message: outPath, style: Toast.Style.Success });
   }
 
