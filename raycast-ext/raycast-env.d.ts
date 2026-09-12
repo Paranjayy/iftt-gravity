@@ -72,6 +72,10 @@ declare namespace Preferences {
   export type RepoBackup = ExtensionPreferences & {}
   /** Preferences accessible in the `desktop_week` command */
   export type DesktopWeek = ExtensionPreferences & {}
+  /** Preferences accessible in the `curate_desktop` command */
+  export type CurateDesktop = ExtensionPreferences & {}
+  /** Preferences accessible in the `desktop_guard` command */
+  export type DesktopGuard = ExtensionPreferences & {}
   /** Preferences accessible in the `screenshot_fix` command */
   export type ScreenshotFix = ExtensionPreferences & {}
   /** Preferences accessible in the `file_curator` command */
@@ -80,6 +84,10 @@ declare namespace Preferences {
   export type ClipboardBackup = ExtensionPreferences & {}
   /** Preferences accessible in the `organize_repos` command */
   export type OrganizeRepos = ExtensionPreferences & {}
+  /** Preferences accessible in the `gravity_hub` command */
+  export type GravityHub = ExtensionPreferences & {}
+  /** Preferences accessible in the `quick_stats` command */
+  export type QuickStats = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -131,6 +139,10 @@ declare namespace Arguments {
   export type RepoBackup = {}
   /** Arguments passed to the `desktop_week` command */
   export type DesktopWeek = {}
+  /** Arguments passed to the `curate_desktop` command */
+  export type CurateDesktop = {}
+  /** Arguments passed to the `desktop_guard` command */
+  export type DesktopGuard = {}
   /** Arguments passed to the `screenshot_fix` command */
   export type ScreenshotFix = {}
   /** Arguments passed to the `file_curator` command */
@@ -139,5 +151,9 @@ declare namespace Arguments {
   export type ClipboardBackup = {}
   /** Arguments passed to the `organize_repos` command */
   export type OrganizeRepos = {}
+  /** Arguments passed to the `gravity_hub` command */
+  export type GravityHub = {}
+  /** Arguments passed to the `quick_stats` command */
+  export type QuickStats = {}
 }
 

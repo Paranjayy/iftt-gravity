@@ -396,16 +396,30 @@ function fileDate(file: string, name: string): Date {
   return captureDateFromName(name) ?? fs.statSync(file).mtime;
 }
 
+export const DESKTOP_SCREENSHOT_BREAK = 48;
+export const DESKTOP_MOVE_BATCH = 32;
+export const STRAY_WARNING_NAME = "DESKTOP-STRAY-WARNING.md";
+
+function isReservedDesktopName(name: string): boolean {
+  return name.startsWith(".") || name.startsWith("Organised") || name === STRAY_WARNING_NAME;
+}
+
 export async function organizeDesktop(
   root: string,
   opts: {
     grain?: CalendarGrain;
     skipLog?: boolean;
     undoPath?: string;
+    screenshotsOnly?: boolean;
+    batchSize?: number;
+    batchDelayMs?: number;
     onProgress?: (done: number, total: number, name: string) => void;
   } = {},
 ): Promise<OrganizeReport> {
   const grain = opts.grain ?? "week";
+  const screenshotsOnly = opts.screenshotsOnly ?? true;
+  const batchSize = Math.max(1, opts.batchSize ?? DESKTOP_MOVE_BATCH);
+  const batchDelayMs = opts.batchDelayMs ?? 0;
   const undoPath = opts.undoPath ?? DESKTOP_UNDO_PATH;
   const screenshotRoot = path.join(root, "Organised Screenshots");
   const folderRoot = path.join(root, "Organised Folders");
@@ -419,14 +433,10 @@ export async function organizeDesktop(
     return report;
   }
 
-  const files = entries.filter(
-    (e) =>
-      e.isFile() &&
-      !e.name.startsWith(".") &&
-      !e.name.startsWith("Organised"),
-  );
+  const files = entries.filter((e) => e.isFile() && !isReservedDesktopName(e.name));
+  const targets = screenshotsOnly ? files.filter((e) => isScreenshotName(e.name)) : files;
   let done = 0;
-  for (const entry of files) {
+  for (const entry of targets) {
     const file = path.join(root, entry.name);
     try {
       const destDir = isScreenshotName(entry.name)
@@ -440,7 +450,10 @@ export async function organizeDesktop(
       report.failed.push({ file, reason: (err as Error).message.slice(0, 120) });
     }
     done++;
-    opts.onProgress?.(done, files.length, entry.name);
+    opts.onProgress?.(done, targets.length, entry.name);
+    if (done % batchSize === 0 && batchDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, batchDelayMs));
+    }
   }
 
   try {
@@ -453,11 +466,126 @@ export async function organizeDesktop(
   if (!opts.skipLog && report.moved.length > 0) {
     const folder = root.replace(os.homedir(), "~");
     await appendLog(
-      `Desktop organize (${grain}): **${report.moved.length}** moved, **${report.failed.length}** failed in \`${folder}\``,
+      `Desktop organize (${grain}${screenshotsOnly ? ", screenshots-only" : ""}): **${report.moved.length}** moved, **${report.failed.length}** failed in \`${folder}\``,
     );
   }
 
   return report;
+}
+
+export interface DesktopStray {
+  name: string;
+  path: string;
+  size: number;
+  mtime: string;
+}
+
+export interface GuardReport {
+  screenshots: number;
+  strays: DesktopStray[];
+  overBreak: boolean;
+  swept: OrganizeReport | null;
+  warningPaths: string[];
+}
+
+function strayMarkdown(root: string, strays: DesktopStray[], screenshots: number, swept: number): string {
+  const lines = [
+    `# Desktop stray warning`,
+    "",
+    `_Generated ${new Date().toISOString().replace("T", " ").slice(0, 19)}_`,
+    "",
+    `Loose screenshots seen: **${screenshots}**. Swept this run: **${swept}**.`,
+    "",
+    "Clean & Group only moves macOS screenshots (`Screenshot …`, `Screen Shot …`). Everything else on the Desktop was **left in place** so a third-party drop is never silently filed away.",
+    "",
+    "## Left on Desktop",
+    "",
+  ];
+  for (const s of strays) {
+    lines.push(`- \`${s.name}\` — ${formatSize(s.size)} — mtime ${s.mtime}`);
+    lines.push(`  \`${s.path}\``);
+  }
+  lines.push("", "## What to do", "");
+  lines.push("- Move these yourself, or leave them if they belong on the Desktop.");
+  lines.push("- Do not keep thousands of screenshots on the Desktop: Finder icon preview will eat RAM.");
+  lines.push(`- Breaking point is **${DESKTOP_SCREENSHOT_BREAK}** loose screenshots; over that, a guard sweep archives them into \`Organised Screenshots/{ISO week}/\` in batches of ${DESKTOP_MOVE_BATCH}.`);
+  lines.push(`- Root: \`${root}\``);
+  lines.push("");
+  return lines.join("\n");
+}
+
+export async function guardDesktop(
+  root: string,
+  opts: {
+    downloadsDir: string;
+    threshold?: number;
+    force?: boolean;
+    grain?: CalendarGrain;
+    skipLog?: boolean;
+    undoPath?: string;
+    batchSize?: number;
+    batchDelayMs?: number;
+    onProgress?: (done: number, total: number, name: string) => void;
+  },
+): Promise<GuardReport> {
+  const threshold = opts.threshold ?? DESKTOP_SCREENSHOT_BREAK;
+  const grain = opts.grain ?? "week";
+  let entries: fs.Dirent[] = [];
+  try {
+    entries = await fs.promises.readdir(root, { withFileTypes: true });
+  } catch {
+    return { screenshots: 0, strays: [], overBreak: false, swept: null, warningPaths: [] };
+  }
+
+  const files = entries.filter((e) => e.isFile() && !isReservedDesktopName(e.name));
+  const shots = files.filter((e) => isScreenshotName(e.name));
+  const strayEntries = files.filter((e) => !isScreenshotName(e.name));
+  const strays: DesktopStray[] = [];
+  for (const e of strayEntries) {
+    const full = path.join(root, e.name);
+    try {
+      const st = await fs.promises.stat(full);
+      strays.push({
+        name: e.name,
+        path: full,
+        size: st.size,
+        mtime: st.mtime.toISOString().replace("T", " ").slice(0, 19),
+      });
+    } catch {
+      strays.push({ name: e.name, path: full, size: 0, mtime: "unknown" });
+    }
+  }
+
+  const overBreak = shots.length >= threshold;
+  let swept: OrganizeReport | null = null;
+  if (opts.force || overBreak) {
+    swept = await organizeDesktop(root, {
+      grain,
+      screenshotsOnly: true,
+      skipLog: opts.skipLog,
+      undoPath: opts.undoPath,
+      batchSize: opts.batchSize,
+      batchDelayMs: opts.batchDelayMs ?? 15,
+      onProgress: opts.onProgress,
+    });
+  }
+
+  const warningPaths: string[] = [];
+  if (strays.length > 0) {
+    const body = strayMarkdown(root, strays, shots.length, swept?.moved.length ?? 0);
+    for (const dir of [root, opts.downloadsDir]) {
+      try {
+        await fs.promises.mkdir(dir, { recursive: true });
+        const dest = path.join(dir, STRAY_WARNING_NAME);
+        await fs.promises.writeFile(dest, body, "utf-8");
+        warningPaths.push(dest);
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  return { screenshots: shots.length, strays, overBreak, swept, warningPaths };
 }
 
 export async function undoDesktopOrganize(

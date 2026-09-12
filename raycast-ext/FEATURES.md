@@ -37,11 +37,14 @@ Sort top-level Desktop files into `YYYY-Www` week folders.
 - **Trash-safe**
 
 ### Curate Desktop (`curate_desktop`)
-Group loose Desktop files locally (does **not** need archive port 3031).
+Group loose Desktop **screenshots only** (does **not** need archive port 3031).
 - **Screenshots** → `Organised Screenshots/{grain}/` using the date in the filename
-- **Other files** → `Organised Folders/{type}/`
+- **Never moves** PDFs, zips, or other drops; writes `DESKTOP-STRAY-WARNING.md` to Desktop and Downloads
 - **Grains:** year/month/day, year/month, ISO week, day
 - **Undo** restores the last batch
+
+### Desktop Screenshot Guard (`desktop_guard`)
+No-view. If loose screenshots ≥ 48, sweep them into ISO week folders in batches of 32. Same stray warning. Safe to bind to a hotkey or later launchd.
 
 ### Screenshot Fixer (`screenshot_fix`)
 Three-in-one: switch macOS screenshots to JPG, disable window shadows, shrink existing Desktop PNGs.

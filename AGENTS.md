@@ -109,3 +109,8 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+
+## Desktop file tools
+
+See `raycast-ext/AGENTS.md` and `raycast-ext/DESIGN.md`. Screenshot sweeps are local, screenshot-only, and must not depend on port 3031.
+

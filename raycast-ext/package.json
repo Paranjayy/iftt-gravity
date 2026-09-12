@@ -184,6 +184,13 @@
       "mode": "view"
     },
     {
+      "name": "desktop_guard",
+      "title": "Desktop Screenshot Guard",
+      "description": "If loose screenshots exceed the break, sweep them into week folders; warn on non-screenshot files",
+      "icon": "commands/control.png",
+      "mode": "no-view"
+    },
+    {
       "name": "screenshot_fix",
       "title": "Screenshot Fixer",
       "description": "Switch macOS captures to JPG, drop window shadows, shrink existing Desktop PNGs",

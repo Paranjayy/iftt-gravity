@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   SCOPES,
   CalendarGrain,
-  organizeDesktop,
+  guardDesktop,
   organizeMarkdown,
   undoDesktopOrganize,
 } from "./fileops";
@@ -26,7 +26,7 @@ export default function Command() {
     if (
       !(await confirmAlert({
         title: `Curate Desktop by ${selected.title}?`,
-        message: `Loose Desktop files only. Screenshots → Organised Screenshots/${selected.hint}/… Other files → Organised Folders by type. Capture date comes from the filename when possible.`,
+        message: `Screenshots only → Organised Screenshots/${selected.hint}/. Other Desktop files are never moved; a warning is written to Desktop and Downloads if any remain.`,
         primaryAction: { title: "Curate" },
       }))
     )
@@ -37,13 +37,20 @@ export default function Command() {
         title={`Curating by ${selected.title}`}
         icon="🗂️"
         task={async (onP) => {
-          const r = await organizeDesktop(root, { grain, onProgress: onP });
-          showToast({
-            title: `Moved ${r.moved.length}`,
-            style: r.failed.length ? Toast.Style.Failure : Toast.Style.Success,
-            message: r.failed.length ? `${r.failed.length} failed` : undefined,
+          const r = await guardDesktop(root, {
+            downloadsDir: SCOPES.downloads,
+            grain,
+            force: true,
+            onProgress: onP,
           });
-          return organizeMarkdown(grain, r);
+          const moved = r.swept?.moved.length ?? 0;
+          const failed = r.swept?.failed.length ?? 0;
+          showToast({
+            title: `Moved ${moved} screenshots`,
+            style: failed ? Toast.Style.Failure : Toast.Style.Success,
+            message: r.strays.length ? `${r.strays.length} strays left (warning MD)` : undefined,
+          });
+          return organizeMarkdown(grain, r.swept ?? { moved: [], failed: [] });
         }}
       />,
     );
@@ -70,7 +77,7 @@ export default function Command() {
     >
       <List.Item
         title={`Curate Desktop → ${selected.hint}`}
-        subtitle="Screenshots by capture date · other files by type"
+        subtitle="Screenshots by capture date · never moves other files"
         icon={Icon.Calendar}
         actions={
           <ActionPanel>

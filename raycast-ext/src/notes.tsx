@@ -23,7 +23,7 @@ import NodeReaper from "./node-reaper";
 import Scaffolder from "./project-scaffolder";
 import ExtensionAuditor from "./extension-auditor";
 import WarpDrive from "./warp";
-import { SCOPES, organizeDesktop as organizeDesktopFiles, undoDesktopOrganize } from "./fileops";
+import { SCOPES, undoDesktopOrganize, guardDesktop } from "./fileops";
 
 interface NoteFile {
   name: string;
@@ -123,17 +123,27 @@ export default function Command() {
 
   async function organizeDesktop() {
     const toast = await showToast({
-      title: "Organizing Desktop...",
+      title: "Sweeping screenshots...",
       style: Toast.Style.Animated,
     });
     try {
-      const data = await organizeDesktopFiles(SCOPES.desktop, { grain: "week" });
-      toast.style = Toast.Style.Success;
-      toast.title = "Desktop Purified";
-      toast.message =
-        data.failed.length > 0
-          ? `${data.moved.length} grouped, ${data.failed.length} failed`
-          : `${data.moved.length} files grouped into folders`;
+      const data = await guardDesktop(SCOPES.desktop, {
+        downloadsDir: SCOPES.downloads,
+        grain: "week",
+        force: true,
+      });
+      const moved = data.swept?.moved.length ?? 0;
+      const failed = data.swept?.failed.length ?? 0;
+      const strayN = data.strays.length;
+      toast.style = failed > 0 ? Toast.Style.Failure : Toast.Style.Success;
+      toast.title = "Screenshots grouped";
+      toast.message = [
+        `${moved} moved into Organised Screenshots/week`,
+        strayN > 0 ? `${strayN} other files left — see DESKTOP-STRAY-WARNING.md` : "no strays",
+        failed > 0 ? `${failed} failed` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
     } catch (e) {
       toast.style = Toast.Style.Failure;
       toast.title = "Failed to organize desktop";
@@ -410,7 +420,7 @@ export default function Command() {
       <List.Section title="System Orchestration">
         <List.Item
           title="Clean & Group Desktop"
-          subtitle="Local: screenshots → week folders. Hub not required."
+          subtitle="Screenshots → week folders. Other files stay; warning MD if strays."
           icon={Icon.Desktop}
           actions={
             <ActionPanel>
