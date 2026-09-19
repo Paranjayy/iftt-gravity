@@ -1,9 +1,9 @@
 # Use the official Bun image
-FROM oven/sh/bun:latest as base
+FROM oven/bun:latest as base
 WORKDIR /usr/src/app
 
 # Install dependencies
-COPY package.json bun.lockb ./
+COPY package.json bun.lock* ./
 RUN bun install
 
 # Copy source code

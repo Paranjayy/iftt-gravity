@@ -9,6 +9,13 @@ cd "$SCRIPT_DIR"
 echo "🚀 Starting Gravity IFTTT Dashboard..."
 echo "📂 Working from: $SCRIPT_DIR"
 
+# Keep the dashboard and Raycast on the same backend path. The backend
+# launcher is idempotent and can use native Bun or Docker when available.
+if ! curl -fsS --max-time 1 http://127.0.0.1:3030/ >/dev/null 2>&1; then
+  echo "🪐 Starting Gravity Hub backend..."
+  "$SCRIPT_DIR/raycast-ext/start-gravity.sh" || exit 1
+fi
+
 # Try bun first, then npm, then npx
 if command -v bun &> /dev/null; then
   echo "✅ Found Bun! Setting up local environment shims..."

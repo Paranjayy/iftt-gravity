@@ -176,43 +176,49 @@ export class MiraieAdapter extends Adapter {
   }
 
   async controlDevice(deviceId: string, command: Partial<MiraieStatus>): Promise<void> {
-    if (!this.accessToken) await this.login();
-
     const device = this.devices.find(d => d.deviceId === deviceId);
     if (!device) throw new Error(`Device ${deviceId} not found`);
 
-    return new Promise((resolve, reject) => {
-      const client = mqtt.connect('mqtts://mqtt.miraie.in:8883', {
-        username: device.homeId, 
-        password: this.accessToken!, 
-        clientId: 'ha-mirae-mqtt-' + Math.floor(Math.random() * 1000)
-      });
+    // MirAie MQTT credentials are short-lived. A long-running hub can keep
+    // its HTTP device list fresh while its MQTT token has already expired.
+    // Refresh once on broker auth failure, then surface the real error.
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (!this.accessToken) await this.login();
+      try {
+        await new Promise<void>((resolve, reject) => {
+          const client = mqtt.connect('mqtts://mqtt.miraie.in:8883', {
+            username: device.homeId,
+            password: this.accessToken!,
+            clientId: 'ha-mirae-mqtt-' + Math.floor(Math.random() * 1000)
+          });
 
-      client.on('connect', () => {
-        // MirAie Mandatory Protocol Handshake
-        const payload = { 
-          ki: 1, 
-          cnt: 'an', 
-          sid: '1', 
-          bz: 1, 
-          ...command 
-        };
-        client.publish(device.topic.pub, JSON.stringify(payload), (err) => {
-          client.end();
-          if (err) reject(err);
-          else {
-            // Update local status cache for immediate feedback
-            device.status = { ...device.status, ...command };
-            resolve();
-          }
+          client.on('connect', () => {
+            const payload = { ki: 1, cnt: 'an', sid: '1', bz: 1, ...command };
+            client.publish(device.topic.pub, JSON.stringify(payload), (err) => {
+              client.end();
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+
+          client.on('error', (err) => {
+            client.end();
+            reject(err);
+          });
         });
-      });
 
-      client.on('error', (err) => {
-        client.end();
-        reject(err);
-      });
-    });
+        // Update local status cache only after the broker accepted the command.
+        device.status = { ...device.status, ...command };
+        return;
+      } catch (error) {
+        const message = String((error as Error)?.message || error);
+        const authFailure = /bad username or password|not authorized|not authorised/i.test(message);
+        if (!authFailure || attempt === 1) throw error;
+        console.warn(`[MirAie] MQTT auth rejected for ${deviceId}; refreshing session and retrying once.`);
+        this.accessToken = null;
+        await this.login();
+      }
+    }
   }
 
   async getDeviceStatus(deviceId: string): Promise<MiraieStatus | null> {

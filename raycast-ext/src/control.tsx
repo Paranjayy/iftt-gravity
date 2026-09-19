@@ -121,11 +121,21 @@ export default function Command() {
     showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
       const res = await fetch(hubUrl(endpoint.startsWith("/") ? endpoint.slice(1) : endpoint));
-      if (!res.ok) throw new Error("Failed");
+      if (!res.ok) throw new Error(await describeHubFailure(res));
       showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
       setTimeout(refresh, 500);
     } catch (e) {
       showToast({ style: Toast.Style.Failure, title: "Action Failed", message: "Hub Offline" });
+    }
+  }
+
+  async function describeHubFailure(response: Response): Promise<string> {
+    const body = await response.text().catch(() => "");
+    try {
+      const parsed = JSON.parse(body) as { message?: string; requestId?: string };
+      return `${parsed.message || `Hub returned ${response.status}`}${parsed.requestId ? ` (ref ${parsed.requestId})` : ""}`;
+    } catch {
+      return body || `Hub returned ${response.status}`;
     }
   }
 
@@ -142,18 +152,27 @@ export default function Command() {
   async function runDirectScene(name: string, ac: Record<string, string>, light: Record<string, unknown>) {
     showToast({ style: Toast.Style.Animated, title: `Pulsing: ${name}...` });
     try {
-      const [acResponse, bulbsResponse] = await Promise.all([
+      const [acResult, bulbsResult] = await Promise.allSettled([
         fetch(hubUrl(`control/ac/set?${new URLSearchParams(ac).toString()}`)),
         fetch(hubUrl("control/wiz/devices")),
       ]);
-      if (!acResponse.ok || !bulbsResponse.ok) throw new Error("Hub request failed");
-      const devices = (await bulbsResponse.json()) as { bulbs?: WizDevice[] };
+
+      const acFailure = acResult.status === "rejected"
+        ? `AC request failed: ${acResult.reason instanceof Error ? acResult.reason.message : String(acResult.reason)}`
+        : !acResult.value.ok
+          ? `AC request failed: ${await describeHubFailure(acResult.value)}`
+          : null;
+      if (bulbsResult.status === "rejected") throw new Error(`WiZ request failed: ${bulbsResult.reason instanceof Error ? bulbsResult.reason.message : String(bulbsResult.reason)}`);
+      if (!bulbsResult.value.ok) throw new Error(`WiZ request failed: ${await bulbsResult.value.text()}`);
+
+      const devices = (await bulbsResult.value.json()) as { bulbs?: WizDevice[] };
       const bulb = devices.bulbs?.find((candidate) => candidate.online && candidate.ip) || devices.bulbs?.find((candidate) => candidate.ip);
       if (!bulb?.ip) throw new Error("No reachable WiZ bulb found");
       await sendWizPilotResilient(bulb.ip, light, {
         mac: bulb.mac,
         hubFallback: (params) => hubWizControl(bulb.mac, params),
       });
+      if (acFailure) throw new Error(`${acFailure}. WiZ applied; AC needs re-authentication.`);
       showToast({ style: Toast.Style.Success, title: `Confirmed: ${name}` });
       setTimeout(refresh, 500);
     } catch (error) {

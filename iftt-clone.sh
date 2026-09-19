@@ -34,6 +34,19 @@ wait_for_port() {
   return 1
 }
 
+wait_for_http_port() {
+  local port="$1"
+  local attempts=30
+  while [ "$attempts" -gt 0 ]; do
+    if curl -fsS --max-time 1 "http://127.0.0.1:$port/" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+    attempts=$((attempts - 1))
+  done
+  return 1
+}
+
 launch_detached() {
   local log_file="$1"
   shift
@@ -46,6 +59,12 @@ launch_detached() {
 ensure_dependencies() {
   if [ ! -d "$ROOT/node_modules" ]; then
     echo "  ↳ Installing hub dependencies…"
+    (cd "$ROOT" && PUPPETEER_SKIP_DOWNLOAD=1 "$BUN" install --frozen-lockfile) || return 1
+  fi
+  # A partial install can leave the directory present while the bot's direct
+  # imports are still missing. Validate the dependency the hub needs at boot.
+  if [ ! -f "$ROOT/node_modules/puppeteer/package.json" ]; then
+    echo "  ↳ Repairing incomplete hub dependencies…"
     (cd "$ROOT" && PUPPETEER_SKIP_DOWNLOAD=1 "$BUN" install --frozen-lockfile) || return 1
   fi
 }
@@ -68,7 +87,7 @@ if [ "$1" == "bot" ]; then
   ensure_dependencies || exit 1
   ps aux | grep "src/lib/bot.ts" | grep -v grep | awk '{print $2}' | xargs kill -9 2>/dev/null
   launch_detached "$BOT_LOG" "$BUN" "--preload=$PRELOAD" src/lib/bot.ts
-  if wait_for_port 3030; then
+  if wait_for_http_port 3030; then
     echo "✅ Hub Bot is now live (Port 3030)."
     exit 0
   fi
@@ -111,7 +130,7 @@ launch_detached "$BOT_LOG" "$BUN" "--preload=$PRELOAD" src/lib/bot.ts
 
 sleep 4
 # Final Pulse Check
-if wait_for_port 3000 && wait_for_port 3030 && wait_for_port 3031; then
+if wait_for_port 3000 && wait_for_http_port 3030 && wait_for_port 3031; then
   echo "✅ Gravity Hub Restoration: SUCCESS."
 else
   echo "❌ Gravity Boot Failed."

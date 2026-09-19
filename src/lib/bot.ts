@@ -49,13 +49,35 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import puppeteer from 'puppeteer';
 import os from 'os';
+
+// Puppeteer powers a few optional browser/scraping features. Keep it lazy so
+// the local control API and device automations can boot on lean installs.
+let puppeteerModule: any | null | undefined;
+async function getPuppeteer() {
+  if (puppeteerModule !== undefined) return puppeteerModule;
+  try {
+    const module = await import('puppeteer');
+    puppeteerModule = module.default ?? module;
+  } catch {
+    puppeteerModule = null;
+    console.warn('⚠️ Puppeteer unavailable; browser features disabled.');
+  }
+  return puppeteerModule;
+}
 
 const weather = new WeatherEngine();
 
 const execAsync = promisify(exec);
 const CONFIG_PATH = path.join(process.cwd(), 'config.json');
+const API_LOG_PATH = '/tmp/gravity-api.log';
+
+function apiLog(event: string, details: Record<string, unknown> = {}) {
+  const line = `[${new Date().toISOString()}] ${event} ${JSON.stringify(details)}`;
+  console.error(line);
+  try { fs.appendFileSync(API_LOG_PATH, `${line}\n`); } catch { /* logging must never break control */ }
+}
+
 const LOG_PATH = path.join(process.cwd(), 'house_log.md');
 const WISHLIST_PATH = path.join(process.cwd(), 'house_wishlist.md');
 const IPL_ROOT = "/Users/paranjay/Downloads/2work/dev/Web_Apps/ipl-2026-engine/public/data/balls";
@@ -2178,6 +2200,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
   // ──────────────────────────────────────────────────────
   setInterval(async () => {
     try {
+      const puppeteer = await getPuppeteer();
+      if (!puppeteer) return;
       const browser = await puppeteer.launch({ headless: true });
       const page = await browser.newPage();
       await page.goto('https://www.pgvcl.com/consumer/index.php');
@@ -3514,6 +3538,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
       const lang = args[0] || '';
       await send(`🔍 *Scraping GitHub Trending* ${lang ? 'for ' + lang : ''}...`);
       try {
+        const puppeteer = await getPuppeteer();
+        if (!puppeteer) return await send('❌ Browser features unavailable: install Puppeteer to enable scraping.');
         const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
         await page.goto(`https://github.com/trending/${lang}`, { waitUntil: 'networkidle2' });
@@ -4343,7 +4369,7 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
         // Require valid token for all sensitive paths, BUT allow Localhost (Raycast) to skip
         if (!isLocal && (url.pathname.includes('/control') || url.pathname.includes('/scene') || url.pathname.includes('/trigger'))) {
            if (tokenStr !== (config.hubToken || 'gravity_unprotected')) {
-              console.warn(`🔐 API: Unauthorized attempt from ${host} to ${url.pathname}`);
+      console.warn(`🔐 API: Unauthorized attempt from ${host} to ${url.pathname}`);
               return new Response(JSON.stringify({ error: "Unauthorized. Hub Token required for remote access." }), { 
                 status: 401, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
               });
@@ -5581,7 +5607,20 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
             }
             return new Response('No device or adapter not active', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
           } catch (e: any) {
-            return new Response(`Error: ${e.message}`, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+            const requestId = `ac-${Date.now().toString(36)}`;
+            apiLog('ac_control_failed', {
+              requestId,
+              fields: Object.keys(cmd),
+              error: e?.message || String(e),
+            });
+            return new Response(JSON.stringify({
+              error: 'ac_control_failed',
+              message: e?.message || 'AC command failed',
+              requestId,
+            }), {
+              status: 500,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            });
           }
         }
         if (url.pathname === '/control/volume') {
@@ -5699,7 +5738,9 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     });
     (global as any).gravityWebKeepAlive = (global as any).gravityWebKeepAlive || setInterval(() => {}, 60_000);
     console.log('🌐 Web API enabled: :3030/scene/[NAME]');
-  } catch(e) { console.warn('API error (port likely in use)'); }
+  } catch(e) {
+    apiLog('api_bind_failed', { port: 3030, error: e instanceof Error ? e.message : String(e) });
+  }
 
   // ──────────────────────────────────────────────────────
   // PGVCL Utility Scraper (God Mode v2)
@@ -5713,6 +5754,8 @@ async function getBattery() { try { const { stdout } = await execAsync(`pmset -g
     logActivity("⚡ Starting PGVCL Utility Scan...");
     let browser;
     try {
+      const puppeteer = await getPuppeteer();
+      if (!puppeteer) return;
       browser = await puppeteer.launch({ 
         headless: 'new',
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']

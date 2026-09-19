@@ -110,7 +110,17 @@ bun --hot ./index.ts
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
 
+## Gravity backend etiquette
+
+- `start.sh` and `raycast-ext/start-gravity.sh` share the same backend bootstrap; keep them aligned.
+- Treat `127.0.0.1:3030` as the control-plane health contract. A process existing is not enough; verify an HTTP response.
+- Prefer actionable, subsystem-specific errors with a short request reference. Never log tokens, passwords, full query strings, or device secrets.
+- Native Bun is the first route; Docker is an optional fallback. Do not make Raycast depend on the dashboard port.
+- Before handoff: run `bun run build` in `raycast-ext`, the focused Bun tests, shell syntax checks, and `docker compose config`.
+- Preserve unrelated dirty data files. Commit only intended source, docs, and configuration changes.
+
+See [DESIGN.md](DESIGN.md) for the launcher and logging contract.
+
 ## Desktop file tools
 
 See `raycast-ext/AGENTS.md` and `raycast-ext/DESIGN.md`. Screenshot sweeps are local, screenshot-only, and must not depend on port 3031.
-

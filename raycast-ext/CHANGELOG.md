@@ -135,6 +135,27 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 18: optional Puppeteer runtime
+- **Fix**: the hub no longer hard-imports Puppeteer during startup. The local
+  API and device controls boot without it; PGVCL and browser-scraping commands
+  skip or report that browser features are unavailable until Puppeteer exists.
+
+### Round 19: resilient AC scenes and one backend launcher (v1.6.3)
+- **Fix**: refreshes an expired MirAie MQTT login once before failing an AC
+  command, fixing stale `Bad username or password` sessions.
+- **Fix**: Work Mode and similar Raycast scenes now apply WiZ even when AC
+  authentication fails, and show the real failing subsystem.
+- **Fix**: `start.sh` and the Raycast launcher share the same native/Docker
+  backend bootstrap path.
+
+### Round 17: resilient Gravity Hub startup (v1.6.2)
+- **Fix**: `Start Gravity Hub` now checks for an existing local API before
+  launching, repairs missing/partial Bun dependencies, waits for port 3030,
+  and reports a useful launcher log on failure.
+- **Fallback**: if native startup cannot provide the hub, the command tries
+  Docker when it is installed and running; Docker now builds from the bot
+  image and exposes the Raycast control API on port 3030.
+
 ### Round 16: clipboard full-JSON export + honest Auto-AC toggle (v1.6.0)
 - **Clipboard Export**: new `Export Full JSON` action — complete text
   content + metadata (chars, words, size, timestamps) for every entry.
