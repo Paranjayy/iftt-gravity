@@ -1,6 +1,6 @@
 import { ActionPanel, Action, Icon, List, LocalStorage, showToast, Toast, Color } from "@raycast/api";
 import { useState, useEffect, useMemo } from "react";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, open } from "node:fs/promises";
 import path from "node:path";
 
 const ARCHIVE_DIR = "/Users/paranjay/Developer/iftt/gravity-archive";
@@ -11,54 +11,54 @@ const BUCKETS: Record<Bucket, { title: string; icon: Icon; tint: string }> = {
   thoughts: { title: "Thoughts", icon: Icon.LightBulb, tint: "#3CC8F0" },
 };
 
-interface Clip {
-  line: number;
-  createdAt: string;
+interface IdxEntry {
+  o: number;
+  n: number;
+  ts: string;
   kind: string;
-  preview: string;
   len: number;
-  isCode: boolean;
-  hasLink: boolean;
-  full?: string;
+  prev: string;
+  s: string;
+  code: boolean;
+  link: boolean;
 }
 
-async function latestJsonl(): Promise<string | null> {
+let jsonlPath = "";
+
+async function latestIdx(): Promise<IdxEntry[] | null> {
   try {
-    const files = (await readdir(ARCHIVE_DIR)).filter((f) => f.startsWith("rayconfig-clips-") && f.endsWith(".jsonl")).sort();
-    return files.length ? path.join(ARCHIVE_DIR, files[files.length - 1]) : null;
+    const files = (await readdir(ARCHIVE_DIR)).filter((f) => f.startsWith("rayconfig-clips-") && f.endsWith(".idx.json")).sort();
+    if (!files.length) return null;
+    jsonlPath = path.join(ARCHIVE_DIR, files[files.length - 1].replace(/\.idx\.json$/, ".jsonl"));
+    const idx = JSON.parse(await readFile(path.join(ARCHIVE_DIR, files[files.length - 1]), "utf8"));
+    return idx.entries as IdxEntry[];
   } catch {
     return null;
   }
 }
 
-async function loadClips(): Promise<Clip[]> {
-  const file = await latestJsonl();
-  if (!file) return [];
-  const lines = (await readFile(file, "utf8")).trim().split("\n");
-  return lines.map((l, i) => {
-    const e = JSON.parse(l);
-    const text: string = e.kind === "text" ? e.text : "";
-    return {
-      line: i,
-      createdAt: e.createdAt || "",
-      kind: e.kind,
-      preview: e.kind === "text" ? text.replace(/\s+/g, " ").trim().slice(0, 110) || "(empty)" : `[image] ${e.imagePath || ""}`.slice(0, 110),
-      len: text.length,
-      isCode: /```|function |const .*=|import .*from|def |class /.test(text),
-      hasLink: /https?:\/\//.test(text),
-      full: e.kind === "text" ? text : undefined,
-    };
-  });
+// Slice one clip body from disk — the index stays tiny so we never OOM the heap.
+async function readBody(e: IdxEntry): Promise<string | null> {
+  try {
+    const fh = await open(jsonlPath, "r");
+    const buf = Buffer.alloc(e.n);
+    await fh.read(buf, 0, e.n, e.o);
+    await fh.close();
+    const parsed = JSON.parse(buf.toString("utf8"));
+    return typeof parsed.text === "string" ? parsed.text : null;
+  } catch {
+    return null;
+  }
 }
 
 export default function Command() {
-  const [clips, setClips] = useState<Clip[] | null>(null);
+  const [clips, setClips] = useState<IdxEntry[] | null>(null);
   const [buckets, setBuckets] = useState<Record<string, Bucket>>({});
   const [bucketFilter, setBucketFilter] = useState("all");
   const [kindFilter, setKindFilter] = useState("all");
 
   useEffect(() => {
-    loadClips().then(setClips);
+    latestIdx().then(setClips);
     LocalStorage.getItem<string>("homepulse-clip-buckets").then((v) => {
       if (v) setBuckets(JSON.parse(v));
     });
@@ -74,6 +74,15 @@ export default function Command() {
     showToast({ title: b ? `Filed → ${BUCKETS[b].title}` : "Removed from bucket", style: Toast.Style.Success });
   }
 
+  async function pasteOrCopy(e: IdxEntry, mode: "paste" | "copy") {
+    const body = await readBody(e);
+    if (!body) {
+      showToast({ title: "Could not read clip body", style: Toast.Style.Failure });
+      return null;
+    }
+    return body;
+  }
+
   const counts = useMemo(() => {
     const c: Record<string, number> = { throwaway: 0, important: 0, thoughts: 0 };
     Object.values(buckets).forEach((b) => c[b]++);
@@ -82,10 +91,10 @@ export default function Command() {
 
   const filtered = useMemo(() => {
     if (!clips) return [];
-    return clips.filter((c) => {
-      if (bucketFilter !== "all" && buckets[`clip:${c.line}`] !== bucketFilter) return false;
-      if (kindFilter === "code" && !c.isCode) return false;
-      if (kindFilter === "links" && !c.hasLink) return false;
+    return clips.filter((c, i) => {
+      if (bucketFilter !== "all" && buckets[`clip:${i}`] !== bucketFilter) return false;
+      if (kindFilter === "code" && !c.code) return false;
+      if (kindFilter === "links" && !c.link) return false;
       if (kindFilter === "big" && c.len < 2000) return false;
       if (kindFilter === "images" && c.kind !== "image") return false;
       return true;
@@ -121,29 +130,56 @@ export default function Command() {
       </List.Section>
       <List.Section title={`${filtered.length} clips`}>
         {filtered.slice(0, 500).map((c) => {
-          const b = buckets[`clip:${c.line}`];
+          const line = clips!.indexOf(c);
+          const b = buckets[`clip:${line}`];
           return (
             <List.Item
-              key={c.line}
-              title={c.preview}
-              subtitle={`${c.createdAt.slice(0, 10)} · ${c.len.toLocaleString()} chars${c.isCode ? " · code" : ""}`}
+              key={line}
+              title={c.prev}
+              subtitle={`${c.ts.slice(0, 10)} · ${c.len.toLocaleString()} chars${c.code ? " · code" : ""}`}
               icon={b ? { source: BUCKETS[b].icon, tintColor: BUCKETS[b].tint } : c.kind === "image" ? Icon.Image : Icon.Text}
               accessories={b ? [{ tag: { value: BUCKETS[b].title, color: Color.SecondaryText } }] : []}
-              keywords={[c.kind, b ?? ""]}
+              keywords={[c.kind, c.s.split(" ").slice(0, 20).join(" "), b ?? ""]}
               actions={
                 <ActionPanel title="Clip">
-                  {c.full && <Action.Paste title="Paste Clip" content={c.full} />}
-                  {c.full && <Action.CopyToClipboard title="Copy Clip" content={c.full} />}
+                  {c.kind === "text" && (
+                    <Action
+                      title="Paste Clip"
+                      icon={Icon.Terminal}
+                      onAction={async () => {
+                        const body = await pasteOrCopy(c, "paste");
+                        if (body) {
+                          const { Clipboard } = await import("@raycast/api");
+                          await Clipboard.copy(body);
+                          showToast({ title: "Copied — paste with ⌘V", style: Toast.Style.Success });
+                        }
+                      }}
+                    />
+                  )}
+                  {c.kind === "text" && (
+                    <Action
+                      title="Copy Clip"
+                      icon={Icon.Clipboard}
+                      onAction={async () => {
+                        const body = await pasteOrCopy(c, "copy");
+                        if (body) {
+                          const { Clipboard } = await import("@raycast/api");
+                          await Clipboard.copy(body);
+                          showToast({ title: "Copied to clipboard", style: Toast.Style.Success });
+                        }
+                      }}
+                    />
+                  )}
                   <ActionPanel.Section title="File into bucket">
                     {(Object.keys(BUCKETS) as Bucket[]).map((k) => (
                       <Action
                         key={k}
                         title={`File → ${BUCKETS[k].title}`}
                         icon={BUCKETS[k].icon}
-                        onAction={() => setBucket(c.line, b === k ? null : k)}
+                        onAction={() => setBucket(line, b === k ? null : k)}
                       />
                     ))}
-                    {b && <Action title="Remove From Bucket" icon={Icon.Xmark} onAction={() => setBucket(c.line, null)} />}
+                    {b && <Action title="Remove From Bucket" icon={Icon.Xmark} onAction={() => setBucket(line, null)} />}
                   </ActionPanel.Section>
                 </ActionPanel>
               }

@@ -1,44 +1,82 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Clipboard Rescue — stats</title>
+<title>Clipboard Rescue — analyzer</title>
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box;margin:0}
-body{background:#0b0b10;color:#e8e8ef;font:14px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:28px;max-width:960px;margin:auto}
-h1{font-size:22px;margin-bottom:2px}h2{font-size:15px;margin:26px 0 10px;color:#b9b9c7;text-transform:uppercase;letter-spacing:.06em}
-.sub{color:#8a8a99;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+body{background:#0b0b10;color:#e8e8ef;font:14px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:28px;max-width:1000px;margin:auto}
+h1{font-size:22px}h2{font-size:14px;margin:26px 0 10px;color:#b9b9c7;text-transform:uppercase;letter-spacing:.06em}
+.sub{color:#8a8a99;margin:2px 0 18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
 .card{background:#15151d;border:1px solid #262633;border-radius:12px;padding:12px 14px}
 .card b{display:block;font-size:22px}.card span{color:#8a8a99;font-size:12px}
 canvas{background:#15151d;border:1px solid #262633;border-radius:12px;width:100%}
 table{width:100%;border-collapse:collapse;background:#15151d;border-radius:12px;overflow:hidden}
 td,th{padding:8px 12px;text-align:left;border-bottom:1px solid #23232e;font-size:13px}
-th{color:#8a8a99;font-weight:600}tr:last-child td{border-bottom:0}
+th{color:#8a8a99}tr:last-child td{border-bottom:0}
 .bar{height:8px;background:#262633;border-radius:4px;overflow:hidden;min-width:120px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#7c5cff,#3cc8f0)}
+#drop{border:2px dashed #3a3a4a;border-radius:12px;padding:22px;text-align:center;color:#8a8a99;margin-top:8px;cursor:pointer}
+#drop.over{border-color:#7c5cff;color:#e8e8ef}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+button{background:#23232e;color:#e8e8ef;border:1px solid #343442;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px}
+button:hover{border-color:#7c5cff}
 .note{margin-top:26px;color:#6d6d7d;font-size:12px}
+.heat{display:grid;grid-template-columns:36px repeat(24,1fr);gap:2px;font-size:10px;color:#8a8a99;align-items:center}
+.heat div{min-height:14px;border-radius:3px;text-align:center}
 </style></head><body>
-<h1>📋 Clipboard Rescue — stats</h1>
-<div class="sub">generated 2026-09-23 22:42:59 · source gravity-archive/rayconfig-clips-1790183173785.jsonl · aggregates only, zero clip content</div>
-<div class="grid">
-<div class="card"><b>5,811</b><span>entries</span></div>
-<div class="card"><b>5,740</b><span>text clips</span></div>
-<div class="card"><b>71</b><span>images</span></div>
-<div class="card"><b>11.6M</b><span>chars</span></div>
-<div class="card"><b>1.77M</b><span>words</span></div>
-<div class="card"><b>2,029</b><span>avg chars/clip</span></div>
-<div class="card"><b>19,488</b><span>url mentions</span></div>
-<div class="card"><b>206</b><span>code-looking</span></div>
-<div class="card"><b>30,564</b><span>biggest clip (2026-07-26)</span></div>
-</div>
+<h1>📋 Clipboard Rescue — analyzer</h1>
+<div class="sub" id="src"></div>
+<div id="cards" class="grid"></div>
 <h2>Per month</h2><canvas id="m" height="150"></canvas>
 <h2>Clip length buckets</h2><canvas id="b" height="130"></canvas>
-<h2>Top domains (mentions, not links)</h2>
-<table><tr><th>domain</th><th>mentions</th><th></th></tr>
-<tr><td>www.youtube.com</td><td>8,553</td><td><div class="bar"><i style="width:100%"></i></div></td></tr><tr><td>github.com</td><td>891</td><td><div class="bar"><i style="width:10%"></i></div></td></tr><tr><td>www.reddit.com</td><td>808</td><td><div class="bar"><i style="width:9%"></i></div></td></tr><tr><td>x.com</td><td>749</td><td><div class="bar"><i style="width:9%"></i></div></td></tr><tr><td>www.instagram.com</td><td>599</td><td><div class="bar"><i style="width:7%"></i></div></td></tr><tr><td>www.google.com</td><td>459</td><td><div class="bar"><i style="width:5%"></i></div></td></tr><tr><td>t.co</td><td>439</td><td><div class="bar"><i style="width:5%"></i></div></td></tr><tr><td>img.youtube.com</td><td>376</td><td><div class="bar"><i style="width:4%"></i></div></td></tr><tr><td>www.linkedin.com</td><td>346</td><td><div class="bar"><i style="width:4%"></i></div></td></tr><tr><td>i.ytimg.com</td><td>247</td><td><div class="bar"><i style="width:3%"></i></div></td></tr><tr><td>en.wikipedia.org</td><td>216</td><td><div class="bar"><i style="width:3%"></i></div></td></tr><tr><td>www.imdb.com</td><td>207</td><td><div class="bar"><i style="width:2%"></i></div></td></tr><tr><td>open.spotify.com</td><td>192</td><td><div class="bar"><i style="width:2%"></i></div></td></tr><tr><td>api.follow.it</td><td>139</td><td><div class="bar"><i style="width:2%"></i></div></td></tr><tr><td>chatgpt.com</td><td>129</td><td><div class="bar"><i style="width:2%"></i></div></td></tr>
-</table>
-<div class="note">local file · no network · no clip text embedded — regenerate with <code>bun scripts/clipboard-report.ts</code></div>
+<h2>Copy heatmap (weekday × hour)</h2><div class="heat" id="h"></div>
+<h2>Top domains (mentions, not links)</h2><table id="t"></table>
+<div class="row">
+<button id="dl">Download aggregates JSON</button>
+<label for="file" style="cursor:pointer"><span style="background:#23232e;border:1px solid #343442;border-radius:8px;padding:8px 14px;font-size:13px">Analyze another JSONL…</span></label>
+<input type="file" id="file" accept=".jsonl" style="display:none">
+</div>
+<div id="drop">…or drop any <code>rayconfig-clips-*.jsonl</code> here — parsed locally in chunks, content never displayed</div>
+<div class="note">local file · no network · zero clip text embedded or shown — regenerate with <code>bun scripts/clipboard-report.ts</code></div>
 <script>
-const D={"months":{"2025-11":2,"2025-12":1,"2026-02":1,"2026-04":2,"2026-07":3145,"2026-08":2589},"buckets":{"<100":2019,"100-500":1889,"500-2k":854,"2k-10k":569,">10k":409}};
-function bars(id,obj,color){const c=document.getElementById(id),x=c.getContext("2d"),ks=Object.keys(obj),vs=ks.map(k=>obj[k]),mx=Math.max(...vs,1),W=c.width=c.offsetWidth*2,H=c.height;const bw=W/ks.length;x.fillStyle="#8a8a99";x.font="20px sans-serif";ks.forEach((k,i)=>{const h=(H-40)*(vs[i]/mx),px=i*bw+bw*0.2;const g=x.createLinearGradient(0,H,0,H-h);g.addColorStop(0,"#7c5cff");g.addColorStop(1,"#3cc8f0");x.fillStyle=g;x.fillRect(px,H-28,bw*0.6,h);x.fillStyle="#8a8a99";x.fillText(String(vs[i]),px,H-30);x.fillText(k.slice(2),px,H-8);});}
-bars("m",D.months);bars("b",D.buckets);
+let D={"source":"gravity-archive/rayconfig-clips-1790183173785.jsonl","total":5811,"textN":5740,"imgN":71,"chars":11647642,"words":1770916,"avg":2029,"biggest":{"len":30564,"ts":"2026-07-26T14:37:50Z"},"months":{"2025-11":2,"2025-12":1,"2026-02":1,"2026-04":2,"2026-07":3145,"2026-08":2589},"buckets":{"<100":2019,"100-500":1889,"500-2k":854,"2k-10k":569,">10k":409},"heat":[[29,45,28,24,51,26,41,18,36,5,3,0,0,0,0,13,14,31,16,29,67,38,30,28],[47,52,54,48,29,48,49,27,27,37,34,26,18,1,5,8,15,11,20,50,13,13,34,51],[21,29,39,25,13,45,71,55,19,39,25,26,17,6,4,12,17,34,17,22,30,14,71,112],[80,51,41,18,17,30,9,19,21,16,5,21,34,14,5,19,45,83,32,41,86,58,96,77],[84,51,35,90,72,57,69,43,34,21,41,7,11,0,0,14,40,14,72,44,62,25,84,64],[47,27,31,48,74,43,18,19,11,22,5,9,1,9,14,29,57,38,44,51,30,28,65,47],[46,52,37,48,47,80,56,30,33,91,34,18,42,22,30,33,11,16,24,39,21,14,58,87]],"urlN":19488,"codeN":206,"topDomains":[["www.youtube.com",8553],["github.com",891],["www.reddit.com",808],["x.com",749],["www.instagram.com",599],["www.google.com",459],["t.co",439],["img.youtube.com",376],["www.linkedin.com",346],["i.ytimg.com",247],["en.wikipedia.org",216],["www.imdb.com",207],["open.spotify.com",192],["api.follow.it",139],["chatgpt.com",129]]};
+const $=id=>document.getElementById(id);
+function draw(){
+  $("src").textContent="source "+D.source+" · "+D.total.toLocaleString()+" entries · aggregates only, zero clip content";
+  const C=[["entries",D.total],["text clips",D.textN],["images",D.imgN],["chars",(D.chars/1e6).toFixed(1)+"M"],["words",(D.words/1e6).toFixed(2)+"M"],["avg chars/clip",D.avg.toLocaleString()],["url mentions",D.urlN.toLocaleString()],["code-looking",D.codeN],["biggest clip",D.biggest.len.toLocaleString()+" ("+D.biggest.ts.slice(0,10)+")"]];
+  $("cards").innerHTML=C.map(([s,b])=>'<div class="card"><b>'+b+'</b><span>'+s+'</span></div>').join("");
+  bars("m",D.months,v=>v);bars("b",D.buckets,v=>v);
+  const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],mx=Math.max(1,...D.heat.flat());
+  $("h").innerHTML=days.map((d,i)=>'<div>'+d+'</div>'+D.heat[i].map(v=>'<div title="'+v+'" style="background:rgba(124,92,255,'+(0.06+0.94*v/mx).toFixed(2)+')"></div>').join("")).join("");
+  $("t").innerHTML="<tr><th>domain</th><th>mentions</th><th></th></tr>"+D.topDomains.map(([d,c])=>"<tr><td>"+d+"</td><td>"+c.toLocaleString()+'</td><td><div class="bar"><i style="width:'+Math.round(c/D.topDomains[0][1]*100)+'%"></i></div></td></tr>').join("");
+}
+function bars(id,obj){const c=$(id),dpr=window.devicePixelRatio||1,W=c.clientWidth,H=parseInt(c.getAttribute("height")),ks=Object.keys(obj),vs=ks.map(k=>obj[k]),mx=Math.max(...vs,1);c.width=W*dpr;c.height=H*dpr;const x=c.getContext("2d");x.scale(dpr,dpr);const bw=W/ks.length;x.font="11px sans-serif";ks.forEach((k,i)=>{const h=(H-44)*(vs[i]/mx),px=i*bw+bw*0.2;const g=x.createLinearGradient(0,H,0,H-h);g.addColorStop(0,"#7c5cff");g.addColorStop(1,"#3cc8f0");x.fillStyle=g;x.fillRect(px,H-30,Math.max(2,bw*0.6),h);x.fillStyle="#b9b9c7";x.fillText(String(vs[i]),px,H-32);x.fillStyle="#8a8a99";x.fillText(k.slice(2),px,H-10);});}
+window.addEventListener("resize",draw);
+$("dl").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(D,null,1)],{type:"application/json"}));a.download="clipboard-aggregates.json";a.click();};
+async function analyzeFile(f){
+  $("src").textContent="parsing "+f.name+" …";
+  const N={source:f.name,total:0,textN:0,imgN:0,chars:0,words:0,avg:0,biggest:{len:0,ts:""},months:{},buckets:{"<100":0,"100-500":0,"500-2k":0,"2k-10k":0,">10k":0},heat:Array.from({length:7},()=>new Array(24).fill(0)),urlN:0,codeN:0,topDomains:[]};
+  const dom={},CH=65536;let off=0,tail="";
+  while(off<f.size){const chunk=await f.slice(off,off+CH).text();off+=CH;const parts=(tail+chunk).split("\n");tail=parts.pop();
+    for(const l of parts){if(!l.trim())continue;let e;try{e=JSON.parse(l)}catch{continue}N.total++;
+      if(e.kind!=="text"){N.imgN++;continue}N.textN++;const t=e.text||"",c=t.length;N.chars+=c;N.words+=t.split(/\s+/).filter(Boolean).length;
+      if(c>N.biggest.len)N.biggest={len:c,ts:e.createdAt||""};
+      const m=(e.createdAt||"").slice(0,7);if(m)N.months[m]=(N.months[m]||0)+1;
+      N.buckets[c<100?"<100":c<500?"100-500":c<2000?"500-2k":c<10000?"2k-10k":">10k"]++;
+      const d=new Date(e.createdAt);if(!isNaN(+d))N.heat[d.getDay()][d.getHours()]++;
+      const us=t.match(/https?:\/\/([a-zA-Z0-9.-]+)/g)||[];N.urlN+=us.length;
+      for(const u of us){const dd=u.replace(/https?:\/\//,"").toLowerCase();dom[dd]=(dom[dd]||0)+1}
+      if(/```|function |const .*=|import .*from|def |class /.test(t))N.codeN++;}
+    $("src").textContent="parsing "+f.name+" … "+N.total.toLocaleString()+" rows";}
+  N.avg=Math.round(N.chars/Math.max(1,N.textN));
+  N.topDomains=Object.entries(dom).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  D=N;draw();
+}
+const dz=$("drop");
+["dragover","dragenter"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("over")}));
+dz.addEventListener("drop",e=>{if(e.dataTransfer.files[0])analyzeFile(e.dataTransfer.files[0])});
+dz.onclick=()=>$("file").click();
+$("file").onchange=e=>{if(e.target.files[0])analyzeFile(e.target.files[0])};
+draw();
 </script></body></html>
