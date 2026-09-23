@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clipboard Rescue — stats</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box;margin:0}
+body{background:#0b0b10;color:#e8e8ef;font:14px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:28px;max-width:960px;margin:auto}
+h1{font-size:22px;margin-bottom:2px}h2{font-size:15px;margin:26px 0 10px;color:#b9b9c7;text-transform:uppercase;letter-spacing:.06em}
+.sub{color:#8a8a99;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.card{background:#15151d;border:1px solid #262633;border-radius:12px;padding:12px 14px}
+.card b{display:block;font-size:22px}.card span{color:#8a8a99;font-size:12px}
+canvas{background:#15151d;border:1px solid #262633;border-radius:12px;width:100%}
+table{width:100%;border-collapse:collapse;background:#15151d;border-radius:12px;overflow:hidden}
+td,th{padding:8px 12px;text-align:left;border-bottom:1px solid #23232e;font-size:13px}
+th{color:#8a8a99;font-weight:600}tr:last-child td{border-bottom:0}
+.bar{height:8px;background:#262633;border-radius:4px;overflow:hidden;min-width:120px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#7c5cff,#3cc8f0)}
+.note{margin-top:26px;color:#6d6d7d;font-size:12px}
+</style></head><body>
+<h1>📋 Clipboard Rescue — stats</h1>
+<div class="sub">generated 2026-09-23 22:42:59 · source gravity-archive/rayconfig-clips-1790183173785.jsonl · aggregates only, zero clip content</div>
+<div class="grid">
+<div class="card"><b>5,811</b><span>entries</span></div>
+<div class="card"><b>5,740</b><span>text clips</span></div>
+<div class="card"><b>71</b><span>images</span></div>
+<div class="card"><b>11.6M</b><span>chars</span></div>
+<div class="card"><b>1.77M</b><span>words</span></div>
+<div class="card"><b>2,029</b><span>avg chars/clip</span></div>
+<div class="card"><b>19,488</b><span>url mentions</span></div>
+<div class="card"><b>206</b><span>code-looking</span></div>
+<div class="card"><b>30,564</b><span>biggest clip (2026-07-26)</span></div>
+</div>
+<h2>Per month</h2><canvas id="m" height="150"></canvas>
+<h2>Clip length buckets</h2><canvas id="b" height="130"></canvas>
+<h2>Top domains (mentions, not links)</h2>
+<table><tr><th>domain</th><th>mentions</th><th></th></tr>
+<tr><td>www.youtube.com</td><td>8,553</td><td><div class="bar"><i style="width:100%"></i></div></td></tr><tr><td>github.com</td><td>891</td><td><div class="bar"><i style="width:10%"></i></div></td></tr><tr><td>www.reddit.com</td><td>808</td><td><div class="bar"><i style="width:9%"></i></div></td></tr><tr><td>x.com</td><td>749</td><td><div class="bar"><i style="width:9%"></i></div></td></tr><tr><td>www.instagram.com</td><td>599</td><td><div class="bar"><i style="width:7%"></i></div></td></tr><tr><td>www.google.com</td><td>459</td><td><div class="bar"><i style="width:5%"></i></div></td></tr><tr><td>t.co</td><td>439</td><td><div class="bar"><i style="width:5%"></i></div></td></tr><tr><td>img.youtube.com</td><td>376</td><td><div class="bar"><i style="width:4%"></i></div></td></tr><tr><td>www.linkedin.com</td><td>346</td><td><div class="bar"><i style="width:4%"></i></div></td></tr><tr><td>i.ytimg.com</td><td>247</td><td><div class="bar"><i style="width:3%"></i></div></td></tr><tr><td>en.wikipedia.org</td><td>216</td><td><div class="bar"><i style="width:3%"></i></div></td></tr><tr><td>www.imdb.com</td><td>207</td><td><div class="bar"><i style="width:2%"></i></div></td></tr><tr><td>open.spotify.com</td><td>192</td><td><div class="bar"><i style="width:2%"></i></div></td></tr><tr><td>api.follow.it</td><td>139</td><td><div class="bar"><i style="width:2%"></i></div></td></tr><tr><td>chatgpt.com</td><td>129</td><td><div class="bar"><i style="width:2%"></i></div></td></tr>
+</table>
+<div class="note">local file · no network · no clip text embedded — regenerate with <code>bun scripts/clipboard-report.ts</code></div>
+<script>
+const D={"months":{"2025-11":2,"2025-12":1,"2026-02":1,"2026-04":2,"2026-07":3145,"2026-08":2589},"buckets":{"<100":2019,"100-500":1889,"500-2k":854,"2k-10k":569,">10k":409}};
+function bars(id,obj,color){const c=document.getElementById(id),x=c.getContext("2d"),ks=Object.keys(obj),vs=ks.map(k=>obj[k]),mx=Math.max(...vs,1),W=c.width=c.offsetWidth*2,H=c.height;const bw=W/ks.length;x.fillStyle="#8a8a99";x.font="20px sans-serif";ks.forEach((k,i)=>{const h=(H-40)*(vs[i]/mx),px=i*bw+bw*0.2;const g=x.createLinearGradient(0,H,0,H-h);g.addColorStop(0,"#7c5cff");g.addColorStop(1,"#3cc8f0");x.fillStyle=g;x.fillRect(px,H-28,bw*0.6,h);x.fillStyle="#8a8a99";x.fillText(String(vs[i]),px,H-30);x.fillText(k.slice(2),px,H-8);});}
+bars("m",D.months);bars("b",D.buckets);
+</script></body></html>

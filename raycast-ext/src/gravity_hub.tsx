@@ -27,6 +27,7 @@ import RecentActivity from "./recent_activity";
 // Utility
 import Archive from "./archive";
 import ClipboardVault from "./clipboard_vault";
+import ClipStacks from "./clip_stacks";
 import Prompts from "./prompts";
 import ConvertLink from "./convert_link";
 import SocialStats from "./social_stats";
@@ -69,6 +70,7 @@ const COMMANDS: Cmd[] = [
 
   // Utility
   { title: "Clipboard Vault (Transcript)", subtitle: "Search locally curated Raycast clipboard transcripts and URLs", icon: Icon.Archive, section: "Utility", keywords: ["clipboard", "vault", "search", "transcript", "url"], C: ClipboardVault },
+  { title: "Clip Stacks", subtitle: "Rescued clipboard history in buckets — beyond the 3-month wall", icon: Icon.Layers, section: "Utility", keywords: ["clip", "stack", "clipboard", "bucket", "history", "rescue"], C: ClipStacks },
   { title: "Clipboard Archive", subtitle: "Infinite history of your copies and cuts", icon: Icon.Clock, section: "Utility", keywords: ["clipboard", "archive", "history", "copy", "cut"], C: Archive },
   { title: "Prompt Library", subtitle: "Store, search, and use reusable AI prompts", icon: Icon.Wand, section: "Utility", keywords: ["prompt", "library", "ai", "template"], C: Prompts },
   { title: "URL → Markdown", subtitle: "Convert URLs to markdown links with smart title extraction", icon: Icon.Link, section: "Utility", keywords: ["url", "markdown", "convert", "link"], C: ConvertLink },

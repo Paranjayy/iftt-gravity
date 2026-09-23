@@ -135,6 +135,13 @@
       "mode": "view"
     },
     {
+      "name": "clip_stacks",
+      "title": "Clip Stacks",
+      "description": "Search, filter, and file rescued clipboard history into Throwaway / Important / Thoughts buckets",
+      "icon": "commands/archive.png",
+      "mode": "view"
+    },
+    {
       "name": "png_to_jpg",
       "title": "PNG → JPG",
       "description": "Convert PNGs to JPG in place (keeps folder structure, deletes originals only on success)",

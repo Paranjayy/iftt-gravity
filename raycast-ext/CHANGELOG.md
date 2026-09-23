@@ -135,6 +135,15 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 17: Clip Stacks command + offline stats HTML (v1.7.0)
+- **NEW command `Clip Stacks`**: search/filter rescued clipboard history
+  (the `.rayconfig` JSONL — history beyond Raycast's free 3-month wall),
+  file clips into Throwaway / Important / Thoughts buckets (LocalStorage),
+  paste or copy back out. Listed in consolidated hub too.
+- **`scripts/clipboard-report.ts` → `scratch/clipboard-report.html`**:
+  offline stats page, aggregates only (counts, per-month bars, length
+  buckets, top domains) — zero clip content embedded by design.
+
 ### Round 18: optional Puppeteer runtime
 - **Fix**: the hub no longer hard-imports Puppeteer during startup. The local
   API and device controls boot without it; PGVCL and browser-scraping commands
