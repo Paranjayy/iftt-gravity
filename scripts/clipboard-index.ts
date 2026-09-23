@@ -25,9 +25,12 @@ for (let i = 0; i <= buf.length; i++) {
         const e = JSON.parse(raw);
         const text: string = e.kind === "text" ? e.text : "";
         const norm = text.replace(/\s+/g, " ").trim();
+        const day: string = (e.createdAt || "").slice(0, 10);
         entries.push({
           o: start, n: i - start, ts: e.createdAt || "", kind: e.kind,
           len: text.length,
+          w: text ? text.split(/\s+/).filter(Boolean).length : 0,
+          day,
           prev: (e.kind === "text" ? norm.slice(0, 110) || "(empty)" : `[image] ${e.imagePath || ""}`.slice(0, 110)),
           s: norm.slice(0, 400),
           code: /```|function |const .*=|import .*from|def |class /.test(text),

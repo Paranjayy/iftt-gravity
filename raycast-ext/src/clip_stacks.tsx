@@ -17,6 +17,8 @@ interface IdxEntry {
   ts: string;
   kind: string;
   len: number;
+  w: number;
+  day: string;
   prev: string;
   s: string;
   code: boolean;
@@ -83,6 +85,33 @@ export default function Command() {
     return body;
   }
 
+  async function exportBucket(b: Bucket) {
+    const toast = await showToast({ style: Toast.Style.Animated, title: `Exporting ${BUCKETS[b].title}…` });
+    try {
+      const { mkdir, writeFile } = await import("node:fs/promises");
+      const { homedir } = await import("node:os");
+      const dir = path.join(homedir(), "Developer", "clipboard-backup");
+      await mkdir(dir, { recursive: true });
+      const lines: string[] = [`# Clip Stacks — ${BUCKETS[b].title}`, "", `> Exported ${new Date().toISOString().slice(0, 19).replace("T", " ")}`, ""];
+      let n = 0;
+      for (let i = 0; i < (clips?.length ?? 0); i++) {
+        if (buckets[`clip:${i}`] !== b) continue;
+        const body = await readBody(clips![i]);
+        if (!body) continue;
+        n++;
+        lines.push(`## ${clips![i].ts.slice(0, 16)} · ${clips![i].len.toLocaleString()} chars`, "", body, "");
+      }
+      const out = path.join(dir, `bucket-${b}-${Date.now()}.md`);
+      await writeFile(out, lines.join("\n"));
+      toast.style = Toast.Style.Success;
+      toast.title = `Exported ${n} clips`;
+      toast.message = out;
+    } catch {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Bucket export failed";
+    }
+  }
+
   const counts = useMemo(() => {
     const c: Record<string, number> = { throwaway: 0, important: 0, thoughts: 0 };
     Object.values(buckets).forEach((b) => c[b]++);
@@ -104,6 +133,7 @@ export default function Command() {
   return (
     <List
       isLoading={clips === null}
+      isShowingDetail
       searchBarPlaceholder={`Search ${clips?.length ?? "…"} rescued clips (beyond Raycast's 3-month wall)…`}
       searchBarAccessory={
         <List.Dropdown tooltip="Bucket" value={bucketFilter} onChange={setBucketFilter} storeValue>
@@ -140,6 +170,24 @@ export default function Command() {
               icon={b ? { source: BUCKETS[b].icon, tintColor: BUCKETS[b].tint } : c.kind === "image" ? Icon.Image : Icon.Text}
               accessories={b ? [{ tag: { value: BUCKETS[b].title, color: Color.SecondaryText } }] : []}
               keywords={[c.kind, c.s.split(" ").slice(0, 20).join(" "), b ?? ""]}
+              detail={
+                <List.Item.Detail
+                  metadata={
+                    <List.Item.Detail.Metadata>
+                      <List.Item.Detail.Metadata.Label title="Copied" text={c.ts.replace("T", " ").slice(0, 19)} />
+                      <List.Item.Detail.Metadata.Label title="Size" text={`${c.len.toLocaleString()} chars · ${c.w.toLocaleString()} words`} />
+                      <List.Item.Detail.Metadata.TagList title="Bucket">
+                        <List.Item.Detail.Metadata.TagList.Item text={b ? BUCKETS[b].title : "Unfiled"} color={b ? Color.Green : Color.SecondaryText} />
+                      </List.Item.Detail.Metadata.TagList>
+                      <List.Item.Detail.Metadata.Separator />
+                      <List.Item.Detail.Metadata.Label title="Kind" text={c.kind} />
+                      {c.code && <List.Item.Detail.Metadata.Label title="Flags" text="code-looking" />}
+                      {c.link && <List.Item.Detail.Metadata.Label title="Flags" text="has links" />}
+                      {c.len >= 2000 && <List.Item.Detail.Metadata.Label title="Flags" text="big clip" />}
+                    </List.Item.Detail.Metadata>
+                  }
+                />
+              }
               actions={
                 <ActionPanel title="Clip">
                   {c.kind === "text" && (
@@ -180,6 +228,17 @@ export default function Command() {
                       />
                     ))}
                     {b && <Action title="Remove From Bucket" icon={Icon.Xmark} onAction={() => setBucket(line, null)} />}
+                  </ActionPanel.Section>
+                  <ActionPanel.Section title="Bucket tools">
+                    {(Object.keys(BUCKETS) as Bucket[]).map((k) => (
+                      <Action
+                        key={`exp-${k}`}
+                        title={`Export ${BUCKETS[k].title} bucket (${counts[k]})`}
+                        icon={Icon.SaveDocument}
+                        shortcut={{ modifiers: ["cmd", "shift"], key: "e" }}
+                        onAction={() => exportBucket(k)}
+                      />
+                    ))}
                   </ActionPanel.Section>
                 </ActionPanel>
               }

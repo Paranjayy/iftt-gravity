@@ -135,6 +135,14 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 20: gauges + detail sidebar + bucket export (v1.8.0)
+- **Report v3**: speedtest-style SVG gauges (clips/day, prose share,
+  streak), daily area chart with peak marker, content-mix chips, heatmap —
+  still aggregates-only, still any-file via drop-in.
+- **Clip Stacks**: right detail sidebar (copied date, chars/words, bucket,
+  flags) + `Export bucket` (Important/Thoughts → Markdown in
+  `~/Developer/clipboard-backup`, bodies sliced on demand).
+
 ### Round 17: Clip Stacks command + offline stats HTML (v1.7.x)
 - **NEW command `Clip Stacks`**: search/filter rescued clipboard history
   (the `.rayconfig` JSONL — history beyond Raycast's free 3-month wall),
