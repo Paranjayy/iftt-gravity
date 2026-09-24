@@ -58,6 +58,8 @@ export default function Command() {
   const [buckets, setBuckets] = useState<Record<string, Bucket>>({});
   const [bucketFilter, setBucketFilter] = useState("all");
   const [kindFilter, setKindFilter] = useState("all");
+  const [activeClip, setActiveClip] = useState<IdxEntry | null>(null);
+  const [activeBody, setActiveBody] = useState<string | null>(null);
 
   useEffect(() => {
     latestIdx().then(setClips);
@@ -65,6 +67,13 @@ export default function Command() {
       if (v) setBuckets(JSON.parse(v));
     });
   }, []);
+
+  useEffect(() => {
+    if (!activeClip) { setActiveBody(null); return; }
+    let live = true;
+    readBody(activeClip).then((b) => { if (live) setActiveBody(b); });
+    return () => { live = false; };
+  }, [activeClip]);
 
   async function setBucket(line: number, b: Bucket | null) {
     const next = { ...buckets };
@@ -83,6 +92,24 @@ export default function Command() {
       return null;
     }
     return body;
+  }
+
+  async function runBackupNow() {
+    const toast = await showToast({ style: Toast.Style.Animated, title: "Running backup workflow…" });
+    try {
+      const { execFile } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const execA = promisify(execFile);
+      const script = "/Users/paranjay/Developer/iftt/raycast-ext/scripts/clipboard-vault-backup.sh";
+      const { stdout } = await execA("bash", [script]);
+      toast.style = Toast.Style.Success;
+      toast.title = "Backup complete";
+      toast.message = stdout.trim().slice(0, 100);
+    } catch (e: any) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Backup failed";
+      toast.message = String(e?.message || e).slice(0, 100);
+    }
   }
 
   async function exportBucket(b: Bucket) {
@@ -135,6 +162,11 @@ export default function Command() {
       isLoading={clips === null}
       isShowingDetail
       searchBarPlaceholder={`Search ${clips?.length ?? "…"} rescued clips (beyond Raycast's 3-month wall)…`}
+      onSelectionChange={(id) => {
+        if (!clips || !id || !id.startsWith("clip-")) return;
+        const idx = parseInt(id.slice(5), 10);
+        if (!isNaN(idx) && clips[idx]) setActiveClip(clips[idx]);
+      }}
       searchBarAccessory={
         <List.Dropdown tooltip="Bucket" value={bucketFilter} onChange={setBucketFilter} storeValue>
           <List.Dropdown.Item title="All buckets" value="all" />
@@ -165,6 +197,7 @@ export default function Command() {
           return (
             <List.Item
               key={line}
+              id={`clip-${line}`}
               title={c.prev}
               subtitle={`${c.ts.slice(0, 10)} · ${c.len.toLocaleString()} chars${c.code ? " · code" : ""}`}
               icon={b ? { source: BUCKETS[b].icon, tintColor: BUCKETS[b].tint } : c.kind === "image" ? Icon.Image : Icon.Text}
@@ -172,6 +205,7 @@ export default function Command() {
               keywords={[c.kind, c.s.split(" ").slice(0, 20).join(" "), b ?? ""]}
               detail={
                 <List.Item.Detail
+                  markdown={activeClip === c && activeBody ? `\`\`\`\n${activeBody.slice(0, 4000)}${activeBody.length > 4000 ? "\n\n… (truncated preview)" : ""}\n\`\`\`` : `\`\`\`\n${c.s}\n\`\`\``}
                   metadata={
                     <List.Item.Detail.Metadata>
                       <List.Item.Detail.Metadata.Label title="Copied" text={c.ts.replace("T", " ").slice(0, 19)} />
@@ -230,6 +264,12 @@ export default function Command() {
                     {b && <Action title="Remove From Bucket" icon={Icon.Xmark} onAction={() => setBucket(line, null)} />}
                   </ActionPanel.Section>
                   <ActionPanel.Section title="Bucket tools">
+                    <Action
+                      title="Run Full Backup Workflow"
+                      icon={Icon.HardDrive}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "b" }}
+                      onAction={runBackupNow}
+                    />
                     {(Object.keys(BUCKETS) as Bucket[]).map((k) => (
                       <Action
                         key={`exp-${k}`}

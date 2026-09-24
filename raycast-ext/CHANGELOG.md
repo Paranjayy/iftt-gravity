@@ -135,6 +135,13 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 21: live preview + backup workflow action (v1.9.0)
+- **Clip Stacks live preview**: active row choice (`onSelectionChange`) triggers
+  on-demand slice of the real clip body into markdown preview above metadata
+  (capped 4KB to protect paint window).
+- **Run Full Backup Workflow** action (`⌘⇧B` in Clip Stacks): calls
+  `clipboard-vault-backup.sh` to snapshot and push vault.
+
 ### Round 20: gauges + detail sidebar + bucket export (v1.8.0)
 - **Report v3**: speedtest-style SVG gauges (clips/day, prose share,
   streak), daily area chart with peak marker, content-mix chips, heatmap —
