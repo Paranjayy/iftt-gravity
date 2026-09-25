@@ -135,6 +135,17 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 24: Paste Stack visible + batch auto-file + sentry goes live (v2.2.0)
+- **Paste Stack section**: queued items now show at the top of Clip Stacks with
+  count, next-up marker, copy/remove/clear actions (was toast-only before).
+- **Auto-File All Unfiled Clips**: one-shot batch classifier over the whole
+  index (in-memory, skips clips with no signal).
+- **Sentry daemon live**: `launchctl` agent `com.iftt.rayconfig-sentry`
+  (KeepAlive) watching `~/Downloads`; passphrase from `~/.rayconfig_pass`
+  (chmod 600, never committed). Fixed launchd PATH (absolute bun) + mid-write
+  debounce. E2E verified: detect → decrypt → index → report, zero errors.
+- Root scripts: `bun run sentry`, `bun run clipboard:diff`.
+
 ### Round 23: Transformers wired into Clip Stacks + stack drain + diff CLI (v2.1.0)
 - **Transformers action section**: Strip Tracking Params (`⌘⇧U`), Prettify JSON
   (`⌘⇧J`), Wrap In Prompt Quotes, Auto-File By Rules (`⌘⇧A`) now live in the

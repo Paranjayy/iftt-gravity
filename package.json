@@ -13,6 +13,8 @@
     "desktop": "electron electron/main.cjs",
     "archive": "bun src/archive/cli.ts",
     "archive:watch": "bun src/archive/watcher.ts",
+    "sentry": "bun scripts/auto-decrypter-sentry.ts",
+    "clipboard:diff": "bun scripts/rayconfig-diff.ts",
     "test": "bash scripts/synthetic-monitor.sh"
   },
   "dependencies": {

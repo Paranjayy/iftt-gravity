@@ -60,9 +60,16 @@ export default function Command() {
   const [kindFilter, setKindFilter] = useState("all");
   const [activeClip, setActiveClip] = useState<IdxEntry | null>(null);
   const [activeBody, setActiveBody] = useState<string | null>(null);
+  const [stack, setStack] = useState<Array<{ id: string; text: string; title: string }>>([]);
+
+  async function refreshStack() {
+    const v = await LocalStorage.getItem<string>("homepulse-paste-stack");
+    setStack(v ? JSON.parse(v) : []);
+  }
 
   useEffect(() => {
     latestIdx().then(setClips);
+    refreshStack();
     LocalStorage.getItem<string>("homepulse-clip-buckets").then((v) => {
       if (v) setBuckets(JSON.parse(v));
     });
@@ -83,6 +90,58 @@ export default function Command() {
     setBuckets(next);
     await LocalStorage.setItem("homepulse-clip-buckets", JSON.stringify(next));
     showToast({ title: b ? `Filed → ${BUCKETS[b].title}` : "Removed from bucket", style: Toast.Style.Success });
+  }
+
+  async function writeStack(next: Array<{ id: string; text: string; title: string }>) {
+    await LocalStorage.setItem("homepulse-paste-stack", JSON.stringify(next));
+    setStack(next);
+  }
+
+  async function removeFromStack(id: string) {
+    await writeStack(stack.filter((s) => s.id !== id));
+    showToast({ title: "Removed from Paste Stack", style: Toast.Style.Success });
+  }
+
+  async function clearStack() {
+    await writeStack([]);
+    showToast({ title: "Paste Stack cleared", style: Toast.Style.Success });
+  }
+
+  async function consumeNext() {
+    const { popNextPasteStack } = await import("./paste_stack_utils");
+    const res = await popNextPasteStack();
+    setStack((prev) => prev.slice(1));
+    if (!res) return;
+    const { Clipboard } = await import("@raycast/api");
+    await Clipboard.copy(res.item.text);
+    showToast({
+      title: `Copied — paste with ⌘V (${res.remaining} left in stack)`,
+      style: Toast.Style.Success,
+    });
+  }
+
+  async function autoFileAll() {
+    if (!clips) return;
+    const next = { ...buckets };
+    let filed = 0;
+    const { autoClassifyClip } = await import("./clip_transformers");
+    clips.forEach((c, i) => {
+      if (next[`clip:${i}`]) return;
+      const tags = autoClassifyClip(c.prev);
+      if (!tags.length) return;
+      next[`clip:${i}`] = tags.includes("thoughts")
+        ? "thoughts"
+        : tags.includes("throwaway")
+        ? "throwaway"
+        : "important";
+      filed++;
+    });
+    setBuckets(next);
+    await LocalStorage.setItem("homepulse-clip-buckets", JSON.stringify(next));
+    showToast({
+      title: filed ? `Auto-filed ${filed} clips` : "Nothing left to auto-file",
+      style: filed ? Toast.Style.Success : Toast.Style.Failure,
+    });
   }
 
   async function pasteOrCopy(e: IdxEntry, mode: "paste" | "copy") {
@@ -176,6 +235,46 @@ export default function Command() {
         </List.Dropdown>
       }
     >
+      {stack.length > 0 && (
+        <List.Section title={`🗂 Paste Stack (${stack.length})`}>
+          {stack.map((item, i) => (
+            <List.Item
+              key={item.id}
+              id={`stack-${item.id}`}
+              title={item.title}
+              subtitle={i === 0 ? `next up · ${stack.length} queued` : `#${i + 1} of ${stack.length}`}
+              icon={i === 0 ? Icon.Layers : Icon.Clock}
+              actions={
+                <ActionPanel title="Paste Stack">
+                  {i === 0 && (
+                    <Action
+                      title="Consume Next (Copy For Paste)"
+                      icon={Icon.Layers}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
+                      onAction={consumeNext}
+                    />
+                  )}
+                  <Action
+                    title="Copy This Item"
+                    icon={Icon.Clipboard}
+                    onAction={async () => {
+                      const { Clipboard } = await import("@raycast/api");
+                      await Clipboard.copy(item.text);
+                      showToast({ title: "Copied", style: Toast.Style.Success });
+                    }}
+                  />
+                  <Action
+                    title="Remove From Stack"
+                    icon={Icon.Xmark}
+                    onAction={() => removeFromStack(item.id)}
+                  />
+                  <Action title="Clear Whole Stack" icon={Icon.Trash} onAction={clearStack} />
+                </ActionPanel>
+              }
+            />
+          ))}
+        </List.Section>
+      )}
       <List.Section title="Filter">
         {(["all", "code", "links", "big", "images"] as const).map((k) => (
           <List.Item
@@ -189,6 +288,16 @@ export default function Command() {
             }
           />
         ))}
+        <List.Item
+          title="Auto-File All Unfiled Clips"
+          subtitle="run the local classifier over everything in one shot"
+          icon={Icon.Wand}
+          actions={
+            <ActionPanel>
+              <Action title="Run Auto-Filer" icon={Icon.Wand} onAction={autoFileAll} />
+            </ActionPanel>
+          }
+        />
       </List.Section>
       <List.Section title={`${filtered.length} clips`}>
         {filtered.slice(0, 500).map((c) => {
@@ -234,6 +343,7 @@ export default function Command() {
                         if (body) {
                           const { addToPasteStack } = await import("./paste_stack_utils");
                           await addToPasteStack(body, c.prev);
+                          refreshStack();
                         }
                       }}
                     />
@@ -347,17 +457,7 @@ export default function Command() {
                       title="Consume Next In Paste Stack"
                       icon={Icon.Layers}
                       shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
-                      onAction={async () => {
-                        const { popNextPasteStack } = await import("./paste_stack_utils");
-                        const res = await popNextPasteStack();
-                        if (!res) return;
-                        const { Clipboard } = await import("@raycast/api");
-                        await Clipboard.copy(res.item.text);
-                        showToast({
-                          title: `Next item copied — paste with ⌘V (${res.remaining} left in stack)`,
-                          style: Toast.Style.Success,
-                        });
-                      }}
+                      onAction={consumeNext}
                     />
                   </ActionPanel.Section>
                   <ActionPanel.Section title="Bucket tools">
