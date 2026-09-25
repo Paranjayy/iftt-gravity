@@ -226,6 +226,20 @@ export default function Command() {
                 <ActionPanel title="Clip">
                   {c.kind === "text" && (
                     <Action
+                      title="Add to Paste Stack Queue"
+                      icon={Icon.Layers}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "q" }}
+                      onAction={async () => {
+                        const body = await readBody(c);
+                        if (body) {
+                          const { addToPasteStack } = await import("./paste_stack_utils");
+                          await addToPasteStack(body, c.prev);
+                        }
+                      }}
+                    />
+                  )}
+                  {c.kind === "text" && (
+                    <Action
                       title="Paste Clip"
                       icon={Icon.Terminal}
                       onAction={async () => {

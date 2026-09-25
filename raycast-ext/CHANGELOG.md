@@ -135,6 +135,15 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 22: Paste Stack Queue, Auto-Tagging & Sentry Daemon (v2.0.0)
+- **Paste Stack Queue (`⌘Shift+Q`)**: queue items from Clip Stacks into a serial
+  paste sequence (`paste_stack_utils.ts`).
+- **Transformers & Classifier**: `clip_transformers.ts` for clean URLs (strip `utm_` / `si`),
+  prompt quotes wrapping, JSON prettifier, and auto-classification.
+- **Rayconfig Time Machine**: `scripts/rayconfig-diff.ts` to diff two backups.
+- **Auto-Decrypter Sentry**: `scripts/auto-decrypter-sentry.ts` background daemon
+  watching `~/Downloads` for new `.rayconfig` files and auto-decrypting/re-indexing.
+
 ### Round 21: live preview + backup workflow action (v1.9.0)
 - **Clip Stacks live preview**: active row choice (`onSelectionChange`) triggers
   on-demand slice of the real clip body into markdown preview above metadata
