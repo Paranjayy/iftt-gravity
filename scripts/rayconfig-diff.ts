@@ -44,3 +44,23 @@ export async function diffJsonlFiles(pathA: string, pathB: string): Promise<Diff
     shared,
   };
 }
+
+if (import.meta.main) {
+  const [a, b] = process.argv.slice(2);
+  if (!a || !b) {
+    console.error("usage: bun scripts/rayconfig-diff.ts <fileA.jsonl> <fileB.jsonl>");
+    process.exit(1);
+  }
+  const report = await diffJsonlFiles(a, b);
+  console.log(
+    [
+      `Time Machine diff`,
+      `  A: ${report.fileA} (${report.countA.toLocaleString()} entries)`,
+      `  B: ${report.fileB} (${report.countB.toLocaleString()} entries)`,
+      ``,
+      `  shared:  ${report.shared.toLocaleString()}`,
+      `  only in A (lost in B): ${report.onlyInA.toLocaleString()}`,
+      `  only in B (new):       ${report.onlyInB.toLocaleString()}`,
+    ].join("\n"),
+  );
+}

@@ -135,6 +135,19 @@ The scheduler (in `src/lib/bot.ts` `GravityScheduler.check()`) handles:
 
 ## What's been built (chronological)
 
+### Round 23: Transformers wired into Clip Stacks + stack drain + diff CLI (v2.1.0)
+- **Transformers action section**: Strip Tracking Params (`⌘⇧U`), Prettify JSON
+  (`⌘⇧J`), Wrap In Prompt Quotes, Auto-File By Rules (`⌘⇧A`) now live in the
+  Clip Stacks action panel (were dead files in v2.0.0).
+- **Paste Stack drain**: "Consume Next In Paste Stack" (`⌘⇧P`) — the queue could
+  be filled but never emptied before.
+- **Time Machine CLI**: `bun scripts/rayconfig-diff.ts <a.jsonl> <b.jsonl>` now
+  runs standalone (self-diff verified: 5,669/5,669 shared; half-vs-full: 2,969
+  shared / 2,700 new).
+- **Sentry daemon verified**: `bun scripts/auto-decrypter-sentry.ts` boots and
+  watches `~/Downloads` for `.rayconfig` drops.
+- New tests: `src/__test__/clip_transformers.spec.ts`.
+
 ### Round 22: Paste Stack Queue, Auto-Tagging & Sentry Daemon (v2.0.0)
 - **Paste Stack Queue (`⌘Shift+Q`)**: queue items from Clip Stacks into a serial
   paste sequence (`paste_stack_utils.ts`).

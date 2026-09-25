@@ -277,6 +277,89 @@ export default function Command() {
                     ))}
                     {b && <Action title="Remove From Bucket" icon={Icon.Xmark} onAction={() => setBucket(line, null)} />}
                   </ActionPanel.Section>
+                  <ActionPanel.Section title="Transformers">
+                    <Action
+                      title="Strip Tracking Params From Link"
+                      icon={Icon.Link}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "u" }}
+                      onAction={async () => {
+                        const { cleanMarkdownUrl } = await import("./clip_transformers");
+                        const body = await readBody(c);
+                        if (body) {
+                          const { Clipboard } = await import("@raycast/api");
+                          await Clipboard.copy(cleanMarkdownUrl(body.trim()));
+                          showToast({ title: "Clean URL copied", style: Toast.Style.Success });
+                        }
+                      }}
+                    />
+                    <Action
+                      title="Prettify JSON"
+                      icon={Icon.Code}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "j" }}
+                      onAction={async () => {
+                        const { prettifyJson } = await import("./clip_transformers");
+                        const body = await readBody(c);
+                        const pretty = body ? prettifyJson(body) : null;
+                        if (pretty) {
+                          const { Clipboard } = await import("@raycast/api");
+                          await Clipboard.copy(pretty);
+                          showToast({ title: "Prettified JSON copied", style: Toast.Style.Success });
+                        } else {
+                          showToast({ title: "Not valid JSON", style: Toast.Style.Failure });
+                        }
+                      }}
+                    />
+                    <Action
+                      title="Wrap In Prompt Quotes"
+                      icon={Icon.Quote}
+                      onAction={async () => {
+                        const { wrapInPromptQuotes } = await import("./clip_transformers");
+                        const body = await readBody(c);
+                        if (body) {
+                          const { Clipboard } = await import("@raycast/api");
+                          await Clipboard.copy(wrapInPromptQuotes(body));
+                          showToast({ title: "Wrapped & copied", style: Toast.Style.Success });
+                        }
+                      }}
+                    />
+                    <Action
+                      title="Auto-File By Rules"
+                      icon={Icon.Wand}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
+                      onAction={async () => {
+                        const { autoClassifyClip } = await import("./clip_transformers");
+                        const tags = autoClassifyClip(c.prev);
+                        const target: Bucket | null = tags.includes("thoughts")
+                          ? "thoughts"
+                          : tags.includes("throwaway")
+                          ? "throwaway"
+                          : "important";
+                        await setBucket(line, target);
+                        showToast({
+                          title: `Auto-filed → ${BUCKETS[target].title} (${tags.join(", ")})`,
+                          style: Toast.Style.Success,
+                        });
+                      }}
+                    />
+                  </ActionPanel.Section>
+                  <ActionPanel.Section title="Paste Stack">
+                    <Action
+                      title="Consume Next In Paste Stack"
+                      icon={Icon.Layers}
+                      shortcut={{ modifiers: ["cmd", "shift"], key: "p" }}
+                      onAction={async () => {
+                        const { popNextPasteStack } = await import("./paste_stack_utils");
+                        const res = await popNextPasteStack();
+                        if (!res) return;
+                        const { Clipboard } = await import("@raycast/api");
+                        await Clipboard.copy(res.item.text);
+                        showToast({
+                          title: `Next item copied — paste with ⌘V (${res.remaining} left in stack)`,
+                          style: Toast.Style.Success,
+                        });
+                      }}
+                    />
+                  </ActionPanel.Section>
                   <ActionPanel.Section title="Bucket tools">
                     <Action
                       title="Run Full Backup Workflow"

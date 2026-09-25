@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "homepulse",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "title": "HomePulse",
   "description": "Local-first Raycast mission control for your smart home. Talks to a hub you run.",
   "icon": "icon.png",
